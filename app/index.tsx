@@ -7,8 +7,9 @@ import { NavTopBar } from '@/components/nav-top-bar';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useAuth } from '@/context/AuthContext';
+import type { AuthUser, News } from '@/models/types';
 import { staffNewsFeed } from '@/services/newsService';
-import type { News } from '@/models/types';
 
 const screens = [
   { title: 'การลา', href: '/absent' },
@@ -19,9 +20,19 @@ const screens = [
   { title: 'ค้นหาบุคลากร', href: '/person-search' },
 ] as const;
 
+function getAuthDisplayName(user: AuthUser | null) {
+  if (!user) {
+    return '';
+  }
+
+  const displayName = user.name || user.displayName || user.fullName || user.staffId;
+  return typeof displayName === 'string' ? displayName : '';
+}
+
 export default function HomeScreen() {
   const [newsItems, setNewsItems] = useState<News[]>([]);
   const [isNewsLoading, setIsNewsLoading] = useState(true);
+  const { loading: isAuthLoading, signIn, user: authUser } = useAuth();
 
   useEffect(() => {
     let isMounted = true;
@@ -49,9 +60,42 @@ export default function HomeScreen() {
     }
   };
 
+  const handleLogin = async () => {
+    await signIn();
+  };
+
+  const authDisplayName = getAuthDisplayName(authUser);
+
+  const renderAuthAction = () => {
+    if (isAuthLoading) {
+      return <ThemedText style={styles.authName}>...</ThemedText>;
+    }
+
+    if (authUser) {
+      return (
+        <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.authName}>
+          {authDisplayName}
+        </ThemedText>
+      );
+    }
+
+    return (
+      <Pressable accessibilityRole="button" onPress={handleLogin} style={styles.loginButton}>
+        <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.loginButtonText}>
+          Login
+        </ThemedText>
+      </Pressable>
+    );
+  };
+
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="หน้าหลัก" showBackButton={false} showHomeButton={false} />
+      <NavTopBar
+        title="หน้าหลัก"
+        showBackButton={false}
+        showHomeButton={false}
+        rightContent={renderAuthAction()}
+      />
       <ParallaxScrollView
         headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
         headerImage={
@@ -115,6 +159,26 @@ const styles = StyleSheet.create({
   },
   description: {
     marginTop: 8,
+  },
+  authName: {
+    color: '#0A6E8A',
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'right',
+  },
+  loginButton: {
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#0A6E8A',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+  },
+  loginButtonText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   newsList: {
     gap: 10,

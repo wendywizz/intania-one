@@ -1,4 +1,5 @@
-import { Link, router } from 'expo-router';
+import { Link, router, type Href } from 'expo-router';
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -7,16 +8,25 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 
 type NavTopBarProps = {
   title: string;
+  backHref?: Href;
   showBackButton?: boolean;
   showHomeButton?: boolean;
+  rightContent?: ReactNode;
 };
 
 export function NavTopBar({
   title,
+  backHref,
   showBackButton = true,
-  showHomeButton = true,
+  showHomeButton = false,
+  rightContent,
 }: NavTopBarProps) {
   const goBack = () => {
+    if (backHref) {
+      router.replace(backHref);
+      return;
+    }
+
     if (router.canGoBack()) {
       router.back();
       return;
@@ -45,8 +55,10 @@ export function NavTopBar({
         {title}
       </ThemedText>
 
-      <View style={styles.rightActions}>
-        {showHomeButton ? (
+      <View style={[styles.rightActions, rightContent ? styles.customRightActions : undefined]}>
+        {rightContent ? (
+          rightContent
+        ) : showHomeButton ? (
           <Link href="/" asChild>
             <Pressable accessibilityLabel="ไปหน้าหลัก" accessibilityRole="button" style={styles.iconButton}>
               <IconSymbol name="house.fill" size={23} color="#0A6E8A" />
@@ -76,6 +88,9 @@ const styles = StyleSheet.create({
   rightActions: {
     width: 48,
     alignItems: 'flex-end',
+  },
+  customRightActions: {
+    width: 116,
   },
   iconButton: {
     width: 40,

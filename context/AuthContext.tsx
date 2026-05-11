@@ -6,6 +6,7 @@ type AuthContextValue = {
   user: AuthUser | null;
   loading: boolean;
   signedIn: boolean;
+  completeWebSignIn: (params: Parameters<typeof authService.completeWebLogin>[0]) => Promise<void>;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -28,6 +29,14 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       user,
       loading,
       signedIn: Boolean(user),
+      completeWebSignIn: async (params) => {
+        setLoading(true);
+        try {
+          setUser(await authService.completeWebLogin(params));
+        } finally {
+          setLoading(false);
+        }
+      },
       signIn: async () => {
         setLoading(true);
         try {

@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
+import { AuthProvider } from '@/context/AuthContext';
 import { AppFonts } from '@/constants/fonts';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -37,12 +38,16 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="absent" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'โมดัล' }} />
-      </Stack>
-      <StatusBar style="auto" />
+      <AuthProvider>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="absent" options={{ headerShown: false }} />
+          <Stack.Screen name="meeting" options={{ headerShown: false }} />
+          <Stack.Screen name="login-callback" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'โมดัล' }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

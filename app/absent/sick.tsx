@@ -19,6 +19,8 @@ type Approver = {
   positionName?: string;
 };
 
+type ValidationErrors = Partial<Record<'approver' | 'reason' | 'date' | 'contact', string>>;
+
 function getApproverList(data: Absent | null): Approver[] {
   return Array.isArray(data?.approverList) ? (data.approverList as Approver[]) : [];
 }
@@ -47,6 +49,8 @@ type SelectFieldProps = {
   value: string;
   options: string[];
   isOpen: boolean;
+  hasError?: boolean;
+  errorMessage?: string;
   onToggle: () => void;
   onSelect: (value: string) => void;
 };
@@ -57,18 +61,24 @@ function SelectField({
   value,
   options,
   isOpen,
+  hasError,
+  errorMessage,
   onToggle,
   onSelect,
 }: SelectFieldProps) {
   return (
     <View style={styles.field}>
       <ThemedText type="defaultSemiBold">{label}</ThemedText>
-      <Pressable accessibilityRole="button" onPress={onToggle} style={styles.selectButton}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onToggle}
+        style={[styles.selectButton, hasError ? styles.inputError : undefined]}>
         <ThemedText style={[styles.selectText, !value && styles.placeholder]}>
           {value || placeholder}
         </ThemedText>
         <ThemedText style={styles.chevron}>⌄</ThemedText>
       </Pressable>
+      {errorMessage ? <ThemedText style={styles.fieldError}>{errorMessage}</ThemedText> : null}
 
       <Modal transparent visible={isOpen} animationType="fade" onRequestClose={onToggle}>
         <Pressable style={styles.backdrop} onPress={onToggle}>
@@ -137,6 +147,19 @@ export default function SickScreen() {
   const [halfDay, setHalfDay] = useState('');
   const [contact, setContact] = useState('');
   const [openSelect, setOpenSelect] = useState<'approver' | 'halfDay' | null>(null);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+
+  const clearValidationError = useCallback((field: keyof ValidationErrors) => {
+    setValidationErrors((currentErrors) => {
+      if (!currentErrors[field]) {
+        return currentErrors;
+      }
+
+      const nextErrors = { ...currentErrors };
+      delete nextErrors[field];
+      return nextErrors;
+    });
+  }, []);
 
   const loadInitialAbsentData = useCallback(async () => {
     setIsInitialLoading(true);
@@ -173,6 +196,7 @@ export default function SickScreen() {
     startDate && endDate && endDate <= startDate
       ? 'วันที่สิ้นสุดต้องมากกว่าวันที่เริ่มต้น'
       : '';
+  const displayedDateError = dateError || validationErrors.date || '';
   const leaveDayCount = useMemo(() => {
     if (!startDate || !endDate || dateError) {
       return null;
@@ -181,10 +205,36 @@ export default function SickScreen() {
     return getLeaveDayCount(startDate, endDate, Boolean(halfDay));
   }, [dateError, endDate, halfDay, startDate]);
 
+  const handleSubmit = useCallback(() => {
+    const nextErrors: ValidationErrors = {};
+
+    if (!approver) {
+      nextErrors.approver = 'กรุณาเลือกผู้อนุมัติ';
+    }
+
+    if (!reason.trim()) {
+      nextErrors.reason = 'กรุณากรอกเหตุผล';
+    }
+
+    if (!startDate || !endDate) {
+      nextErrors.date = 'กรุณาเลือกวันที่ลา';
+    }
+
+    if (!contact.trim()) {
+      nextErrors.contact = 'กรุณากรอกช่องทางติดต่อ';
+    }
+
+    setValidationErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length || dateError) {
+      return;
+    }
+  }, [approver, contact, dateError, endDate, reason, startDate]);
+
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title="ลาป่วย" />
+        <NavTopBar title="ลาป่วย" backHref="/absent" />
         <View style={styles.stateContent}>
           <ThemedText type="subtitle">กำลังโหลดข้อมูล</ThemedText>
           <ThemedText style={styles.stateMessage}>กรุณารอสักครู่</ThemedText>
@@ -196,7 +246,7 @@ export default function SickScreen() {
   if (initialError) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title="ลาป่วย" />
+        <NavTopBar title="ลาป่วย" backHref="/absent" />
         <View style={styles.stateContent}>
           <ThemedText type="subtitle">เกิดข้อผิดพลาด</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{initialError}</ThemedText>
@@ -204,7 +254,7 @@ export default function SickScreen() {
             <Pressable accessibilityRole="button" onPress={loadInitialAbsentData} style={styles.secondaryButton}>
               <ThemedText type="defaultSemiBold">ลองใหม่</ThemedText>
             </Pressable>
-            <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.submitButton}>
+            <Pressable accessibilityRole="button" onPress={() => router.replace('/absent')} style={styles.submitButton}>
               <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
                 ย้อนกลับ
               </ThemedText>
@@ -217,7 +267,7 @@ export default function SickScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="ลาป่วย" />
+      <NavTopBar title="ลาป่วย" backHref="/absent" />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
@@ -233,9 +283,12 @@ export default function SickScreen() {
               value={approver}
               options={approverOptions}
               isOpen={openSelect === 'approver'}
+              hasError={Boolean(validationErrors.approver)}
+              errorMessage={validationErrors.approver}
               onToggle={() => setOpenSelect(openSelect === 'approver' ? null : 'approver')}
               onSelect={(value) => {
                 setApprover(value);
+                clearValidationError('approver');
                 setOpenSelect(null);
               }}
             />
@@ -245,13 +298,25 @@ export default function SickScreen() {
               <TextInput
                 multiline
                 numberOfLines={2}
-                onChangeText={setReason}
+                onChangeText={(value) => {
+                  setReason(value);
+                  if (value.trim()) {
+                    clearValidationError('reason');
+                  }
+                }}
                 placeholder="กรอกเหตุผล"
                 placeholderTextColor="#8A969C"
-                style={[styles.input, styles.textArea]}
+                style={[
+                  styles.input,
+                  styles.textArea,
+                  validationErrors.reason ? styles.inputError : undefined,
+                ]}
                 textAlignVertical="top"
                 value={reason}
               />
+              {validationErrors.reason ? (
+                <ThemedText style={styles.fieldError}>{validationErrors.reason}</ThemedText>
+              ) : null}
             </View>
 
             <View style={styles.field}>
@@ -264,19 +329,27 @@ export default function SickScreen() {
                     setStartDate(date);
                     if (endDate && endDate <= date) {
                       setEndDate(null);
+                    } else if (endDate) {
+                      clearValidationError('date');
                     }
                   }}
+                  hasError={Boolean(displayedDateError)}
                 />
                 <DatePickerField
                   label="วันที่สิ้นสุด"
                   value={endDate}
                   minimumDate={minimumEndDate}
-                  hasError={Boolean(dateError)}
-                  onChange={setEndDate}
+                  hasError={Boolean(displayedDateError)}
+                  onChange={(date) => {
+                    setEndDate(date);
+                    if (startDate) {
+                      clearValidationError('date');
+                    }
+                  }}
                 />
               </View>
-              <ThemedText style={[styles.hint, dateError ? styles.errorText : undefined]}>
-                {dateError || 'เลือกวันที่เริ่มต้นและวันที่สิ้นสุด'}
+              <ThemedText style={[styles.hint, displayedDateError ? styles.errorText : undefined]}>
+                {displayedDateError || 'เลือกวันที่เริ่มต้นและวันที่สิ้นสุด'}
               </ThemedText>
               {leaveDayCount ? (
                 <ThemedText type="defaultSemiBold" style={styles.leaveDaySummary}>
@@ -301,15 +374,23 @@ export default function SickScreen() {
             <View style={styles.field}>
               <ThemedText type="defaultSemiBold">ช่องทางติดต่อ</ThemedText>
               <TextInput
-                onChangeText={setContact}
+                onChangeText={(value) => {
+                  setContact(value);
+                  if (value.trim()) {
+                    clearValidationError('contact');
+                  }
+                }}
                 placeholder="กรอกช่องทางติดต่อ"
                 placeholderTextColor="#8A969C"
-                style={styles.input}
+                style={[styles.input, validationErrors.contact ? styles.inputError : undefined]}
                 value={contact}
               />
+              {validationErrors.contact ? (
+                <ThemedText style={styles.fieldError}>{validationErrors.contact}</ThemedText>
+              ) : null}
             </View>
 
-            <Pressable accessibilityRole="button" style={styles.submitButton}>
+            <Pressable accessibilityRole="button" onPress={handleSubmit} style={styles.submitButton}>
               <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
                 ส่งคำขอ
               </ThemedText>
@@ -372,6 +453,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
+  inputError: {
+    borderColor: '#B42318',
+  },
   textArea: {
     minHeight: 72,
   },
@@ -389,6 +473,11 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#B42318',
+  },
+  fieldError: {
+    color: '#B42318',
+    fontSize: 12,
+    lineHeight: 18,
   },
   selectButton: {
     minHeight: 48,

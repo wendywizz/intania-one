@@ -82,11 +82,10 @@ config.server = {
     return async (req, res, next) => {
       if (req.url?.startsWith('/api/staff-news-feed')) {
         try {
-          const response = await fetch(STAFF_NEWS_FEED);
-          const xml = await response.text();
-          const news = parseNewsFeed(xml);
+          const response = await fetchTextWithLegacyTls(STAFF_NEWS_FEED);
+          const news = parseNewsFeed(response.body);
 
-          writeJson(res, 200, news);
+          writeJson(res, response.statusCode, news);
         } catch (error) {
           writeJson(res, 500, {
             message: error instanceof Error ? error.message : String(error),
