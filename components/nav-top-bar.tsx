@@ -1,0 +1,96 @@
+import { Link, router } from 'expo-router';
+import { Pressable, StyleSheet, View } from 'react-native';
+
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+
+type NavTopBarProps = {
+  title: string;
+  showBackButton?: boolean;
+  showHomeButton?: boolean;
+};
+
+export function NavTopBar({
+  title,
+  showBackButton = true,
+  showHomeButton = true,
+}: NavTopBarProps) {
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace('/');
+  };
+
+  return (
+    <ThemedView style={styles.container} lightColor="#FFFFFF" darkColor="#151718">
+      <View style={styles.leftActions}>
+        {showBackButton ? (
+          <Pressable
+            accessibilityLabel="ย้อนกลับ"
+            accessibilityRole="button"
+            onPress={goBack}
+            style={styles.iconButton}>
+            <IconSymbol name="arrow.left" size={24} color="#0A6E8A" />
+          </Pressable>
+        ) : (
+          <View style={styles.iconButtonSpacer} />
+        )}
+      </View>
+
+      <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.title}>
+        {title}
+      </ThemedText>
+
+      <View style={styles.rightActions}>
+        {showHomeButton ? (
+          <Link href="/" asChild>
+            <Pressable accessibilityLabel="ไปหน้าหลัก" accessibilityRole="button" style={styles.iconButton}>
+              <IconSymbol name="house.fill" size={23} color="#0A6E8A" />
+            </Pressable>
+          </Link>
+        ) : (
+          <View style={styles.iconButtonSpacer} />
+        )}
+      </View>
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#D7E6EC',
+    paddingHorizontal: 12,
+  },
+  leftActions: {
+    width: 48,
+    alignItems: 'flex-start',
+  },
+  rightActions: {
+    width: 48,
+    alignItems: 'flex-end',
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  iconButtonSpacer: {
+    width: 40,
+    height: 40,
+  },
+  title: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+});
