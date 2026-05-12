@@ -1,5 +1,6 @@
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -7,22 +8,22 @@ import { ThemedView } from '@/components/themed-view';
 
 const absentMenus = [
   {
-    title: 'ลาป่วย',
+    title: TEXT.TITLE_2,
     description: 'ยื่นคำขอลาป่วย',
     href: '/absent/sick',
   },
   {
-    title: 'ไปราชการ',
+    title: TEXT.TITLE_3,
     description: 'ยื่นคำขอไปราชการ',
     href: '/absent/business',
   },
   {
-    title: 'ลาพักผ่อน',
+    title: TEXT.TITLE_4,
     description: 'ยื่นคำขอลาพักผ่อน',
     href: '/absent/relax',
   },
   {
-    title: 'ลาคลอด',
+    title: TEXT.TITLE_5,
     description: 'ยื่นคำขอลาคลอด',
     href: '/absent/birth',
   },
@@ -31,11 +32,11 @@ const absentMenus = [
 export default function AbsentScreen() {
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="การลา" />
+      <NavTopBar title={TEXT.TITLE_6} />
 
       <View style={styles.content}>
-        <ThemedText type="subtitle">การลา</ThemedText>
-        <ThemedText style={styles.description}>เลือกประเภทการลา</ThemedText>
+        <ThemedText type="subtitle">{TEXT.TITLE_6}</ThemedText>
+        <ThemedText style={styles.description}>{TEXT.TEXT}</ThemedText>
 
         <View style={styles.grid}>
           {absentMenus.map((menu) => (

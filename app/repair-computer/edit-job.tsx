@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { AppToast } from '@/components/app-toast';
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -52,7 +53,7 @@ export default function RepairComputerEditJobScreen() {
 
   const loadDetail = useCallback(async () => {
     if (!jobId) {
-      setError('Unable to load job detail.');
+      setError(TEXT.UNABLE_TO_LOAD_JOB_DETAIL);
       setIsLoading(false);
       return;
     }
@@ -65,7 +66,7 @@ export default function RepairComputerEditJobScreen() {
     const result = await getJobDetail(jobId);
 
     if (result.processType === PROCESS.error || !result.data) {
-      setError(result.message || 'Unable to load job detail.');
+      setError(result.message || TEXT.UNABLE_TO_LOAD_JOB_DETAIL);
       setIsLoading(false);
       return;
     }
@@ -100,28 +101,27 @@ export default function RepairComputerEditJobScreen() {
 
     if (result.processType === PROCESS.success && result.success !== false) {
       setToastType('success');
-      setToastMessage(result.message || 'Repair computer job updated successfully.');
+      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESSFULLY);
       return;
     }
 
     setToastType('error');
-    setToastMessage(result.message || 'Unable to update repair computer job.');
+    setToastMessage(result.message || TEXT.UNABLE_TO_UPDATE_REPAIR_COMPUTER_JOB);
   };
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title="Loading detail" desc="Please wait a moment" />;
+      return <LoadingAnimate title={TEXT.LOADING_DETAIL} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">Something went wrong</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={loadDetail} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              Retry
-            </ThemedText>
+              {TEXT.RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -132,7 +132,7 @@ export default function RepairComputerEditJobScreen() {
     return (
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
         <View style={styles.field}>
-          <ThemedText type="defaultSemiBold">Detail</ThemedText>
+          <ThemedText type="defaultSemiBold">{TEXT.DETAIL}</ThemedText>
           {isReadOnly ? (
             <ThemedText style={styles.readOnlyValue}>{detail || '-'}</ThemedText>
           ) : (
@@ -140,7 +140,7 @@ export default function RepairComputerEditJobScreen() {
               multiline
               numberOfLines={2}
               onChangeText={setDetail}
-              placeholder="Detail"
+              placeholder={TEXT.DETAIL}
               placeholderTextColor="#8A969C"
               style={[styles.input, styles.textArea]}
               textAlignVertical="top"
@@ -150,13 +150,13 @@ export default function RepairComputerEditJobScreen() {
         </View>
 
         <View style={styles.field}>
-          <ThemedText type="defaultSemiBold">Supply Code</ThemedText>
+          <ThemedText type="defaultSemiBold">{TEXT.SUPPLY_CODE}</ThemedText>
           {isReadOnly ? (
             <ThemedText style={styles.readOnlyValue}>{supplyCode || '-'}</ThemedText>
           ) : (
             <TextInput
               onChangeText={setSupplyCode}
-              placeholder="Supply Code"
+              placeholder={TEXT.SUPPLY_CODE}
               placeholderTextColor="#8A969C"
               style={styles.input}
               value={supplyCode}
@@ -165,14 +165,14 @@ export default function RepairComputerEditJobScreen() {
         </View>
 
         <View style={styles.field}>
-          <ThemedText type="defaultSemiBold">Phone</ThemedText>
+          <ThemedText type="defaultSemiBold">{TEXT.PHONE}</ThemedText>
           {isReadOnly ? (
             <ThemedText style={styles.readOnlyValue}>{phone || '-'}</ThemedText>
           ) : (
             <TextInput
               keyboardType="phone-pad"
               onChangeText={setPhone}
-              placeholder="Phone"
+              placeholder={TEXT.PHONE}
               placeholderTextColor="#8A969C"
               style={styles.input}
               value={phone}
@@ -188,7 +188,7 @@ export default function RepairComputerEditJobScreen() {
             style={[styles.updateButton, isUpdating ? styles.disabledButton : undefined]}>
             {isUpdating ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {isUpdating ? 'Updating...' : 'Update'}
+              {isUpdating ? TEXT.UPDATING : TEXT.UPDATE}
             </ThemedText>
           </Pressable>
         ) : null}
@@ -199,14 +199,14 @@ export default function RepairComputerEditJobScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title="Repair Computer"
+        title={TEXT.REPAIR_COMPUTER}
         backHref={backHref as Parameters<typeof NavTopBar>[0]['backHref']}
         showBackButton
       />
 
       <View style={styles.content}>
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">{isReadOnly ? 'Job Detail' : 'Edit Job'}</ThemedText>
+          <ThemedText type="subtitle">{isReadOnly ? TEXT.JOB_DETAIL : TEXT.EDIT_JOB}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>

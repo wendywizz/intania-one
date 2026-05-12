@@ -1,6 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -98,7 +99,7 @@ export default function TodayMeetingScreen() {
 
     if (result.processType === 'error') {
       setMeetings([]);
-      setError(result.message || 'Unable to load meetings');
+      setError(result.message || TEXT.UNABLE_TO_LOAD_MEETINGS);
     } else {
       setMeetings(Array.isArray(result.data) ? sortMeetingsByDateDesc(result.data) : []);
     }
@@ -115,18 +116,17 @@ export default function TodayMeetingScreen() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title="Loading meetings" desc="Please wait a moment" />;
+      return <LoadingAnimate title={TEXT.LOADING_MEETINGS} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">Something went wrong</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={() => loadMeetings()} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              Retry
-            </ThemedText>
+              {TEXT.RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -143,7 +143,7 @@ export default function TodayMeetingScreen() {
         renderItem={({ item }) => <MeetingListItem meeting={item} />}
         ListEmptyComponent={
           <ThemedView style={styles.emptyCard} lightColor="#FFFFFF" darkColor="#151718">
-            <ThemedText style={styles.emptyMessage}>No meetings today</ThemedText>
+            <ThemedText style={styles.emptyMessage}>{TEXT.NO_MEETINGS_TODAY}</ThemedText>
           </ThemedView>
         }
       />
@@ -152,11 +152,11 @@ export default function TodayMeetingScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="Meeting" backHref="/" />
+      <NavTopBar title={TEXT.MEETING} backHref="/" />
 
       <View style={styles.content}>
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">Today Meeting</ThemedText>
+          <ThemedText type="subtitle">{TEXT.TODAY_MEETING}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>

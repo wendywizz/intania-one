@@ -1,10 +1,11 @@
 import { RepairComputerTabContent } from '@/components/repair-computer-tab-content';
+import { TEXT } from '@/constants/text';
 
 export default function WorkerCurrentJobScreen() {
   return (
     <RepairComputerTabContent
-      title="Current Job"
-      description="View worker jobs currently in progress."
+      title={TEXT.CURRENT_JOB}
+      description={TEXT.VIEW_WORKER_JOBS_CURRENTLY_IN_PROGRESS}
     />
   );
 }

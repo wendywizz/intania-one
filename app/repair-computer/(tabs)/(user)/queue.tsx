@@ -1,6 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -95,7 +96,7 @@ function WorkerQueueListItem({ failedPhotoIds, item, onPhotoError }: WorkerQueue
         <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.queueCount}>
           {queueCount}
         </ThemedText>
-        <ThemedText style={styles.queueLabel}>Jobs</ThemedText>
+        <ThemedText style={styles.queueLabel}>{TEXT.JOBS}</ThemedText>
       </View>
     </ThemedView>
   );
@@ -121,7 +122,7 @@ export default function RepairComputerQueueScreen() {
 
     if (result.processType === PROCESS.error) {
       setWorkers([]);
-      setError(result.message || 'Unable to load worker queue');
+      setError(result.message || TEXT.UNABLE_TO_LOAD_WORKER_QUEUE);
     } else {
       setWorkers(Array.isArray(result.data) ? sortWorkersByNameAsc(result.data) : []);
     }
@@ -146,18 +147,17 @@ export default function RepairComputerQueueScreen() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title="Loading queue" desc="Please wait a moment" />;
+      return <LoadingAnimate title={TEXT.LOADING_QUEUE} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">Something went wrong</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={() => loadQueue()} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              Retry
-            </ThemedText>
+              {TEXT.RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -180,7 +180,7 @@ export default function RepairComputerQueueScreen() {
         )}
         ListEmptyComponent={
           <ThemedView style={styles.emptyCard} lightColor="#FFFFFF" darkColor="#151718">
-            <ThemedText style={styles.emptyMessage}>No worker queue</ThemedText>
+            <ThemedText style={styles.emptyMessage}>{TEXT.NO_WORKER_QUEUE}</ThemedText>
           </ThemedView>
         }
       />
@@ -189,11 +189,11 @@ export default function RepairComputerQueueScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="Repair Computer" backHref="/" rightContent={roleSwitcher} />
+      <NavTopBar title={TEXT.REPAIR_COMPUTER} backHref="/" rightContent={roleSwitcher} />
 
       <View style={styles.content}>
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">Queue</ThemedText>
+          <ThemedText type="subtitle">{TEXT.QUEUE}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -83,13 +84,13 @@ export function DatePickerField({
             <ThemedView style={styles.calendar} lightColor="#FFFFFF" darkColor="#151718">
               <View style={styles.calendarHeader}>
                 <Pressable accessibilityRole="button" onPress={() => changeMonth(-1)} style={styles.monthButton}>
-                  <ThemedText type="defaultSemiBold">&lt;</ThemedText>
+                  <ThemedText type="defaultSemiBold">{TEXT.LT}</ThemedText>
                 </Pressable>
                 <ThemedText type="defaultSemiBold" style={styles.monthTitle}>
                   {getMonthTitle(visibleMonth)}
                 </ThemedText>
                 <Pressable accessibilityRole="button" onPress={() => changeMonth(1)} style={styles.monthButton}>
-                  <ThemedText type="defaultSemiBold">&gt;</ThemedText>
+                  <ThemedText type="defaultSemiBold">{TEXT.GT}</ThemedText>
                 </Pressable>
               </View>
 

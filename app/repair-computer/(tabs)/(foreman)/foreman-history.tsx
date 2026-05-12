@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { TEXT } from '@/constants/text';
 
 import { RepairComputerJobListScreen } from '@/components/repair-computer-job-list-screen';
 import { USER_ID } from '@/constants/user';
@@ -14,10 +15,10 @@ export default function ForemanHistoryScreen() {
 
   return (
     <RepairComputerJobListScreen
-      title="History"
-      emptyMessage="No history"
-      errorMessage="Unable to load history"
-      loadingTitle="Loading history"
+      title={TEXT.HISTORY}
+      emptyMessage={TEXT.NO_HISTORY}
+      errorMessage={TEXT.UNABLE_TO_LOAD_HISTORY}
+      loadingTitle={TEXT.LOADING_HISTORY}
       loadPage={loadPage}
       detailBackHref="/repair-computer/foreman-history"
     />

@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -77,7 +78,7 @@ export default function RepairComputerCurrentJobScreen() {
 
     if (result.processType === PROCESS.error) {
       setJobs([]);
-      setError(result.message || 'Unable to load current jobs');
+      setError(result.message || TEXT.UNABLE_TO_LOAD_CURRENT_JOBS);
       setHasMore(false);
     } else {
       const nextJobs = Array.isArray(result.data) ? result.data : [];
@@ -124,7 +125,7 @@ export default function RepairComputerCurrentJobScreen() {
 
     if (!jobId) {
       setToastType('error');
-      setToastMessage('Unable to open job detail.');
+      setToastMessage(TEXT.UNABLE_TO_OPEN_JOB_DETAIL);
       return;
     }
 
@@ -162,29 +163,28 @@ export default function RepairComputerCurrentJobScreen() {
 
     if (result.processType === PROCESS.success && result.success !== false) {
       setToastType('success');
-      setToastMessage(result.message || 'Repair job deleted successfully.');
+      setToastMessage(result.message || TEXT.REPAIR_JOB_DELETED_SUCCESSFULLY);
       loadFirstPage();
       return;
     }
 
     setToastType('error');
-    setToastMessage(result.message || 'Unable to delete repair job.');
+    setToastMessage(result.message || TEXT.UNABLE_TO_DELETE_REPAIR_JOB);
   };
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title="Loading current jobs" desc="Please wait a moment" />;
+      return <LoadingAnimate title={TEXT.LOADING_CURRENT_JOBS} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">Something went wrong</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={() => loadFirstPage()} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              Retry
-            </ThemedText>
+              {TEXT.RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -212,7 +212,7 @@ export default function RepairComputerCurrentJobScreen() {
         }
         ListEmptyComponent={
           <ThemedView style={styles.emptyCard} lightColor="#FFFFFF" darkColor="#151718">
-            <ThemedText style={styles.emptyMessage}>No current jobs</ThemedText>
+            <ThemedText style={styles.emptyMessage}>{TEXT.NO_CURRENT_JOBS}</ThemedText>
           </ThemedView>
         }
       />
@@ -221,11 +221,11 @@ export default function RepairComputerCurrentJobScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="Repair Computer" backHref="/" rightContent={roleSwitcher} />
+      <NavTopBar title={TEXT.REPAIR_COMPUTER} backHref="/" rightContent={roleSwitcher} />
 
       <View style={styles.content}>
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">Current Job</ThemedText>
+          <ThemedText type="subtitle">{TEXT.CURRENT_JOB}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>
@@ -234,10 +234,9 @@ export default function RepairComputerCurrentJobScreen() {
         <Pressable style={styles.backdrop} onPress={closeDeleteConfirm}>
           <Pressable>
             <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
-              <ThemedText type="subtitle">Confirm delete</ThemedText>
+              <ThemedText type="subtitle">{TEXT.CONFIRM_DELETE}</ThemedText>
               <ThemedText style={styles.confirmMessage}>
-                Do you want to delete this repair computer job?
-              </ThemedText>
+                {TEXT.DO_YOU_WANT_TO_DELETE_THIS_REPAIR_COMPUTER_JOB}</ThemedText>
 
               <View style={styles.confirmActions}>
                 <Pressable
@@ -245,7 +244,7 @@ export default function RepairComputerCurrentJobScreen() {
                   disabled={isDeleting}
                   onPress={closeDeleteConfirm}
                   style={styles.cancelButton}>
-                  <ThemedText type="defaultSemiBold">Cancel</ThemedText>
+                  <ThemedText type="defaultSemiBold">{TEXT.CANCEL}</ThemedText>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"

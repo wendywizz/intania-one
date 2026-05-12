@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -13,7 +14,7 @@ type AbsentTabContentProps = {
 export function AbsentTabContent({ title, description, items }: AbsentTabContentProps) {
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="การลา" />
+      <NavTopBar title={TEXT.TITLE_6} />
 
       <View style={styles.content}>
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">

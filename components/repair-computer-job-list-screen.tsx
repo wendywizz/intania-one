@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -115,18 +116,17 @@ export function RepairComputerJobListScreen({
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title={loadingTitle} desc="Please wait a moment" />;
+      return <LoadingAnimate title={loadingTitle} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">Something went wrong</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={() => loadFirstPage()} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              Retry
-            </ThemedText>
+              {TEXT.RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -161,7 +161,7 @@ export function RepairComputerJobListScreen({
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="Repair Computer" backHref="/" rightContent={roleSwitcher} />
+      <NavTopBar title={TEXT.REPAIR_COMPUTER} backHref="/" rightContent={roleSwitcher} />
 
       <View style={styles.content}>
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">

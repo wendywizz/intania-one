@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -12,7 +13,7 @@ type MeetingTabContentProps = {
 export function MeetingTabContent({ title, emptyMessage }: MeetingTabContentProps) {
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="ประชุม" backHref="/" />
+      <NavTopBar title={TEXT.TITLE_10} backHref="/" />
 
       <View style={styles.content}>
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">

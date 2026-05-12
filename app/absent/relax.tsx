@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { DatePickerField } from '@/components/date-picker-field';
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -40,10 +41,10 @@ function getApproverLabel(approver: Approver) {
 }
 
 const halfDayOptions = [
-  'วันแรกครึ่งวันเช้า',
-  'วันแรกครึ่งวันบ่าย',
-  'วันสุดท้ายครึ่งวันเช้า',
-  'วันแรกครึ่งวันบ่าย - วันสุดท้ายครึ่งวันเช้า',
+  TEXT.OPTION,
+  TEXT.OPTION_2,
+  TEXT.OPTION_3,
+  TEXT.OPTION_4,
 ];
 
 type SelectFieldProps = {
@@ -92,7 +93,7 @@ function SelectField({
                   {label}
                 </ThemedText>
                 <Pressable accessibilityRole="button" onPress={onToggle} style={styles.closeButton}>
-                  <ThemedText type="defaultSemiBold">ปิด</ThemedText>
+                  <ThemedText type="defaultSemiBold">{TEXT.TEXT_2}</ThemedText>
                 </Pressable>
               </View>
 
@@ -113,7 +114,7 @@ function SelectField({
                     </Pressable>
                   ))
                 ) : (
-                  <ThemedText style={styles.emptyOption}>ไม่มีข้อมูล</ThemedText>
+                  <ThemedText style={styles.emptyOption}>{TEXT.TEXT_3}</ThemedText>
                 )}
               </ScrollView>
             </ThemedView>
@@ -174,7 +175,7 @@ export default function RelaxScreen() {
     const result = await initAbsentData(userId, TYPE_ABSENT_RELAX);
 
     if (!result.data || result.processType === 'error') {
-      setInitialError(result.message || 'ไม่สามารถโหลดข้อมูลตั้งต้นได้');
+      setInitialError(result.message || TEXT.MESSAGE);
       setIsInitialLoading(false);
       return;
     }
@@ -239,8 +240,8 @@ export default function RelaxScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title="ลาพักผ่อน" backHref="/absent" />
-        <LoadingAnimate title="กำลังโหลดข้อมูล" desc="กรุณารอสักครู่" />
+        <NavTopBar title={TEXT.TITLE_4} backHref="/absent" />
+        <LoadingAnimate title={TEXT.TITLE_9} desc={TEXT.DESC} />
       </ThemedView>
     );
   }
@@ -248,18 +249,17 @@ export default function RelaxScreen() {
   if (initialError) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title="ลาพักผ่อน" backHref="/absent" />
+        <NavTopBar title={TEXT.TITLE_4} backHref="/absent" />
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">เกิดข้อผิดพลาด</ThemedText>
+          <ThemedText type="subtitle">{TEXT.TEXT_4}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{initialError}</ThemedText>
           <View style={styles.errorActions}>
             <Pressable accessibilityRole="button" onPress={loadInitialAbsentData} style={styles.secondaryButton}>
-              <ThemedText type="defaultSemiBold">ลองใหม่</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.TEXT_5}</ThemedText>
             </Pressable>
             <Pressable accessibilityRole="button" onPress={() => router.replace('/absent')} style={styles.submitButton}>
               <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                ย้อนกลับ
-              </ThemedText>
+                {TEXT.TEXT_6}</ThemedText>
             </Pressable>
           </View>
         </View>
@@ -269,19 +269,19 @@ export default function RelaxScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="ลาพักผ่อน" backHref="/absent" />
+      <NavTopBar title={TEXT.TITLE_4} backHref="/absent" />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">แบบฟอร์มลาพักผ่อน</ThemedText>
+          <ThemedText type="subtitle">{TEXT.TEXT_17}</ThemedText>
           {initialAbsentData ? (
-            <ThemedText style={styles.initialStatus}>โหลดข้อมูลตั้งต้นเรียบร้อยแล้ว</ThemedText>
+            <ThemedText style={styles.initialStatus}>{TEXT.TEXT_8}</ThemedText>
           ) : null}
 
           <View style={styles.form}>
             <SelectField
-              label="ผู้อนุมัติ"
-              placeholder="เลือกผู้อนุมัติ"
+              label={TEXT.LABEL}
+              placeholder={TEXT.PLACEHOLDER_2}
               value={approver}
               options={approverOptions}
               isOpen={openSelect === 'approver'}
@@ -296,7 +296,7 @@ export default function RelaxScreen() {
             />
 
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">เหตุผล</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.TEXT_9}</ThemedText>
               <TextInput
                 multiline
                 numberOfLines={2}
@@ -306,7 +306,7 @@ export default function RelaxScreen() {
                     clearValidationError('reason');
                   }
                 }}
-                placeholder="กรอกเหตุผล"
+                placeholder={TEXT.PLACEHOLDER_3}
                 placeholderTextColor="#8A969C"
                 style={[
                   styles.input,
@@ -322,10 +322,10 @@ export default function RelaxScreen() {
             </View>
 
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">วันที่ลา</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.TEXT_10}</ThemedText>
               <View style={styles.dateRow}>
                 <DatePickerField
-                  label="วันที่เริ่มต้น"
+                  label={TEXT.LABEL_2}
                   value={startDate}
                   onChange={(date) => {
                     setStartDate(date);
@@ -338,7 +338,7 @@ export default function RelaxScreen() {
                   hasError={Boolean(displayedDateError)}
                 />
                 <DatePickerField
-                  label="วันที่สิ้นสุด"
+                  label={TEXT.LABEL_3}
                   value={endDate}
                   minimumDate={minimumEndDate}
                   hasError={Boolean(displayedDateError)}
@@ -355,14 +355,13 @@ export default function RelaxScreen() {
               </ThemedText>
               {leaveDayCount ? (
                 <ThemedText type="defaultSemiBold" style={styles.leaveDaySummary}>
-                  จำนวนวันลา {leaveDayCount.toLocaleString('th-TH')} วัน
-                </ThemedText>
+                  {TEXT.TEXT_11}{leaveDayCount.toLocaleString('th-TH')} {TEXT.TEXT_12}</ThemedText>
               ) : null}
             </View>
 
             <SelectField
-              label="ลาครึ่งวัน"
-              placeholder="เลือกตัวเลือกลาครึ่งวัน"
+              label={TEXT.LABEL_4}
+              placeholder={TEXT.PLACEHOLDER_4}
               value={halfDay}
               options={halfDayOptions}
               isOpen={openSelect === 'halfDay'}
@@ -374,7 +373,7 @@ export default function RelaxScreen() {
             />
 
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">ช่องทางติดต่อ</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.TEXT_13}</ThemedText>
               <TextInput
                 onChangeText={(value) => {
                   setContact(value);
@@ -382,7 +381,7 @@ export default function RelaxScreen() {
                     clearValidationError('contact');
                   }
                 }}
-                placeholder="กรอกช่องทางติดต่อ"
+                placeholder={TEXT.PLACEHOLDER_5}
                 placeholderTextColor="#8A969C"
                 style={[styles.input, validationErrors.contact ? styles.inputError : undefined]}
                 value={contact}
@@ -394,8 +393,7 @@ export default function RelaxScreen() {
 
             <Pressable accessibilityRole="button" onPress={handleSubmit} style={styles.submitButton}>
               <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                ส่งคำขอ
-              </ThemedText>
+                {TEXT.TEXT_16}</ThemedText>
             </Pressable>
           </View>
         </ThemedView>

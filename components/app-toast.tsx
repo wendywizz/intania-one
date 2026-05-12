@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TEXT } from '@/constants/text';
 
 type AppToastProps = {
   message: string;
@@ -13,7 +14,7 @@ export function AppToast({ message, type = 'success' }: AppToastProps) {
   const [visibleMessage, setVisibleMessage] = useState(message);
   const isSuccess = type === 'success';
   const accentColor = isSuccess ? '#0A6E8A' : '#C44D58';
-  const title = isSuccess ? 'Success' : 'Unable to complete';
+  const title = isSuccess ? TEXT.SUCCESS : TEXT.UNABLE_TO_COMPLETE;
 
   useEffect(() => {
     setVisibleMessage(message);

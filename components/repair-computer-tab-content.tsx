@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -15,7 +16,7 @@ export function RepairComputerTabContent({ title, description }: RepairComputerT
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="Repair Computer" backHref="/" rightContent={roleSwitcher} />
+      <NavTopBar title={TEXT.REPAIR_COMPUTER} backHref="/" rightContent={roleSwitcher} />
 
       <View style={styles.content}>
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">

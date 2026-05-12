@@ -1,6 +1,7 @@
 import { Tabs, router, usePathname } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -24,8 +25,8 @@ import { checkPrivilege } from '@/services/repairComputerService';
 const privilegeRoleCache = new Map<string, RepairComputerRole>();
 
 const switchableRoleOptions = [
-  { label: 'Worker', value: PRIVILEGE_RC_WORKER },
-  { label: 'Foreman', value: PRIVILEGE_RC_FOREMAN },
+  { label: TEXT.WORKER, value: PRIVILEGE_RC_WORKER },
+  { label: TEXT.FOREMAN, value: PRIVILEGE_RC_FOREMAN },
 ] as const;
 
 function normalizeRepairComputerRole(privilege?: string): RepairComputerRole {
@@ -175,10 +176,9 @@ export default function RepairComputerTabLayout() {
             <ThemedView style={styles.selectModal} lightColor="#FFFFFF" darkColor="#151718">
               <View style={styles.selectModalHeader}>
                 <ThemedText type="defaultSemiBold" style={styles.selectModalTitle}>
-                  Select Role
-                </ThemedText>
+                  {TEXT.SELECT_ROLE}</ThemedText>
                 <Pressable accessibilityRole="button" onPress={handleCloseRoleModal} style={styles.closeButton}>
-                  <ThemedText type="defaultSemiBold">Close</ThemedText>
+                  <ThemedText type="defaultSemiBold">{TEXT.CLOSE}</ThemedText>
                 </Pressable>
               </View>
 
@@ -215,8 +215,7 @@ export default function RepairComputerTabLayout() {
         onPress={() => router.push('/repair-computer' as Parameters<typeof router.push>[0])}
         style={styles.switchButton}>
         <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.switchButtonText}>
-          Inform
-        </ThemedText>
+          {TEXT.INFORM}</ThemedText>
       </Pressable>
     ) : undefined;
   const topRightAction = roleSwitcher ?? informAction;
@@ -225,7 +224,7 @@ export default function RepairComputerTabLayout() {
     <RepairComputerRoleProvider roleSwitcher={topRightAction}>
       {isCheckingPrivilege ? (
         <ThemedView style={styles.container}>
-          <LoadingAnimate title="Checking privilege" desc="Please wait a moment" />
+          <LoadingAnimate title={TEXT.CHECKING_PRIVILEGE} desc={TEXT.PLEASE_WAIT_A_MOMENT} />
         </ThemedView>
       ) : (
         <Tabs
@@ -237,7 +236,7 @@ export default function RepairComputerTabLayout() {
           <Tabs.Screen
             name="(user)/index"
             options={{
-              title: 'Inform',
+              title: TEXT.INFORM,
               href: null,
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
             }}
@@ -245,7 +244,7 @@ export default function RepairComputerTabLayout() {
           <Tabs.Screen
             name="(user)/current-job"
             options={{
-              title: 'Current Job',
+              title: TEXT.CURRENT_JOB,
               href: visibleFor(PRIVILEGE_RC_USER),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="wrench.fill" color={color} />,
             }}
@@ -253,7 +252,7 @@ export default function RepairComputerTabLayout() {
           <Tabs.Screen
             name="(user)/queue"
             options={{
-              title: 'Queue',
+              title: TEXT.QUEUE,
               href: visibleFor(PRIVILEGE_RC_USER),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="tray.fill" color={color} />,
             }}
@@ -261,7 +260,7 @@ export default function RepairComputerTabLayout() {
           <Tabs.Screen
             name="(user)/history"
             options={{
-              title: 'History',
+              title: TEXT.HISTORY,
               href: visibleFor(PRIVILEGE_RC_USER),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
             }}
@@ -270,7 +269,7 @@ export default function RepairComputerTabLayout() {
           <Tabs.Screen
             name="(worker)/worker-new-job"
             options={{
-              title: 'New Job',
+              title: TEXT.NEW_JOB,
               href: visibleFor(PRIVILEGE_RC_WORKER),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="tray.fill" color={color} />,
             }}
@@ -278,7 +277,7 @@ export default function RepairComputerTabLayout() {
           <Tabs.Screen
             name="(worker)/worker-current-job"
             options={{
-              title: 'Current Job',
+              title: TEXT.CURRENT_JOB,
               href: visibleFor(PRIVILEGE_RC_WORKER),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="wrench.fill" color={color} />,
             }}
@@ -286,7 +285,7 @@ export default function RepairComputerTabLayout() {
           <Tabs.Screen
             name="(worker)/worker-history"
             options={{
-              title: 'History',
+              title: TEXT.HISTORY,
               href: visibleFor(PRIVILEGE_RC_WORKER),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
             }}
@@ -295,7 +294,7 @@ export default function RepairComputerTabLayout() {
           <Tabs.Screen
             name="(foreman)/foreman-new-job"
             options={{
-              title: 'New Job',
+              title: TEXT.NEW_JOB,
               href: visibleFor(PRIVILEGE_RC_FOREMAN),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="tray.fill" color={color} />,
             }}
@@ -303,7 +302,7 @@ export default function RepairComputerTabLayout() {
           <Tabs.Screen
             name="(foreman)/manage-job"
             options={{
-              title: 'Manage Job',
+              title: TEXT.MANAGE_JOB,
               href: visibleFor(PRIVILEGE_RC_FOREMAN),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.2.fill" color={color} />,
             }}
@@ -311,7 +310,7 @@ export default function RepairComputerTabLayout() {
           <Tabs.Screen
             name="(foreman)/approvement"
             options={{
-              title: 'Approvement',
+              title: TEXT.APPROVEMENT,
               href: visibleFor(PRIVILEGE_RC_FOREMAN),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="checkmark.circle.fill" color={color} />,
             }}
@@ -319,7 +318,7 @@ export default function RepairComputerTabLayout() {
           <Tabs.Screen
             name="(foreman)/foreman-history"
             options={{
-              title: 'History',
+              title: TEXT.HISTORY,
               href: visibleFor(PRIVILEGE_RC_FOREMAN),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
             }}

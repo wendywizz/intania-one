@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { TEXT } from '@/constants/text';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -46,13 +47,13 @@ export function RepairComputerJobListItem({ job, onDelete, onPress }: RepairComp
       <ThemedView style={styles.itemCard} lightColor="#FFFFFF" darkColor="#151718">
         <View style={styles.itemHeader}>
           <ThemedText type="defaultSemiBold" style={styles.itemTitle}>
-            Job ID: {jobId || '-'}
+            {TEXT.JOB_ID}{jobId || '-'}
           </ThemedText>
           {statusLabel ? <ThemedText style={styles.statusText}>{statusLabel}</ThemedText> : null}
         </View>
 
-        {supplyCode ? <ThemedText style={styles.itemMeta}>Supply Code: {supplyCode}</ThemedText> : null}
-        {informDate ? <ThemedText style={styles.itemMeta}>Inform Date: {informDate}</ThemedText> : null}
+        {supplyCode ? <ThemedText style={styles.itemMeta}>{TEXT.SUPPLY_CODE_2}{supplyCode}</ThemedText> : null}
+        {informDate ? <ThemedText style={styles.itemMeta}>{TEXT.INFORM_DATE}{informDate}</ThemedText> : null}
       </ThemedView>
     </Pressable>
   );
@@ -64,8 +65,7 @@ export function RepairComputerJobListItem({ job, onDelete, onPress }: RepairComp
   const renderRightActions = () => (
     <Pressable accessibilityRole="button" onPress={() => onDelete(job)} style={styles.deleteAction}>
       <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-        Delete
-      </ThemedText>
+        {TEXT.DELETE}</ThemedText>
     </Pressable>
   );
 

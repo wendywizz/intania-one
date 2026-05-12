@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -51,7 +52,7 @@ export default function RepairComputerHistoryScreen() {
 
     if (result.processType === PROCESS.error) {
       setJobs([]);
-      setError(result.message || 'Unable to load history');
+      setError(result.message || TEXT.UNABLE_TO_LOAD_HISTORY);
       setHasMore(false);
     } else {
       const nextJobs = Array.isArray(result.data) ? result.data : [];
@@ -103,18 +104,17 @@ export default function RepairComputerHistoryScreen() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title="Loading history" desc="Please wait a moment" />;
+      return <LoadingAnimate title={TEXT.LOADING_HISTORY} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">Something went wrong</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={() => loadFirstPage()} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              Retry
-            </ThemedText>
+              {TEXT.RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -140,7 +140,7 @@ export default function RepairComputerHistoryScreen() {
         }
         ListEmptyComponent={
           <ThemedView style={styles.emptyCard} lightColor="#FFFFFF" darkColor="#151718">
-            <ThemedText style={styles.emptyMessage}>No history</ThemedText>
+            <ThemedText style={styles.emptyMessage}>{TEXT.NO_HISTORY}</ThemedText>
           </ThemedView>
         }
       />
@@ -149,11 +149,11 @@ export default function RepairComputerHistoryScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="Repair Computer" backHref="/" rightContent={roleSwitcher} />
+      <NavTopBar title={TEXT.REPAIR_COMPUTER} backHref="/" rightContent={roleSwitcher} />
 
       <View style={styles.content}>
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">History</ThemedText>
+          <ThemedText type="subtitle">{TEXT.HISTORY}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>

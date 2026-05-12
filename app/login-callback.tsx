@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ThemedText } from '@/components/themed-text';
@@ -51,17 +52,16 @@ export default function LoginCallbackScreen() {
       <View style={styles.content}>
         {errorMessage ? (
           <>
-            <ThemedText type="subtitle">เข้าสู่ระบบไม่สำเร็จ</ThemedText>
+            <ThemedText type="subtitle">{TEXT.TEXT_28}</ThemedText>
             <ThemedText style={[styles.message, styles.errorText]}>{errorMessage}</ThemedText>
           </>
         ) : (
-          <LoadingAnimate title="กำลังเข้าสู่ระบบ" desc="กรุณารอสักครู่" />
+          <LoadingAnimate title={TEXT.TITLE_15} desc={TEXT.DESC} />
         )}
         {errorMessage ? (
           <Pressable accessibilityRole="button" onPress={() => router.replace('/')} style={styles.button}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              กลับหน้าหลัก
-            </ThemedText>
+              {TEXT.TEXT_21}</ThemedText>
           </Pressable>
         ) : null}
       </View>

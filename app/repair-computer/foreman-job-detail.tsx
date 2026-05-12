@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -77,7 +78,7 @@ export default function ForemanJobDetailScreen() {
 
   const loadDetail = useCallback(async () => {
     if (!jobId) {
-      setError('Unable to load job detail.');
+      setError(TEXT.UNABLE_TO_LOAD_JOB_DETAIL);
       setIsLoading(false);
       return;
     }
@@ -88,7 +89,7 @@ export default function ForemanJobDetailScreen() {
     const result = await getJobDetail(jobId);
 
     if (result.processType === PROCESS.error || !result.data) {
-      setError(result.message || 'Unable to load job detail.');
+      setError(result.message || TEXT.UNABLE_TO_LOAD_JOB_DETAIL);
       setData(null);
       setIsLoading(false);
       return;
@@ -109,18 +110,17 @@ export default function ForemanJobDetailScreen() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title="Loading job detail" desc="Please wait a moment" />;
+      return <LoadingAnimate title={TEXT.LOADING_JOB_DETAIL} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">Something went wrong</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={loadDetail} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              Retry
-            </ThemedText>
+              {TEXT.RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -128,29 +128,29 @@ export default function ForemanJobDetailScreen() {
 
     return (
       <ScrollView contentContainerStyle={styles.form}>
-        <RowDetail title="User:" description={getJobText(data, ['staffFullname', 'staff_fullname']) || TEXT_NONE} />
-        <RowDetail title="Department:" description={getJobText(data, ['deptName', 'dept_name']) || TEXT_NONE} />
-        <RowDetail title="Inform Date:" description={informDateTime ? formatDate(informDateTime) : TEXT_NONE} />
+        <RowDetail title={TEXT.USER} description={getJobText(data, ['staffFullname', 'staff_fullname']) || TEXT_NONE} />
+        <RowDetail title={TEXT.DEPARTMENT} description={getJobText(data, ['deptName', 'dept_name']) || TEXT_NONE} />
+        <RowDetail title={TEXT.INFORM_DATE} description={informDateTime ? formatDate(informDateTime) : TEXT_NONE} />
         <RowDetail
-          title="Supply Code:"
+          title={TEXT.SUPPLY_CODE_2}
           description={getJobText(data, ['supplyCode', 'supply_code']) || TEXT_RC_NO_SUPPLYCODE}
         />
-        <RowDetail title="Phone:" description={getJobText(data, ['phone']) || TEXT_NONE} />
-        <RowDetail title="Detail:" description={getJobText(data, ['detail']) || TEXT_NONE} />
+        <RowDetail title={TEXT.PHONE_2} description={getJobText(data, ['phone']) || TEXT_NONE} />
+        <RowDetail title={TEXT.DETAIL_2} description={getJobText(data, ['detail']) || TEXT_NONE} />
 
         {status !== REPAIR_STATUS_NEW_JOB && showAssignedWorker ? (
           <View style={styles.assignedSection}>
-            <ThemedText type="subtitle">Assign Confirm</ThemedText>
+            <ThemedText type="subtitle">{TEXT.ASSIGN_CONFIRM}</ThemedText>
             <RowDetail
-              title="Worker:"
+              title={TEXT.WORKER_2}
               description={getJobText(data, ['workerFullname', 'worker_fullname']) || TEXT_NONE}
             />
             <RowDetail
-              title="Status:"
+              title={TEXT.STATUS}
               description={getJobText(data, ['statusName', 'status_name']) || TEXT_NONE}
             />
             {status === REPAIR_STATUS_WORKER_REJECT ? (
-              <RowDetail title="Reject Detail:" description={rejectDetail || TEXT_NONE} />
+              <RowDetail title={TEXT.REJECT_DETAIL} description={rejectDetail || TEXT_NONE} />
             ) : null}
           </View>
         ) : null}
@@ -161,14 +161,14 @@ export default function ForemanJobDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title="Repair Computer"
+        title={TEXT.REPAIR_COMPUTER}
         backHref={backHref as Parameters<typeof NavTopBar>[0]['backHref']}
         showBackButton
       />
 
       <View style={styles.content}>
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">Job Detail</ThemedText>
+          <ThemedText type="subtitle">{TEXT.JOB_DETAIL}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>

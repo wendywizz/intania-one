@@ -1,6 +1,7 @@
 import { Link, router, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { TEXT } from '@/constants/text';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -40,7 +41,7 @@ export function NavTopBar({
       <View style={styles.leftActions}>
         {showBackButton ? (
           <Pressable
-            accessibilityLabel="ย้อนกลับ"
+            accessibilityLabel={TEXT.TEXT_6}
             accessibilityRole="button"
             onPress={goBack}
             style={styles.iconButton}>
@@ -60,7 +61,7 @@ export function NavTopBar({
           rightContent
         ) : showHomeButton ? (
           <Link href="/" asChild>
-            <Pressable accessibilityLabel="ไปหน้าหลัก" accessibilityRole="button" style={styles.iconButton}>
+            <Pressable accessibilityLabel={TEXT.ACCESSIBILITYLABEL} accessibilityRole="button" style={styles.iconButton}>
               <IconSymbol name="house.fill" size={23} color="#0A6E8A" />
             </Pressable>
           </Link>
