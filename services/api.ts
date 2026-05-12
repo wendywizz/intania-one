@@ -2,6 +2,16 @@ import {PROCESS} from '../constants/domain';
 import type {Result} from '../models/types';
 
 const TIMEOUT_MS = 10000;
+export const API_DELAY_MS = 500;
+
+export function waitApiDelay() {
+  return new Promise((resolve) => setTimeout(resolve, API_DELAY_MS));
+}
+
+export async function fetchWithApiDelay(input: RequestInfo | URL, init?: RequestInit) {
+  await waitApiDelay();
+  return fetch(input, init);
+}
 
 export function buildHttpsUrl(
   host: string,
@@ -22,7 +32,7 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithApiDelay(url, {
       ...init,
       signal: controller.signal,
       headers: {

@@ -1,0 +1,406 @@
+import { Tabs, router, usePathname } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+
+import { HapticTab } from '@/components/haptic-tab';
+import { LoadingAnimate } from '@/components/loading-animate';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import {
+  PRIVILEGE_RC_FOREMAN,
+  PRIVILEGE_RC_USER,
+  PRIVILEGE_RC_WORKER,
+  REPAIR_COMPUTER_DEFAULT_ROLE,
+  type RepairComputerRole,
+} from '@/constants/type-repair-computer';
+import { Colors } from '@/constants/theme';
+import { USER_ID } from '@/constants/user';
+import { useAuth } from '@/context/AuthContext';
+import { RepairComputerRoleProvider } from '@/context/RepairComputerRoleContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { checkPrivilege } from '@/services/repairComputerService';
+
+const privilegeRoleCache = new Map<string, RepairComputerRole>();
+
+const switchableRoleOptions = [
+  { label: 'Worker', value: PRIVILEGE_RC_WORKER },
+  { label: 'Foreman', value: PRIVILEGE_RC_FOREMAN },
+] as const;
+
+function normalizeRepairComputerRole(privilege?: string): RepairComputerRole {
+  if (privilege === PRIVILEGE_RC_WORKER || privilege === PRIVILEGE_RC_FOREMAN) {
+    return privilege;
+  }
+
+  return REPAIR_COMPUTER_DEFAULT_ROLE;
+}
+
+function getDefaultRoute(role: RepairComputerRole) {
+  if (role === PRIVILEGE_RC_WORKER) {
+    return '/repair-computer/worker-new-job';
+  }
+
+  if (role === PRIVILEGE_RC_FOREMAN) {
+    return '/repair-computer/foreman-new-job';
+  }
+
+  return '/repair-computer/current-job';
+}
+
+function getRoleLabel(role: RepairComputerRole) {
+  if (role === PRIVILEGE_RC_WORKER) {
+    return 'Worker';
+  }
+
+  if (role === PRIVILEGE_RC_FOREMAN) {
+    return 'Foreman';
+  }
+
+  return 'User';
+}
+
+function blurActiveWebElement() {
+  if (Platform.OS !== 'web') {
+    return;
+  }
+
+  const activeElement = document.activeElement;
+
+  if (activeElement instanceof HTMLElement) {
+    activeElement.blur();
+  }
+}
+
+export default function RepairComputerTabLayout() {
+  const colorScheme = useColorScheme();
+  const pathname = usePathname();
+  const { user: authUser } = useAuth();
+  const userId = authUser?.staffId || USER_ID;
+  const cachedRole = privilegeRoleCache.get(userId) ?? REPAIR_COMPUTER_DEFAULT_ROLE;
+  const [privilegeRole, setPrivilegeRole] = useState<RepairComputerRole>(cachedRole);
+  const [currentRole, setCurrentRole] = useState<RepairComputerRole>(cachedRole);
+  const [isCheckingPrivilege, setIsCheckingPrivilege] = useState(!privilegeRoleCache.has(userId));
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [pendingRoute, setPendingRoute] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPrivilege() {
+      const cachedUserRole = privilegeRoleCache.get(userId);
+
+      if (cachedUserRole) {
+        setPrivilegeRole(cachedUserRole);
+        setCurrentRole(cachedUserRole);
+        setIsCheckingPrivilege(false);
+        return;
+      }
+
+      setIsCheckingPrivilege(true);
+      const privilege = await checkPrivilege(userId);
+      const nextRole = normalizeRepairComputerRole(privilege?.privilege);
+
+      if (!isMounted) {
+        return;
+      }
+
+      setPrivilegeRole(nextRole);
+      setCurrentRole(nextRole);
+      privilegeRoleCache.set(userId, nextRole);
+      setIsCheckingPrivilege(false);
+
+      setPendingRoute(getDefaultRoute(nextRole));
+    }
+
+    loadPrivilege();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!pendingRoute || isCheckingPrivilege) {
+      return;
+    }
+
+    if (pathname !== pendingRoute) {
+      router.replace(pendingRoute as Parameters<typeof router.replace>[0]);
+    }
+
+    setPendingRoute('');
+  }, [isCheckingPrivilege, pathname, pendingRoute]);
+
+  const visibleFor = (role: RepairComputerRole) => (currentRole === role ? undefined : null);
+  const canSwitchRole = privilegeRole === PRIVILEGE_RC_FOREMAN;
+
+  const handleSwitchRole = () => {
+    if (!canSwitchRole) {
+      return;
+    }
+
+    blurActiveWebElement();
+    setIsRoleModalOpen(true);
+  };
+
+  const handleCloseRoleModal = () => {
+    blurActiveWebElement();
+    setIsRoleModalOpen(false);
+  };
+
+  const handleSelectRole = (role: RepairComputerRole) => {
+    blurActiveWebElement();
+    setIsRoleModalOpen(false);
+
+    if (!canSwitchRole || currentRole === role) {
+      return;
+    }
+
+    setCurrentRole(role);
+    setPendingRoute(getDefaultRoute(role));
+  };
+
+  const roleSwitcher = canSwitchRole ? (
+    <>
+      <Pressable accessibilityRole="button" onPress={handleSwitchRole} style={styles.switchButton}>
+        <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.switchButtonText}>
+          {getRoleLabel(currentRole)}
+        </ThemedText>
+      </Pressable>
+
+      <Modal transparent visible={isRoleModalOpen} animationType="fade" onRequestClose={handleCloseRoleModal}>
+        <Pressable style={styles.backdrop} onPress={handleCloseRoleModal}>
+          <Pressable>
+            <ThemedView style={styles.selectModal} lightColor="#FFFFFF" darkColor="#151718">
+              <View style={styles.selectModalHeader}>
+                <ThemedText type="defaultSemiBold" style={styles.selectModalTitle}>
+                  Select Role
+                </ThemedText>
+                <Pressable accessibilityRole="button" onPress={handleCloseRoleModal} style={styles.closeButton}>
+                  <ThemedText type="defaultSemiBold">Close</ThemedText>
+                </Pressable>
+              </View>
+
+              <ScrollView style={styles.optionScroll} contentContainerStyle={styles.optionScrollContent}>
+                {switchableRoleOptions.map((option) => {
+                  const isSelected = currentRole === option.value;
+
+                  return (
+                    <Pressable
+                      key={option.value}
+                      accessibilityRole="button"
+                      onPress={() => handleSelectRole(option.value)}
+                      style={[styles.option, isSelected ? styles.selectedOption : undefined]}>
+                      <ThemedText
+                        lightColor={isSelected ? '#FFFFFF' : undefined}
+                        darkColor={isSelected ? '#FFFFFF' : undefined}
+                        style={styles.optionText}>
+                        {option.label}
+                      </ThemedText>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </ThemedView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
+  ) : undefined;
+  const informAction =
+    currentRole === PRIVILEGE_RC_USER && pathname === '/repair-computer/current-job' ? (
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/repair-computer' as Parameters<typeof router.push>[0])}
+        style={styles.switchButton}>
+        <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.switchButtonText}>
+          Inform
+        </ThemedText>
+      </Pressable>
+    ) : undefined;
+  const topRightAction = roleSwitcher ?? informAction;
+
+  return (
+    <RepairComputerRoleProvider roleSwitcher={topRightAction}>
+      {isCheckingPrivilege ? (
+        <ThemedView style={styles.container}>
+          <LoadingAnimate title="Checking privilege" desc="Please wait a moment" />
+        </ThemedView>
+      ) : (
+        <Tabs
+          screenOptions={{
+            tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+            headerShown: false,
+            tabBarButton: HapticTab,
+          }}>
+          <Tabs.Screen
+            name="(user)/index"
+            options={{
+              title: 'Inform',
+              href: null,
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="(user)/current-job"
+            options={{
+              title: 'Current Job',
+              href: visibleFor(PRIVILEGE_RC_USER),
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="wrench.fill" color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="(user)/queue"
+            options={{
+              title: 'Queue',
+              href: visibleFor(PRIVILEGE_RC_USER),
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="tray.fill" color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="(user)/history"
+            options={{
+              title: 'History',
+              href: visibleFor(PRIVILEGE_RC_USER),
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+            }}
+          />
+
+          <Tabs.Screen
+            name="(worker)/worker-new-job"
+            options={{
+              title: 'New Job',
+              href: visibleFor(PRIVILEGE_RC_WORKER),
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="tray.fill" color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="(worker)/worker-current-job"
+            options={{
+              title: 'Current Job',
+              href: visibleFor(PRIVILEGE_RC_WORKER),
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="wrench.fill" color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="(worker)/worker-history"
+            options={{
+              title: 'History',
+              href: visibleFor(PRIVILEGE_RC_WORKER),
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+            }}
+          />
+
+          <Tabs.Screen
+            name="(foreman)/foreman-new-job"
+            options={{
+              title: 'New Job',
+              href: visibleFor(PRIVILEGE_RC_FOREMAN),
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="tray.fill" color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="(foreman)/manage-job"
+            options={{
+              title: 'Manage Job',
+              href: visibleFor(PRIVILEGE_RC_FOREMAN),
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.2.fill" color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="(foreman)/approvement"
+            options={{
+              title: 'Approvement',
+              href: visibleFor(PRIVILEGE_RC_FOREMAN),
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="checkmark.circle.fill" color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="(foreman)/foreman-history"
+            options={{
+              title: 'History',
+              href: visibleFor(PRIVILEGE_RC_FOREMAN),
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+            }}
+          />
+        </Tabs>
+      )}
+    </RepairComputerRoleProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  switchButton: {
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#0A6E8A',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+  },
+  switchButtonText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  backdrop: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    padding: 24,
+  },
+  selectModal: {
+    width: '100%',
+    maxWidth: 420,
+    maxHeight: 460,
+    borderRadius: 8,
+    padding: 16,
+  },
+  selectModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 12,
+  },
+  selectModalTitle: {
+    flex: 1,
+    fontSize: 16,
+  },
+  closeButton: {
+    minHeight: 40,
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#E4F0F6',
+    paddingHorizontal: 14,
+  },
+  optionScroll: {
+    maxHeight: 360,
+  },
+  optionScrollContent: {
+    gap: 8,
+  },
+  option: {
+    minHeight: 48,
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#D7E6EC',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  selectedOption: {
+    borderColor: '#0A6E8A',
+    backgroundColor: '#0A6E8A',
+  },
+  optionText: {
+    lineHeight: 20,
+  },
+});

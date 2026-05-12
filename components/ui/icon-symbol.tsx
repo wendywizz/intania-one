@@ -22,6 +22,11 @@ const MAPPING = {
   'clock.fill': 'schedule',
   calendar: 'calendar-today',
   'person.crop.circle.badge.minus': 'person-off',
+  'list.bullet': 'format-list-bulleted',
+  'wrench.fill': 'build',
+  'tray.fill': 'inbox',
+  'checkmark.circle.fill': 'check-circle',
+  'person.2.fill': 'groups',
 } as IconMapping;
 
 /**

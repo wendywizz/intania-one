@@ -4,11 +4,12 @@ import {
   TYPE_ABSENT_HAJJ,
   TYPE_ABSENT_RELAX,
   TYPE_ABSENT_SICK,
-} from '../constants/absent-type';
+} from '../constants/type-absent';
 import { PROCESS } from '../constants/domain';
 import { ENDPOINTS } from '../constants/endpoints';
 import type { Absent, Result } from '../models/types';
 import { Platform } from 'react-native';
+import { waitApiDelay } from './api';
 
 const CONNECTION_TIMEOUT_MS = 10000;
 const MESSAGE_CANNOT_CONNECT_TO_SERVER = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
@@ -72,6 +73,8 @@ function createLocalUrl(path: string, query?: Record<string, string | number | u
 }
 
 async function fetchWithTimeout(url: string, init?: RequestInit) {
+  await waitApiDelay();
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), CONNECTION_TIMEOUT_MS);
 

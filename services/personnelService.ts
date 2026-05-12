@@ -1,13 +1,13 @@
 import {ENDPOINTS} from '../constants/endpoints';
 import type {Person, Result} from '../models/types';
-import {buildHttpsUrl, listRequest} from './api';
+import {buildHttpsUrl, fetchWithApiDelay, listRequest} from './api';
 
 export async function getPersonnelSuggestions(keyword: string): Promise<Person[]> {
   if (!keyword.trim()) {
     return [];
   }
 
-  const response = await fetch(ENDPOINTS.personnelSearch, {
+  const response = await fetchWithApiDelay(ENDPOINTS.personnelSearch, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -3,10 +3,13 @@ import { useCallback, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { DatePickerField } from '@/components/date-picker-field';
+import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { TYPE_ABSENT_RELAX } from '@/constants/absent-type';
+import { TYPE_ABSENT_RELAX } from '@/constants/type-absent';
+import { USER_ID } from '@/constants/user';
+import { useAuth } from '@/context/AuthContext';
 import { AppFonts } from '@/constants/fonts';
 import type { Absent } from '@/models/types';
 import { initAbsentData } from '@/services/absentService';
@@ -137,6 +140,7 @@ function getLeaveDayCount(startDate: Date, endDate: Date, hasHalfDay: boolean) {
 }
 
 export default function RelaxScreen() {
+  const { user: authUser } = useAuth();
   const [initialAbsentData, setInitialAbsentData] = useState<Absent | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [initialError, setInitialError] = useState('');
@@ -148,6 +152,7 @@ export default function RelaxScreen() {
   const [contact, setContact] = useState('');
   const [openSelect, setOpenSelect] = useState<'approver' | 'halfDay' | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const userId = authUser?.staffId || USER_ID;
 
   const clearValidationError = useCallback((field: keyof ValidationErrors) => {
     setValidationErrors((currentErrors) => {
@@ -166,7 +171,7 @@ export default function RelaxScreen() {
     setInitialError('');
     setInitialAbsentData(null);
 
-    const result = await initAbsentData('0024028', TYPE_ABSENT_RELAX);
+    const result = await initAbsentData(userId, TYPE_ABSENT_RELAX);
 
     if (!result.data || result.processType === 'error') {
       setInitialError(result.message || 'ไม่สามารถโหลดข้อมูลตั้งต้นได้');
@@ -176,7 +181,7 @@ export default function RelaxScreen() {
 
     setInitialAbsentData(result.data);
     setIsInitialLoading(false);
-  }, []);
+  }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -235,10 +240,7 @@ export default function RelaxScreen() {
     return (
       <ThemedView style={styles.container}>
         <NavTopBar title="ลาพักผ่อน" backHref="/absent" />
-        <View style={styles.stateContent}>
-          <ThemedText type="subtitle">กำลังโหลดข้อมูล</ThemedText>
-          <ThemedText style={styles.stateMessage}>กรุณารอสักครู่</ThemedText>
-        </View>
+        <LoadingAnimate title="กำลังโหลดข้อมูล" desc="กรุณารอสักครู่" />
       </ThemedView>
     );
   }

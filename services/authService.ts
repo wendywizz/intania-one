@@ -4,6 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import {Platform} from 'react-native';
 import {AUTH} from '../constants/auth';
 import type {AuthUser} from '../models/types';
+import {fetchWithApiDelay} from './api';
 
 type TokenResponse = {
   access_token?: string;
@@ -64,7 +65,7 @@ async function persistSession(user: AuthUser, tokens?: {accessToken?: string; re
 }
 
 async function fetchCurrentUser(accessToken: string): Promise<AuthUser> {
-  const response = await fetch(`https://${AUTH.domain}${AUTH.endpoints.userInfo}`, {
+  const response = await fetchWithApiDelay(`https://${AUTH.domain}${AUTH.endpoints.userInfo}`, {
     headers: {Authorization: `Bearer ${accessToken}`},
   });
 
@@ -76,7 +77,7 @@ async function fetchCurrentUser(accessToken: string): Promise<AuthUser> {
 }
 
 async function exchangeCodeForToken(code: string): Promise<TokenResponse> {
-  const response = await fetch(`${AUTH.issuer}${AUTH.endpoints.token}`, {
+  const response = await fetchWithApiDelay(`${AUTH.issuer}${AUTH.endpoints.token}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -98,7 +99,7 @@ async function exchangeCodeForToken(code: string): Promise<TokenResponse> {
 }
 
 async function exchangeRefreshToken(refreshToken: string): Promise<TokenResponse> {
-  const response = await fetch(`${AUTH.issuer}${AUTH.endpoints.token}`, {
+  const response = await fetchWithApiDelay(`${AUTH.issuer}${AUTH.endpoints.token}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',

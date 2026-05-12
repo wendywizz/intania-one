@@ -3,6 +3,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { Platform } from 'react-native';
 import { ENDPOINTS } from '../constants/endpoints';
 import type { News } from '../models/types';
+import { fetchWithApiDelay } from './api';
 
 const parser = new XMLParser({ignoreAttributes: false});
 const WEB_NEWS_PROXY = '/api/staff-news-feed';
@@ -46,7 +47,7 @@ function parseNewsFeed(xml: string): News[] {
 export async function staffNewsFeed(): Promise<News[]> {
   try {
     if (Platform.OS === 'web') {
-      const response = await fetch(WEB_NEWS_PROXY);
+      const response = await fetchWithApiDelay(WEB_NEWS_PROXY);
       const news = await response.json();
       return Array.isArray(news) ? news : [];
     }
@@ -55,7 +56,7 @@ export async function staffNewsFeed(): Promise<News[]> {
 
     if (proxyUrl) {
       try {
-        const response = await fetch(proxyUrl);
+        const response = await fetchWithApiDelay(proxyUrl);
         const news = await response.json();
         return Array.isArray(news) ? news : [];
       } catch (error) {
@@ -63,7 +64,7 @@ export async function staffNewsFeed(): Promise<News[]> {
       }
     }
 
-    const response = await fetch(ENDPOINTS.staffNewsFeed);
+    const response = await fetchWithApiDelay(ENDPOINTS.staffNewsFeed);
     const xml = await response.text();
     return parseNewsFeed(xml);
   } catch (error) {

@@ -1,7 +1,7 @@
-import {ENDPOINTS} from '../constants/endpoints';
-import type {Meeting, Result} from '../models/types';
-import {buildHttpsUrl} from './api';
-import {PROCESS} from '../constants/domain';
+import { PROCESS } from '../constants/domain';
+import { ENDPOINTS } from '../constants/endpoints';
+import type { Meeting, Result } from '../models/types';
+import { buildHttpsUrl, fetchWithApiDelay } from './api';
 
 export async function listMeeting(
   userId = '',
@@ -12,7 +12,7 @@ export async function listMeeting(
       user_id: userId,
       type,
     });
-    const response = await fetch(url, {headers: {'Content-Type': 'application/json'}});
+    const response = await fetchWithApiDelay(url, {headers: {'Content-Type': 'application/json'}});
     const json = await response.json();
     const data = Array.isArray(json.data) ? json.data : [];
     return {

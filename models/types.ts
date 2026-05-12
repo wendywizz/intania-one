@@ -25,6 +25,11 @@ export type RepairComputer = {
   [key: string]: unknown;
 };
 
+export type RepairComputerPrivilege = {
+  staffId: string;
+  privilege: string;
+};
+
 export type Absent = {
   id?: string;
   [key: string]: unknown;

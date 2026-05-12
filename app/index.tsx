@@ -3,6 +3,7 @@ import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, StyleSheet, TouchableOpacity } from 'react-native';
 
+import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
@@ -109,7 +110,7 @@ export default function HomeScreen() {
           <ThemedView style={styles.newsList}>
             {isNewsLoading ? (
               <ThemedView style={styles.newsCard} lightColor="#F3F8FB" darkColor="#1F2B30">
-                <ThemedText>กำลังโหลดข่าวสาร...</ThemedText>
+                <LoadingAnimate fill={false} title="กำลังโหลดข่าวสาร" desc="กรุณารอสักครู่" />
               </ThemedView>
             ) : newsItems.length > 0 ? (
               newsItems.map((item) => (
@@ -138,7 +139,7 @@ export default function HomeScreen() {
         </ThemedView>
         <ThemedView style={styles.grid}>
           {screens.map((screen) => (
-            <Link key={screen.href} href={screen.href} asChild>
+            <Link key={screen.href} href={screen.href as Parameters<typeof Link>[0]['href']} asChild>
               <TouchableOpacity style={styles.card}>
                 <ThemedText type="subtitle">{screen.title}</ThemedText>
               </TouchableOpacity>
@@ -209,10 +210,7 @@ const styles = StyleSheet.create({
     padding: 16,
     justifyContent: 'center',
     backgroundColor: '#E4F0F6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
+    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
     elevation: 3,
     marginBottom: 12,
   },

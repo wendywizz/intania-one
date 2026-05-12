@@ -8,6 +8,7 @@ const parser = new XMLParser({ ignoreAttributes: false });
 const STAFF_NEWS_FEED =
   'https://www.eng.psu.ac.th/index.php?option=com_content&view=category&id=15&format=feed&type=rss';
 const PHOENIX_URL = 'phoenix.eng.psu.ac.th';
+const INFOR_URL = 'infor.eng.psu.ac.th';
 
 function parseNewsFeed(xml) {
   const parsed = parser.parse(xml);
@@ -112,6 +113,59 @@ config.server = {
           res.setHeader('Access-Control-Allow-Origin', '*');
           res.setHeader('Content-Type', 'application/json');
           res.end(response.body || JSON.stringify({ message: 'ไม่พบข้อมูลจากเซิร์ฟเวอร์' }));
+        } catch (error) {
+          writeJson(res, 500, {
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
+        return;
+      }
+
+      if (req.url?.startsWith('/api/meeting/list')) {
+        try {
+          const localUrl = new URL(req.url, 'http://localhost');
+          const userId = localUrl.searchParams.get('user_id') ?? '';
+          const type = localUrl.searchParams.get('type') ?? '';
+          const phoenixUrl = new URL(`https://${PHOENIX_URL}/meetingv2/api/index.php/meeting/list`);
+
+          phoenixUrl.searchParams.set('user_id', userId);
+          phoenixUrl.searchParams.set('type', type);
+
+          const response = await fetchTextWithLegacyTls(phoenixUrl.toString(), {
+            'Content-Type': 'application/json',
+          });
+
+          res.statusCode = response.statusCode;
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Content-Type', 'application/json');
+          res.end(response.body || JSON.stringify({ message: 'No data returned from server' }));
+        } catch (error) {
+          writeJson(res, 500, {
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
+        return;
+      }
+
+      if (req.url?.startsWith('/api/repair-computer/privilege')) {
+        try {
+          const localUrl = new URL(req.url, 'http://localhost');
+          const appId = localUrl.searchParams.get('app_id') ?? '';
+          const staffId = localUrl.searchParams.get('staff_id') ?? '';
+          const inforUrl = new URL(`https://${INFOR_URL}/repairComputer/api/privilege`);
+
+          inforUrl.searchParams.set('app_id', appId);
+          inforUrl.searchParams.set('staff_id', staffId);
+
+          const response = await fetchTextWithLegacyTls(inforUrl.toString(), {
+            'Content-Type': 'application/json',
+            Authorization: '',
+          });
+
+          res.statusCode = response.statusCode;
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Content-Type', 'application/json');
+          res.end(response.body || JSON.stringify({ data: '' }));
         } catch (error) {
           writeJson(res, 500, {
             message: error instanceof Error ? error.message : String(error),
