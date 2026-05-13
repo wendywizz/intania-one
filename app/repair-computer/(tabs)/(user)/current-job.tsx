@@ -1,5 +1,5 @@
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { router, usePathname } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -23,11 +23,12 @@ import { PROCESS } from '@/constants/domain';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { useRepairComputerRole } from '@/context/RepairComputerRoleContext';
-import type { RepairComputer } from '@/models/types';
+import type { RepairComputer, Result } from '@/models/types';
 import { getUserCurrentJob, removeJob } from '@/services/repairComputerService';
 
 const ESTIMATED_ITEM_HEIGHT = 132;
 const LIST_VERTICAL_CHROME = 260;
+const statusFields = ['status', 'state', 'statusId', 'status_id'];
 
 function getJobKey(job: RepairComputer, index: number) {
   return `${getRepairComputerJobId(job) || 'repair-job'}-${index}`;
@@ -35,6 +36,36 @@ function getJobKey(job: RepairComputer, index: number) {
 
 function getPageSize(screenHeight: number) {
   return Math.max(3, Math.ceil((screenHeight - LIST_VERTICAL_CHROME) / ESTIMATED_ITEM_HEIGHT));
+}
+
+function getHasMore(currentCount: number, pageSize: number, result: Result<RepairComputer[]>) {
+  if (typeof result.totalCount === 'number') {
+    return currentCount < result.totalCount;
+  }
+
+  const pageCount = Array.isArray(result.data) ? result.data.length : 0;
+  return pageCount >= pageSize;
+}
+
+function getJobText(job: RepairComputer, fields: string[]) {
+  for (const field of fields) {
+    const value = job[field];
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+
+    if (typeof value === 'number') {
+      return String(value);
+    }
+  }
+
+  return '';
+}
+
+function canEditJob(job: RepairComputer) {
+  const status = getJobText(job, statusFields);
+  return status === '' || Number(status) === 0;
 }
 
 function blurActiveWebElement() {
@@ -51,6 +82,7 @@ function blurActiveWebElement() {
 
 export default function RepairComputerCurrentJobScreen() {
   const { height } = useWindowDimensions();
+  const pathname = usePathname();
   const { user: authUser } = useAuth();
   const { roleSwitcher } = useRepairComputerRole();
   const staffId = authUser?.staffId || USER_ID;
@@ -65,8 +97,16 @@ export default function RepairComputerCurrentJobScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error' | ''>('');
+  const autoLoadedRouteRef = useRef('');
+  const loadingStartRef = useRef<number | null>(null);
+  const loadedStartRef = useRef<Set<number>>(new Set());
 
-  const loadFirstPage = useCallback(async (showRefreshing = false) => {
+  const loadFirstPage = useCallback(async (showRefreshing = false, forceReload = false) => {
+    if (loadingStartRef.current === 0 || (!forceReload && loadedStartRef.current.has(0))) {
+      return;
+    }
+
+    loadingStartRef.current = 0;
     if (showRefreshing) {
       setIsRefreshing(true);
     } else {
@@ -75,6 +115,8 @@ export default function RepairComputerCurrentJobScreen() {
 
     setError('');
     const result = await getUserCurrentJob(staffId, 0, pageSize);
+    loadingStartRef.current = null;
+    loadedStartRef.current = new Set([0]);
 
     if (result.processType === PROCESS.error) {
       setJobs([]);
@@ -83,7 +125,7 @@ export default function RepairComputerCurrentJobScreen() {
     } else {
       const nextJobs = Array.isArray(result.data) ? result.data : [];
       setJobs(nextJobs);
-      setHasMore(nextJobs.length >= pageSize);
+      setHasMore(getHasMore(nextJobs.length, pageSize, result));
     }
 
     setIsLoading(false);
@@ -95,25 +137,39 @@ export default function RepairComputerCurrentJobScreen() {
       return;
     }
 
+    const start = jobs.length;
+
+    if (loadingStartRef.current === start || loadedStartRef.current.has(start)) {
+      return;
+    }
+
+    loadingStartRef.current = start;
     setIsLoadingMore(true);
-    const result = await getUserCurrentJob(staffId, jobs.length, pageSize);
+    const result = await getUserCurrentJob(staffId, start, pageSize);
+    loadingStartRef.current = null;
+    loadedStartRef.current.add(start);
 
     if (result.processType === PROCESS.error) {
       setHasMore(false);
     } else {
       const nextJobs = Array.isArray(result.data) ? result.data : [];
       setJobs((currentJobs) => [...currentJobs, ...nextJobs]);
-      setHasMore(nextJobs.length >= pageSize);
+      setHasMore(getHasMore(start + nextJobs.length, pageSize, result));
     }
 
     setIsLoadingMore(false);
   }, [hasMore, isLoading, isLoadingMore, isRefreshing, jobs.length, pageSize, staffId]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadFirstPage();
-    }, [loadFirstPage]),
-  );
+  useEffect(() => {
+    if (pathname !== '/repair-computer/current-job') {
+      return;
+    }
+
+    if (autoLoadedRouteRef.current !== pathname) {
+      autoLoadedRouteRef.current = pathname;
+      loadFirstPage(false, true);
+    }
+  }, [loadFirstPage, pathname]);
 
   const openDeleteConfirm = (job: RepairComputer) => {
     blurActiveWebElement();
@@ -132,7 +188,10 @@ export default function RepairComputerCurrentJobScreen() {
     blurActiveWebElement();
     router.push({
       pathname: '/repair-computer/edit-job',
-      params: { id: jobId },
+      params: {
+        id: jobId,
+        ...(canEditJob(job) ? {} : { readonly: 'true' }),
+      },
     } as Parameters<typeof router.push>[0]);
   };
 
@@ -164,7 +223,7 @@ export default function RepairComputerCurrentJobScreen() {
     if (result.processType === PROCESS.success && result.success !== false) {
       setToastType('success');
       setToastMessage(result.message || TEXT.REPAIR_JOB_DELETED_SUCCESSFULLY);
-      loadFirstPage();
+      loadFirstPage(false, true);
       return;
     }
 
@@ -182,7 +241,7 @@ export default function RepairComputerCurrentJobScreen() {
         <View style={styles.stateContent}>
           <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={() => loadFirstPage()} style={styles.retryButton}>
+          <Pressable accessibilityRole="button" onPress={() => loadFirstPage(false, true)} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
               {TEXT.RETRY}</ThemedText>
           </Pressable>
@@ -196,7 +255,7 @@ export default function RepairComputerCurrentJobScreen() {
         data={jobs}
         keyExtractor={getJobKey}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadFirstPage(true)} />
+          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadFirstPage(true, true)} />
         }
         onEndReached={loadMoreJobs}
         onEndReachedThreshold={0.4}

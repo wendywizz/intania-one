@@ -1,5 +1,5 @@
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { router, usePathname } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { TEXT } from '@/constants/text';
 
@@ -13,7 +13,7 @@ import { PRIVILEGE_RC_USER } from '@/constants/type-repair-computer';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { useRepairComputerRole } from '@/context/RepairComputerRoleContext';
-import type { RepairComputer } from '@/models/types';
+import type { RepairComputer, Result } from '@/models/types';
 import { getUserHistory } from '@/services/repairComputerService';
 
 const ESTIMATED_ITEM_HEIGHT = 132;
@@ -27,8 +27,18 @@ function getPageSize(screenHeight: number) {
   return Math.max(3, Math.ceil((screenHeight - LIST_VERTICAL_CHROME) / ESTIMATED_ITEM_HEIGHT));
 }
 
+function getHasMore(currentCount: number, pageSize: number, result: Result<RepairComputer[]>) {
+  if (typeof result.totalCount === 'number') {
+    return currentCount < result.totalCount;
+  }
+
+  const pageCount = Array.isArray(result.data) ? result.data.length : 0;
+  return pageCount >= pageSize;
+}
+
 export default function RepairComputerHistoryScreen() {
   const { height } = useWindowDimensions();
+  const pathname = usePathname();
   const { user: authUser } = useAuth();
   const { roleSwitcher } = useRepairComputerRole();
   const staffId = authUser?.staffId || USER_ID;
@@ -39,8 +49,16 @@ export default function RepairComputerHistoryScreen() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState('');
+  const autoLoadedRouteRef = useRef('');
+  const loadingStartRef = useRef<number | null>(null);
+  const loadedStartRef = useRef<Set<number>>(new Set());
 
-  const loadFirstPage = useCallback(async (showRefreshing = false) => {
+  const loadFirstPage = useCallback(async (showRefreshing = false, forceReload = false) => {
+    if (loadingStartRef.current === 0 || (!forceReload && loadedStartRef.current.has(0))) {
+      return;
+    }
+
+    loadingStartRef.current = 0;
     if (showRefreshing) {
       setIsRefreshing(true);
     } else {
@@ -49,6 +67,8 @@ export default function RepairComputerHistoryScreen() {
 
     setError('');
     const result = await getUserHistory(staffId, PRIVILEGE_RC_USER, 0, pageSize);
+    loadingStartRef.current = null;
+    loadedStartRef.current = new Set([0]);
 
     if (result.processType === PROCESS.error) {
       setJobs([]);
@@ -57,7 +77,7 @@ export default function RepairComputerHistoryScreen() {
     } else {
       const nextJobs = Array.isArray(result.data) ? result.data : [];
       setJobs(nextJobs);
-      setHasMore(nextJobs.length >= pageSize);
+      setHasMore(getHasMore(nextJobs.length, pageSize, result));
     }
 
     setIsLoading(false);
@@ -69,25 +89,39 @@ export default function RepairComputerHistoryScreen() {
       return;
     }
 
+    const start = jobs.length;
+
+    if (loadingStartRef.current === start || loadedStartRef.current.has(start)) {
+      return;
+    }
+
+    loadingStartRef.current = start;
     setIsLoadingMore(true);
-    const result = await getUserHistory(staffId, PRIVILEGE_RC_USER, jobs.length, pageSize);
+    const result = await getUserHistory(staffId, PRIVILEGE_RC_USER, start, pageSize);
+    loadingStartRef.current = null;
+    loadedStartRef.current.add(start);
 
     if (result.processType === PROCESS.error) {
       setHasMore(false);
     } else {
       const nextJobs = Array.isArray(result.data) ? result.data : [];
       setJobs((currentJobs) => [...currentJobs, ...nextJobs]);
-      setHasMore(nextJobs.length >= pageSize);
+      setHasMore(getHasMore(start + nextJobs.length, pageSize, result));
     }
 
     setIsLoadingMore(false);
   }, [hasMore, isLoading, isLoadingMore, isRefreshing, jobs.length, pageSize, staffId]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadFirstPage();
-    }, [loadFirstPage]),
-  );
+  useEffect(() => {
+    if (pathname !== '/repair-computer/history') {
+      return;
+    }
+
+    if (autoLoadedRouteRef.current !== pathname) {
+      autoLoadedRouteRef.current = pathname;
+      loadFirstPage(false, true);
+    }
+  }, [loadFirstPage, pathname]);
 
   const openJobDetail = (job: RepairComputer) => {
     const jobId = getRepairComputerJobId(job);
@@ -112,7 +146,7 @@ export default function RepairComputerHistoryScreen() {
         <View style={styles.stateContent}>
           <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={() => loadFirstPage()} style={styles.retryButton}>
+          <Pressable accessibilityRole="button" onPress={() => loadFirstPage(false, true)} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
               {TEXT.RETRY}</ThemedText>
           </Pressable>
@@ -126,7 +160,7 @@ export default function RepairComputerHistoryScreen() {
         data={jobs}
         keyExtractor={getJobKey}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadFirstPage(true)} />
+          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadFirstPage(true, true)} />
         }
         onEndReached={loadMoreJobs}
         onEndReachedThreshold={0.4}

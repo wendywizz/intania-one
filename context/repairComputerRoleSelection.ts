@@ -1,0 +1,45 @@
+import {
+  PRIVILEGE_RC_FOREMAN,
+  PRIVILEGE_RC_USER,
+  PRIVILEGE_RC_WORKER,
+  type RepairComputerRole,
+} from '@/constants/type-repair-computer';
+import { TEXT } from '@/constants/text';
+
+export const repairComputerRoleOptions = [
+  { label: 'User', value: PRIVILEGE_RC_USER },
+  { label: TEXT.WORKER, value: PRIVILEGE_RC_WORKER },
+  { label: TEXT.FOREMAN, value: PRIVILEGE_RC_FOREMAN },
+] as const;
+
+const selectedRoleCache = new Map<string, RepairComputerRole>();
+
+export function getAccessibleRepairComputerRoleOptions(role: RepairComputerRole) {
+  if (role === PRIVILEGE_RC_FOREMAN) {
+    return repairComputerRoleOptions;
+  }
+
+  if (role === PRIVILEGE_RC_WORKER) {
+    return repairComputerRoleOptions.filter((option) => option.value !== PRIVILEGE_RC_FOREMAN);
+  }
+
+  return repairComputerRoleOptions.filter((option) => option.value === PRIVILEGE_RC_USER);
+}
+
+export function canAccessRepairComputerRole(privilegeRole: RepairComputerRole, role: RepairComputerRole) {
+  return getAccessibleRepairComputerRoleOptions(privilegeRole).some((option) => option.value === role);
+}
+
+export function getRepairComputerSelectedRole(userId: string, privilegeRole: RepairComputerRole) {
+  const selectedRole = selectedRoleCache.get(userId);
+
+  if (selectedRole && canAccessRepairComputerRole(privilegeRole, selectedRole)) {
+    return selectedRole;
+  }
+
+  return privilegeRole;
+}
+
+export function setRepairComputerSelectedRole(userId: string, role: RepairComputerRole) {
+  selectedRoleCache.set(userId, role);
+}

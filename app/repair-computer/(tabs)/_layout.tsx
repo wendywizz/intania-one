@@ -1,5 +1,5 @@
 import { Tabs, router, usePathname } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { TEXT } from '@/constants/text';
 
@@ -19,15 +19,17 @@ import { Colors } from '@/constants/theme';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { RepairComputerRoleProvider } from '@/context/RepairComputerRoleContext';
+import {
+  canAccessRepairComputerRole,
+  getAccessibleRepairComputerRoleOptions,
+  getRepairComputerSelectedRole,
+  repairComputerRoleOptions,
+  setRepairComputerSelectedRole,
+} from '@/context/repairComputerRoleSelection';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { checkPrivilege } from '@/services/repairComputerService';
 
 const privilegeRoleCache = new Map<string, RepairComputerRole>();
-
-const switchableRoleOptions = [
-  { label: TEXT.WORKER, value: PRIVILEGE_RC_WORKER },
-  { label: TEXT.FOREMAN, value: PRIVILEGE_RC_FOREMAN },
-] as const;
 
 function normalizeRepairComputerRole(privilege?: string): RepairComputerRole {
   if (privilege === PRIVILEGE_RC_WORKER || privilege === PRIVILEGE_RC_FOREMAN) {
@@ -49,6 +51,36 @@ function getDefaultRoute(role: RepairComputerRole) {
   return '/repair-computer/current-job';
 }
 
+function getRouteRole(pathname: string): RepairComputerRole | null {
+  if (
+    pathname === '/repair-computer/worker-new-job' ||
+    pathname === '/repair-computer/worker-current-job' ||
+    pathname === '/repair-computer/worker-history'
+  ) {
+    return PRIVILEGE_RC_WORKER;
+  }
+
+  if (
+    pathname === '/repair-computer/foreman-new-job' ||
+    pathname === '/repair-computer/manage-job' ||
+    pathname === '/repair-computer/approvement' ||
+    pathname === '/repair-computer/foreman-history'
+  ) {
+    return PRIVILEGE_RC_FOREMAN;
+  }
+
+  if (
+    pathname === '/repair-computer/inform' ||
+    pathname === '/repair-computer/current-job' ||
+    pathname === '/repair-computer/queue' ||
+    pathname === '/repair-computer/history'
+  ) {
+    return PRIVILEGE_RC_USER;
+  }
+
+  return null;
+}
+
 function getRoleLabel(role: RepairComputerRole) {
   if (role === PRIVILEGE_RC_WORKER) {
     return 'Worker';
@@ -59,6 +91,10 @@ function getRoleLabel(role: RepairComputerRole) {
   }
 
   return 'User';
+}
+
+function getCurrentRoleFromCache(userId: string, privilegeRole: RepairComputerRole) {
+  return getRepairComputerSelectedRole(userId, privilegeRole);
 }
 
 function blurActiveWebElement() {
@@ -78,12 +114,43 @@ export default function RepairComputerTabLayout() {
   const pathname = usePathname();
   const { user: authUser } = useAuth();
   const userId = authUser?.staffId || USER_ID;
-  const cachedRole = privilegeRoleCache.get(userId) ?? REPAIR_COMPUTER_DEFAULT_ROLE;
-  const [privilegeRole, setPrivilegeRole] = useState<RepairComputerRole>(cachedRole);
-  const [currentRole, setCurrentRole] = useState<RepairComputerRole>(cachedRole);
+  const cachedPrivilegeRole = privilegeRoleCache.get(userId) ?? REPAIR_COMPUTER_DEFAULT_ROLE;
+  const cachedCurrentRole = getCurrentRoleFromCache(userId, cachedPrivilegeRole);
+  const [privilegeRole, setPrivilegeRole] = useState<RepairComputerRole>(cachedPrivilegeRole);
+  const [currentRole, setCurrentRole] = useState<RepairComputerRole>(cachedCurrentRole);
   const [isCheckingPrivilege, setIsCheckingPrivilege] = useState(!privilegeRoleCache.has(userId));
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
-  const [pendingRoute, setPendingRoute] = useState('');
+  const lastRedirectRef = useRef('');
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const switchingRoleRef = useRef<RepairComputerRole | null>(null);
+
+  const replaceRoute = useCallback((route: string) => {
+    if (pathname === route || lastRedirectRef.current === route) {
+      return;
+    }
+
+    lastRedirectRef.current = route;
+    if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+    }
+
+    redirectTimerRef.current = setTimeout(() => {
+      redirectTimerRef.current = null;
+      router.replace(route as Parameters<typeof router.replace>[0]);
+    }, 0);
+  }, [pathname]);
+
+  useEffect(() => {
+    lastRedirectRef.current = '';
+  }, [pathname]);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -92,8 +159,11 @@ export default function RepairComputerTabLayout() {
       const cachedUserRole = privilegeRoleCache.get(userId);
 
       if (cachedUserRole) {
+        const cachedCurrentUserRole = getCurrentRoleFromCache(userId, cachedUserRole);
         setPrivilegeRole(cachedUserRole);
-        setCurrentRole(cachedUserRole);
+        if (!switchingRoleRef.current) {
+          setCurrentRole(cachedCurrentUserRole);
+        }
         setIsCheckingPrivilege(false);
         return;
       }
@@ -107,11 +177,12 @@ export default function RepairComputerTabLayout() {
       }
 
       setPrivilegeRole(nextRole);
-      setCurrentRole(nextRole);
       privilegeRoleCache.set(userId, nextRole);
+      const nextCurrentRole = getCurrentRoleFromCache(userId, nextRole);
+      if (!switchingRoleRef.current) {
+        setCurrentRole(nextCurrentRole);
+      }
       setIsCheckingPrivilege(false);
-
-      setPendingRoute(getDefaultRoute(nextRole));
     }
 
     loadPrivilege();
@@ -122,19 +193,45 @@ export default function RepairComputerTabLayout() {
   }, [userId]);
 
   useEffect(() => {
-    if (!pendingRoute || isCheckingPrivilege) {
+    if (isCheckingPrivilege) {
       return;
     }
 
-    if (pathname !== pendingRoute) {
-      router.replace(pendingRoute as Parameters<typeof router.replace>[0]);
+    const routeRole = getRouteRole(pathname);
+    const switchingRole = switchingRoleRef.current;
+
+    if (switchingRole) {
+      const switchingRoute = getDefaultRoute(switchingRole);
+
+      if (pathname === switchingRoute) {
+        switchingRoleRef.current = null;
+        return;
+      }
+
+      replaceRoute(switchingRoute);
+      return;
     }
 
-    setPendingRoute('');
-  }, [isCheckingPrivilege, pathname, pendingRoute]);
+    if (!routeRole) {
+      return;
+    }
 
+    if (routeRole === currentRole) {
+      return;
+    }
+
+    const defaultRoute = getDefaultRoute(currentRole);
+
+    if (pathname !== defaultRoute) {
+      replaceRoute(defaultRoute);
+    }
+  }, [currentRole, isCheckingPrivilege, pathname, replaceRoute]);
+
+  const accessibleRoleOptions = getAccessibleRepairComputerRoleOptions(privilegeRole);
   const visibleFor = (role: RepairComputerRole) => (currentRole === role ? undefined : null);
-  const canSwitchRole = privilegeRole === PRIVILEGE_RC_FOREMAN;
+  const canSwitchRole = accessibleRoleOptions.length > 1;
+  const routeRole = getRouteRole(pathname);
+  const isRedirectingToRole = !isCheckingPrivilege && Boolean(routeRole) && routeRole !== currentRole;
 
   const handleSwitchRole = () => {
     if (!canSwitchRole) {
@@ -154,12 +251,17 @@ export default function RepairComputerTabLayout() {
     blurActiveWebElement();
     setIsRoleModalOpen(false);
 
-    if (!canSwitchRole || currentRole === role) {
+    const canAccessRole = canAccessRepairComputerRole(privilegeRole, role);
+
+    if (!canSwitchRole || !canAccessRole || currentRole === role) {
       return;
     }
 
+    setRepairComputerSelectedRole(userId, role);
+    switchingRoleRef.current = role;
     setCurrentRole(role);
-    setPendingRoute(getDefaultRoute(role));
+    const nextRoute = getDefaultRoute(role);
+    replaceRoute(nextRoute);
   };
 
   const roleSwitcher = canSwitchRole ? (
@@ -183,7 +285,9 @@ export default function RepairComputerTabLayout() {
               </View>
 
               <ScrollView style={styles.optionScroll} contentContainerStyle={styles.optionScrollContent}>
-                {switchableRoleOptions.map((option) => {
+                {repairComputerRoleOptions
+                  .filter((option) => accessibleRoleOptions.some((accessibleOption) => accessibleOption.value === option.value))
+                  .map((option) => {
                   const isSelected = currentRole === option.value;
 
                   return (
@@ -212,29 +316,41 @@ export default function RepairComputerTabLayout() {
     currentRole === PRIVILEGE_RC_USER && pathname === '/repair-computer/current-job' ? (
       <Pressable
         accessibilityRole="button"
-        onPress={() => router.push('/repair-computer' as Parameters<typeof router.push>[0])}
+        onPress={() => router.push('/repair-computer/inform' as Parameters<typeof router.push>[0])}
         style={styles.switchButton}>
         <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.switchButtonText}>
           {TEXT.INFORM}</ThemedText>
       </Pressable>
     ) : undefined;
-  const topRightAction = roleSwitcher ?? informAction;
+  const topRightAction =
+    roleSwitcher && informAction ? (
+      <View style={styles.actionGroup}>
+        {informAction}
+        {roleSwitcher}
+      </View>
+    ) : (
+      roleSwitcher ?? informAction
+    );
 
   return (
-    <RepairComputerRoleProvider roleSwitcher={topRightAction}>
-      {isCheckingPrivilege ? (
+    <RepairComputerRoleProvider currentRole={currentRole} roleSwitcher={topRightAction}>
+      {isCheckingPrivilege || isRedirectingToRole ? (
         <ThemedView style={styles.container}>
-          <LoadingAnimate title={TEXT.CHECKING_PRIVILEGE} desc={TEXT.PLEASE_WAIT_A_MOMENT} />
+          <LoadingAnimate
+            title={isCheckingPrivilege ? TEXT.CHECKING_PRIVILEGE : TEXT.REPAIR_COMPUTER}
+            desc={TEXT.PLEASE_WAIT_A_MOMENT}
+          />
         </ThemedView>
       ) : (
         <Tabs
+          key={currentRole}
           screenOptions={{
             tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
             headerShown: false,
             tabBarButton: HapticTab,
           }}>
           <Tabs.Screen
-            name="(user)/index"
+            name="(user)/inform"
             options={{
               title: TEXT.INFORM,
               href: null,
@@ -346,6 +462,12 @@ const styles = StyleSheet.create({
   switchButtonText: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  actionGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 8,
   },
   backdrop: {
     flex: 1,

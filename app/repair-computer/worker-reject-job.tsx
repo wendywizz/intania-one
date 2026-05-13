@@ -9,37 +9,36 @@ import { ThemedView } from '@/components/themed-view';
 import { PROCESS } from '@/constants/domain';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
-import { foremanRejectJob } from '@/services/repairComputerService';
+import { acceptRejectedFromWorker } from '@/services/repairComputerService';
 
-const DEFAULT_REJECT_DETAIL = 'Reject job because not our duty';
+const DEFAULT_REJECT_REASON = 'Reject job';
 
-export default function RejectJobScreen() {
-  const params = useLocalSearchParams<{ backHref?: string | string[]; id?: string | string[] }>();
+export default function WorkerRejectJobScreen() {
+  const params = useLocalSearchParams<{ id?: string | string[] }>();
   const jobId = Array.isArray(params.id) ? params.id[0] : params.id;
-  const backHrefParam = Array.isArray(params.backHref) ? params.backHref[0] : params.backHref;
-  const backHref = backHrefParam || '/repair-computer/foreman-new-job';
-  const [rejectDetail, setRejectDetail] = useState(DEFAULT_REJECT_DETAIL);
+  const [reason, setReason] = useState(DEFAULT_REJECT_REASON);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error' | ''>('');
 
   const handleBackPress = () => {
-    if (backHref === '/repair-computer/foreman-job-detail' && jobId) {
+    if (jobId) {
       router.replace({
-        pathname: '/repair-computer/foreman-job-detail',
+        pathname: '/repair-computer/edit-job',
         params: {
           id: jobId,
-          backHref: '/repair-computer/foreman-new-job',
+          readonly: 'true',
+          backHref: '/repair-computer/worker-new-job',
         },
       } as Parameters<typeof router.replace>[0]);
       return;
     }
 
-    router.replace(backHref as Parameters<typeof router.replace>[0]);
+    router.replace('/repair-computer/worker-new-job');
   };
 
-  const handleReject = async () => {
+  const handleSubmit = async () => {
     if (!jobId || isSubmitting) {
       return;
     }
@@ -48,7 +47,7 @@ export default function RejectJobScreen() {
     setToastMessage('');
     setToastType('');
 
-    const result = await foremanRejectJob(jobId);
+    const result = await acceptRejectedFromWorker(jobId);
 
     setIsSubmitting(false);
     setIsConfirmOpen(false);
@@ -57,7 +56,7 @@ export default function RejectJobScreen() {
       setToastType('success');
       setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESSFULLY);
       setTimeout(() => {
-        router.replace('/repair-computer/foreman-new-job');
+        router.replace('/repair-computer/worker-new-job');
       }, 900);
       return;
     }
@@ -68,32 +67,29 @@ export default function RejectJobScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar
-        title={TEXT.REPAIR_COMPUTER}
-        onBackPress={handleBackPress}
-        showBackButton
-      />
+      <NavTopBar title={TEXT.REPAIR_COMPUTER} onBackPress={handleBackPress} showBackButton />
 
       <View style={styles.content}>
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">Reject Job</ThemedText>
+          <ThemedText type="subtitle">Reject Reason</ThemedText>
+
           <View style={styles.field}>
             <ThemedText type="defaultSemiBold">{TEXT.REJECT_DETAIL}</ThemedText>
             <TextInput
               multiline
               numberOfLines={2}
-              onChangeText={setRejectDetail}
+              onChangeText={setReason}
               placeholder={TEXT.REJECT_DETAIL}
               placeholderTextColor="#8A969C"
               style={styles.textArea}
               textAlignVertical="top"
-              value={rejectDetail}
+              value={reason}
             />
           </View>
 
-          <Pressable accessibilityRole="button" onPress={() => setIsConfirmOpen(true)} style={styles.rejectButton}>
+          <Pressable accessibilityRole="button" onPress={() => setIsConfirmOpen(true)} style={styles.submitButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              Submit
+              Confirm
             </ThemedText>
           </Pressable>
         </ThemedView>
@@ -116,8 +112,8 @@ export default function RejectJobScreen() {
                 <Pressable
                   accessibilityRole="button"
                   disabled={isSubmitting}
-                  onPress={handleReject}
-                  style={[styles.confirmRejectButton, isSubmitting ? styles.disabledButton : undefined]}>
+                  onPress={handleSubmit}
+                  style={[styles.confirmButton, isSubmitting ? styles.disabledButton : undefined]}>
                   {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
                   <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
                     Yes
@@ -144,8 +140,8 @@ const styles = StyleSheet.create({
   },
   panel: {
     borderRadius: 8,
-    padding: 20,
     gap: 18,
+    padding: 20,
   },
   field: {
     gap: 8,
@@ -162,7 +158,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  rejectButton: {
+  submitButton: {
     minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
@@ -203,7 +199,7 @@ const styles = StyleSheet.create({
     borderColor: '#BFD2DA',
     backgroundColor: '#FFFFFF',
   },
-  confirmRejectButton: {
+  confirmButton: {
     minHeight: 46,
     flex: 1,
     flexDirection: 'row',

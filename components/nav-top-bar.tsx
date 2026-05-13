@@ -10,6 +10,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 type NavTopBarProps = {
   title: string;
   backHref?: Href;
+  onBackPress?: () => void;
   showBackButton?: boolean;
   showHomeButton?: boolean;
   rightContent?: ReactNode;
@@ -18,11 +19,17 @@ type NavTopBarProps = {
 export function NavTopBar({
   title,
   backHref,
+  onBackPress,
   showBackButton = true,
   showHomeButton = false,
   rightContent,
 }: NavTopBarProps) {
   const goBack = () => {
+    if (onBackPress) {
+      onBackPress();
+      return;
+    }
+
     if (backHref) {
       router.replace(backHref);
       return;
@@ -87,11 +94,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   rightActions: {
-    width: 48,
+    minWidth: 48,
     alignItems: 'flex-end',
   },
   customRightActions: {
-    width: 116,
+    minWidth: 116,
   },
   iconButton: {
     width: 40,

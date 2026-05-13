@@ -28,7 +28,7 @@ export function getRepairComputerJobText(job: RepairComputer, fields: string[]) 
 }
 
 export function getRepairComputerJobId(job: RepairComputer) {
-  return getRepairComputerJobText(job, ['id', 'jobId', 'job_id', 'informId', 'inform_id']);
+  return getRepairComputerJobText(job, ['id', 'jobId', 'job_id', 'jobID', 'informId', 'inform_id', 'informID']);
 }
 
 type RepairComputerJobListItemProps = {

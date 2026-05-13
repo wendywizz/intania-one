@@ -109,6 +109,10 @@ export default function ForemanJobDetailScreen() {
   const informDateTime = getJobText(data, ['informDateTime', 'inform_date_time', 'informDate', 'inform_date']);
   const rejectDetail = getJobText(data, ['rejectDetail', 'reject_detail', 'rejectReason', 'reject_reason', 'reason']);
 
+  const handleBackPress = () => {
+    router.replace(backHref as Parameters<typeof router.replace>[0]);
+  };
+
   const renderContent = () => {
     if (isLoading) {
       return <LoadingAnimate title={TEXT.LOADING_JOB_DETAIL} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
@@ -197,7 +201,7 @@ export default function ForemanJobDetailScreen() {
     <ThemedView style={styles.container}>
       <NavTopBar
         title={TEXT.REPAIR_COMPUTER}
-        backHref={backHref as Parameters<typeof NavTopBar>[0]['backHref']}
+        onBackPress={handleBackPress}
         showBackButton
       />
 

@@ -1,5 +1,5 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { usePathname } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { TEXT } from '@/constants/text';
 
@@ -103,14 +103,22 @@ function WorkerQueueListItem({ failedPhotoIds, item, onPhotoError }: WorkerQueue
 }
 
 export default function RepairComputerQueueScreen() {
+  const pathname = usePathname();
   const { roleSwitcher } = useRepairComputerRole();
   const [workers, setWorkers] = useState<WorkerQueueItem[]>([]);
   const [failedPhotoIds, setFailedPhotoIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const autoLoadedRouteRef = useRef('');
+  const isLoadingQueueRef = useRef(false);
 
-  const loadQueue = useCallback(async (showRefreshing = false) => {
+  const loadQueue = useCallback(async (showRefreshing = false, forceReload = false) => {
+    if (isLoadingQueueRef.current || (!forceReload && autoLoadedRouteRef.current === '/repair-computer/queue')) {
+      return;
+    }
+
+    isLoadingQueueRef.current = true;
     if (showRefreshing) {
       setIsRefreshing(true);
     } else {
@@ -119,6 +127,7 @@ export default function RepairComputerQueueScreen() {
 
     setError('');
     const result = await workerQueue();
+    isLoadingQueueRef.current = false;
 
     if (result.processType === PROCESS.error) {
       setWorkers([]);
@@ -131,11 +140,12 @@ export default function RepairComputerQueueScreen() {
     setIsRefreshing(false);
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadQueue();
-    }, [loadQueue]),
-  );
+  useEffect(() => {
+    if (pathname === '/repair-computer/queue' && autoLoadedRouteRef.current !== pathname) {
+      autoLoadedRouteRef.current = pathname;
+      loadQueue(false, true);
+    }
+  }, [loadQueue, pathname]);
 
   const handlePhotoError = (workerId: string) => {
     setFailedPhotoIds((currentIds) => {
@@ -155,7 +165,7 @@ export default function RepairComputerQueueScreen() {
         <View style={styles.stateContent}>
           <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={() => loadQueue()} style={styles.retryButton}>
+          <Pressable accessibilityRole="button" onPress={() => loadQueue(false, true)} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
               {TEXT.RETRY}</ThemedText>
           </Pressable>
@@ -169,7 +179,7 @@ export default function RepairComputerQueueScreen() {
         data={workers}
         keyExtractor={getWorkerKey}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadQueue(true)} />
+          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadQueue(true, true)} />
         }
         renderItem={({ item }) => (
           <WorkerQueueListItem

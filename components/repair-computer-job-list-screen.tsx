@@ -1,5 +1,5 @@
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { router, usePathname } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { TEXT } from '@/constants/text';
 
@@ -9,6 +9,11 @@ import { getRepairComputerJobId, RepairComputerJobListItem } from '@/components/
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PROCESS } from '@/constants/domain';
+import {
+  PRIVILEGE_RC_FOREMAN,
+  PRIVILEGE_RC_WORKER,
+  type RepairComputerRole,
+} from '@/constants/type-repair-computer';
 import { useRepairComputerRole } from '@/context/RepairComputerRoleContext';
 import type { RepairComputer, Result } from '@/models/types';
 
@@ -33,6 +38,27 @@ function getPageSize(screenHeight: number) {
   return Math.max(3, Math.ceil((screenHeight - LIST_VERTICAL_CHROME) / ESTIMATED_ITEM_HEIGHT));
 }
 
+function getRoleTitlePrefix(role: RepairComputerRole) {
+  if (role === PRIVILEGE_RC_FOREMAN) {
+    return TEXT.FOREMAN;
+  }
+
+  if (role === PRIVILEGE_RC_WORKER) {
+    return TEXT.WORKER;
+  }
+
+  return 'User';
+}
+
+function getHasMore(currentCount: number, pageSize: number, result: Result<RepairComputer[]>) {
+  if (typeof result.totalCount === 'number') {
+    return currentCount < result.totalCount;
+  }
+
+  const pageCount = Array.isArray(result.data) ? result.data.length : 0;
+  return pageCount >= pageSize;
+}
+
 export function RepairComputerJobListScreen({
   title,
   emptyMessage,
@@ -43,7 +69,9 @@ export function RepairComputerJobListScreen({
   detailPathname = '/repair-computer/edit-job',
 }: RepairComputerJobListScreenProps) {
   const { height } = useWindowDimensions();
-  const { roleSwitcher } = useRepairComputerRole();
+  const pathname = usePathname();
+  const { currentRole, roleSwitcher } = useRepairComputerRole();
+  const screenTitle = title === TEXT.NEW_JOB ? `${getRoleTitlePrefix(currentRole)} ${title}` : title;
   const pageSize = getPageSize(height);
   const [jobs, setJobs] = useState<RepairComputer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,8 +79,16 @@ export function RepairComputerJobListScreen({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState('');
+  const autoLoadedRouteRef = useRef('');
+  const loadingStartRef = useRef<number | null>(null);
+  const loadedStartRef = useRef<Set<number>>(new Set());
 
-  const loadFirstPage = useCallback(async (showRefreshing = false) => {
+  const loadFirstPage = useCallback(async (showRefreshing = false, forceReload = false) => {
+    if (loadingStartRef.current === 0 || (!forceReload && loadedStartRef.current.has(0))) {
+      return;
+    }
+
+    loadingStartRef.current = 0;
     if (showRefreshing) {
       setIsRefreshing(true);
     } else {
@@ -61,6 +97,8 @@ export function RepairComputerJobListScreen({
 
     setError('');
     const result = await loadPage(0, pageSize);
+    loadingStartRef.current = null;
+    loadedStartRef.current = new Set([0]);
 
     if (result.processType === PROCESS.error) {
       setJobs([]);
@@ -69,7 +107,7 @@ export function RepairComputerJobListScreen({
     } else {
       const nextJobs = Array.isArray(result.data) ? result.data : [];
       setJobs(nextJobs);
-      setHasMore(nextJobs.length >= pageSize);
+      setHasMore(getHasMore(nextJobs.length, pageSize, result));
     }
 
     setIsLoading(false);
@@ -81,25 +119,40 @@ export function RepairComputerJobListScreen({
       return;
     }
 
+    const start = jobs.length;
+
+    if (loadingStartRef.current === start || loadedStartRef.current.has(start)) {
+      return;
+    }
+
+    loadingStartRef.current = start;
     setIsLoadingMore(true);
-    const result = await loadPage(jobs.length, pageSize);
+    const result = await loadPage(start, pageSize);
+    loadingStartRef.current = null;
+    loadedStartRef.current.add(start);
 
     if (result.processType === PROCESS.error) {
       setHasMore(false);
     } else {
       const nextJobs = Array.isArray(result.data) ? result.data : [];
       setJobs((currentJobs) => [...currentJobs, ...nextJobs]);
-      setHasMore(nextJobs.length >= pageSize);
+      setHasMore(getHasMore(start + nextJobs.length, pageSize, result));
     }
 
     setIsLoadingMore(false);
   }, [hasMore, isLoading, isLoadingMore, isRefreshing, jobs.length, loadPage, pageSize]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadFirstPage();
-    }, [loadFirstPage]),
-  );
+  useEffect(() => {
+    if (pathname !== detailBackHref) {
+      return;
+    }
+
+    if (autoLoadedRouteRef.current !== pathname) {
+      autoLoadedRouteRef.current = pathname;
+      loadedStartRef.current = new Set();
+      loadFirstPage(false, true);
+    }
+  }, [detailBackHref, loadFirstPage, pathname]);
 
   const openJobDetail = (job: RepairComputer) => {
     const jobId = getRepairComputerJobId(job);
@@ -124,7 +177,7 @@ export function RepairComputerJobListScreen({
         <View style={styles.stateContent}>
           <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={() => loadFirstPage()} style={styles.retryButton}>
+          <Pressable accessibilityRole="button" onPress={() => loadFirstPage(false, true)} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
               {TEXT.RETRY}</ThemedText>
           </Pressable>
@@ -138,7 +191,7 @@ export function RepairComputerJobListScreen({
         data={jobs}
         keyExtractor={getJobKey}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadFirstPage(true)} />
+          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadFirstPage(true, true)} />
         }
         onEndReached={loadMoreJobs}
         onEndReachedThreshold={0.4}
@@ -165,7 +218,7 @@ export function RepairComputerJobListScreen({
 
       <View style={styles.content}>
         <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">{title}</ThemedText>
+          <ThemedText type="subtitle">{screenTitle}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>

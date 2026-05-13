@@ -17,7 +17,7 @@ const screens = [
   { title: TEXT.TITLE_6, href: '/absent' },
   { title: TEXT.TEXT_22, href: '/forgot-timestamp' },
   { title: TEXT.TITLE_10, href: '/meeting' },
-  { title: TEXT.TITLE_11, href: '/repair-computer' },
+  { title: TEXT.TITLE_11, href: '/repair-computer/current-job' },
   { title: TEXT.TEXT_19, href: '/calendar' },
   { title: TEXT.TITLE_12, href: '/person-search' },
 ] as const;

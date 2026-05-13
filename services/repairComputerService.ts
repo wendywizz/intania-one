@@ -1,11 +1,25 @@
-import { ENDPOINTS } from '../constants/endpoints';
-import { PROCESS } from '../constants/domain';
-import { PRIVILEGE_RC_USER, RP_APP_ID } from '../constants/type-repair-computer';
-import type { RepairComputer, RepairComputerPrivilege, Result } from '../models/types';
-import { buildHttpsUrl, fetchWithApiDelay, listRequest, mutationRequest, rowRequest } from './api';
+import { PROCESS } from "../constants/domain";
+import { ENDPOINTS } from "../constants/endpoints";
+import {
+    PRIVILEGE_RC_USER,
+    RP_APP_ID,
+} from "../constants/type-repair-computer";
+import type {
+    Person,
+    RepairComputer,
+    RepairComputerPrivilege,
+    Result,
+} from "../models/types";
+import {
+    buildHttpsUrl,
+    fetchWithApiDelay,
+    listRequest,
+    mutationRequest,
+    rowRequest,
+} from "./api";
 
-const base = '/repairComputer/api/';
-const SCOOBA_API_TOKEN = '';
+const base = "/repairComputer/api/";
+const SCOOBA_API_TOKEN = "";
 
 export type AddRepairComputerJobPayload = {
   staff_id: string;
@@ -14,9 +28,37 @@ export type AddRepairComputerJobPayload = {
   detail: string;
 };
 
-export function update(path: string, id: string, data?: Record<string, unknown>) {
+export function update(
+  path: string,
+  id: string,
+  data?: Record<string, unknown>,
+) {
   const url = buildHttpsUrl(ENDPOINTS.infor, `${base}${path}`);
-  return mutationRequest(url, 'PUT', {...(data ?? {}), id});
+  return mutationRequest(url, "PUT", { ...(data ?? {}), id });
+}
+
+export function updateInformData(
+  id: string,
+  data: Record<string, unknown> = {},
+  actionPath?: string,
+) {
+  return update(actionPath ? `inform/${actionPath}` : "inform", id, data);
+}
+
+export function updateManageData(
+  id: string,
+  data: Record<string, unknown> = {},
+  actionPath?: string,
+) {
+  return update(actionPath ? `manage/${actionPath}` : "manage", id, data);
+}
+
+export function updateOperateData(
+  id: string,
+  data: Record<string, unknown> = {},
+  actionPath?: string,
+) {
+  return update(actionPath ? `operate/${actionPath}` : "operate", id, data);
 }
 
 export function checkCanInform(staffId: string): Promise<Result> {
@@ -27,41 +69,43 @@ export function checkCanInform(staffId: string): Promise<Result> {
 }
 
 export function getJobDetail(id: string): Promise<Result<RepairComputer>> {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform`, {id});
+  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform`, { id });
   return rowRequest<RepairComputer>(url);
 }
 
 export function addRepairComputerJob(data: AddRepairComputerJobPayload) {
   const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform`);
-  return mutationRequest(url, 'POST', data);
+  return mutationRequest(url, "POST", data);
 }
 
+export const addData = addRepairComputerJob;
+
 export function closeJob(id: string) {
-  return update('inform/close', id);
+  return updateInformData(id, { id }, "close");
 }
 
 export async function removeJob(id: string): Promise<Result> {
   try {
     const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform`);
     const response = await fetchWithApiDelay(url, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({id}).toString(),
+      body: new URLSearchParams({ id }).toString(),
     });
     const text = await response.text();
 
     if (!response.ok || !text) {
-      throw new Error('Server request failed');
+      throw new Error("Server request failed");
     }
 
-    const json = JSON.parse(text) as {message?: string; success?: boolean};
+    const json = JSON.parse(text) as { message?: string; success?: boolean };
 
     return {
       processType: PROCESS.success,
       success: json.success ?? true,
-      message: json.message ?? '',
+      message: json.message ?? "",
     };
   } catch (error) {
     return {
@@ -72,6 +116,7 @@ export async function removeJob(id: string): Promise<Result> {
   }
 }
 
+/* Inform */
 export function getUserCurrentJob(staffId: string, start = 0, length = 10) {
   const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform/current`, {
     staff_id: staffId,
@@ -88,7 +133,7 @@ export function workerQueue(): Promise<Result<Record<string, unknown>[]>> {
 
 export function getUserHistory(
   staffId: string,
-  type = '',
+  type = "",
   start = 0,
   length = 10,
 ) {
@@ -101,8 +146,21 @@ export function getUserHistory(
   return listRequest<RepairComputer>(url);
 }
 
+export function getUncloseJob(staffId: string, start = 0, length = 10) {
+  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform/unclose_job`, {
+    staff_id: staffId,
+    start,
+    length,
+  });
+  return listRequest<RepairComputer>(url);
+}
+
+/* Manage */
 export function listForemanNewJob(start = 0, length = 10) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}manage/new`, {start, length});
+  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}manage/new`, {
+    start,
+    length,
+  });
   return listRequest<RepairComputer>(url);
 }
 
@@ -124,17 +182,33 @@ export function listForemanHistory(foreman: string, start = 0, length = 10) {
   return listRequest<RepairComputer>(url);
 }
 
+export function changeWorker(id: string, workerId: string) {
+  return updateManageData(id, { worker: workerId }, "change_worker");
+}
+
+export function foremanRejectJob(id: string) {
+  return updateManageData(id, {}, "reject");
+}
+
+export function foremanUnassignJob(id: string) {
+  return updateManageData(id, {}, "unassign");
+}
+
+export function acceptRejectedFromWorker(id: string) {
+  return updateManageData(id, {}, "accept_rejected");
+}
+
 export function assignJob(
   id: string,
   repairType: string,
   worker: string,
   foreman: string,
 ) {
-  return update('manage/assign', id, {
+  return updateManageData(id, {
     repair_type: repairType,
     worker,
     staff_id: foreman,
-  });
+  }, "assign");
 }
 
 export function getRepairTypes() {
@@ -142,6 +216,24 @@ export function getRepairTypes() {
   return listRequest<Record<string, string>>(url);
 }
 
+export async function getRejectReason(jobId: string, worker?: string) {
+  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform/reject_reason`, {
+    id: jobId,
+    worker,
+  });
+  const result = await rowRequest<Record<string, unknown>>(url);
+  const data = result.data ?? {};
+
+  return {
+    ...result,
+    data: {
+      detail: String(data.detail ?? ""),
+      dateTime: String(data.dateTime ?? ""),
+    },
+  };
+}
+
+/* Operate */
 export function listWorkerNewJob(worker: string, start = 0, length = 10) {
   const url = buildHttpsUrl(ENDPOINTS.infor, `${base}operate/new`, {
     staff_id: worker,
@@ -169,26 +261,46 @@ export function listWorkerHistory(worker: string, start = 0, length = 10) {
   return listRequest<RepairComputer>(url);
 }
 
-export function workerReceiveJob(jobId: string, isAccept: boolean, reason?: string) {
-  return update('operate/accept_newjob', jobId, {
-    action: isAccept ? 'accept' : 'reject',
-    reason,
-  });
+export function workerReceiveJob(
+  jobId: string,
+  isAccept: boolean,
+  reason?: string,
+) {
+  return updateOperateData(jobId, {
+    action: isAccept ? "accept" : "reject",
+    ...(!isAccept && reason ? { reason } : {}),
+  }, "accept_newjob");
 }
 
-export function workerOperateJob(jobId: string, repairDetail: string, solveDetail: string) {
-  return update('operate/operate_job', jobId, {
+export function workerOperateJob(
+  jobId: string,
+  repairDetail: string,
+  solveDetail: string,
+) {
+  return updateOperateData(jobId, {
     audit: repairDetail,
     result: solveDetail,
-  });
+  }, "operate_job");
 }
 
 export function requestSupply(jobId: string, detail: string) {
-  return update('operate/request_supply', jobId, {detail});
+  return updateOperateData(jobId, { detail }, "request_supply");
 }
 
 export function submitJob(jobId: string, userTip?: string) {
-  return update('operate/submit_job', jobId, userTip ? {user_tip: userTip} : {});
+  return updateOperateData(
+    jobId,
+    userTip ? { user_tip: userTip } : {},
+    "submit_job",
+  );
+}
+
+export function getRepairComputerWorkers(): Promise<Result<Person[]>> {
+  const url = buildHttpsUrl(
+    ENDPOINTS.infor,
+    "/repairComputer/api/manage/tech_list",
+  );
+  return listRequest<Person>(url);
 }
 
 export async function checkPrivilege(
@@ -201,7 +313,7 @@ export async function checkPrivilege(
     });
     const response = await fetchWithApiDelay(url, {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         Authorization: `Bearer ${SCOOBA_API_TOKEN}`,
       },
     });
@@ -213,12 +325,14 @@ export async function checkPrivilege(
     const body = await response.text();
 
     if (response.status !== 200 || !body) {
-      throw new Error('Server request failed');
+      throw new Error("Server request failed");
     }
 
-    const json = JSON.parse(body) as {data?: unknown};
+    const json = JSON.parse(body) as { data?: unknown };
     const privilege =
-      typeof json.data === 'string' && json.data.trim() ? json.data : PRIVILEGE_RC_USER;
+      typeof json.data === "string" && json.data.trim()
+        ? json.data
+        : PRIVILEGE_RC_USER;
 
     return {
       staffId,
