@@ -42,7 +42,14 @@ export type CalendarEvent = {
 };
 
 function getEnv(name: string) {
-  return process.env[name] ?? '';
+  switch (name) {
+    case 'EXPO_PUBLIC_SCOOBA_API_TOKEN':
+      return process.env.EXPO_PUBLIC_SCOOBA_API_TOKEN ?? '';
+    case 'EXPO_PUBLIC_GOOGLE_API_KEY':
+      return process.env.EXPO_PUBLIC_GOOGLE_API_KEY ?? '';
+    default:
+      return '';
+  }
 }
 
 function toDateKey(date: Date) {
@@ -104,7 +111,7 @@ function mapCalendarEvent(item: GoogleCalendarItem): CalendarEvent {
 }
 
 export async function getExecutiveCalendarSources(): Promise<CalendarSource[]> {
-  const token = getEnv('EXPO_PUBLIC_SCOOBA_API_TOKEN');
+  const token = getEnv('EXPO_PUBLIC_SCOOBA_API_TOKEN').trim();
 
   if (!token) {
     throw new Error('Missing EXPO_PUBLIC_SCOOBA_API_TOKEN');
@@ -121,7 +128,7 @@ export async function getExecutiveCalendarSources(): Promise<CalendarSource[]> {
   );
 
   if (!response.ok) {
-    throw new Error('Unable to load calendar sources');
+    throw new Error(`Unable to load calendar sources (${response.status})`);
   }
 
   const json = (await response.json()) as {data?: ScoobaScheduleItem[]};

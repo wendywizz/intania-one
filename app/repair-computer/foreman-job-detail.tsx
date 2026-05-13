@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { TEXT } from '@/constants/text';
@@ -104,6 +104,7 @@ export default function ForemanJobDetailScreen() {
   }, [loadDetail]);
 
   const status = getJobText(data, ['status', 'state', 'statusId', 'status_id']);
+  const showActionButtons = status === REPAIR_STATUS_NEW_JOB && Boolean(jobId);
   const showAssignedWorker = true;
   const informDateTime = getJobText(data, ['informDateTime', 'inform_date_time', 'informDate', 'inform_date']);
   const rejectDetail = getJobText(data, ['rejectDetail', 'reject_detail', 'rejectReason', 'reject_reason', 'reason']);
@@ -152,6 +153,40 @@ export default function ForemanJobDetailScreen() {
             {status === REPAIR_STATUS_WORKER_REJECT ? (
               <RowDetail title={TEXT.REJECT_DETAIL} description={rejectDetail || TEXT_NONE} />
             ) : null}
+          </View>
+        ) : null}
+
+        {showActionButtons ? (
+          <View style={styles.actionRow}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                router.push({
+                  pathname: '/repair-computer/assign-job',
+                  params: { id: jobId, backHref: '/repair-computer/foreman-job-detail' },
+                });
+              }}
+              style={styles.acceptButton}
+            >
+              <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                Accept
+              </ThemedText>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                router.push({
+                  pathname: '/repair-computer/reject-job',
+                  params: { id: jobId, backHref: '/repair-computer/foreman-job-detail' },
+                });
+              }}
+              style={styles.rejectButton}
+            >
+              <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                Reject
+              </ThemedText>
+            </Pressable>
           </View>
         ) : null}
       </ScrollView>
@@ -234,5 +269,26 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#0A6E8A',
     marginTop: 24,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  acceptButton: {
+    flex: 1,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#0A6E8A',
+  },
+  rejectButton: {
+    flex: 1,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#C44D58',
   },
 });

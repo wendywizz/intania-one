@@ -198,6 +198,34 @@ export default function CalendarScreen() {
     );
   }
 
+  const sourceLoadFailed = !sources.length && Boolean(errorMessage);
+  if (sourceLoadFailed) {
+    return (
+      <ThemedView style={styles.container}>
+        <NavTopBar title={TEXT.TEXT_19} backHref="/" />
+        <View style={styles.centerErrorWrap}>
+          <ThemedView
+            style={styles.messageBox}
+            lightColor="#FFF8F8"
+            darkColor="#2A171A"
+          >
+            <ThemedText type="defaultSemiBold" style={[styles.errorTitle, styles.centerText]}>
+              {TEXT.UNABLE_TO_COMPLETE}
+            </ThemedText>
+            <ThemedText style={[styles.errorMessage, styles.centerText]}>
+              {errorMessage}
+            </ThemedText>
+            <Pressable style={styles.centerRetryButton} onPress={loadSources}>
+              <ThemedText type="defaultSemiBold" style={styles.retryText}>
+                {TEXT.RETRY}
+              </ThemedText>
+            </Pressable>
+          </ThemedView>
+        </View>
+      </ThemedView>
+    );
+  }
+
   return (
     <ThemedView style={styles.container}>
       <NavTopBar title={TEXT.TEXT_19} backHref="/" />
@@ -383,6 +411,22 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 24,
+  },
+  centerErrorWrap: {
+    flex: 1,
+    justifyContent: "center",
+    paddingBottom: 56,
+  },
+  centerText: {
+    textAlign: "center",
+  },
+  centerRetryButton: {
+    alignSelf: "center",
+    marginTop: 10,
+    borderRadius: 8,
+    backgroundColor: "#0A6E8A",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
   sourceField: {
     gap: 8,

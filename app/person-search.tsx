@@ -39,19 +39,29 @@ function getPersonLabel(person: Person): string {
   );
 }
 
-function getPersonSubtitle(person: Person): string | undefined {
+function getPersonDetails(person: Person): {
+  dept?: string;
+  phone?: string;
+  fallback?: string;
+} {
   const r = person as Record<string, unknown>;
   const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : '');
+  const phone =
+    str(r.OFFICE_TEL) ||
+    str(r.officeTel) ||
+    str(r.phone) ||
+    str(r.tel);
   const dept =
     str(r.department) ||
     str(r.deptName) ||
     str(r.faculty) ||
     str(r.DEPT_NAME_TH);
-  if (dept) {
-    return dept;
-  }
   const id = person.staffId ? String(person.staffId) : '';
-  return id || undefined;
+  return {
+    dept: dept || undefined,
+    phone: phone ? `Tel: ${phone}` : undefined,
+    fallback: id || undefined,
+  };
 }
 
 function PersonSearchListItem({ item }: { item: Person }) {
@@ -64,7 +74,7 @@ function PersonSearchListItem({ item }: { item: Person }) {
   }, [item.staffId]);
 
   const title = getPersonLabel(item);
-  const subtitle = getPersonSubtitle(item);
+  const details = getPersonDetails(item);
   const showPhoto = hasStaffId && !photoFailed;
 
   return (
@@ -89,9 +99,19 @@ function PersonSearchListItem({ item }: { item: Person }) {
         <ThemedText type="defaultSemiBold" numberOfLines={2}>
           {title}
         </ThemedText>
-        {subtitle && subtitle !== title ? (
+        {details.dept ? (
           <ThemedText style={styles.subtitle} numberOfLines={2}>
-            {subtitle}
+            {details.dept}
+          </ThemedText>
+        ) : null}
+        {details.phone ? (
+          <ThemedText style={styles.subtitle} numberOfLines={1}>
+            {details.phone}
+          </ThemedText>
+        ) : null}
+        {!details.dept && !details.phone && details.fallback && details.fallback !== title ? (
+          <ThemedText style={styles.subtitle} numberOfLines={1}>
+            {details.fallback}
           </ThemedText>
         ) : null}
       </View>
@@ -169,26 +189,22 @@ export default function PersonSearchScreen() {
       <NavTopBar title={TEXT.TITLE_12} />
 
       <View style={styles.searchRow}>
-        <View style={styles.inputRow}>
+        <View style={styles.inputWrap}>
           <TextInput
             accessibilityLabel={TEXT.PLACEHOLDER}
             autoCapitalize="none"
             autoCorrect={false}
             clearButtonMode="while-editing"
             onChangeText={setKeyword}
-            placeholder={TEXT.PLACEHOLDER}
+            placeholder="Search by name or staff ID"
             placeholderTextColor="#8A969C"
             returnKeyType="search"
             style={styles.input}
-            value={keyword}
+            value={keyword}            
           />
-          {isLoading ? (
-            <View style={styles.spinnerWrap}>
-              <ActivityIndicator color="#0A6E8A" size="small" />
-            </View>
-          ) : (
-            <View style={styles.spinnerWrap} />
-          )}
+          <View pointerEvents="none" style={styles.spinnerWrap}>
+            {isLoading ? <ActivityIndicator color="#0A6E8A" size="small" /> : null}
+          </View>
         </View>
       </View>
 
@@ -234,13 +250,11 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  inputWrap: {
+    position: 'relative',
+    justifyContent: 'center',
   },
   input: {
-    flex: 1,
     minHeight: 46,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
@@ -250,10 +264,15 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     paddingHorizontal: 14,
+    paddingRight: 42,
     paddingVertical: 10,
   },
   spinnerWrap: {
-    width: 28,
+    position: 'absolute',
+    right: 12,
+    top: 0,
+    bottom: 0,
+    width: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },

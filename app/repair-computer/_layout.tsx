@@ -7,6 +7,8 @@ export default function RepairComputerLayout() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="edit-job" />
       <Stack.Screen name="foreman-job-detail" />
+      <Stack.Screen name="assign-job" />
+      <Stack.Screen name="reject-job" />
     </Stack>
   );
 }
