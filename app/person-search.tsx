@@ -143,7 +143,7 @@ export default function PersonSearchScreen() {
           return;
         }
         setResults([]);
-        setError(TEXT.SOMETHING_WENT_WRONG);
+        setError(TEXT.SHARED_SOMETHING_WENT_WRONG);
       })
       .finally(() => {
         if (id !== requestIdRef.current) {
@@ -186,12 +186,12 @@ export default function PersonSearchScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.TITLE_12} />
+      <NavTopBar title={TEXT.PERSON_SEARCH_TITLE} />
 
       <View style={styles.searchRow}>
         <View style={styles.inputWrap}>
           <TextInput
-            accessibilityLabel={TEXT.PLACEHOLDER}
+            accessibilityLabel={TEXT.SHARED_SEARCH_NAME_PLACEHOLDER}
             autoCapitalize="none"
             autoCorrect={false}
             clearButtonMode="while-editing"
@@ -213,7 +213,7 @@ export default function PersonSearchScreen() {
           <ThemedText style={styles.errorText}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={handleRetry} style={styles.retryButton}>
             <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold">
-              {TEXT.RETRY}
+              {TEXT.SHARED_RETRY}
             </ThemedText>
           </Pressable>
         </View>
@@ -232,7 +232,7 @@ export default function PersonSearchScreen() {
         }
         ListEmptyComponent={
           showEmptyHint ? (
-            <ThemedText style={styles.emptyText}>{TEXT.TEXT_3}</ThemedText>
+            <ThemedText style={styles.emptyText}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
           ) : null
         }
         renderItem={({ item }) => <PersonSearchListItem item={item} />}

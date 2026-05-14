@@ -11,10 +11,10 @@ export default function ForemanNewJobScreen() {
 
   return (
     <RepairComputerJobListScreen
-      title={TEXT.NEW_JOB}
-      emptyMessage={TEXT.NO_NEW_JOBS}
-      errorMessage={TEXT.UNABLE_TO_LOAD_NEW_JOBS}
-      loadingTitle={TEXT.LOADING_NEW_JOBS}
+      title={TEXT.REPAIR_COMPUTER_NEW_JOB}
+      emptyMessage={TEXT.REPAIR_COMPUTER_NO_NEW_JOBS}
+      errorMessage={TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_NEW_JOBS}
+      loadingTitle={TEXT.REPAIR_COMPUTER_LOADING_NEW_JOBS}
       loadPage={loadPage}
       detailBackHref="/repair-computer/foreman-new-job"
       detailPathname="/repair-computer/foreman-job-detail"

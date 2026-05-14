@@ -10,6 +10,7 @@ export default function RepairComputerLayout() {
       <Stack.Screen name="assign-job" />
       <Stack.Screen name="reject-job" />
       <Stack.Screen name="worker-reject-job" />
+      <Stack.Screen name="operate-job" />
     </Stack>
   );
 }

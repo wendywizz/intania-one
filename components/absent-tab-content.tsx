@@ -14,10 +14,10 @@ type AbsentTabContentProps = {
 export function AbsentTabContent({ title, description, items }: AbsentTabContentProps) {
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.TITLE_6} />
+      <NavTopBar title={TEXT.ABSENT_TITLE} />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
           <ThemedText type="subtitle">{title}</ThemedText>
           <ThemedText style={styles.message}>{description}</ThemedText>
 
@@ -41,11 +41,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
   panel: {
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
   },
   message: {
     marginTop: 12,

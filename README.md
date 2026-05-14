@@ -2,6 +2,13 @@
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
+## Project notes
+
+- Before adding an external package, prefer existing project dependencies first.
+- If a new package is needed, use an official React Native or Expo package when available.
+- If there is no official package, use a well-maintained package that is among the most popular choices in the React Native community.
+- For Expo native modules, use `npx expo install <package>` so the installed version matches the project SDK.
+
 ## Get started
 
 1. Install dependencies

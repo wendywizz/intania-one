@@ -15,10 +15,10 @@ export default function WorkerHistoryScreen() {
 
   return (
     <RepairComputerJobListScreen
-      title={TEXT.HISTORY}
-      emptyMessage={TEXT.NO_HISTORY}
-      errorMessage={TEXT.UNABLE_TO_LOAD_HISTORY}
-      loadingTitle={TEXT.LOADING_HISTORY}
+      title={TEXT.SHARED_HISTORY}
+      emptyMessage={TEXT.SHARED_NO_HISTORY}
+      errorMessage={TEXT.SHARED_UNABLE_TO_LOAD_HISTORY}
+      loadingTitle={TEXT.SHARED_LOADING_HISTORY}
       loadPage={loadPage}
       detailBackHref="/repair-computer/worker-history"
     />

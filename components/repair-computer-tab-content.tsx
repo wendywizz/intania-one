@@ -18,11 +18,11 @@ type RepairComputerTabContentProps = {
 
 function getRoleTitlePrefix(role: RepairComputerRole) {
   if (role === PRIVILEGE_RC_FOREMAN) {
-    return TEXT.FOREMAN;
+    return TEXT.REPAIR_COMPUTER_FOREMAN;
   }
 
   if (role === PRIVILEGE_RC_WORKER) {
-    return TEXT.WORKER;
+    return TEXT.REPAIR_COMPUTER_WORKER;
   }
 
   return 'User';
@@ -30,14 +30,14 @@ function getRoleTitlePrefix(role: RepairComputerRole) {
 
 export function RepairComputerTabContent({ title, description }: RepairComputerTabContentProps) {
   const { currentRole, roleSwitcher } = useRepairComputerRole();
-  const screenTitle = title === TEXT.NEW_JOB ? `${getRoleTitlePrefix(currentRole)} ${title}` : title;
+  const screenTitle = title === TEXT.REPAIR_COMPUTER_NEW_JOB ? `${getRoleTitlePrefix(currentRole)} ${title}` : title;
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.REPAIR_COMPUTER} backHref="/" rightContent={roleSwitcher} />
+      <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} backHref="/" rightContent={roleSwitcher} />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
           <ThemedText type="subtitle">{screenTitle}</ThemedText>
           <ThemedText style={styles.description}>{description}</ThemedText>
         </ThemedView>
@@ -52,11 +52,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
   panel: {
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
   },
   description: {
     color: '#687076',

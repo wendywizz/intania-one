@@ -194,7 +194,7 @@ export default function AssignJobScreen() {
 
   const loadData = useCallback(async () => {
     if (!jobId) {
-      setError(TEXT.UNABLE_TO_LOAD_JOB_DETAIL);
+      setError(TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_JOB_DETAIL);
       setIsLoading(false);
       return;
     }
@@ -208,7 +208,7 @@ export default function AssignJobScreen() {
     ]);
 
     if (detailResult.processType === PROCESS.error || !detailResult.data) {
-      setError(detailResult.message || TEXT.UNABLE_TO_LOAD_JOB_DETAIL);
+      setError(detailResult.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_JOB_DETAIL);
       setIsLoading(false);
       return;
     }
@@ -297,7 +297,7 @@ export default function AssignJobScreen() {
     if (result.processType === PROCESS.success && result.success !== false) {
       setRepairComputerSelectedRole(foremanId, PRIVILEGE_RC_FOREMAN);
       setToastType('success');
-      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESSFULLY);
+      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE);
       setTimeout(() => {
         router.replace('/repair-computer/foreman-new-job');
       }, 900);
@@ -305,16 +305,16 @@ export default function AssignJobScreen() {
     }
 
     setToastType('error');
-    setToastMessage(result.message || TEXT.UNABLE_TO_UPDATE_REPAIR_COMPUTER_JOB);
+    setToastMessage(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_UPDATE_JOB);
   };
 
   const jobRows = useMemo(() => {
     return [
-      { title: TEXT.JOB_ID, description: jobId || TEXT_NONE },
-      { title: TEXT.USER, description: getValue(jobDetail, ['staffFullname', 'staff_fullname']) || TEXT_NONE },
-      { title: TEXT.DEPARTMENT, description: getValue(jobDetail, ['deptName', 'dept_name']) || TEXT_NONE },
-      { title: TEXT.SUPPLY_CODE_2, description: getValue(jobDetail, ['supplyCode', 'supply_code']) || TEXT_NONE },
-      { title: TEXT.DETAIL_2, description: getValue(jobDetail, ['detail']) || TEXT_NONE },
+      { title: TEXT.REPAIR_COMPUTER_JOB_ID_LABEL, description: jobId || TEXT_NONE },
+      { title: TEXT.REPAIR_COMPUTER_USER_LABEL, description: getValue(jobDetail, ['staffFullname', 'staff_fullname']) || TEXT_NONE },
+      { title: TEXT.SHARED_DEPARTMENT_LABEL, description: getValue(jobDetail, ['deptName', 'dept_name']) || TEXT_NONE },
+      { title: TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL, description: getValue(jobDetail, ['supplyCode', 'supply_code']) || TEXT_NONE },
+      { title: TEXT.REPAIR_COMPUTER_DETAIL_LABEL, description: getValue(jobDetail, ['detail']) || TEXT_NONE },
     ];
   }, [jobDetail, jobId]);
 
@@ -377,17 +377,17 @@ export default function AssignJobScreen() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title="Loading assign data" desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
+      return <LoadingAnimate title="Loading assign data" desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={step === 'worker' ? loadWorkers : loadData} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.RETRY}</ThemedText>
+              {TEXT.SHARED_RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -456,7 +456,7 @@ export default function AssignJobScreen() {
         <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Selected Job Type</ThemedText>
         <RowDetail title="Type:" description={selectedRepairType ? getRepairTypeName(selectedRepairType) : TEXT_NONE} />
         <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Selected Worker</ThemedText>
-        {selectedWorker ? <WorkerSummary worker={selectedWorker} /> : <RowDetail title={TEXT.WORKER_2} description={TEXT_NONE} />}
+        {selectedWorker ? <WorkerSummary worker={selectedWorker} /> : <RowDetail title={TEXT.REPAIR_COMPUTER_WORKER_LABEL} description={TEXT_NONE} />}
 
         <Pressable accessibilityRole="button" onPress={() => setIsConfirmOpen(true)} style={styles.primaryButton}>
           <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
@@ -470,15 +470,15 @@ export default function AssignJobScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={TEXT.REPAIR_COMPUTER}
+        title={TEXT.REPAIR_COMPUTER_TITLE}
         onBackPress={handleBackPress}
         showBackButton
       />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
           <ThemedText type="subtitle">
-            {step === 'repairType' ? 'Select Job Type' : step === 'worker' ? 'Select Worker' : TEXT.ASSIGN_CONFIRM}
+            {step === 'repairType' ? 'Select Job Type' : step === 'worker' ? 'Select Worker' : TEXT.REPAIR_COMPUTER_ASSIGN_CONFIRM}
           </ThemedText>
           {renderContent()}
         </ThemedView>
@@ -525,12 +525,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
   panel: {
     flex: 1,
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
   },
   listContent: {
     gap: 12,

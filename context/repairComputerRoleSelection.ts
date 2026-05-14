@@ -8,8 +8,8 @@ import { TEXT } from '@/constants/text';
 
 export const repairComputerRoleOptions = [
   { label: 'User', value: PRIVILEGE_RC_USER },
-  { label: TEXT.WORKER, value: PRIVILEGE_RC_WORKER },
-  { label: TEXT.FOREMAN, value: PRIVILEGE_RC_FOREMAN },
+  { label: TEXT.REPAIR_COMPUTER_WORKER, value: PRIVILEGE_RC_WORKER },
+  { label: TEXT.REPAIR_COMPUTER_FOREMAN, value: PRIVILEGE_RC_FOREMAN },
 ] as const;
 
 const selectedRoleCache = new Map<string, RepairComputerRole>();

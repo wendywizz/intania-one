@@ -12,6 +12,7 @@ import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import type { Meeting } from '@/models/types';
 import { listMeeting } from '@/services/meetingService';
+import { formatDateAndTime } from '@/utils/date-format';
 
 const titleFields = ['title', 'topic', 'subject', 'meetingName', 'meetingTitle', 'name'];
 const dateFields = ['meetingDate', 'date', 'startDate', 'meeting_date', 'start_date'];
@@ -63,7 +64,7 @@ function MeetingListItem({ meeting }: MeetingListItemProps) {
   const time = getText(meeting, timeFields);
   const place = getText(meeting, placeFields);
   const detail = getText(meeting, ['detail', 'description', 'agenda', 'remark']);
-  const schedule = [date, time].filter(Boolean).join(' ');
+  const schedule = formatDateAndTime(date, time);
 
   return (
     <ThemedView style={styles.itemCard} lightColor="#FFFFFF" darkColor="#151718">
@@ -99,7 +100,7 @@ export default function IncomingMeetingScreen() {
 
     if (result.processType === 'error') {
       setMeetings([]);
-      setError(result.message || TEXT.UNABLE_TO_LOAD_MEETINGS);
+      setError(result.message || TEXT.MEETING_UNABLE_TO_LOAD_MEETINGS);
     } else {
       setMeetings(Array.isArray(result.data) ? sortMeetingsByDateDesc(result.data) : []);
     }
@@ -116,17 +117,17 @@ export default function IncomingMeetingScreen() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title={TEXT.LOADING_MEETINGS} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
+      return <LoadingAnimate title={TEXT.MEETING_LOADING_MEETINGS} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={() => loadMeetings()} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.RETRY}</ThemedText>
+              {TEXT.SHARED_RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -143,7 +144,7 @@ export default function IncomingMeetingScreen() {
         renderItem={({ item }) => <MeetingListItem meeting={item} />}
         ListEmptyComponent={
           <ThemedView style={styles.emptyCard} lightColor="#FFFFFF" darkColor="#151718">
-            <ThemedText style={styles.emptyMessage}>{TEXT.NO_INCOMING_MEETINGS}</ThemedText>
+            <ThemedText style={styles.emptyMessage}>{TEXT.MEETING_NO_INCOMING_MEETINGS}</ThemedText>
           </ThemedView>
         }
       />
@@ -152,11 +153,11 @@ export default function IncomingMeetingScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.MEETING} backHref="/" />
+      <NavTopBar title={TEXT.MEETING_HEADER_TITLE} backHref="/" />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">{TEXT.INCOMING_MEETING}</ThemedText>
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
+          <ThemedText type="subtitle">{TEXT.MEETING_INCOMING}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>
@@ -170,12 +171,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
   panel: {
     flex: 1,
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
   },
   listContent: {
     gap: 12,

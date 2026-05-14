@@ -1,8 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { TEXT } from '@/constants/text';
 
+import { AppToast } from '@/components/app-toast';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -10,13 +11,21 @@ import { ThemedView } from '@/components/themed-view';
 import { PROCESS } from '@/constants/domain';
 import {
   REPAIR_STATUS_NEW_JOB,
+  REPAIR_STATUS_WAIT_FOREMAN,
   REPAIR_STATUS_WORKER_REJECT,
 } from '@/constants/type-repair-computer';
 import type { RepairComputer } from '@/models/types';
-import { getJobDetail } from '@/services/repairComputerService';
+import {
+  foremanCloseJob,
+  foremanForwardForeman,
+  foremanForwardWorker,
+  getJobDetail,
+} from '@/services/repairComputerService';
+import { formatDateTime } from '@/utils/date-format';
 
 const TEXT_NONE = '-';
 const TEXT_RC_NO_SUPPLYCODE = 'No supply code';
+type ForemanCurrentJobAction = 'forwardWorker' | 'forwardForeman' | 'closeJob';
 
 function getJobText(job: RepairComputer | null, fields: string[]) {
   if (!job) {
@@ -36,19 +45,6 @@ function getJobText(job: RepairComputer | null, fields: string[]) {
   }
 
   return '';
-}
-
-function formatDate(value: string) {
-  const timestamp = Date.parse(value);
-
-  if (Number.isNaN(timestamp)) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(timestamp));
 }
 
 type RowDetailProps = {
@@ -74,22 +70,28 @@ export default function ForemanJobDetailScreen() {
   const backHref = backHrefParam || '/repair-computer/foreman-new-job';
   const [data, setData] = useState<RepairComputer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ForemanCurrentJobAction | null>(null);
   const [error, setError] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | ''>('');
 
   const loadDetail = useCallback(async () => {
     if (!jobId) {
-      setError(TEXT.UNABLE_TO_LOAD_JOB_DETAIL);
+      setError(TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_JOB_DETAIL);
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
     setError('');
+    setToastMessage('');
+    setToastType('');
 
     const result = await getJobDetail(jobId);
 
     if (result.processType === PROCESS.error || !result.data) {
-      setError(result.message || TEXT.UNABLE_TO_LOAD_JOB_DETAIL);
+      setError(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_JOB_DETAIL);
       setData(null);
       setIsLoading(false);
       return;
@@ -105,6 +107,7 @@ export default function ForemanJobDetailScreen() {
 
   const status = getJobText(data, ['status', 'state', 'statusId', 'status_id']);
   const showActionButtons = status === REPAIR_STATUS_NEW_JOB && Boolean(jobId);
+  const showWaitForemanActionButtons = status === REPAIR_STATUS_WAIT_FOREMAN && Boolean(jobId);
   const showAssignedWorker = true;
   const informDateTime = getJobText(data, ['informDateTime', 'inform_date_time', 'informDate', 'inform_date']);
   const rejectDetail = getJobText(data, ['rejectDetail', 'reject_detail', 'rejectReason', 'reject_reason', 'reason']);
@@ -113,19 +116,70 @@ export default function ForemanJobDetailScreen() {
     router.replace(backHref as Parameters<typeof router.replace>[0]);
   };
 
+  const getConfirmContent = (action: ForemanCurrentJobAction) => {
+    if (action === 'forwardWorker') {
+      return {
+        title: 'Confirm Forward Worker',
+        message: 'Do you want to forward this job back to worker?',
+        submit: () => foremanForwardWorker(jobId || ''),
+      };
+    }
+
+    if (action === 'forwardForeman') {
+      return {
+        title: 'Confirm Forward Foreman',
+        message: 'Do you want to forward this job to foreman?',
+        submit: () => foremanForwardForeman(jobId || ''),
+      };
+    }
+
+    return {
+      title: 'Confirm Close Job',
+      message: 'Do you want to close this repair computer job?',
+      submit: () => foremanCloseJob(jobId || ''),
+    };
+  };
+
+  const handleConfirmAction = async () => {
+    if (!jobId || !confirmAction || isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setToastMessage('');
+    setToastType('');
+
+    const result = await getConfirmContent(confirmAction).submit();
+
+    setIsSubmitting(false);
+    setConfirmAction(null);
+
+    if (result.processType === PROCESS.success && result.success !== false) {
+      setToastType('success');
+      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE);
+      setTimeout(() => {
+        router.replace(backHref as Parameters<typeof router.replace>[0]);
+      }, 900);
+      return;
+    }
+
+    setToastType('error');
+    setToastMessage(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_UPDATE_JOB);
+  };
+
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title={TEXT.LOADING_JOB_DETAIL} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
+      return <LoadingAnimate title={TEXT.REPAIR_COMPUTER_LOADING_JOB_DETAIL} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={loadDetail} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.RETRY}</ThemedText>
+              {TEXT.SHARED_RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -133,29 +187,29 @@ export default function ForemanJobDetailScreen() {
 
     return (
       <ScrollView contentContainerStyle={styles.form}>
-        <RowDetail title={TEXT.USER} description={getJobText(data, ['staffFullname', 'staff_fullname']) || TEXT_NONE} />
-        <RowDetail title={TEXT.DEPARTMENT} description={getJobText(data, ['deptName', 'dept_name']) || TEXT_NONE} />
-        <RowDetail title={TEXT.INFORM_DATE} description={informDateTime ? formatDate(informDateTime) : TEXT_NONE} />
+        <RowDetail title={TEXT.REPAIR_COMPUTER_USER_LABEL} description={getJobText(data, ['staffFullname', 'staff_fullname']) || TEXT_NONE} />
+        <RowDetail title={TEXT.SHARED_DEPARTMENT_LABEL} description={getJobText(data, ['deptName', 'dept_name']) || TEXT_NONE} />
+        <RowDetail title={TEXT.REPAIR_COMPUTER_INFORM_DATE_LABEL} description={informDateTime ? formatDateTime(informDateTime) : TEXT_NONE} />
         <RowDetail
-          title={TEXT.SUPPLY_CODE_2}
+          title={TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL}
           description={getJobText(data, ['supplyCode', 'supply_code']) || TEXT_RC_NO_SUPPLYCODE}
         />
-        <RowDetail title={TEXT.PHONE_2} description={getJobText(data, ['phone']) || TEXT_NONE} />
-        <RowDetail title={TEXT.DETAIL_2} description={getJobText(data, ['detail']) || TEXT_NONE} />
+        <RowDetail title={TEXT.REPAIR_COMPUTER_PHONE_LABEL} description={getJobText(data, ['phone']) || TEXT_NONE} />
+        <RowDetail title={TEXT.REPAIR_COMPUTER_DETAIL_LABEL} description={getJobText(data, ['detail']) || TEXT_NONE} />
 
         {status !== REPAIR_STATUS_NEW_JOB && showAssignedWorker ? (
           <View style={styles.assignedSection}>
-            <ThemedText type="subtitle">{TEXT.ASSIGN_CONFIRM}</ThemedText>
+            <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_ASSIGN_CONFIRM}</ThemedText>
             <RowDetail
-              title={TEXT.WORKER_2}
+              title={TEXT.REPAIR_COMPUTER_WORKER_LABEL}
               description={getJobText(data, ['workerFullname', 'worker_fullname']) || TEXT_NONE}
             />
             <RowDetail
-              title={TEXT.STATUS}
+              title={TEXT.REPAIR_COMPUTER_STATUS_LABEL}
               description={getJobText(data, ['statusName', 'status_name']) || TEXT_NONE}
             />
             {status === REPAIR_STATUS_WORKER_REJECT ? (
-              <RowDetail title={TEXT.REJECT_DETAIL} description={rejectDetail || TEXT_NONE} />
+              <RowDetail title={TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL} description={rejectDetail || TEXT_NONE} />
             ) : null}
           </View>
         ) : null}
@@ -193,24 +247,96 @@ export default function ForemanJobDetailScreen() {
             </Pressable>
           </View>
         ) : null}
+
+        {showWaitForemanActionButtons ? (
+          <View style={styles.actionStack}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={() => setConfirmAction('forwardWorker')}
+              style={[styles.forwardButton, isSubmitting ? styles.disabledButton : undefined]}>
+              <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                Forward Worker
+              </ThemedText>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={() => setConfirmAction('forwardForeman')}
+              style={[styles.forwardButton, isSubmitting ? styles.disabledButton : undefined]}>
+              <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                Forward Foreman
+              </ThemedText>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={() => setConfirmAction('closeJob')}
+              style={[styles.closeJobButton, isSubmitting ? styles.disabledButton : undefined]}>
+              <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                Close Job
+              </ThemedText>
+            </Pressable>
+          </View>
+        ) : null}
       </ScrollView>
     );
   };
 
+  const confirmContent = confirmAction ? getConfirmContent(confirmAction) : null;
+
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={TEXT.REPAIR_COMPUTER}
+        title={TEXT.REPAIR_COMPUTER_TITLE}
         onBackPress={handleBackPress}
         showBackButton
       />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">{TEXT.JOB_DETAIL}</ThemedText>
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
+          <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_JOB_DETAIL}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>
+
+      <AppToast message={toastMessage} type={toastType === 'error' ? 'error' : 'success'} />
+
+      <Modal
+        transparent
+        visible={Boolean(confirmContent)}
+        animationType="fade"
+        onRequestClose={() => setConfirmAction(null)}>
+        <Pressable style={styles.backdrop} onPress={() => setConfirmAction(null)}>
+          <Pressable>
+            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
+              <ThemedText type="subtitle">{confirmContent?.title}</ThemedText>
+              <ThemedText style={styles.confirmMessage}>{confirmContent?.message}</ThemedText>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isSubmitting}
+                  onPress={() => setConfirmAction(null)}
+                  style={styles.cancelButton}>
+                  <ThemedText type="defaultSemiBold">No</ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isSubmitting}
+                  onPress={handleConfirmAction}
+                  style={[styles.confirmButton, isSubmitting ? styles.disabledButton : undefined]}>
+                  {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                    Yes
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </ThemedView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ThemedView>
   );
 }
@@ -221,12 +347,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
   panel: {
     flex: 1,
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
   },
   form: {
     gap: 12,
@@ -279,8 +405,26 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 20,
   },
+  actionStack: {
+    gap: 12,
+    marginTop: 20,
+  },
   acceptButton: {
     flex: 1,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#0A6E8A',
+  },
+  closeJobButton: {
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#11181C',
+  },
+  forwardButton: {
     minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
@@ -294,5 +438,51 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     backgroundColor: '#C44D58',
+  },
+  disabledButton: {
+    opacity: 0.65,
+  },
+  backdrop: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    padding: 24,
+  },
+  confirmModal: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 8,
+    padding: 18,
+  },
+  confirmMessage: {
+    color: '#687076',
+    lineHeight: 20,
+    marginTop: 10,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 18,
+  },
+  cancelButton: {
+    minHeight: 46,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#BFD2DA',
+    backgroundColor: '#FFFFFF',
+  },
+  confirmButton: {
+    minHeight: 46,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#0A6E8A',
   },
 });

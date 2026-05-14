@@ -39,6 +39,12 @@
           }
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Intania Staff Buddy to access your photos so you can attach a medical certificate image."
+        }
+      ],
       "@react-native-community/datetimepicker"
     ],
     "experiments": {

@@ -12,14 +12,15 @@ import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/context/AuthContext';
 import type { AuthUser, News } from '@/models/types';
 import { staffNewsFeed } from '@/services/newsService';
+import { formatDateTime } from '@/utils/date-format';
 
 const screens = [
-  { title: TEXT.TITLE_6, href: '/absent' },
-  { title: TEXT.TEXT_22, href: '/forgot-timestamp' },
-  { title: TEXT.TITLE_10, href: '/meeting' },
-  { title: TEXT.TITLE_11, href: '/repair-computer/current-job' },
-  { title: TEXT.TEXT_19, href: '/calendar' },
-  { title: TEXT.TITLE_12, href: '/person-search' },
+  { title: TEXT.ABSENT_TITLE, href: '/absent' },
+  { title: TEXT.FORGOT_TIMESTAMP_TITLE, href: '/forgot-timestamp' },
+  { title: TEXT.MEETING_MENU_TITLE, href: '/meeting' },
+  { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: '/repair-computer/current-job' },
+  { title: TEXT.CALENDAR_TITLE, href: '/calendar' },
+  { title: TEXT.PERSON_SEARCH_TITLE, href: '/person-search' },
 ] as const;
 
 function getAuthDisplayName(user: AuthUser | null) {
@@ -84,7 +85,7 @@ export default function HomeScreen() {
     return (
       <Pressable accessibilityRole="button" onPress={handleLogin} style={styles.loginButton}>
         <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.loginButtonText}>
-          {TEXT.LOGIN}</ThemedText>
+          {TEXT.AUTH_LOGIN}</ThemedText>
       </Pressable>
     );
   };
@@ -92,7 +93,7 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={TEXT.TITLE_13}
+        title={TEXT.HOME_TITLE}
         showBackButton={false}
         showHomeButton={false}
         rightContent={renderAuthAction()}
@@ -106,36 +107,38 @@ export default function HomeScreen() {
           />
         }>
         <ThemedView style={styles.section}>
-          <ThemedText type="subtitle">{TEXT.TEXT_24}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.HOME_NEWS_SECTION_TITLE}</ThemedText>
           <ThemedView style={styles.newsList}>
             {isNewsLoading ? (
-              <ThemedView style={styles.newsCard} lightColor="#F3F8FB" darkColor="#1F2B30">
-                <LoadingAnimate fill={false} title={TEXT.TITLE_14} desc={TEXT.DESC} />
+              <ThemedView style={styles.newsCard} lightColor="#FFFFFF" darkColor="#1F2B30">
+                <LoadingAnimate fill={false} title={TEXT.HOME_LOADING_NEWS_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
               </ThemedView>
             ) : newsItems.length > 0 ? (
               newsItems.map((item) => (
                 <Pressable key={item.guid || item.link || item.title} onPress={() => openNews(item.link)}>
-                  <ThemedView style={styles.newsCard} lightColor="#F3F8FB" darkColor="#1F2B30">
+                  <ThemedView style={styles.newsCard} lightColor="#FFFFFF" darkColor="#1F2B30">
                     <ThemedText type="defaultSemiBold" numberOfLines={2}>
                       {item.title}
                     </ThemedText>
                     <ThemedText style={styles.newsMeta}>
-                      {[item.category, item.pubDate].filter(Boolean).join(' · ')}
+                      {[item.category, item.pubDate ? formatDateTime(item.pubDate) : '']
+                        .filter(Boolean)
+                        .join(' · ')}
                     </ThemedText>
                   </ThemedView>
                 </Pressable>
               ))
             ) : (
-              <ThemedView style={styles.newsCard} lightColor="#F3F8FB" darkColor="#1F2B30">
-                <ThemedText>{TEXT.TEXT_25}</ThemedText>
+              <ThemedView style={styles.newsCard} lightColor="#FFFFFF" darkColor="#1F2B30">
+                <ThemedText>{TEXT.HOME_NO_NEWS_MESSAGE}</ThemedText>
               </ThemedView>
             )}
           </ThemedView>
         </ThemedView>
 
         <ThemedView style={styles.section}>
-          <ThemedText type="subtitle">{TEXT.TEXT_26}</ThemedText>
-          <ThemedText style={styles.description}>{TEXT.TEXT_27}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.HOME_MENU_SECTION_TITLE}</ThemedText>
+          <ThemedText style={styles.description}>{TEXT.HOME_MENU_SECTION_DESCRIPTION}</ThemedText>
         </ThemedView>
         <ThemedView style={styles.grid}>
           {screens.map((screen) => (

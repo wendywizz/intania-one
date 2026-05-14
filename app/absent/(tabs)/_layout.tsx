@@ -20,21 +20,21 @@ export default function AbsentTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: TEXT.TITLE_6,
+          title: TEXT.ABSENT_TITLE,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle.badge.minus" color={color} />,
         }}
       />
       <Tabs.Screen
         name="waiting"
         options={{
-          title: TEXT.TITLE_7,
+          title: TEXT.ABSENT_WAITING_TITLE,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="history"
         options={{
-          title: TEXT.TITLE_8,
+          title: TEXT.ABSENT_HISTORY_TAB_TITLE,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
         }}
       />

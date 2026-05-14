@@ -13,10 +13,10 @@ type MeetingTabContentProps = {
 export function MeetingTabContent({ title, emptyMessage }: MeetingTabContentProps) {
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.TITLE_10} backHref="/" />
+      <NavTopBar title={TEXT.MEETING_MENU_TITLE} backHref="/" />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
           <ThemedText type="subtitle">{title}</ThemedText>
           <ThemedView style={styles.emptyCard} lightColor="#FFFFFF" darkColor="#151718">
             <ThemedText style={styles.emptyMessage}>{emptyMessage}</ThemedText>
@@ -33,11 +33,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
   panel: {
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
   },
   emptyCard: {
     minHeight: 120,

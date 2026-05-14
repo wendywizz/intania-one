@@ -4,8 +4,8 @@ import { TEXT } from '@/constants/text';
 export default function ForemanApprovementScreen() {
   return (
     <RepairComputerTabContent
-      title={TEXT.APPROVEMENT}
-      description={TEXT.APPROVE_REPAIR_COMPUTER_JOB_OUTCOMES}
+      title={TEXT.REPAIR_COMPUTER_APPROVEMENT}
+      description={TEXT.REPAIR_COMPUTER_APPROVEMENT_DESCRIPTION}
     />
   );
 }

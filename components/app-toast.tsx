@@ -14,7 +14,7 @@ export function AppToast({ message, type = 'success' }: AppToastProps) {
   const [visibleMessage, setVisibleMessage] = useState(message);
   const isSuccess = type === 'success';
   const accentColor = isSuccess ? '#0A6E8A' : '#C44D58';
-  const title = isSuccess ? TEXT.SUCCESS : TEXT.UNABLE_TO_COMPLETE;
+  const title = isSuccess ? TEXT.SHARED_SUCCESS : TEXT.SHARED_UNABLE_TO_COMPLETE;
 
   useEffect(() => {
     setVisibleMessage(message);

@@ -1,21 +1,21 @@
 import { PROCESS } from "../constants/domain";
 import { ENDPOINTS } from "../constants/endpoints";
 import {
-    PRIVILEGE_RC_USER,
-    RP_APP_ID,
+  PRIVILEGE_RC_USER,
+  RP_APP_ID,
 } from "../constants/type-repair-computer";
 import type {
-    Person,
-    RepairComputer,
-    RepairComputerPrivilege,
-    Result,
+  Person,
+  RepairComputer,
+  RepairComputerPrivilege,
+  Result,
 } from "../models/types";
 import {
-    buildHttpsUrl,
-    fetchWithApiDelay,
-    listRequest,
-    mutationRequest,
-    rowRequest,
+  buildHttpsUrl,
+  fetchWithApiDelay,
+  listRequest,
+  mutationRequest,
+  rowRequest,
 } from "./api";
 
 const base = "/repairComputer/api/";
@@ -196,6 +196,18 @@ export function foremanUnassignJob(id: string) {
 
 export function acceptRejectedFromWorker(id: string) {
   return updateManageData(id, {}, "accept_rejected");
+}
+
+export function foremanForwardWorker(id: string) {
+  return updateManageData(id, {}, "forward_worker");
+}
+
+export function foremanForwardForeman(id: string) {
+  return updateManageData(id, {}, "forward_foreman");
+}
+
+export function foremanCloseJob(id: string) {
+  return updateManageData(id, {}, "close_job");
 }
 
 export function assignJob(

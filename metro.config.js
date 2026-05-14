@@ -121,6 +121,34 @@ config.server = {
         return;
       }
 
+      if (req.url?.startsWith('/api/absent/history')) {
+        try {
+          const localUrl = new URL(req.url, 'http://localhost');
+          const staffId = localUrl.searchParams.get('staff_id') ?? '';
+          const start = localUrl.searchParams.get('start') ?? '0';
+          const length = localUrl.searchParams.get('length') ?? '10';
+          const phoenixUrl = new URL(`https://${PHOENIX_URL}/personnel/apis/absent/history`);
+
+          phoenixUrl.searchParams.set('staff_id', staffId);
+          phoenixUrl.searchParams.set('start', start);
+          phoenixUrl.searchParams.set('length', length);
+
+          const response = await fetchTextWithLegacyTls(phoenixUrl.toString(), {
+            'Content-Type': 'application/json',
+          });
+
+          res.statusCode = response.statusCode;
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Content-Type', 'application/json');
+          res.end(response.body || JSON.stringify({ data: [] }));
+        } catch (error) {
+          writeJson(res, 500, {
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
+        return;
+      }
+
       if (req.url?.startsWith('/api/meeting/list')) {
         try {
           const localUrl = new URL(req.url, 'http://localhost');

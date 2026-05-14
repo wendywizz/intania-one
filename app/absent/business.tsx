@@ -51,10 +51,10 @@ function uniqueValues(values: string[]) {
 }
 
 const halfDayOptions = [
-  TEXT.OPTION,
-  TEXT.OPTION_2,
-  TEXT.OPTION_3,
-  TEXT.OPTION_4,
+  TEXT.ABSENT_HALF_DAY_FIRST_MORNING,
+  TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON,
+  TEXT.ABSENT_HALF_DAY_LAST_MORNING,
+  TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING,
 ];
 
 type SelectFieldProps = {
@@ -134,14 +134,14 @@ function SelectField({
                   {label}
                 </ThemedText>
                 <Pressable accessibilityRole="button" onPress={handleToggle} style={styles.closeButton}>
-                  <ThemedText type="defaultSemiBold">{TEXT.TEXT_2}</ThemedText>
+                  <ThemedText type="defaultSemiBold">{TEXT.SHARED_CLOSE_THAI}</ThemedText>
                 </Pressable>
               </View>
 
               {searchable ? (
                 <TextInput
                   onChangeText={setSearchText}
-                  placeholder={TEXT.PLACEHOLDER}
+                  placeholder={TEXT.SHARED_SEARCH_NAME_PLACEHOLDER}
                   placeholderTextColor="#8A969C"
                   style={styles.searchInput}
                   value={searchText}
@@ -165,7 +165,7 @@ function SelectField({
                     </Pressable>
                   ))
                 ) : (
-                  <ThemedText style={styles.emptyOption}>{TEXT.TEXT_3}</ThemedText>
+                  <ThemedText style={styles.emptyOption}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
                 )}
               </ScrollView>
             </ThemedView>
@@ -233,7 +233,7 @@ export default function BusinessScreen() {
     const result = await initAbsentData(userId, TYPE_ABSENT_BUSINESS);
 
     if (!result.data || result.processType === 'error') {
-      setInitialError(result.message || TEXT.MESSAGE);
+      setInitialError(result.message || TEXT.ABSENT_INIT_LOAD_ERROR_MESSAGE);
       setIsInitialLoading(false);
       return;
     }
@@ -339,8 +339,8 @@ export default function BusinessScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.TITLE_3} backHref="/absent" />
-        <LoadingAnimate title={TEXT.TITLE_9} desc={TEXT.DESC} />
+        <NavTopBar title={TEXT.ABSENT_BUSINESS_TITLE} backHref="/absent" />
+        <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
       </ThemedView>
     );
   }
@@ -348,17 +348,17 @@ export default function BusinessScreen() {
   if (initialError) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.TITLE_3} backHref="/absent" />
+        <NavTopBar title={TEXT.ABSENT_BUSINESS_TITLE} backHref="/absent" />
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">{TEXT.TEXT_4}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SHARED_ERROR_TITLE_THAI}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{initialError}</ThemedText>
           <View style={styles.errorActions}>
             <Pressable accessibilityRole="button" onPress={loadInitialAbsentData} style={styles.secondaryButton}>
-              <ThemedText type="defaultSemiBold">{TEXT.TEXT_5}</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.SHARED_RETRY_THAI}</ThemedText>
             </Pressable>
             <Pressable accessibilityRole="button" onPress={() => router.replace('/absent')} style={styles.submitButton}>
               <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                {TEXT.TEXT_6}</ThemedText>
+                {TEXT.SHARED_BACK_THAI}</ThemedText>
             </Pressable>
           </View>
         </View>
@@ -368,19 +368,19 @@ export default function BusinessScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.TITLE_3} backHref="/absent" />
+      <NavTopBar title={TEXT.ABSENT_BUSINESS_TITLE} backHref="/absent" />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">{TEXT.TEXT_7}</ThemedText>
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
+          <ThemedText type="subtitle">{TEXT.ABSENT_BUSINESS_FORM_TITLE}</ThemedText>
           {initialAbsentData ? (
-            <ThemedText style={styles.initialStatus}>{TEXT.TEXT_8}</ThemedText>
+            <ThemedText style={styles.initialStatus}>{TEXT.ABSENT_INITIAL_DATA_LOADED}</ThemedText>
           ) : null}
 
           <View style={styles.form}>
             <SelectField
-              label={TEXT.LABEL}
-              placeholder={TEXT.PLACEHOLDER_2}
+              label={TEXT.ABSENT_APPROVER_LABEL}
+              placeholder={TEXT.ABSENT_APPROVER_PLACEHOLDER}
               value={approver}
               options={approverOptions}
               isOpen={openSelect === 'approver'}
@@ -395,7 +395,7 @@ export default function BusinessScreen() {
             />
 
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.TEXT_9}</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.ABSENT_REASON_LABEL}</ThemedText>
               <TextInput
                 multiline
                 numberOfLines={2}
@@ -405,7 +405,7 @@ export default function BusinessScreen() {
                     clearValidationError('reason');
                   }
                 }}
-                placeholder={TEXT.PLACEHOLDER_3}
+                placeholder={TEXT.ABSENT_REASON_PLACEHOLDER}
                 placeholderTextColor="#8A969C"
                 style={[
                   styles.input,
@@ -421,10 +421,10 @@ export default function BusinessScreen() {
             </View>
 
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.TEXT_10}</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.ABSENT_LEAVE_DATE_LABEL}</ThemedText>
               <View style={styles.dateRow}>
                 <DatePickerField
-                  label={TEXT.LABEL_2}
+                  label={TEXT.ABSENT_START_DATE_LABEL}
                   value={startDate}
                   minimumDate={minimumStartDate}
                   onChange={(date) => {
@@ -438,7 +438,7 @@ export default function BusinessScreen() {
                   hasError={Boolean(displayedDateError)}
                 />
                 <DatePickerField
-                  label={TEXT.LABEL_3}
+                  label={TEXT.ABSENT_END_DATE_LABEL}
                   value={endDate}
                   minimumDate={minimumEndDate}
                   hasError={Boolean(displayedDateError)}
@@ -455,13 +455,13 @@ export default function BusinessScreen() {
               </ThemedText>
               {leaveDayCount ? (
                 <ThemedText type="defaultSemiBold" style={styles.leaveDaySummary}>
-                  {TEXT.TEXT_11}{leaveDayCount.toLocaleString('th-TH')} {TEXT.TEXT_12}</ThemedText>
+                  {TEXT.ABSENT_LEAVE_DAY_COUNT_LABEL}{leaveDayCount.toLocaleString('th-TH')} {TEXT.ABSENT_DAY_UNIT}</ThemedText>
               ) : null}
             </View>
 
             <SelectField
-              label={TEXT.LABEL_4}
-              placeholder={TEXT.PLACEHOLDER_4}
+              label={TEXT.ABSENT_HALF_DAY_LABEL}
+              placeholder={TEXT.ABSENT_HALF_DAY_PLACEHOLDER}
               value={halfDay}
               options={halfDayOptions}
               isOpen={openSelect === 'halfDay'}
@@ -473,7 +473,7 @@ export default function BusinessScreen() {
             />
 
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.TEXT_13}</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.ABSENT_CONTACT_CHANNEL_LABEL}</ThemedText>
               <TextInput
                 onChangeText={(value) => {
                   setContact(value);
@@ -481,7 +481,7 @@ export default function BusinessScreen() {
                     clearValidationError('contact');
                   }
                 }}
-                placeholder={TEXT.PLACEHOLDER_5}
+                placeholder={TEXT.ABSENT_CONTACT_CHANNEL_PLACEHOLDER}
                 placeholderTextColor="#8A969C"
                 style={[styles.input, validationErrors.contact ? styles.inputError : undefined]}
                 value={contact}
@@ -495,8 +495,8 @@ export default function BusinessScreen() {
               <View style={styles.agentRow}>
                 <View style={styles.agentSelect}>
                   <SelectField
-                    label={TEXT.LABEL_5}
-                    placeholder={TEXT.PLACEHOLDER_6}
+                    label={TEXT.ABSENT_DELEGATE_LABEL}
+                    placeholder={TEXT.ABSENT_DELEGATE_PLACEHOLDER}
                     value={agent}
                     options={availableAgentOptions}
                     isOpen={openSelect === 'agent'}
@@ -519,7 +519,7 @@ export default function BusinessScreen() {
                     !agent || isAgentAlreadySelected ? styles.disabledButton : undefined,
                   ]}>
                   <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold">
-                    {TEXT.TEXT_14}</ThemedText>
+                    {TEXT.SHARED_ADD_THAI}</ThemedText>
                 </Pressable>
               </View>
               {selectedAgents.length ? (
@@ -532,7 +532,7 @@ export default function BusinessScreen() {
                         onPress={() => handleRemoveAgent(selectedAgent)}
                         style={styles.deleteAgentButton}>
                         <ThemedText lightColor="#B42318" darkColor="#B42318" type="defaultSemiBold">
-                          {TEXT.TEXT_15}</ThemedText>
+                          {TEXT.SHARED_DELETE_THAI}</ThemedText>
                       </Pressable>
                     </View>
                   ))}
@@ -545,7 +545,7 @@ export default function BusinessScreen() {
 
             <Pressable accessibilityRole="button" onPress={handleSubmit} style={styles.submitButton}>
               <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                {TEXT.TEXT_16}</ThemedText>
+                {TEXT.ABSENT_SUBMIT_REQUEST}</ThemedText>
             </Pressable>
           </View>
         </ThemedView>
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 24,
+    padding: 16,
   },
   stateContent: {
     flex: 1,
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   },
   panel: {
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
   },
   initialStatus: {
     marginTop: 8,

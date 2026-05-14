@@ -40,11 +40,11 @@ function getPageSize(screenHeight: number) {
 
 function getRoleTitlePrefix(role: RepairComputerRole) {
   if (role === PRIVILEGE_RC_FOREMAN) {
-    return TEXT.FOREMAN;
+    return TEXT.REPAIR_COMPUTER_FOREMAN;
   }
 
   if (role === PRIVILEGE_RC_WORKER) {
-    return TEXT.WORKER;
+    return TEXT.REPAIR_COMPUTER_WORKER;
   }
 
   return 'User';
@@ -71,7 +71,7 @@ export function RepairComputerJobListScreen({
   const { height } = useWindowDimensions();
   const pathname = usePathname();
   const { currentRole, roleSwitcher } = useRepairComputerRole();
-  const screenTitle = title === TEXT.NEW_JOB ? `${getRoleTitlePrefix(currentRole)} ${title}` : title;
+  const screenTitle = title === TEXT.REPAIR_COMPUTER_NEW_JOB ? `${getRoleTitlePrefix(currentRole)} ${title}` : title;
   const pageSize = getPageSize(height);
   const [jobs, setJobs] = useState<RepairComputer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -169,17 +169,17 @@ export function RepairComputerJobListScreen({
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title={loadingTitle} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
+      return <LoadingAnimate title={loadingTitle} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={() => loadFirstPage(false, true)} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.RETRY}</ThemedText>
+              {TEXT.SHARED_RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -214,10 +214,10 @@ export function RepairComputerJobListScreen({
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.REPAIR_COMPUTER} backHref="/" rightContent={roleSwitcher} />
+      <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} backHref="/" rightContent={roleSwitcher} />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
           <ThemedText type="subtitle">{screenTitle}</ThemedText>
           {renderContent()}
         </ThemedView>
@@ -232,12 +232,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
   panel: {
     flex: 1,
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
   },
   listContent: {
     gap: 12,

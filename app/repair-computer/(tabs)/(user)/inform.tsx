@@ -137,7 +137,7 @@ export default function RepairComputerInformScreen() {
 
     if (result.processType === PROCESS.success && result.success !== false) {
       setToastType('success');
-      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_REQUEST_SUBMITTED_SUCCESSFULLY);
+      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_REQUEST_SUBMITTED_SUCCESS_MESSAGE);
       setDetail('');
       setSupplyCode('');
       setPhone('');
@@ -148,21 +148,21 @@ export default function RepairComputerInformScreen() {
     }
 
     setToastType('error');
-    setToastMessage(result.message || TEXT.UNABLE_TO_SUBMIT_REPAIR_COMPUTER_REQUEST);
+    setToastMessage(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_SUBMIT_REQUEST);
   };
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.REPAIR_COMPUTER} backHref="/repair-computer/current-job" />
+      <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} backHref="/repair-computer/current-job" />
 
       {isCheckingCanInform ? (
-        <LoadingAnimate title={TEXT.CHECKING_REQUEST} desc={TEXT.PLEASE_WAIT_A_MOMENT} />
+        <LoadingAnimate title={TEXT.REPAIR_COMPUTER_CHECKING_REQUEST} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
       ) : canInform ? (
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <ThemedText type="subtitle">{TEXT.INFORM}</ThemedText>
+        <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_INFORM}</ThemedText>
 
         <View style={styles.field}>
-          <ThemedText type="defaultSemiBold">{TEXT.DETAIL}</ThemedText>
+          <ThemedText type="defaultSemiBold">{TEXT.REPAIR_COMPUTER_DETAIL}</ThemedText>
           <TextInput
             multiline
             numberOfLines={2}
@@ -170,7 +170,7 @@ export default function RepairComputerInformScreen() {
               setDetail(value);
               clearValidationError('detail');
             }}
-            placeholder={TEXT.DETAIL}
+            placeholder={TEXT.REPAIR_COMPUTER_DETAIL}
             placeholderTextColor="#8A969C"
             style={[styles.input, styles.textArea, validationErrors.detail ? styles.inputError : undefined]}
             textAlignVertical="top"
@@ -180,10 +180,10 @@ export default function RepairComputerInformScreen() {
         </View>
 
         <View style={styles.field}>
-          <ThemedText type="defaultSemiBold">{TEXT.SUPPLY_CODE}</ThemedText>
+          <ThemedText type="defaultSemiBold">{TEXT.REPAIR_COMPUTER_SUPPLY_CODE}</ThemedText>
           <TextInput
             onChangeText={setSupplyCode}
-            placeholder={TEXT.SUPPLY_CODE}
+            placeholder={TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
             placeholderTextColor="#8A969C"
             style={styles.input}
             value={supplyCode}
@@ -191,14 +191,14 @@ export default function RepairComputerInformScreen() {
         </View>
 
         <View style={styles.field}>
-          <ThemedText type="defaultSemiBold">{TEXT.PHONE}</ThemedText>
+          <ThemedText type="defaultSemiBold">{TEXT.REPAIR_COMPUTER_PHONE}</ThemedText>
           <TextInput
             keyboardType="phone-pad"
             onChangeText={(value) => {
               setPhone(value);
               clearValidationError('phone');
             }}
-            placeholder={TEXT.PHONE}
+            placeholder={TEXT.REPAIR_COMPUTER_PHONE}
             placeholderTextColor="#8A969C"
             style={[styles.input, validationErrors.phone ? styles.inputError : undefined]}
             value={phone}
@@ -219,8 +219,8 @@ export default function RepairComputerInformScreen() {
         </ScrollView>
       ) : (
         <View style={styles.content}>
-          <ThemedView style={styles.messagePanel} lightColor="#F3F8FB" darkColor="#1F2B30">
-            <ThemedText type="subtitle">{TEXT.CANNOT_INFORM_JOB}</ThemedText>
+          <ThemedView style={styles.messagePanel} lightColor="#FFFFFF" darkColor="#1F2B30">
+            <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_CANNOT_INFORM_JOB}</ThemedText>
             <ThemedText style={styles.messageText}>
               {canInformMessage || 'You still have a repair computer job remain.'}
             </ThemedText>
@@ -231,7 +231,7 @@ export default function RepairComputerInformScreen() {
             onPress={() => router.replace('/repair-computer/current-job')}
             style={styles.secondaryButton}>
             <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold">
-              {TEXT.BACK_TO_CURRENT_JOB}</ThemedText>
+              {TEXT.REPAIR_COMPUTER_BACK_TO_CURRENT_JOB}</ThemedText>
           </Pressable>
         </View>
       )}
@@ -247,14 +247,14 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: 18,
-    padding: 24,
+    padding: 16,
   },
   field: {
     gap: 8,
   },
   messagePanel: {
     borderRadius: 8,
-    padding: 20,
+    padding: 16,
   },
   messageText: {
     color: '#687076',

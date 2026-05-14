@@ -8,22 +8,22 @@ import { ThemedView } from '@/components/themed-view';
 
 const absentMenus = [
   {
-    title: TEXT.TITLE_2,
+    title: TEXT.ABSENT_SICK_TITLE,
     description: 'ยื่นคำขอลาป่วย',
     href: '/absent/sick',
   },
   {
-    title: TEXT.TITLE_3,
+    title: TEXT.ABSENT_BUSINESS_TITLE,
     description: 'ยื่นคำขอไปราชการ',
     href: '/absent/business',
   },
   {
-    title: TEXT.TITLE_4,
+    title: TEXT.ABSENT_RELAX_TITLE,
     description: 'ยื่นคำขอลาพักผ่อน',
     href: '/absent/relax',
   },
   {
-    title: TEXT.TITLE_5,
+    title: TEXT.ABSENT_BIRTH_TITLE,
     description: 'ยื่นคำขอลาคลอด',
     href: '/absent/birth',
   },
@@ -32,11 +32,11 @@ const absentMenus = [
 export default function AbsentScreen() {
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.TITLE_6} />
+      <NavTopBar title={TEXT.ABSENT_TITLE} />
 
       <View style={styles.content}>
-        <ThemedText type="subtitle">{TEXT.TITLE_6}</ThemedText>
-        <ThemedText style={styles.description}>{TEXT.TEXT}</ThemedText>
+        <ThemedText type="subtitle">{TEXT.ABSENT_TITLE}</ThemedText>
+        <ThemedText style={styles.description}>{TEXT.ABSENT_REQUEST_TYPE_PROMPT}</ThemedText>
 
         <View style={styles.grid}>
           {absentMenus.map((menu) => (
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
   description: {
     marginTop: 8,
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     padding: 16,
-    backgroundColor: '#F3F8FB',
+    backgroundColor: '#FFFFFF',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#D7E6EC',
   },

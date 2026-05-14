@@ -84,13 +84,13 @@ export function DatePickerField({
             <ThemedView style={styles.calendar} lightColor="#FFFFFF" darkColor="#151718">
               <View style={styles.calendarHeader}>
                 <Pressable accessibilityRole="button" onPress={() => changeMonth(-1)} style={styles.monthButton}>
-                  <ThemedText type="defaultSemiBold">{TEXT.LT}</ThemedText>
+                  <ThemedText type="defaultSemiBold">{TEXT.DATE_PICKER_PREVIOUS_MONTH_LABEL}</ThemedText>
                 </Pressable>
                 <ThemedText type="defaultSemiBold" style={styles.monthTitle}>
                   {getMonthTitle(visibleMonth)}
                 </ThemedText>
                 <Pressable accessibilityRole="button" onPress={() => changeMonth(1)} style={styles.monthButton}>
-                  <ThemedText type="defaultSemiBold">{TEXT.GT}</ThemedText>
+                  <ThemedText type="defaultSemiBold">{TEXT.DATE_PICKER_NEXT_MONTH_LABEL}</ThemedText>
                 </Pressable>
               </View>
 

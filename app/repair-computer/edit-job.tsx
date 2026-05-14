@@ -12,12 +12,15 @@ import { PROCESS } from '@/constants/domain';
 import { AppFonts } from '@/constants/fonts';
 import type { RepairComputer } from '@/models/types';
 import { getPersonPhoto } from '@/services/personnelService';
-import { getJobDetail, update, workerReceiveJob } from '@/services/repairComputerService';
+import { getJobDetail, submitJob, update, workerReceiveJob } from '@/services/repairComputerService';
+import { formatDateTime } from '@/utils/date-format';
+import { REPAIR_STATUS_WAIT_WORKER, REPAIR_STATUS_WORKING } from '@/constants/type-repair-computer';
 
 const detailFields = ['detail', 'description', 'repairDetail', 'repair_detail', 'problem'];
 const supplyFields = ['supplyCode', 'supply_code', 'assetCode', 'asset_code', 'code'];
 const phoneFields = ['phone', 'tel', 'telephone'];
 const statusFields = ['status', 'state', 'statusId', 'status_id'];
+const informDateFields = ['informDateTime', 'inform_date_time', 'informDate', 'inform_date', 'createdAt', 'created_at', 'createDate', 'create_date', 'date'];
 const requesterNameFields = ['staffullName', 'staffFullname', 'staff_fullname', 'requesterFullname', 'requester_fullname'];
 const requesterIdFields = [
   'staffId',
@@ -72,10 +75,12 @@ function normalizeStaffId(staffId: string) {
 function PersonDetailCard({
   fallbackTitle,
   id,
+  meta,
   name,
 }: {
   fallbackTitle: string;
   id: string;
+  meta?: string;
   name: string;
 }) {
   const staffId = normalizeStaffId(id);
@@ -102,7 +107,7 @@ function PersonDetailCard({
         <ThemedText type="defaultSemiBold" style={styles.personName}>
           {name || fallbackTitle}
         </ThemedText>
-        {staffId ? <ThemedText style={styles.personMeta}>Staff ID: {staffId}</ThemedText> : null}
+        {meta ? <ThemedText style={styles.personMeta}>{meta}</ThemedText> : null}
       </View>
     </ThemedView>
   );
@@ -125,6 +130,7 @@ export default function RepairComputerEditJobScreen() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isWorkerActionSubmitting, setIsWorkerActionSubmitting] = useState(false);
   const [isWorkerAcceptConfirmOpen, setIsWorkerAcceptConfirmOpen] = useState(false);
+  const [isWorkerCloseConfirmOpen, setIsWorkerCloseConfirmOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error' | ''>('');
 
@@ -134,7 +140,7 @@ export default function RepairComputerEditJobScreen() {
 
   const loadDetail = useCallback(async () => {
     if (!jobId) {
-      setError(TEXT.UNABLE_TO_LOAD_JOB_DETAIL);
+      setError(TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_JOB_DETAIL);
       setIsLoading(false);
       return;
     }
@@ -147,7 +153,7 @@ export default function RepairComputerEditJobScreen() {
     const result = await getJobDetail(jobId);
 
     if (result.processType === PROCESS.error || !result.data) {
-      setError(result.message || TEXT.UNABLE_TO_LOAD_JOB_DETAIL);
+      setError(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_JOB_DETAIL);
       setIsLoading(false);
       return;
     }
@@ -183,12 +189,12 @@ export default function RepairComputerEditJobScreen() {
 
     if (result.processType === PROCESS.success && result.success !== false) {
       setToastType('success');
-      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESSFULLY);
+      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE);
       return;
     }
 
     setToastType('error');
-    setToastMessage(result.message || TEXT.UNABLE_TO_UPDATE_REPAIR_COMPUTER_JOB);
+    setToastMessage(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_UPDATE_JOB);
   };
 
   const handleWorkerAccept = async () => {
@@ -207,7 +213,7 @@ export default function RepairComputerEditJobScreen() {
 
     if (result.processType === PROCESS.success && result.success !== false) {
       setToastType('success');
-      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESSFULLY);
+      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE);
       setTimeout(() => {
         router.replace('/repair-computer/worker-current-job');
       }, 900);
@@ -215,7 +221,7 @@ export default function RepairComputerEditJobScreen() {
     }
 
     setToastType('error');
-    setToastMessage(result.message || TEXT.UNABLE_TO_UPDATE_REPAIR_COMPUTER_JOB);
+    setToastMessage(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_UPDATE_JOB);
   };
 
   const handleWorkerReject = () => {
@@ -229,19 +235,46 @@ export default function RepairComputerEditJobScreen() {
     } as Parameters<typeof router.push>[0]);
   };
 
+  const handleWorkerCloseJob = async () => {
+    if (!jobId || isWorkerActionSubmitting) {
+      return;
+    }
+
+    setIsWorkerActionSubmitting(true);
+    setToastMessage('');
+    setToastType('');
+
+    const result = await submitJob(jobId);
+
+    setIsWorkerActionSubmitting(false);
+    setIsWorkerCloseConfirmOpen(false);
+
+    if (result.processType === PROCESS.success && result.success !== false) {
+      setToastType('success');
+      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE);
+      setTimeout(() => {
+        router.replace('/repair-computer/worker-current-job');
+      }, 900);
+      return;
+    }
+
+    setToastType('error');
+    setToastMessage(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_UPDATE_JOB);
+  };
+
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title={TEXT.LOADING_DETAIL} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
+      return <LoadingAnimate title={TEXT.REPAIR_COMPUTER_LOADING_DETAIL} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={loadDetail} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.RETRY}</ThemedText>
+              {TEXT.SHARED_RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -250,61 +283,80 @@ export default function RepairComputerEditJobScreen() {
     const canUpdate = !isReadOnly && status === '0';
     const showReadOnlyFields = isReadOnly || status !== '0';
     const showWorkerNewJobActions = backHref === '/repair-computer/worker-new-job';
+    const showWorkerCurrentJobActions = backHref === '/repair-computer/worker-current-job';
+    const showWorkerOperateButton = showWorkerCurrentJobActions && status === REPAIR_STATUS_WAIT_WORKER;
+    const showWorkerCloseJobButton = showWorkerCurrentJobActions && status === REPAIR_STATUS_WORKING;
     const requesterName = jobData ? getJobText(jobData, requesterNameFields) : '';
     const requesterId = jobData ? getJobText(jobData, requesterIdFields) : '';
     const foremanName = jobData ? getJobText(jobData, foremanNameFields) : '';
     const foremanId = jobData ? getJobText(jobData, foremanIdFields) : '';
     const repairTypeName = jobData ? getJobText(jobData, repairTypeNameFields) : '';
     const statusName = jobData ? getJobText(jobData, statusNameFields) || status : status;
+    const informDate = jobData ? formatDateTime(getJobText(jobData, informDateFields)) : '';
 
     return (
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
         {showReadOnlyFields ? (
           <>
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.STATUS}</ThemedText>
-              <ThemedText style={styles.readOnlyValue}>{statusName || '-'}</ThemedText>
-            </View>
+            <ThemedView style={styles.sectionBox} lightColor="#FFFFFF" darkColor="#151718">
+              <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+                {TEXT.REPAIR_COMPUTER_JOB_DETAIL}
+              </ThemedText>
 
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.DETAIL}</ThemedText>
-              <ThemedText style={styles.readOnlyValue}>{detail || '-'}</ThemedText>
-            </View>
+              <View style={styles.field}>
+                <ThemedText type="defaultSemiBold">Job Type</ThemedText>
+                <ThemedText style={styles.readOnlyValue}>{repairTypeName || '-'}</ThemedText>
+              </View>
 
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.SUPPLY_CODE}</ThemedText>
-              <ThemedText style={styles.readOnlyValue}>{supplyCode || '-'}</ThemedText>
-            </View>
+              <View style={styles.field}>
+                <ThemedText type="defaultSemiBold">{TEXT.REPAIR_COMPUTER_DETAIL}</ThemedText>
+                <ThemedText style={styles.readOnlyValue}>{detail || '-'}</ThemedText>
+              </View>
 
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">User Inform</ThemedText>
-              <PersonDetailCard fallbackTitle="User" id={requesterId} name={requesterName} />
-            </View>
+              <View style={styles.field}>
+                <ThemedText type="defaultSemiBold">{TEXT.REPAIR_COMPUTER_SUPPLY_CODE}</ThemedText>
+                <ThemedText style={styles.readOnlyValue}>{supplyCode || '-'}</ThemedText>
+              </View>
 
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.PHONE}</ThemedText>
-              <ThemedText style={styles.readOnlyValue}>{phone || '-'}</ThemedText>
-            </View>
+              <View style={styles.field}>
+                <ThemedText type="defaultSemiBold">{TEXT.REPAIR_COMPUTER_STATUS_LABEL}</ThemedText>
+                <ThemedText style={styles.readOnlyValue}>{statusName || '-'}</ThemedText>
+              </View>
 
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">Job Type</ThemedText>
-              <ThemedText style={styles.readOnlyValue}>{repairTypeName || '-'}</ThemedText>
-            </View>
+              <View style={styles.field}>
+                <ThemedText type="defaultSemiBold">{TEXT.REPAIR_COMPUTER_INFORM_DATE_LABEL}</ThemedText>
+                <ThemedText style={styles.readOnlyValue}>{informDate || '-'}</ThemedText>
+              </View>
+            </ThemedView>
 
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.FOREMAN}</ThemedText>
-              <PersonDetailCard fallbackTitle={TEXT.FOREMAN} id={foremanId} name={foremanName} />
-            </View>
+            <ThemedView style={styles.sectionBox} lightColor="#FFFFFF" darkColor="#151718">
+              <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+                User Inform
+              </ThemedText>
+              <PersonDetailCard
+                fallbackTitle="User"
+                id={requesterId}
+                meta={`${TEXT.REPAIR_COMPUTER_PHONE}: ${phone || '-'}`}
+                name={requesterName}
+              />
+            </ThemedView>
+
+            <ThemedView style={styles.sectionBox} lightColor="#FFFFFF" darkColor="#151718">
+              <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+                {TEXT.REPAIR_COMPUTER_FOREMAN}
+              </ThemedText>
+              <PersonDetailCard fallbackTitle={TEXT.REPAIR_COMPUTER_FOREMAN} id={foremanId} name={foremanName} />
+            </ThemedView>
           </>
         ) : (
           <>
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.DETAIL}</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.REPAIR_COMPUTER_DETAIL}</ThemedText>
             <TextInput
               multiline
               numberOfLines={2}
               onChangeText={setDetail}
-              placeholder={TEXT.DETAIL}
+              placeholder={TEXT.REPAIR_COMPUTER_DETAIL}
               placeholderTextColor="#8A969C"
               style={[styles.input, styles.textArea]}
               textAlignVertical="top"
@@ -313,10 +365,10 @@ export default function RepairComputerEditJobScreen() {
             </View>
 
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.SUPPLY_CODE}</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.REPAIR_COMPUTER_SUPPLY_CODE}</ThemedText>
             <TextInput
               onChangeText={setSupplyCode}
-              placeholder={TEXT.SUPPLY_CODE}
+              placeholder={TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
               placeholderTextColor="#8A969C"
               style={styles.input}
               value={supplyCode}
@@ -324,11 +376,11 @@ export default function RepairComputerEditJobScreen() {
             </View>
 
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.PHONE}</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.REPAIR_COMPUTER_PHONE}</ThemedText>
             <TextInput
               keyboardType="phone-pad"
               onChangeText={setPhone}
-              placeholder={TEXT.PHONE}
+              placeholder={TEXT.REPAIR_COMPUTER_PHONE}
               placeholderTextColor="#8A969C"
               style={styles.input}
               value={phone}
@@ -345,7 +397,7 @@ export default function RepairComputerEditJobScreen() {
             style={[styles.updateButton, isUpdating ? styles.disabledButton : undefined]}>
             {isUpdating ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {isUpdating ? TEXT.UPDATING : TEXT.UPDATE}
+              {isUpdating ? TEXT.SHARED_UPDATING : TEXT.SHARED_UPDATE}
             </ThemedText>
           </Pressable>
         ) : null}
@@ -374,6 +426,35 @@ export default function RepairComputerEditJobScreen() {
             </Pressable>
           </View>
         ) : null}
+
+        {showWorkerOperateButton ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              router.push({
+                pathname: '/repair-computer/operate-job',
+                params: { id: jobId },
+              } as Parameters<typeof router.push>[0]);
+            }}
+            style={styles.operateButton}>
+            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+              Operate
+            </ThemedText>
+          </Pressable>
+        ) : null}
+
+        {showWorkerCloseJobButton ? (
+          <Pressable
+            accessibilityRole="button"
+            disabled={isWorkerActionSubmitting}
+            onPress={() => setIsWorkerCloseConfirmOpen(true)}
+            style={[styles.operateButton, isWorkerActionSubmitting ? styles.disabledButton : undefined]}>
+            {isWorkerActionSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+              Close Job
+            </ThemedText>
+          </Pressable>
+        ) : null}
       </ScrollView>
     );
   };
@@ -381,14 +462,14 @@ export default function RepairComputerEditJobScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={TEXT.REPAIR_COMPUTER}
+        title={TEXT.REPAIR_COMPUTER_TITLE}
         onBackPress={handleBackPress}
         showBackButton
       />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">{isReadOnly ? TEXT.JOB_DETAIL : TEXT.EDIT_JOB}</ThemedText>
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
+          <ThemedText type="subtitle">{isReadOnly ? TEXT.REPAIR_COMPUTER_JOB_DETAIL : TEXT.REPAIR_COMPUTER_EDIT_JOB}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>
@@ -428,6 +509,40 @@ export default function RepairComputerEditJobScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <Modal
+        transparent
+        visible={isWorkerCloseConfirmOpen}
+        animationType="fade"
+        onRequestClose={() => setIsWorkerCloseConfirmOpen(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setIsWorkerCloseConfirmOpen(false)}>
+          <Pressable>
+            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
+              <ThemedText type="subtitle">Confirm Close Job</ThemedText>
+              <ThemedText style={styles.confirmMessage}>Do you want to close this repair computer job?</ThemedText>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isWorkerActionSubmitting}
+                  onPress={() => setIsWorkerCloseConfirmOpen(false)}
+                  style={styles.cancelButton}>
+                  <ThemedText type="defaultSemiBold">No</ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isWorkerActionSubmitting}
+                  onPress={handleWorkerCloseJob}
+                  style={[styles.confirmButton, isWorkerActionSubmitting ? styles.disabledButton : undefined]}>
+                  {isWorkerActionSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                    Yes
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </ThemedView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ThemedView>
   );
 }
@@ -438,12 +553,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
   panel: {
     flex: 1,
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
   },
   form: {
     gap: 16,
@@ -452,6 +567,17 @@ const styles = StyleSheet.create({
   },
   field: {
     gap: 8,
+  },
+  sectionBox: {
+    gap: 12,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#D7E6EC',
+    padding: 14,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    lineHeight: 21,
   },
   input: {
     minHeight: 46,
@@ -574,6 +700,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     backgroundColor: '#C44D58',
+    paddingHorizontal: 18,
+  },
+  operateButton: {
+    minHeight: 48,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#0A6E8A',
+    marginTop: 4,
     paddingHorizontal: 18,
   },
   backdrop: {

@@ -79,7 +79,7 @@ export default function CalendarScreen() {
       setSelectedSource((current) => current ?? result[0]);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : TEXT.SOMETHING_WENT_WRONG,
+        error instanceof Error ? error.message : TEXT.SHARED_SOMETHING_WENT_WRONG,
       );
     } finally {
       setLoadingSources(false);
@@ -97,7 +97,7 @@ export default function CalendarScreen() {
       } catch (error) {
         setEvents([]);
         setErrorMessage(
-          error instanceof Error ? error.message : TEXT.SOMETHING_WENT_WRONG,
+          error instanceof Error ? error.message : TEXT.SHARED_SOMETHING_WENT_WRONG,
         );
       } finally {
         setLoadingEvents(false);
@@ -189,10 +189,10 @@ export default function CalendarScreen() {
   if (loadingSources) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.TEXT_19} backHref="/" />
+        <NavTopBar title={TEXT.CALENDAR_TITLE} backHref="/" />
         <LoadingAnimate
           title="Loading calendar"
-          desc={TEXT.PLEASE_WAIT_A_MOMENT}
+          desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
         />
       </ThemedView>
     );
@@ -202,7 +202,7 @@ export default function CalendarScreen() {
   if (sourceLoadFailed) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.TEXT_19} backHref="/" />
+        <NavTopBar title={TEXT.CALENDAR_TITLE} backHref="/" />
         <View style={styles.centerErrorWrap}>
           <ThemedView
             style={styles.messageBox}
@@ -210,14 +210,14 @@ export default function CalendarScreen() {
             darkColor="#2A171A"
           >
             <ThemedText type="defaultSemiBold" style={[styles.errorTitle, styles.centerText]}>
-              {TEXT.UNABLE_TO_COMPLETE}
+              {TEXT.SHARED_UNABLE_TO_COMPLETE}
             </ThemedText>
             <ThemedText style={[styles.errorMessage, styles.centerText]}>
               {errorMessage}
             </ThemedText>
             <Pressable style={styles.centerRetryButton} onPress={loadSources}>
               <ThemedText type="defaultSemiBold" style={styles.retryText}>
-                {TEXT.RETRY}
+                {TEXT.SHARED_RETRY}
               </ThemedText>
             </Pressable>
           </ThemedView>
@@ -228,7 +228,7 @@ export default function CalendarScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.TEXT_19} backHref="/" />
+      <NavTopBar title={TEXT.CALENDAR_TITLE} backHref="/" />
       <FlatList
         data={selectedEvents}
         keyExtractor={(item) => item.id}
@@ -278,7 +278,7 @@ export default function CalendarScreen() {
                         onPress={() => setSourceModalOpen(false)}
                         style={styles.closeButton}
                       >
-                        <ThemedText type="defaultSemiBold">{TEXT.TEXT_2}</ThemedText>
+                        <ThemedText type="defaultSemiBold">{TEXT.SHARED_CLOSE_THAI}</ThemedText>
                       </Pressable>
                     </View>
 
@@ -304,7 +304,7 @@ export default function CalendarScreen() {
                           );
                         })
                       ) : (
-                        <ThemedText style={styles.emptyOption}>{TEXT.TEXT_3}</ThemedText>
+                        <ThemedText style={styles.emptyOption}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
                       )}
                     </ScrollView>
                   </ThemedView>
@@ -319,14 +319,14 @@ export default function CalendarScreen() {
                 darkColor="#2A171A"
               >
                 <ThemedText type="defaultSemiBold" style={styles.errorTitle}>
-                  {TEXT.UNABLE_TO_COMPLETE}
+                  {TEXT.SHARED_UNABLE_TO_COMPLETE}
                 </ThemedText>
                 <ThemedText style={styles.errorMessage}>
                   {errorMessage}
                 </ThemedText>
                 <Pressable style={styles.retryButton} onPress={handleRefresh}>
                   <ThemedText type="defaultSemiBold" style={styles.retryText}>
-                    {TEXT.RETRY}
+                    {TEXT.SHARED_RETRY}
                   </ThemedText>
                 </Pressable>
               </ThemedView>
@@ -361,7 +361,7 @@ export default function CalendarScreen() {
               <LoadingAnimate
                 fill={false}
                 title="Loading events"
-                desc={TEXT.PLEASE_WAIT_A_MOMENT}
+                desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
               />
             ) : null}
           </>
@@ -374,7 +374,7 @@ export default function CalendarScreen() {
               darkColor="#151718"
             >
               <ThemedText type="defaultSemiBold" style={styles.emptyTitle}>
-                {TEXT.TEXT_3}
+                {TEXT.SHARED_EMPTY_DATA}
               </ThemedText>
               <ThemedText style={styles.emptyMessage}>
                 No schedule for this date

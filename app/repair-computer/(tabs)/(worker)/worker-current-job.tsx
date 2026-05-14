@@ -15,10 +15,10 @@ export default function WorkerCurrentJobScreen() {
 
   return (
     <RepairComputerJobListScreen
-      title={TEXT.CURRENT_JOB}
-      emptyMessage={TEXT.NO_CURRENT_JOBS}
-      errorMessage={TEXT.UNABLE_TO_LOAD_CURRENT_JOBS}
-      loadingTitle={TEXT.LOADING_CURRENT_JOBS}
+      title={TEXT.REPAIR_COMPUTER_CURRENT_JOB}
+      emptyMessage={TEXT.REPAIR_COMPUTER_NO_CURRENT_JOBS}
+      errorMessage={TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_CURRENT_JOBS}
+      loadingTitle={TEXT.REPAIR_COMPUTER_LOADING_CURRENT_JOBS}
       loadPage={loadPage}
       detailBackHref="/repair-computer/worker-current-job"
     />

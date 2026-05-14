@@ -15,12 +15,13 @@ export default function ForemanManageJobScreen() {
 
   return (
     <RepairComputerJobListScreen
-      title={TEXT.MANAGE_JOB}
-      emptyMessage={TEXT.NO_JOBS_TO_MANAGE}
-      errorMessage={TEXT.UNABLE_TO_LOAD_MANAGE_JOBS}
-      loadingTitle={TEXT.LOADING_MANAGE_JOBS}
+      title={TEXT.REPAIR_COMPUTER_MANAGE_JOB}
+      emptyMessage={TEXT.REPAIR_COMPUTER_NO_JOBS_TO_MANAGE}
+      errorMessage={TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_MANAGE_JOBS}
+      loadingTitle={TEXT.REPAIR_COMPUTER_LOADING_MANAGE_JOBS}
       loadPage={loadPage}
       detailBackHref="/repair-computer/manage-job"
+      detailPathname="/repair-computer/foreman-job-detail"
     />
   );
 }

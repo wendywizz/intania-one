@@ -8,9 +8,9 @@ import { ThemedView } from '@/components/themed-view';
 export default function ModalScreen() {
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title">{TEXT.TEXT_29}</ThemedText>
+      <ThemedText type="title">{TEXT.MODAL_TITLE}</ThemedText>
       <Link href="/" dismissTo style={styles.link}>
-        <ThemedText type="link">{TEXT.TEXT_21}</ThemedText>
+        <ThemedText type="link">{TEXT.SHARED_BACK_TO_HOME_THAI}</ThemedText>
       </Link>
     </ThemedView>
   );

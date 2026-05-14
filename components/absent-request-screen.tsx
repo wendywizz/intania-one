@@ -17,7 +17,7 @@ export function AbsentRequestScreen({ title, description, fields }: AbsentReques
       <NavTopBar title={title} />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
           <ThemedText type="subtitle">{title}</ThemedText>
           <ThemedText style={styles.description}>{description}</ThemedText>
 
@@ -25,7 +25,7 @@ export function AbsentRequestScreen({ title, description, fields }: AbsentReques
             {fields.map((field) => (
               <ThemedView key={field} style={styles.field} lightColor="#FFFFFF" darkColor="#151718">
                 <ThemedText type="defaultSemiBold">{field}</ThemedText>
-                <ThemedText style={styles.fieldHint}>{TEXT.TEXT_31}</ThemedText>
+                <ThemedText style={styles.fieldHint}>{TEXT.SHARED_REQUIRED_INFORMATION}</ThemedText>
               </ThemedView>
             ))}
           </View>
@@ -41,11 +41,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
   panel: {
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
   },
   description: {
     marginTop: 8,

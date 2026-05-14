@@ -120,7 +120,7 @@ export default function RepairComputerCurrentJobScreen() {
 
     if (result.processType === PROCESS.error) {
       setJobs([]);
-      setError(result.message || TEXT.UNABLE_TO_LOAD_CURRENT_JOBS);
+      setError(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_CURRENT_JOBS);
       setHasMore(false);
     } else {
       const nextJobs = Array.isArray(result.data) ? result.data : [];
@@ -181,7 +181,7 @@ export default function RepairComputerCurrentJobScreen() {
 
     if (!jobId) {
       setToastType('error');
-      setToastMessage(TEXT.UNABLE_TO_OPEN_JOB_DETAIL);
+      setToastMessage(TEXT.REPAIR_COMPUTER_UNABLE_TO_OPEN_JOB_DETAIL);
       return;
     }
 
@@ -222,28 +222,28 @@ export default function RepairComputerCurrentJobScreen() {
 
     if (result.processType === PROCESS.success && result.success !== false) {
       setToastType('success');
-      setToastMessage(result.message || TEXT.REPAIR_JOB_DELETED_SUCCESSFULLY);
+      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_DELETED_SUCCESS_MESSAGE);
       loadFirstPage(false, true);
       return;
     }
 
     setToastType('error');
-    setToastMessage(result.message || TEXT.UNABLE_TO_DELETE_REPAIR_JOB);
+    setToastMessage(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_DELETE_JOB);
   };
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title={TEXT.LOADING_CURRENT_JOBS} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
+      return <LoadingAnimate title={TEXT.REPAIR_COMPUTER_LOADING_CURRENT_JOBS} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={() => loadFirstPage(false, true)} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.RETRY}</ThemedText>
+              {TEXT.SHARED_RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -271,7 +271,7 @@ export default function RepairComputerCurrentJobScreen() {
         }
         ListEmptyComponent={
           <ThemedView style={styles.emptyCard} lightColor="#FFFFFF" darkColor="#151718">
-            <ThemedText style={styles.emptyMessage}>{TEXT.NO_CURRENT_JOBS}</ThemedText>
+            <ThemedText style={styles.emptyMessage}>{TEXT.REPAIR_COMPUTER_NO_CURRENT_JOBS}</ThemedText>
           </ThemedView>
         }
       />
@@ -280,11 +280,11 @@ export default function RepairComputerCurrentJobScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.REPAIR_COMPUTER} backHref="/" rightContent={roleSwitcher} />
+      <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} backHref="/" rightContent={roleSwitcher} />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">{TEXT.CURRENT_JOB}</ThemedText>
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
+          <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_CURRENT_JOB}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>
@@ -295,7 +295,7 @@ export default function RepairComputerCurrentJobScreen() {
             <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
               <ThemedText type="subtitle">{TEXT.CONFIRM_DELETE}</ThemedText>
               <ThemedText style={styles.confirmMessage}>
-                {TEXT.DO_YOU_WANT_TO_DELETE_THIS_REPAIR_COMPUTER_JOB}</ThemedText>
+                {TEXT.REPAIR_COMPUTER_DELETE_CONFIRM_MESSAGE}</ThemedText>
 
               <View style={styles.confirmActions}>
                 <Pressable
@@ -332,12 +332,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
   panel: {
     flex: 1,
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
   },
   listContent: {
     gap: 12,

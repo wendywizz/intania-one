@@ -9,6 +9,7 @@ export default function AbsentLayout() {
       <Stack.Screen name="business" />
       <Stack.Screen name="relax" />
       <Stack.Screen name="birth" />
+      <Stack.Screen name="detail" />
     </Stack>
   );
 }

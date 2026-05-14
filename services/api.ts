@@ -1,8 +1,22 @@
 import {PROCESS} from '../constants/domain';
+import { ENDPOINTS } from '../constants/endpoints';
 import type {Result} from '../models/types';
 
 const TIMEOUT_MS = 10000;
 export const API_DELAY_MS = 500;
+export const MESSAGE_CANNOT_CONNECT_TO_SERVER = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
+export const MESSAGE_PROCESS_FAILED = 'ดำเนินการไม่สำเร็จ';
+export const MESSAGE_SERVER_ERROR = 'เซิร์ฟเวอร์ขัดข้อง';
+
+export type JsonMap = Record<string, unknown>;
+
+export type UploadableFile =
+  | Blob
+  | {
+      uri: string;
+      name?: string;
+      type?: string;
+    };
 
 export function waitApiDelay() {
   return new Promise((resolve) => setTimeout(resolve, API_DELAY_MS));
@@ -27,29 +41,99 @@ export function buildHttpsUrl(
   return url.toString();
 }
 
-async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
+export function createPhoenixUrl(path: string, query?: Record<string, string | number | undefined>) {
+  return buildHttpsUrl(ENDPOINTS.phoenix, path, query);
+}
+
+export function createLocalUrl(path: string, query?: Record<string, string | number | undefined>) {
+  const url = new URL(path, 'http://localhost');
+
+  Object.entries(query ?? {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      url.searchParams.set(key, String(value));
+    }
+  });
+
+  return `${url.pathname}${url.search}`;
+}
+
+export async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit) {
+  await waitApiDelay();
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    const response = await fetchWithApiDelay(url, {
+    return await fetch(input, {
       ...init,
       signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(init?.headers ?? {}),
-      },
     });
-    const text = await response.text();
-
-    if (!response.ok || !text) {
-      throw new Error('Server request failed');
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(MESSAGE_CANNOT_CONNECT_TO_SERVER);
     }
 
-    return JSON.parse(text) as T;
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function requestJson<T = JsonMap>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetchWithTimeout(url, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  });
+  const text = await response.text();
+
+  if (!response.ok || !text) {
+    throw new Error(MESSAGE_SERVER_ERROR);
+  }
+
+  return JSON.parse(text) as T;
+}
+
+export function toResultRow<T = unknown>(jsonData: JsonMap): Result<T> {
+  const processType = String(jsonData.process_type ?? jsonData.processType ?? PROCESS.success);
+
+  return {
+    processType,
+    data: jsonData.data as T | undefined,
+    message: String(jsonData.message ?? ''),
+    success: Boolean(jsonData.success ?? processType === PROCESS.success),
+  };
+}
+
+export function toResultList<T = unknown>(jsonData: JsonMap): Result<T[]> {
+  const processType = String(jsonData.process_type ?? jsonData.processType ?? PROCESS.success);
+  const data = Array.isArray(jsonData.data) ? (jsonData.data as T[]) : [];
+
+  return {
+    processType,
+    data,
+    totalCount: Number(jsonData.total_count ?? jsonData.totalCount ?? data.length),
+    message: String(jsonData.message ?? ''),
+    success: Boolean(jsonData.success ?? processType === PROCESS.success),
+  };
+}
+
+export function toErrorResult<T = unknown>(error: unknown): Result<T> {
+  return {
+    processType: PROCESS.error,
+    message: error instanceof Error ? error.message : String(error),
+    success: false,
+  };
+}
+
+export function toErrorListResult<T = unknown>(error: unknown): Result<T[]> {
+  return {
+    ...toErrorResult<T[]>(error),
+    data: [],
+    totalCount: 0,
+  };
 }
 
 export async function listRequest<T>(url: string): Promise<Result<T[]>> {
@@ -63,12 +147,7 @@ export async function listRequest<T>(url: string): Promise<Result<T[]>> {
       message: json.message ?? '',
     };
   } catch (error) {
-    return {
-      processType: PROCESS.error,
-      data: [],
-      totalCount: 0,
-      message: error instanceof Error ? error.message : String(error),
-    };
+    return toErrorListResult<T>(error);
   }
 }
 

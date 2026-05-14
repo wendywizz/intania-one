@@ -48,7 +48,7 @@ export default function RootLayout() {
             <Stack.Screen name="calendar" options={{ headerShown: false }} />
             <Stack.Screen name="login-callback" options={{ headerShown: false }} />
             <Stack.Screen name="person-search" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: TEXT.MODAL }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal', title: TEXT.SHARED_MODAL }} />
           </Stack>
           <StatusBar style="dark" />
         </AuthProvider>

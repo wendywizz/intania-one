@@ -55,7 +55,7 @@ export default function RejectJobScreen() {
 
     if (result.processType === PROCESS.success && result.success !== false) {
       setToastType('success');
-      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESSFULLY);
+      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE);
       setTimeout(() => {
         router.replace('/repair-computer/foreman-new-job');
       }, 900);
@@ -63,27 +63,27 @@ export default function RejectJobScreen() {
     }
 
     setToastType('error');
-    setToastMessage(result.message || TEXT.UNABLE_TO_UPDATE_REPAIR_COMPUTER_JOB);
+    setToastMessage(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_UPDATE_JOB);
   };
 
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={TEXT.REPAIR_COMPUTER}
+        title={TEXT.REPAIR_COMPUTER_TITLE}
         onBackPress={handleBackPress}
         showBackButton
       />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
           <ThemedText type="subtitle">Reject Job</ThemedText>
           <View style={styles.field}>
-            <ThemedText type="defaultSemiBold">{TEXT.REJECT_DETAIL}</ThemedText>
+            <ThemedText type="defaultSemiBold">{TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL}</ThemedText>
             <TextInput
               multiline
               numberOfLines={2}
               onChangeText={setRejectDetail}
-              placeholder={TEXT.REJECT_DETAIL}
+              placeholder={TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL}
               placeholderTextColor="#8A969C"
               style={styles.textArea}
               textAlignVertical="top"
@@ -140,11 +140,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
   panel: {
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
     gap: 18,
   },
   field: {

@@ -4,7 +4,7 @@ import { TEXT } from '@/constants/text';
 export default function WaitingScreen() {
   return (
     <AbsentTabContent
-      title={TEXT.TITLE_7}
+      title={TEXT.ABSENT_WAITING_TITLE}
       description="รายการคำขอที่อยู่ระหว่างรอการอนุมัติ"
       items={['รออนุมัติจากหัวหน้าภาควิชา', 'รออนุมัติจากฝ่ายบุคคล']}
     />

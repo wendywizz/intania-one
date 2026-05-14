@@ -8,11 +8,11 @@ import { ThemedView } from '@/components/themed-view';
 export default function ForgotTimestampScreen() {
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title">{TEXT.TEXT_22}</ThemedText>
-      <ThemedText style={styles.message}>{TEXT.TEXT_23}</ThemedText>
+      <ThemedText type="title">{TEXT.FORGOT_TIMESTAMP_TITLE}</ThemedText>
+      <ThemedText style={styles.message}>{TEXT.FORGOT_TIMESTAMP_DESCRIPTION}</ThemedText>
       <Link href="/">
         <ThemedText type="link" style={styles.link}>
-          {TEXT.TEXT_21}</ThemedText>
+          {TEXT.SHARED_BACK_TO_HOME_THAI}</ThemedText>
       </Link>
     </ThemedView>
   );

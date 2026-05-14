@@ -5,6 +5,7 @@ import { TEXT } from '@/constants/text';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import type { RepairComputer } from '@/models/types';
+import { formatDateTime } from '@/utils/date-format';
 
 const supplyFields = ['supplyCode', 'supply_code', 'assetCode', 'asset_code', 'code'];
 const informDateFields = ['informDateTime', 'inform_date_time', 'informDate', 'inform_date', 'createdAt', 'created_at', 'createDate', 'create_date', 'date'];
@@ -40,20 +41,20 @@ type RepairComputerJobListItemProps = {
 export function RepairComputerJobListItem({ job, onDelete, onPress }: RepairComputerJobListItemProps) {
   const jobId = getRepairComputerJobId(job);
   const supplyCode = getRepairComputerJobText(job, supplyFields);
-  const informDate = getRepairComputerJobText(job, informDateFields);
+  const informDate = formatDateTime(getRepairComputerJobText(job, informDateFields));
   const statusLabel = getRepairComputerJobText(job, statusLabelFields) || getRepairComputerJobText(job, statusFields);
   const content = (
     <Pressable accessibilityRole="button" disabled={!onPress} onPress={() => onPress?.(job)}>
       <ThemedView style={styles.itemCard} lightColor="#FFFFFF" darkColor="#151718">
         <View style={styles.itemHeader}>
           <ThemedText type="defaultSemiBold" style={styles.itemTitle}>
-            {TEXT.JOB_ID}{jobId || '-'}
+            {TEXT.REPAIR_COMPUTER_JOB_ID_LABEL}{jobId || '-'}
           </ThemedText>
           {statusLabel ? <ThemedText style={styles.statusText}>{statusLabel}</ThemedText> : null}
         </View>
 
-        {supplyCode ? <ThemedText style={styles.itemMeta}>{TEXT.SUPPLY_CODE_2}{supplyCode}</ThemedText> : null}
-        {informDate ? <ThemedText style={styles.itemMeta}>{TEXT.INFORM_DATE}{informDate}</ThemedText> : null}
+        {supplyCode ? <ThemedText style={styles.itemMeta}>{TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL}{supplyCode}</ThemedText> : null}
+        {informDate ? <ThemedText style={styles.itemMeta}>{TEXT.REPAIR_COMPUTER_INFORM_DATE_LABEL}{informDate}</ThemedText> : null}
       </ThemedView>
     </Pressable>
   );

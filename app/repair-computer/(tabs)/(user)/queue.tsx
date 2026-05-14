@@ -96,7 +96,7 @@ function WorkerQueueListItem({ failedPhotoIds, item, onPhotoError }: WorkerQueue
         <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.queueCount}>
           {queueCount}
         </ThemedText>
-        <ThemedText style={styles.queueLabel}>{TEXT.JOBS}</ThemedText>
+        <ThemedText style={styles.queueLabel}>{TEXT.REPAIR_COMPUTER_JOBS}</ThemedText>
       </View>
     </ThemedView>
   );
@@ -131,7 +131,7 @@ export default function RepairComputerQueueScreen() {
 
     if (result.processType === PROCESS.error) {
       setWorkers([]);
-      setError(result.message || TEXT.UNABLE_TO_LOAD_WORKER_QUEUE);
+      setError(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_WORKER_QUEUE);
     } else {
       setWorkers(Array.isArray(result.data) ? sortWorkersByNameAsc(result.data) : []);
     }
@@ -157,17 +157,17 @@ export default function RepairComputerQueueScreen() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title={TEXT.LOADING_QUEUE} desc={TEXT.PLEASE_WAIT_A_MOMENT} />;
+      return <LoadingAnimate title={TEXT.REPAIR_COMPUTER_LOADING_QUEUE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">{TEXT.SOMETHING_WENT_WRONG}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={() => loadQueue(false, true)} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.RETRY}</ThemedText>
+              {TEXT.SHARED_RETRY}</ThemedText>
           </Pressable>
         </View>
       );
@@ -190,7 +190,7 @@ export default function RepairComputerQueueScreen() {
         )}
         ListEmptyComponent={
           <ThemedView style={styles.emptyCard} lightColor="#FFFFFF" darkColor="#151718">
-            <ThemedText style={styles.emptyMessage}>{TEXT.NO_WORKER_QUEUE}</ThemedText>
+            <ThemedText style={styles.emptyMessage}>{TEXT.REPAIR_COMPUTER_NO_WORKER_QUEUE}</ThemedText>
           </ThemedView>
         }
       />
@@ -199,11 +199,11 @@ export default function RepairComputerQueueScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.REPAIR_COMPUTER} backHref="/" rightContent={roleSwitcher} />
+      <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} backHref="/" rightContent={roleSwitcher} />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">{TEXT.QUEUE}</ThemedText>
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
+          <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_QUEUE}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>
@@ -217,12 +217,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 16,
   },
   panel: {
     flex: 1,
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
   },
   listContent: {
     gap: 12,

@@ -1,32 +1,18 @@
-import { PROCESS } from '../constants/domain';
-import { ENDPOINTS } from '../constants/endpoints';
 import type { Meeting, Result } from '../models/types';
-import { buildHttpsUrl, fetchWithApiDelay } from './api';
+import { createPhoenixUrl, requestJson, toErrorListResult, toResultList, type JsonMap } from './api';
 
 export async function listMeeting(
   userId = '',
   type = '',
 ): Promise<Result<Meeting[]>> {
   try {
-    const url = buildHttpsUrl(ENDPOINTS.phoenix, '/meetingv2/api/index.php/meeting/list', {
+    const url = createPhoenixUrl('/meetingv2/api/index.php/meeting/list', {
       user_id: userId,
       type,
     });
-    const response = await fetchWithApiDelay(url, {headers: {'Content-Type': 'application/json'}});
-    const json = await response.json();
-    const data = Array.isArray(json.data) ? json.data : [];
-    return {
-      processType: PROCESS.success,
-      data,
-      totalCount: data.length,
-      message: json.message ?? '',
-    };
+    const json = await requestJson<JsonMap>(url);
+    return toResultList<Meeting>(json);
   } catch (error) {
-    return {
-      processType: PROCESS.error,
-      data: [],
-      totalCount: 0,
-      message: error instanceof Error ? error.message : String(error),
-    };
+    return toErrorListResult<Meeting>(error);
   }
 }

@@ -20,21 +20,21 @@ export default function MeetingTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: TEXT.TODAY_MEETING,
+          title: TEXT.MEETING_TODAY,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
         }}
       />
       <Tabs.Screen
         name="incoming"
         options={{
-          title: TEXT.INCOMING_MEETING,
+          title: TEXT.MEETING_INCOMING,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="history"
         options={{
-          title: TEXT.HISTORY,
+          title: TEXT.SHARED_HISTORY,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
         }}
       />

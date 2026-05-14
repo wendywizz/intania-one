@@ -48,7 +48,7 @@ export function NavTopBar({
       <View style={styles.leftActions}>
         {showBackButton ? (
           <Pressable
-            accessibilityLabel={TEXT.TEXT_6}
+            accessibilityLabel={TEXT.SHARED_BACK_THAI}
             accessibilityRole="button"
             onPress={goBack}
             style={styles.iconButton}>
@@ -68,7 +68,7 @@ export function NavTopBar({
           rightContent
         ) : showHomeButton ? (
           <Link href="/" asChild>
-            <Pressable accessibilityLabel={TEXT.ACCESSIBILITYLABEL} accessibilityRole="button" style={styles.iconButton}>
+            <Pressable accessibilityLabel={TEXT.NAV_HOME_ACCESSIBILITY_LABEL} accessibilityRole="button" style={styles.iconButton}>
               <IconSymbol name="house.fill" size={23} color="#0A6E8A" />
             </Pressable>
           </Link>

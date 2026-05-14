@@ -1,19 +1,22 @@
+import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { TEXT } from '@/constants/text';
 
+import { AppToast } from '@/components/app-toast';
 import { DatePickerField } from '@/components/date-picker-field';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PROCESS } from '@/constants/domain';
 import { TYPE_ABSENT_SICK } from '@/constants/type-absent';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { AppFonts } from '@/constants/fonts';
 import type { Absent } from '@/models/types';
-import { initAbsentData } from '@/services/absentService';
+import { addAbsentData, initAbsentData } from '@/services/absentService';
 
 type Approver = {
   staffId?: string;
@@ -24,6 +27,14 @@ type Approver = {
 };
 
 type ValidationErrors = Partial<Record<'approver' | 'reason' | 'date' | 'contact', string>>;
+
+type UploadableFile =
+  | Blob
+  | {
+      uri: string;
+      name?: string;
+      type?: string;
+    };
 
 function getApproverList(data: Absent | null): Approver[] {
   return Array.isArray(data?.approverList) ? (data.approverList as Approver[]) : [];
@@ -40,12 +51,22 @@ function getApproverLabel(approver: Approver) {
   return positionName || fullName || approver.staffId || '';
 }
 
-const halfDayOptions = [
-  TEXT.OPTION,
-  TEXT.OPTION_2,
-  TEXT.OPTION_3,
-  TEXT.OPTION_4,
+const halfDayOptions: string[] = [
+  TEXT.ABSENT_HALF_DAY_FIRST_MORNING,
+  TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON,
+  TEXT.ABSENT_HALF_DAY_LAST_MORNING,
+  TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING,
 ];
+
+const FILE_PICKER_LABEL = 'Medical certificate';
+const FILE_PICKER_PLACEHOLDER = 'No image selected';
+const FILE_PICKER_ACTION = 'Choose image';
+const FILE_PICKER_REMOVE = 'Remove image';
+const IMAGE_PICKER_PERMISSION_TITLE = 'Permission required';
+const IMAGE_PICKER_PERMISSION_MESSAGE = 'Permission to access your photo library is required.';
+const SUBMITTING_LABEL = 'Submitting...';
+const SUBMIT_SUCCESS_MESSAGE = 'Sick leave request submitted successfully.';
+const SUBMIT_ERROR_MESSAGE = 'Unable to submit sick leave request.';
 
 type SelectFieldProps = {
   label: string;
@@ -93,7 +114,7 @@ function SelectField({
                   {label}
                 </ThemedText>
                 <Pressable accessibilityRole="button" onPress={onToggle} style={styles.closeButton}>
-                  <ThemedText type="defaultSemiBold">{TEXT.TEXT_2}</ThemedText>
+                  <ThemedText type="defaultSemiBold">{TEXT.SHARED_CLOSE_THAI}</ThemedText>
                 </Pressable>
               </View>
 
@@ -114,7 +135,7 @@ function SelectField({
                     </Pressable>
                   ))
                 ) : (
-                  <ThemedText style={styles.emptyOption}>{TEXT.TEXT_3}</ThemedText>
+                  <ThemedText style={styles.emptyOption}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
                 )}
               </ScrollView>
             </ThemedView>
@@ -140,6 +161,38 @@ function getLeaveDayCount(startDate: Date, endDate: Date, hasHalfDay: boolean) {
   return fullDayCount + (hasHalfDay ? 0.5 : 0);
 }
 
+function formatDateParam(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function getSelectedApprover(approverList: Approver[], selectedLabel: string) {
+  return approverList.find((item) => getApproverLabel(item) === selectedLabel);
+}
+
+function getHalfDayValue(selectedHalfDay: string) {
+  return selectedHalfDay ? String(halfDayOptions.indexOf(selectedHalfDay) + 1) : '';
+}
+
+function getImageFileName(asset: ImagePicker.ImagePickerAsset) {
+  return asset.fileName || `medical-certificate.${asset.mimeType?.split('/')[1] || 'jpg'}`;
+}
+
+function createUploadFile(asset: ImagePicker.ImagePickerAsset): UploadableFile {
+  if (Platform.OS === 'web' && asset.file) {
+    return asset.file;
+  }
+
+  return {
+    uri: asset.uri,
+    name: getImageFileName(asset),
+    type: asset.mimeType,
+  };
+}
+
 export default function SickScreen() {
   const { user: authUser } = useAuth();
   const [initialAbsentData, setInitialAbsentData] = useState<Absent | null>(null);
@@ -151,8 +204,12 @@ export default function SickScreen() {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [halfDay, setHalfDay] = useState('');
   const [contact, setContact] = useState('');
+  const [selectedFile, setSelectedFile] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [openSelect, setOpenSelect] = useState<'approver' | 'halfDay' | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | ''>('');
   const userId = authUser?.staffId || USER_ID;
 
   const clearValidationError = useCallback((field: keyof ValidationErrors) => {
@@ -175,7 +232,7 @@ export default function SickScreen() {
     const result = await initAbsentData(userId, TYPE_ABSENT_SICK);
 
     if (!result.data || result.processType === 'error') {
-      setInitialError(result.message || TEXT.MESSAGE);
+      setInitialError(result.message || TEXT.ABSENT_INIT_LOAD_ERROR_MESSAGE);
       setIsInitialLoading(false);
       return;
     }
@@ -198,6 +255,7 @@ export default function SickScreen() {
     () => getApproverList(initialAbsentData).map(getApproverLabel).filter(Boolean),
     [initialAbsentData],
   );
+  const approverList = useMemo(() => getApproverList(initialAbsentData), [initialAbsentData]);
   const dateError =
     startDate && endDate && endDate <= startDate
       ? 'วันที่สิ้นสุดต้องมากกว่าวันที่เริ่มต้น'
@@ -211,7 +269,31 @@ export default function SickScreen() {
     return getLeaveDayCount(startDate, endDate, Boolean(halfDay));
   }, [dateError, endDate, halfDay, startDate]);
 
-  const handleSubmit = useCallback(() => {
+  const handlePickFile = useCallback(async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      Alert.alert(IMAGE_PICKER_PERMISSION_TITLE, IMAGE_PICKER_PERMISSION_MESSAGE);
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: false,
+      allowsMultipleSelection: false,
+      mediaTypes: ['images'],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setSelectedFile(result.assets[0] ?? null);
+    }
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     const nextErrors: ValidationErrors = {};
 
     if (!approver) {
@@ -235,13 +317,68 @@ export default function SickScreen() {
     if (Object.keys(nextErrors).length || dateError) {
       return;
     }
-  }, [approver, contact, dateError, endDate, reason, startDate]);
+
+    if (!startDate || !endDate) {
+      return;
+    }
+
+    const selectedApprover = getSelectedApprover(approverList, approver);
+
+    setIsSubmitting(true);
+    setToastMessage('');
+    setToastType('');
+
+    const result = await addAbsentData(
+      {
+        staff_id: userId,
+        approver_id: selectedApprover?.staffId,
+        approver: selectedApprover?.staffId ?? approver,
+        reason: reason.trim(),
+        contact: contact.trim(),
+        start_date: formatDateParam(startDate),
+        end_date: formatDateParam(endDate),
+        date_start: formatDateParam(startDate),
+        date_end: formatDateParam(endDate),
+        leave_day: leaveDayCount,
+        half_day: getHalfDayValue(halfDay),
+      },
+      TYPE_ABSENT_SICK,
+      selectedFile ? { fileUpload: createUploadFile(selectedFile) } : undefined,
+    );
+
+    setIsSubmitting(false);
+
+    if (result.processType === PROCESS.success && result.success !== false) {
+      setToastType('success');
+      setToastMessage(result.message || SUBMIT_SUCCESS_MESSAGE);
+      setTimeout(() => {
+        router.replace('/absent');
+      }, 900);
+      return;
+    }
+
+    setToastType('error');
+    setToastMessage(result.message || SUBMIT_ERROR_MESSAGE);
+  }, [
+    approver,
+    approverList,
+    contact,
+    dateError,
+    endDate,
+    halfDay,
+    isSubmitting,
+    leaveDayCount,
+    reason,
+    selectedFile,
+    startDate,
+    userId,
+  ]);
 
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.TITLE_2} backHref="/absent" />
-        <LoadingAnimate title={TEXT.TITLE_9} desc={TEXT.DESC} />
+        <NavTopBar title={TEXT.ABSENT_SICK_TITLE} backHref="/absent" />
+        <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
       </ThemedView>
     );
   }
@@ -249,17 +386,17 @@ export default function SickScreen() {
   if (initialError) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.TITLE_2} backHref="/absent" />
+        <NavTopBar title={TEXT.ABSENT_SICK_TITLE} backHref="/absent" />
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">{TEXT.TEXT_4}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.SHARED_ERROR_TITLE_THAI}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{initialError}</ThemedText>
           <View style={styles.errorActions}>
             <Pressable accessibilityRole="button" onPress={loadInitialAbsentData} style={styles.secondaryButton}>
-              <ThemedText type="defaultSemiBold">{TEXT.TEXT_5}</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.SHARED_RETRY_THAI}</ThemedText>
             </Pressable>
             <Pressable accessibilityRole="button" onPress={() => router.replace('/absent')} style={styles.submitButton}>
               <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                {TEXT.TEXT_6}</ThemedText>
+                {TEXT.SHARED_BACK_THAI}</ThemedText>
             </Pressable>
           </View>
         </View>
@@ -269,19 +406,19 @@ export default function SickScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.TITLE_2} backHref="/absent" />
+      <NavTopBar title={TEXT.ABSENT_SICK_TITLE} backHref="/absent" />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <ThemedView style={styles.panel} lightColor="#F3F8FB" darkColor="#1F2B30">
-          <ThemedText type="subtitle">{TEXT.TEXT_18}</ThemedText>
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
+          <ThemedText type="subtitle">{TEXT.ABSENT_SICK_FORM_TITLE}</ThemedText>
           {initialAbsentData ? (
-            <ThemedText style={styles.initialStatus}>{TEXT.TEXT_8}</ThemedText>
+            <ThemedText style={styles.initialStatus}>{TEXT.ABSENT_INITIAL_DATA_LOADED}</ThemedText>
           ) : null}
 
           <View style={styles.form}>
             <SelectField
-              label={TEXT.LABEL}
-              placeholder={TEXT.PLACEHOLDER_2}
+              label={TEXT.ABSENT_APPROVER_LABEL}
+              placeholder={TEXT.ABSENT_APPROVER_PLACEHOLDER}
               value={approver}
               options={approverOptions}
               isOpen={openSelect === 'approver'}
@@ -296,7 +433,7 @@ export default function SickScreen() {
             />
 
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.TEXT_9}</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.ABSENT_REASON_LABEL}</ThemedText>
               <TextInput
                 multiline
                 numberOfLines={2}
@@ -306,7 +443,7 @@ export default function SickScreen() {
                     clearValidationError('reason');
                   }
                 }}
-                placeholder={TEXT.PLACEHOLDER_3}
+                placeholder={TEXT.ABSENT_REASON_PLACEHOLDER}
                 placeholderTextColor="#8A969C"
                 style={[
                   styles.input,
@@ -322,10 +459,10 @@ export default function SickScreen() {
             </View>
 
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.TEXT_10}</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.ABSENT_LEAVE_DATE_LABEL}</ThemedText>
               <View style={styles.dateRow}>
                 <DatePickerField
-                  label={TEXT.LABEL_2}
+                  label={TEXT.ABSENT_START_DATE_LABEL}
                   value={startDate}
                   onChange={(date) => {
                     setStartDate(date);
@@ -338,7 +475,7 @@ export default function SickScreen() {
                   hasError={Boolean(displayedDateError)}
                 />
                 <DatePickerField
-                  label={TEXT.LABEL_3}
+                  label={TEXT.ABSENT_END_DATE_LABEL}
                   value={endDate}
                   minimumDate={minimumEndDate}
                   hasError={Boolean(displayedDateError)}
@@ -355,13 +492,13 @@ export default function SickScreen() {
               </ThemedText>
               {leaveDayCount ? (
                 <ThemedText type="defaultSemiBold" style={styles.leaveDaySummary}>
-                  {TEXT.TEXT_11}{leaveDayCount.toLocaleString('th-TH')} {TEXT.TEXT_12}</ThemedText>
+                  {TEXT.ABSENT_LEAVE_DAY_COUNT_LABEL}{leaveDayCount.toLocaleString('th-TH')} {TEXT.ABSENT_DAY_UNIT}</ThemedText>
               ) : null}
             </View>
 
             <SelectField
-              label={TEXT.LABEL_4}
-              placeholder={TEXT.PLACEHOLDER_4}
+              label={TEXT.ABSENT_HALF_DAY_LABEL}
+              placeholder={TEXT.ABSENT_HALF_DAY_PLACEHOLDER}
               value={halfDay}
               options={halfDayOptions}
               isOpen={openSelect === 'halfDay'}
@@ -373,7 +510,7 @@ export default function SickScreen() {
             />
 
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">{TEXT.TEXT_13}</ThemedText>
+              <ThemedText type="defaultSemiBold">{TEXT.ABSENT_CONTACT_CHANNEL_LABEL}</ThemedText>
               <TextInput
                 onChangeText={(value) => {
                   setContact(value);
@@ -381,7 +518,7 @@ export default function SickScreen() {
                     clearValidationError('contact');
                   }
                 }}
-                placeholder={TEXT.PLACEHOLDER_5}
+                placeholder={TEXT.ABSENT_CONTACT_CHANNEL_PLACEHOLDER}
                 placeholderTextColor="#8A969C"
                 style={[styles.input, validationErrors.contact ? styles.inputError : undefined]}
                 value={contact}
@@ -391,13 +528,43 @@ export default function SickScreen() {
               ) : null}
             </View>
 
-            <Pressable accessibilityRole="button" onPress={handleSubmit} style={styles.submitButton}>
+            <View style={styles.field}>
+              <ThemedText type="defaultSemiBold">{FILE_PICKER_LABEL}</ThemedText>
+              <View style={styles.filePickerRow}>
+                <Pressable accessibilityRole="button" onPress={handlePickFile} style={styles.filePickerButton}>
+                  <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold">
+                    {FILE_PICKER_ACTION}
+                  </ThemedText>
+                </Pressable>
+                {selectedFile ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setSelectedFile(null)}
+                    style={styles.removeFileButton}>
+                    <ThemedText lightColor="#B42318" darkColor="#B42318" type="defaultSemiBold">
+                      {FILE_PICKER_REMOVE}
+                    </ThemedText>
+                  </Pressable>
+                ) : null}
+              </View>
+              <ThemedText style={[styles.fileName, !selectedFile ? styles.placeholder : undefined]}>
+                {selectedFile ? getImageFileName(selectedFile) : FILE_PICKER_PLACEHOLDER}
+              </ThemedText>
+            </View>
+
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={handleSubmit}
+              style={[styles.submitButton, isSubmitting ? styles.disabledButton : undefined]}>
+              {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
               <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                {TEXT.TEXT_16}</ThemedText>
+                {isSubmitting ? SUBMITTING_LABEL : TEXT.ABSENT_SUBMIT_REQUEST}</ThemedText>
             </Pressable>
           </View>
         </ThemedView>
       </ScrollView>
+      <AppToast message={toastMessage} type={toastType === 'error' ? 'error' : 'success'} />
     </ThemedView>
   );
 }
@@ -407,7 +574,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 24,
+    padding: 16,
   },
   stateContent: {
     flex: 1,
@@ -426,7 +593,7 @@ const styles = StyleSheet.create({
   },
   panel: {
     borderRadius: 8,
-    padding: 20,
+    padding: 0,
   },
   initialStatus: {
     marginTop: 8,
@@ -575,13 +742,48 @@ const styles = StyleSheet.create({
     borderColor: '#BFD2DA',
     backgroundColor: '#FFFFFF',
   },
+  filePickerRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  filePickerButton: {
+    minHeight: 46,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#0A6E8A',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+  },
+  removeFileButton: {
+    minHeight: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#F0B4AE',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+  },
+  fileName: {
+    color: '#11181C',
+    fontSize: 13,
+    lineHeight: 18,
+  },
   submitButton: {
     minHeight: 48,
     flex: 1,
+    flexDirection: 'row',
+    gap: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
     backgroundColor: '#0A6E8A',
     marginTop: 6,
+  },
+  disabledButton: {
+    opacity: 0.65,
   },
 });

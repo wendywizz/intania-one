@@ -52,16 +52,16 @@ export default function LoginCallbackScreen() {
       <View style={styles.content}>
         {errorMessage ? (
           <>
-            <ThemedText type="subtitle">{TEXT.TEXT_28}</ThemedText>
+            <ThemedText type="subtitle">{TEXT.AUTH_LOGIN_FAILED}</ThemedText>
             <ThemedText style={[styles.message, styles.errorText]}>{errorMessage}</ThemedText>
           </>
         ) : (
-          <LoadingAnimate title={TEXT.TITLE_15} desc={TEXT.DESC} />
+          <LoadingAnimate title={TEXT.AUTH_SIGNING_IN_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
         )}
         {errorMessage ? (
           <Pressable accessibilityRole="button" onPress={() => router.replace('/')} style={styles.button}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.TEXT_21}</ThemedText>
+              {TEXT.SHARED_BACK_TO_HOME_THAI}</ThemedText>
           </Pressable>
         ) : null}
       </View>
