@@ -220,9 +220,6 @@ export default function BirthScreen() {
           <ThemedText type="subtitle">{TEXT.SHARED_ERROR_TITLE_THAI}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{initialError}</ThemedText>
           <View style={styles.errorActions}>
-            <Pressable accessibilityRole="button" onPress={loadInitialAbsentData} style={styles.secondaryButton}>
-              <ThemedText type="defaultSemiBold">{TEXT.SHARED_RETRY_THAI}</ThemedText>
-            </Pressable>
             <Pressable accessibilityRole="button" onPress={() => router.replace('/absent')} style={styles.submitButton}>
               <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
                 {TEXT.SHARED_BACK_THAI}</ThemedText>
@@ -481,16 +478,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     paddingVertical: 16,
     textAlign: 'center',
-  },
-  secondaryButton: {
-    minHeight: 48,
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#BFD2DA',
-    backgroundColor: '#FFFFFF',
   },
   submitButton: {
     minHeight: 48,
