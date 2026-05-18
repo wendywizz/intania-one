@@ -1,21 +1,22 @@
-import { PROCESS } from "../constants/domain";
 import { ENDPOINTS } from "../constants/endpoints";
 import {
-  PRIVILEGE_RC_USER,
-  RP_APP_ID,
+    PRIVILEGE_RC_USER,
+    RP_APP_ID,
 } from "../constants/type-repair-computer";
 import type {
-  Person,
-  RepairComputer,
-  RepairComputerPrivilege,
-  Result,
+    Person,
+    RepairComputer,
+    RepairComputerPrivilege,
 } from "../models/types";
 import {
-  buildHttpsUrl,
-  fetchWithApiDelay,
-  listRequest,
-  mutationRequest,
-  rowRequest,
+    buildHttpsUrl,
+    ensureSuccess,
+    fetchWithApiDelay,
+    type ListResponse,
+    type MutationResponse,
+    listRequest,
+    mutationRequest,
+    rowRequest,
 } from "./api";
 
 const base = "/repairComputer/api/";
@@ -61,14 +62,14 @@ export function updateOperateData(
   return update(actionPath ? `operate/${actionPath}` : "operate", id, data);
 }
 
-export function checkCanInform(staffId: string): Promise<Result> {
+export function checkCanInform(staffId: string) {
   const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform/check_can_inform`, {
     staff_id: staffId,
   });
-  return rowRequest(url);
+  return rowRequest<unknown>(url);
 }
 
-export function getJobDetail(id: string): Promise<Result<RepairComputer>> {
+export function getJobDetail(id: string): Promise<RepairComputer> {
   const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform`, { id });
   return rowRequest<RepairComputer>(url);
 }
@@ -84,36 +85,27 @@ export function closeJob(id: string) {
   return updateInformData(id, { id }, "close");
 }
 
-export async function removeJob(id: string): Promise<Result> {
-  try {
-    const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform`);
-    const response = await fetchWithApiDelay(url, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({ id }).toString(),
-    });
-    const text = await response.text();
+export async function removeJob(id: string): Promise<MutationResponse> {
+  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform`);
+  const response = await fetchWithApiDelay(url, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ id }).toString(),
+  });
+  const text = await response.text();
 
-    if (!response.ok || !text) {
-      throw new Error("Server request failed");
-    }
-
-    const json = JSON.parse(text) as { message?: string; success?: boolean };
-
-    return {
-      processType: PROCESS.success,
-      success: json.success ?? true,
-      message: json.message ?? "",
-    };
-  } catch (error) {
-    return {
-      processType: PROCESS.error,
-      success: false,
-      message: error instanceof Error ? error.message : String(error),
-    };
+  if (!response.ok || !text) {
+    throw new Error("Server request failed");
   }
+
+  const json = JSON.parse(text) as { message?: string; success?: boolean };
+  ensureSuccess(json);
+
+  return {
+    message: json.message ?? "",
+  };
 }
 
 /* Inform */
@@ -126,7 +118,7 @@ export function getUserCurrentJob(staffId: string, start = 0, length = 10) {
   return listRequest<RepairComputer>(url);
 }
 
-export function workerQueue(): Promise<Result<Record<string, unknown>[]>> {
+export function workerQueue(): Promise<ListResponse<Record<string, unknown>>> {
   const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform/queue`);
   return listRequest<Record<string, unknown>>(url);
 }
@@ -216,11 +208,15 @@ export function assignJob(
   worker: string,
   foreman: string,
 ) {
-  return updateManageData(id, {
-    repair_type: repairType,
-    worker,
-    staff_id: foreman,
-  }, "assign");
+  return updateManageData(
+    id,
+    {
+      repair_type: repairType,
+      worker,
+      staff_id: foreman,
+    },
+    "assign",
+  );
 }
 
 export function getRepairTypes() {
@@ -233,15 +229,11 @@ export async function getRejectReason(jobId: string, worker?: string) {
     id: jobId,
     worker,
   });
-  const result = await rowRequest<Record<string, unknown>>(url);
-  const data = result.data ?? {};
+  const data = await rowRequest<Record<string, unknown>>(url);
 
   return {
-    ...result,
-    data: {
-      detail: String(data.detail ?? ""),
-      dateTime: String(data.dateTime ?? ""),
-    },
+    detail: String(data?.detail ?? ""),
+    dateTime: String(data?.dateTime ?? ""),
   };
 }
 
@@ -278,10 +270,14 @@ export function workerReceiveJob(
   isAccept: boolean,
   reason?: string,
 ) {
-  return updateOperateData(jobId, {
-    action: isAccept ? "accept" : "reject",
-    ...(!isAccept && reason ? { reason } : {}),
-  }, "accept_newjob");
+  return updateOperateData(
+    jobId,
+    {
+      action: isAccept ? "accept" : "reject",
+      ...(!isAccept && reason ? { reason } : {}),
+    },
+    "accept_newjob",
+  );
 }
 
 export function workerOperateJob(
@@ -289,10 +285,14 @@ export function workerOperateJob(
   repairDetail: string,
   solveDetail: string,
 ) {
-  return updateOperateData(jobId, {
-    audit: repairDetail,
-    result: solveDetail,
-  }, "operate_job");
+  return updateOperateData(
+    jobId,
+    {
+      audit: repairDetail,
+      result: solveDetail,
+    },
+    "operate_job",
+  );
 }
 
 export function requestSupply(jobId: string, detail: string) {
@@ -307,7 +307,7 @@ export function submitJob(jobId: string, userTip?: string) {
   );
 }
 
-export function getRepairComputerWorkers(): Promise<Result<Person[]>> {
+export function getRepairComputerWorkers(): Promise<ListResponse<Person>> {
   const url = buildHttpsUrl(
     ENDPOINTS.infor,
     "/repairComputer/api/manage/tech_list",

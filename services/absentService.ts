@@ -1,41 +1,39 @@
-import { PROCESS } from '../constants/domain';
 import {
-  TYPE_ABSENT_BIRTH,
-  TYPE_ABSENT_BUSINESS,
-  TYPE_ABSENT_HAJJ,
-  TYPE_ABSENT_RELAX,
-  TYPE_ABSENT_SICK,
-} from '../constants/type-absent';
-import type { Absent, Result } from '../models/types';
+    TYPE_ABSENT_BIRTH,
+    TYPE_ABSENT_BUSINESS,
+    TYPE_ABSENT_HAJJ,
+    TYPE_ABSENT_RELAX,
+    TYPE_ABSENT_SICK,
+} from "../constants/type-absent";
+import type { Absent } from "../models/types";
 import {
-  createPhoenixUrl,
-  fetchWithTimeout,
-  MESSAGE_PROCESS_FAILED,
-  requestJson,
-  toErrorListResult,
-  toErrorResult,
-  toResultList,
-  toResultRow,
-  type JsonMap,
-  type UploadableFile
-} from './api';
+    createPhoenixUrl,
+    ensureSuccess,
+    fetchWithTimeout,
+    MESSAGE_PROCESS_FAILED,
+    requestJson,
+    type ListResponse,
+    type MutationResponse,
+    type JsonMap,
+    type UploadableFile,
+} from "./api";
 
 const DEFAULT_DISPLAY_LENGTH = 10;
 
 export function getRequestUrlSuffix(absentType: string) {
   switch (absentType) {
     case TYPE_ABSENT_SICK:
-      return '/personnel/apis/absent/leave/';
+      return "/personnel/apis/absent/leave/";
     case TYPE_ABSENT_BUSINESS:
-      return '/personnel/apis/absent/business/';
+      return "/personnel/apis/absent/business/";
     case TYPE_ABSENT_RELAX:
-      return '/personnel/apis/absent/relax/';
+      return "/personnel/apis/absent/relax/";
     case TYPE_ABSENT_BIRTH:
-      return '/personnel/apis/absent/birth/';
+      return "/personnel/apis/absent/birth/";
     case TYPE_ABSENT_HAJJ:
-      return '/personnel/apis/absent/hajj/';
+      return "/personnel/apis/absent/hajj/";
     default:
-      return '';
+      return "";
   }
 }
 
@@ -44,118 +42,108 @@ export function getSuffixUriEndpoint(absentType: string) {
 }
 
 function generateMedUploadFileName(staffId: unknown) {
-  return `${String(staffId ?? 'unknown')}_${Date.now()}`;
+  return `${String(staffId ?? "unknown")}_${Date.now()}`;
 }
 
 function getUploadFileExtension(fileUpload: UploadableFile) {
   const fileName =
-    fileUpload instanceof Blob && 'name' in fileUpload
+    fileUpload instanceof Blob && "name" in fileUpload
       ? String(fileUpload.name)
-      : 'name' in fileUpload
+      : "name" in fileUpload
         ? fileUpload.name
-        : '';
+        : "";
   const extension = fileName?.match(/\.[A-Za-z0-9]+$/)?.[0];
 
-  return extension || '.jpg';
+  return extension || ".jpg";
 }
 
 export async function initAbsentData(
   staffId: string,
   absentType: string,
-): Promise<Result<Absent>> {
-  try {
-    const suffixUrl = getRequestUrlSuffix(absentType);
-    const url = createPhoenixUrl(`${suffixUrl}init/`, { staff_id: staffId });
-    const jsonData = await requestJson(url, { method: 'GET' });
-    const processType = String(jsonData.process_type ?? jsonData.processType ?? '');
+): Promise<Absent> {
+  const suffixUrl = getRequestUrlSuffix(absentType);
+  const url = createPhoenixUrl(`${suffixUrl}init/`, { staff_id: staffId });
+  const jsonData = await requestJson(url, { method: "GET" });
+  ensureSuccess(jsonData);
 
-    return {
-      processType,
-      message: String(jsonData.message ?? ''),
-      data: processType === PROCESS.success ? (jsonData.data as Absent) : undefined,
-      success: processType === PROCESS.success,
-    };
-  } catch (error) {
-    return toErrorResult<Absent>(error);
-  }
+  return jsonData.data as Absent;
 }
 
-export async function getData(id: string, absentType: string): Promise<Result<Absent>> {
-  try {
-    const suffixUri = getRequestUrlSuffix(absentType);
-    const url = createPhoenixUrl(suffixUri, { id });
-    const jsonData = await requestJson(url, { method: 'GET' });
-    return toResultRow<Absent>(jsonData);
-  } catch (error) {
-    return toErrorResult<Absent>(error);
-  }
+export async function getData(
+  id: string,
+  absentType: string,
+): Promise<Absent> {
+  const suffixUri = getRequestUrlSuffix(absentType);
+  const url = createPhoenixUrl(suffixUri, { id });
+  const jsonData = await requestJson(url, { method: "GET" });
+  ensureSuccess(jsonData);
+
+  return jsonData.data as Absent;
 }
 
 export async function uploadMedFile(
   endpoint: string,
   fileUpload: UploadableFile,
   params?: Record<string, unknown>,
-): Promise<Result> {
-  try {
-    const formData = new FormData();
+): Promise<MutationResponse> {
+  const formData = new FormData();
 
-    Object.entries(params ?? {}).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        formData.append(key, String(value));
-      }
-    });
-    formData.append('file', fileUpload as never);
-
-    const response = await fetchWithTimeout(endpoint, {
-      method: 'POST',
-      body: formData,
-    });
-    const body = await response.text();
-
-    if (!response.ok || !body) {
-      throw new Error(MESSAGE_PROCESS_FAILED);
+  Object.entries(params ?? {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      formData.append(key, String(value));
     }
+  });
+  formData.append("file", fileUpload as never);
 
-    return toResultRow(JSON.parse(body) as JsonMap);
-  } catch (error) {
-    return toErrorResult(error);
+  const response = await fetchWithTimeout(endpoint, {
+    method: "POST",
+    body: formData,
+  });
+  const body = await response.text();
+
+  if (!response.ok || !body) {
+    throw new Error(MESSAGE_PROCESS_FAILED);
   }
+
+  const jsonData = JSON.parse(body) as JsonMap;
+  ensureSuccess(jsonData);
+
+  return {
+    data: jsonData.data,
+    message: String(jsonData.message ?? ""),
+  };
 }
 
 export async function addData(
   data: Record<string, unknown>,
   absentType: string,
   options?: { fileUpload?: UploadableFile },
-): Promise<Result> {
-  try {
-    const suffixUri = getSuffixUriEndpoint(absentType);
-    let fileName: string | undefined;
+): Promise<MutationResponse> {
+  const suffixUri = getSuffixUriEndpoint(absentType);
+  let fileName: string | undefined;
 
-    if (options?.fileUpload) {
-      fileName = `${generateMedUploadFileName(data.staff_id)}${getUploadFileExtension(options.fileUpload)}`;
-      const endpoint = createPhoenixUrl(`${suffixUri}upload`);
-      const uploadResult = await uploadMedFile(endpoint, options.fileUpload, {
-        file_name: fileName,
-      });
-
-      if (!uploadResult.success) {
-        return uploadResult;
-      }
-    }
-
-    const url = createPhoenixUrl(suffixUri);
-    const jsonData = await requestJson(url, {
-      method: 'POST',
-      body: JSON.stringify({
-        ...data,
-        file_upload: fileName,
-      }),
+  if (options?.fileUpload) {
+    fileName = `${generateMedUploadFileName(data.staff_id)}${getUploadFileExtension(options.fileUpload)}`;
+    const endpoint = createPhoenixUrl(`${suffixUri}upload`);
+    await uploadMedFile(endpoint, options.fileUpload, {
+      file_name: fileName,
     });
-
-    return toResultRow(jsonData);
-  } catch (error) {
-    return toErrorResult(error);
   }
+
+  const url = createPhoenixUrl(suffixUri);
+  const jsonData = await requestJson(url, {
+    method: "POST",
+    body: JSON.stringify({
+      ...data,
+      file_upload: fileName,
+    }),
+  });
+  ensureSuccess(jsonData);
+
+  return {
+    data: jsonData.data,
+    message: String(jsonData.message ?? ""),
+  };
 }
 
 export async function updateData(
@@ -163,79 +151,70 @@ export async function updateData(
   data: Record<string, unknown>,
   absentType: string,
   options?: { fileUpload?: UploadableFile },
-): Promise<Result> {
-  try {
-    const suffixUri = getSuffixUriEndpoint(absentType);
-    let fileName: string | undefined;
-    let reUpload = false;
+): Promise<MutationResponse> {
+  const suffixUri = getSuffixUriEndpoint(absentType);
+  let fileName: string | undefined;
+  let reUpload = false;
 
-    if (options?.fileUpload) {
-      fileName = `${generateMedUploadFileName(data.staff_id)}${getUploadFileExtension(options.fileUpload)}`;
-      const endpoint = createPhoenixUrl(`${suffixUri}upload`);
-      reUpload = true;
+  if (options?.fileUpload) {
+    fileName = `${generateMedUploadFileName(data.staff_id)}${getUploadFileExtension(options.fileUpload)}`;
+    const endpoint = createPhoenixUrl(`${suffixUri}upload`);
+    reUpload = true;
 
-      const uploadResult = await uploadMedFile(endpoint, options.fileUpload, {
-        file_name: fileName,
-        old_file_name: data.old_file_upload,
-      });
-
-      if (!uploadResult.success) {
-        return uploadResult;
-      }
-    }
-
-    const url = createPhoenixUrl(suffixUri);
-    const jsonData = await requestJson(url, {
-      method: 'PUT',
-      body: JSON.stringify({
-        ...data,
-        id,
-        ...(reUpload ? { file_upload: fileName } : {}),
-      }),
+    await uploadMedFile(endpoint, options.fileUpload, {
+      file_name: fileName,
+      old_file_name: data.old_file_upload,
     });
-
-    return toResultRow(jsonData);
-  } catch (error) {
-    return toErrorResult(error);
   }
+
+  const url = createPhoenixUrl(suffixUri);
+  const jsonData = await requestJson(url, {
+    method: "PUT",
+    body: JSON.stringify({
+      ...data,
+      id,
+      ...(reUpload ? { file_upload: fileName } : {}),
+    }),
+  });
+  ensureSuccess(jsonData);
+
+  return {
+    data: jsonData.data,
+    message: String(jsonData.message ?? ""),
+  };
 }
 
-export async function waitingData(staffId: string): Promise<Result> {
-  try {
-    const url = createPhoenixUrl('/personnel/apis/absent/home/waiting', {
-      staff_id: staffId,
-    });
-    const jsonData = await requestJson(url, { method: 'GET' });
+export async function waitingData(staffId: string) {
+  const url = createPhoenixUrl("/personnel/apis/absent/home/waiting", {
+    staff_id: staffId,
+  });
+  const jsonData = await requestJson(url, { method: "GET" });
+  ensureSuccess(jsonData);
 
-    return {
-      processType: PROCESS.success,
-      data: {
-        remainResult: (jsonData.remain as Absent | null | undefined) ?? null,
-        cancelResult: (jsonData.cancel as Absent | null | undefined) ?? null,
-      },
-      message: String(jsonData.message ?? ''),
-      success: true,
-    };
-  } catch (error) {
-    return toErrorResult(error);
-  }
+  return {
+    remainResult: (jsonData.remain as Absent | null | undefined) ?? null,
+    cancelResult: (jsonData.cancel as Absent | null | undefined) ?? null,
+  };
 }
 
 export async function historyData(
   staffId: string,
   { length = DEFAULT_DISPLAY_LENGTH, start = 0 } = {},
-): Promise<Result<Absent[]>> {
-  try {
-    const url = createPhoenixUrl('/personnel/apis/absent/history', {
-      staff_id: staffId,
-      start,
-      length,
-    });
-    const jsonData = await requestJson(url, { method: 'GET' });
-    return toResultList<Absent>(jsonData);
-  } catch (error) {
-    return toErrorListResult<Absent>(error);
-  }
+): Promise<ListResponse<Absent>> {
+  const url = createPhoenixUrl("/personnel/apis/absent/history", {
+    staff_id: staffId,
+    start,
+    length,
+  });
+  const jsonData = await requestJson(url, { method: "GET" });
+  ensureSuccess(jsonData);
+  const data = Array.isArray(jsonData.data) ? (jsonData.data as Absent[]) : [];
+
+  return {
+    data,
+    totalCount: Number(jsonData.total_count ?? jsonData.totalCount ?? data.length),
+    message: String(jsonData.message ?? ""),
+  };
 }
 
 function getCurrentThaiBudgetYear() {
@@ -246,19 +225,17 @@ function getCurrentThaiBudgetYear() {
   return budgetYear + 543;
 }
 
-export async function statsData(staffId: string): Promise<Result> {
-  try {
-    const budgetYear = getCurrentThaiBudgetYear();
-    const url = createPhoenixUrl('/personnel/apis/absent/stats', {
-      staff_id: staffId,
-      bgyear: budgetYear,
-      year: budgetYear,
-    });
-    const jsonData = await requestJson(url, { method: 'GET' });
-    return toResultRow(jsonData);
-  } catch (error) {
-    return toErrorResult(error);
-  }
+export async function statsData(staffId: string) {
+  const budgetYear = getCurrentThaiBudgetYear();
+  const url = createPhoenixUrl("/personnel/apis/absent/stats", {
+    staff_id: staffId,
+    bgyear: budgetYear,
+    year: budgetYear,
+  });
+  const jsonData = await requestJson(url, { method: "GET" });
+  ensureSuccess(jsonData);
+
+  return jsonData.data;
 }
 
 export const getAbsentData = getData;
@@ -266,6 +243,10 @@ export const addAbsentData = addData;
 export const updateAbsentData = updateData;
 export const waitingAbsentData = waitingData;
 
-export function historyAbsentData(staffId: string, start = 0, length = DEFAULT_DISPLAY_LENGTH) {
+export function historyAbsentData(
+  staffId: string,
+  start = 0,
+  length = DEFAULT_DISPLAY_LENGTH,
+) {
   return historyData(staffId, { start, length });
 }

@@ -1,43 +1,51 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { router, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
+import {
+    ActivityIndicator,
+    Modal,
+    Pressable,
+    StyleSheet,
+    TextInput,
+    View,
+} from "react-native";
 
-import { AppToast } from '@/components/app-toast';
-import { NavTopBar } from '@/components/nav-top-bar';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { PROCESS } from '@/constants/domain';
-import { AppFonts } from '@/constants/fonts';
-import { TEXT } from '@/constants/text';
-import { workerOperateJob } from '@/services/repairComputerService';
+import { AppToast } from "@/components/app-toast";
+import { NavTopBar } from "@/components/nav-top-bar";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { AppFonts } from "@/constants/fonts";
+import { TEXT } from "@/constants/text";
+import { workerOperateJob } from "@/services/repairComputerService";
 
-type ValidationErrors = Partial<Record<'jobAudit' | 'solveMethod', string>>;
+type ValidationErrors = Partial<Record<"jobAudit" | "solveMethod", string>>;
 
 export default function OperateJobScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const jobId = Array.isArray(params.id) ? params.id[0] : params.id;
-  const [jobAudit, setJobAudit] = useState('');
-  const [solveMethod, setSolveMethod] = useState('');
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [jobAudit, setJobAudit] = useState("");
+  const [solveMethod, setSolveMethod] = useState("");
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
+    {},
+  );
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState<'success' | 'error' | ''>('');
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error" | "">("");
 
   const handleBackPress = () => {
     if (jobId) {
       router.replace({
-        pathname: '/repair-computer/edit-job',
+        pathname: "/repair-computer/edit-job",
         params: {
           id: jobId,
-          readonly: 'true',
-          backHref: '/repair-computer/worker-current-job',
+          readonly: "true",
+          backHref: "/repair-computer/worker-current-job",
         },
       } as Parameters<typeof router.replace>[0]);
       return;
     }
 
-    router.replace('/repair-computer/worker-current-job');
+    router.replace("/repair-computer/worker-current-job");
   };
 
   const clearValidationError = (field: keyof ValidationErrors) => {
@@ -52,11 +60,11 @@ export default function OperateJobScreen() {
     const nextErrors: ValidationErrors = {};
 
     if (!jobAudit.trim()) {
-      nextErrors.jobAudit = 'Job Audit is required';
+      nextErrors.jobAudit = "Job Audit is required";
     }
 
     if (!solveMethod.trim()) {
-      nextErrors.solveMethod = 'Solve method is required';
+      nextErrors.solveMethod = "Solve method is required";
     }
 
     setValidationErrors(nextErrors);
@@ -64,8 +72,8 @@ export default function OperateJobScreen() {
   };
 
   const handleOpenConfirm = () => {
-    setToastMessage('');
-    setToastType('');
+    setToastMessage("");
+    setToastType("");
 
     if (validateForm()) {
       setIsConfirmOpen(true);
@@ -78,33 +86,50 @@ export default function OperateJobScreen() {
     }
 
     setIsSubmitting(true);
-    setToastMessage('');
-    setToastType('');
+    setToastMessage("");
+    setToastType("");
 
-    const result = await workerOperateJob(jobId, jobAudit.trim(), solveMethod.trim());
+    try {
+      const result = await workerOperateJob(
+        jobId,
+        jobAudit.trim(),
+        solveMethod.trim(),
+      );
 
-    setIsSubmitting(false);
-    setIsConfirmOpen(false);
-
-    if (result.processType === PROCESS.success && result.success !== false) {
-      setToastType('success');
-      setToastMessage(result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE);
+      setToastType("success");
+      setToastMessage(
+        result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE,
+      );
       setTimeout(() => {
-        router.replace('/repair-computer/worker-current-job');
+        router.replace("/repair-computer/worker-current-job");
       }, 900);
-      return;
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(
+        error instanceof Error
+          ? error.message
+          : TEXT.REPAIR_COMPUTER_UNABLE_TO_UPDATE_JOB,
+      );
+    } finally {
+      setIsSubmitting(false);
+      setIsConfirmOpen(false);
     }
-
-    setToastType('error');
-    setToastMessage(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_UPDATE_JOB);
   };
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} onBackPress={handleBackPress} showBackButton />
+      <NavTopBar
+        title={TEXT.REPAIR_COMPUTER_TITLE}
+        onBackPress={handleBackPress}
+        showBackButton
+      />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
+        <ThemedView
+          style={styles.panel}
+          lightColor="#FFFFFF"
+          darkColor="#1F2B30"
+        >
           <ThemedText type="subtitle">Operate Job</ThemedText>
 
           <View style={styles.field}>
@@ -114,15 +139,22 @@ export default function OperateJobScreen() {
               numberOfLines={2}
               onChangeText={(value) => {
                 setJobAudit(value);
-                clearValidationError('jobAudit');
+                clearValidationError("jobAudit");
               }}
               placeholder="Job Audit"
               placeholderTextColor="#8A969C"
-              style={[styles.textArea, validationErrors.jobAudit ? styles.inputError : undefined]}
+              style={[
+                styles.textArea,
+                validationErrors.jobAudit ? styles.inputError : undefined,
+              ]}
               textAlignVertical="top"
               value={jobAudit}
             />
-            {validationErrors.jobAudit ? <ThemedText style={styles.fieldError}>{validationErrors.jobAudit}</ThemedText> : null}
+            {validationErrors.jobAudit ? (
+              <ThemedText style={styles.fieldError}>
+                {validationErrors.jobAudit}
+              </ThemedText>
+            ) : null}
           </View>
 
           <View style={styles.field}>
@@ -132,16 +164,21 @@ export default function OperateJobScreen() {
               numberOfLines={2}
               onChangeText={(value) => {
                 setSolveMethod(value);
-                clearValidationError('solveMethod');
+                clearValidationError("solveMethod");
               }}
               placeholder="Solve method"
               placeholderTextColor="#8A969C"
-              style={[styles.textArea, validationErrors.solveMethod ? styles.inputError : undefined]}
+              style={[
+                styles.textArea,
+                validationErrors.solveMethod ? styles.inputError : undefined,
+              ]}
               textAlignVertical="top"
               value={solveMethod}
             />
             {validationErrors.solveMethod ? (
-              <ThemedText style={styles.fieldError}>{validationErrors.solveMethod}</ThemedText>
+              <ThemedText style={styles.fieldError}>
+                {validationErrors.solveMethod}
+              </ThemedText>
             ) : null}
           </View>
 
@@ -149,36 +186,71 @@ export default function OperateJobScreen() {
             accessibilityRole="button"
             disabled={isSubmitting}
             onPress={handleOpenConfirm}
-            style={[styles.submitButton, isSubmitting ? styles.disabledButton : undefined]}>
-            {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+            style={[
+              styles.submitButton,
+              isSubmitting ? styles.disabledButton : undefined,
+            ]}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : null}
+            <ThemedText
+              lightColor="#FFFFFF"
+              darkColor="#FFFFFF"
+              type="defaultSemiBold"
+            >
               Submit
             </ThemedText>
           </Pressable>
         </ThemedView>
       </View>
 
-      <Modal transparent visible={isConfirmOpen} animationType="fade" onRequestClose={() => setIsConfirmOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setIsConfirmOpen(false)}>
+      <Modal
+        transparent
+        visible={isConfirmOpen}
+        animationType="fade"
+        onRequestClose={() => setIsConfirmOpen(false)}
+      >
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setIsConfirmOpen(false)}
+        >
           <Pressable>
-            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
+            <ThemedView
+              style={styles.confirmModal}
+              lightColor="#FFFFFF"
+              darkColor="#151718"
+            >
               <ThemedText type="subtitle">Confirm Operate Job</ThemedText>
-              <ThemedText style={styles.confirmMessage}>Do you want to submit this repair computer job operation?</ThemedText>
+              <ThemedText style={styles.confirmMessage}>
+                Do you want to submit this repair computer job operation?
+              </ThemedText>
               <View style={styles.confirmActions}>
                 <Pressable
                   accessibilityRole="button"
                   disabled={isSubmitting}
                   onPress={() => setIsConfirmOpen(false)}
-                  style={styles.cancelButton}>
+                  style={styles.cancelButton}
+                >
                   <ThemedText type="defaultSemiBold">No</ThemedText>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   disabled={isSubmitting}
                   onPress={handleSubmit}
-                  style={[styles.confirmButton, isSubmitting ? styles.disabledButton : undefined]}>
-                  {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
-                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                  style={[
+                    styles.confirmButton,
+                    isSubmitting ? styles.disabledButton : undefined,
+                  ]}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : null}
+                  <ThemedText
+                    lightColor="#FFFFFF"
+                    darkColor="#FFFFFF"
+                    type="defaultSemiBold"
+                  >
                     Yes
                   </ThemedText>
                 </Pressable>
@@ -188,7 +260,10 @@ export default function OperateJobScreen() {
         </Pressable>
       </Modal>
 
-      <AppToast message={toastMessage} type={toastType === 'error' ? 'error' : 'success'} />
+      <AppToast
+        message={toastMessage}
+        type={toastType === "error" ? "error" : "success"}
+      />
     </ThemedView>
   );
 }
@@ -213,74 +288,74 @@ const styles = StyleSheet.create({
     minHeight: 76,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#BFD2DA',
-    backgroundColor: '#FFFFFF',
-    color: '#11181C',
+    borderColor: "#BFD2DA",
+    backgroundColor: "#FFFFFF",
+    color: "#11181C",
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   inputError: {
-    borderColor: '#C44D58',
+    borderColor: "#C44D58",
   },
   fieldError: {
-    color: '#B42318',
+    color: "#B42318",
     fontSize: 13,
     lineHeight: 18,
   },
   submitButton: {
     minHeight: 48,
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: '#0A6E8A',
+    backgroundColor: "#0A6E8A",
     paddingHorizontal: 18,
   },
   backdrop: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
     padding: 24,
   },
   confirmModal: {
-    width: '100%',
+    width: "100%",
     maxWidth: 420,
     borderRadius: 8,
     padding: 18,
   },
   confirmMessage: {
-    color: '#687076',
+    color: "#687076",
     lineHeight: 20,
     marginTop: 10,
   },
   confirmActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginTop: 18,
   },
   cancelButton: {
     minHeight: 46,
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#BFD2DA',
-    backgroundColor: '#FFFFFF',
+    borderColor: "#BFD2DA",
+    backgroundColor: "#FFFFFF",
   },
   confirmButton: {
     minHeight: 46,
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: '#0A6E8A',
+    backgroundColor: "#0A6E8A",
   },
   disabledButton: {
     opacity: 0.65,

@@ -1,14 +1,34 @@
-import {PROCESS} from '../constants/domain';
-import { ENDPOINTS } from '../constants/endpoints';
-import type {Result} from '../models/types';
+import { ENDPOINTS } from "../constants/endpoints";
 
 const TIMEOUT_MS = 10000;
 export const API_DELAY_MS = 500;
-export const MESSAGE_CANNOT_CONNECT_TO_SERVER = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
-export const MESSAGE_PROCESS_FAILED = 'ดำเนินการไม่สำเร็จ';
-export const MESSAGE_SERVER_ERROR = 'เซิร์ฟเวอร์ขัดข้อง';
+export const MESSAGE_CANNOT_CONNECT_TO_SERVER =
+  "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้";
+export const MESSAGE_PROCESS_FAILED = "ดำเนินการไม่สำเร็จ";
+export const MESSAGE_SERVER_ERROR = "เซิร์ฟเวอร์ขัดข้อง";
 
 export type JsonMap = Record<string, unknown>;
+
+type ApiResponse<T = unknown> = {
+  data?: T;
+  message?: string;
+  process_type?: unknown;
+  processType?: unknown;
+  success?: boolean | string;
+  total_count?: number;
+  totalCount?: number;
+};
+
+export type ListResponse<T> = {
+  data: T[];
+  totalCount: number;
+  message: string;
+};
+
+export type MutationResponse<T = unknown> = {
+  data?: T;
+  message: string;
+};
 
 export type UploadableFile =
   | Blob
@@ -22,7 +42,10 @@ export function waitApiDelay() {
   return new Promise((resolve) => setTimeout(resolve, API_DELAY_MS));
 }
 
-export async function fetchWithApiDelay(input: RequestInfo | URL, init?: RequestInit) {
+export async function fetchWithApiDelay(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+) {
   await waitApiDelay();
   return fetch(input, init);
 }
@@ -34,19 +57,25 @@ export function buildHttpsUrl(
 ) {
   const url = new URL(`https://${host}${path}`);
   Object.entries(query ?? {}).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
+    if (value !== undefined && value !== null && value !== "") {
       url.searchParams.set(key, String(value));
     }
   });
   return url.toString();
 }
 
-export function createPhoenixUrl(path: string, query?: Record<string, string | number | undefined>) {
+export function createPhoenixUrl(
+  path: string,
+  query?: Record<string, string | number | undefined>,
+) {
   return buildHttpsUrl(ENDPOINTS.phoenix, path, query);
 }
 
-export function createLocalUrl(path: string, query?: Record<string, string | number | undefined>) {
-  const url = new URL(path, 'http://localhost');
+export function createLocalUrl(
+  path: string,
+  query?: Record<string, string | number | undefined>,
+) {
+  const url = new URL(path, "http://localhost");
 
   Object.entries(query ?? {}).forEach(([key, value]) => {
     if (value !== undefined) {
@@ -57,7 +86,10 @@ export function createLocalUrl(path: string, query?: Record<string, string | num
   return `${url.pathname}${url.search}`;
 }
 
-export async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit) {
+export async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+) {
   await waitApiDelay();
 
   const controller = new AbortController();
@@ -69,7 +101,7 @@ export async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestI
       signal: controller.signal,
     });
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (error instanceof Error && error.name === "AbortError") {
       throw new Error(MESSAGE_CANNOT_CONNECT_TO_SERVER);
     }
 
@@ -79,11 +111,14 @@ export async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestI
   }
 }
 
-export async function requestJson<T = JsonMap>(url: string, init?: RequestInit): Promise<T> {
+export async function requestJson<T = JsonMap>(
+  url: string,
+  init?: RequestInit,
+): Promise<T> {
   const response = await fetchWithTimeout(url, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(init?.headers ?? {}),
     },
   });
@@ -96,104 +131,65 @@ export async function requestJson<T = JsonMap>(url: string, init?: RequestInit):
   return JSON.parse(text) as T;
 }
 
-export function toResultRow<T = unknown>(jsonData: JsonMap): Result<T> {
-  const processType = String(jsonData.process_type ?? jsonData.processType ?? PROCESS.success);
-
-  return {
-    processType,
-    data: jsonData.data as T | undefined,
-    message: String(jsonData.message ?? ''),
-    success: Boolean(jsonData.success ?? processType === PROCESS.success),
-  };
-}
-
-export function toResultList<T = unknown>(jsonData: JsonMap): Result<T[]> {
-  const processType = String(jsonData.process_type ?? jsonData.processType ?? PROCESS.success);
-  const data = Array.isArray(jsonData.data) ? (jsonData.data as T[]) : [];
-
-  return {
-    processType,
-    data,
-    totalCount: Number(jsonData.total_count ?? jsonData.totalCount ?? data.length),
-    message: String(jsonData.message ?? ''),
-    success: Boolean(jsonData.success ?? processType === PROCESS.success),
-  };
-}
-
-export function toErrorResult<T = unknown>(error: unknown): Result<T> {
-  return {
-    processType: PROCESS.error,
-    message: error instanceof Error ? error.message : String(error),
-    success: false,
-  };
-}
-
-export function toErrorListResult<T = unknown>(error: unknown): Result<T[]> {
-  return {
-    ...toErrorResult<T[]>(error),
-    data: [],
-    totalCount: 0,
-  };
-}
-
-export async function listRequest<T>(url: string): Promise<Result<T[]>> {
-  try {
-    const json = await requestJson<{data?: T[]; message?: string}>(url);
-    const data = Array.isArray(json.data) ? json.data : [];
-    return {
-      processType: PROCESS.success,
-      data,
-      totalCount: data.length,
-      message: json.message ?? '',
-    };
-  } catch (error) {
-    return toErrorListResult<T>(error);
+function isSuccessResponse(json: ApiResponse) {
+  if (typeof json.success === "boolean") {
+    return json.success;
   }
-}
 
-export async function rowRequest<T>(url: string): Promise<Result<T>> {
-  try {
-    const json = await requestJson<{data?: T; message?: string; success?: boolean}>(
-      url,
+  if (typeof json.success === "string") {
+    return ["true", "success", "successed", "ok"].includes(
+      json.success.toLowerCase(),
     );
-    return {
-      processType: PROCESS.success,
-      data: json.data,
-      success: json.success,
-      message: json.message ?? '',
-    };
-  } catch (error) {
-    return {
-      processType: PROCESS.error,
-      message: error instanceof Error ? error.message : String(error),
-    };
   }
+
+  const processType = String(
+    json.process_type ?? json.processType ?? "success",
+  ).toLowerCase();
+
+  return ["success", "successed", "ok"].includes(processType);
+}
+
+function getMessage(json: ApiResponse) {
+  return String(json.message ?? "");
+}
+
+export function ensureSuccess(json: ApiResponse) {
+  if (!isSuccessResponse(json)) {
+    throw new Error(getMessage(json) || MESSAGE_PROCESS_FAILED);
+  }
+}
+
+export async function listRequest<T>(url: string): Promise<ListResponse<T>> {
+  const json = await requestJson<ApiResponse<T[]>>(url);
+  ensureSuccess(json);
+
+  const data = Array.isArray(json.data) ? json.data : [];
+  return {
+    data,
+    totalCount: Number(json.total_count ?? json.totalCount ?? data.length),
+    message: getMessage(json),
+  };
+}
+
+export async function rowRequest<T>(url: string): Promise<T> {
+  const json = await requestJson<ApiResponse<T>>(url);
+  ensureSuccess(json);
+  return json.data as T;
 }
 
 export async function mutationRequest<T>(
   url: string,
-  method: 'POST' | 'PUT' | 'DELETE',
+  method: "POST" | "PUT" | "DELETE",
   body?: unknown,
-): Promise<Result<T>> {
-  try {
-    const json = await requestJson<{data?: T; message?: string; success?: boolean}>(
-      url,
-      {
-        method,
-        body: body === undefined ? undefined : JSON.stringify(body),
-      },
-    );
-    return {
-      processType: PROCESS.success,
-      data: json.data,
-      success: json.success ?? true,
-      message: json.message ?? '',
-    };
-  } catch (error) {
-    return {
-      processType: PROCESS.error,
-      success: false,
-      message: error instanceof Error ? error.message : String(error),
-    };
-  }
+): Promise<MutationResponse<T>> {
+  const json = await requestJson<ApiResponse<T>>(url, {
+    method,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  ensureSuccess(json);
+
+  return {
+    data: json.data,
+    message: getMessage(json),
+  };
 }

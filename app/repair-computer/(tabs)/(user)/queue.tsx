@@ -1,39 +1,70 @@
-import { usePathname } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Image, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
-import { TEXT } from '@/constants/text';
+import { TEXT } from "@/constants/text";
+import { usePathname } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+    FlatList,
+    Image,
+    Pressable,
+    RefreshControl,
+    StyleSheet,
+    View,
+} from "react-native";
 
-import { LoadingAnimate } from '@/components/loading-animate';
-import { NavTopBar } from '@/components/nav-top-bar';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { PROCESS } from '@/constants/domain';
-import { ENDPOINTS } from '@/constants/endpoints';
-import { useRepairComputerRole } from '@/context/RepairComputerRoleContext';
-import { workerQueue } from '@/services/repairComputerService';
+import { LoadingAnimate } from "@/components/loading-animate";
+import { NavTopBar } from "@/components/nav-top-bar";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { ENDPOINTS } from "@/constants/endpoints";
+import { useRepairComputerRole } from "@/context/RepairComputerRoleContext";
+import { workerQueue } from "@/services/repairComputerService";
 
 type WorkerQueueItem = Record<string, unknown>;
 
-const workerIdFields = ['worker_id', 'workerId', 'staff_id', 'staffId', 'id'];
-const fullNameFields = ['workerFullname', 'worker_fullname', 'fullname', 'fullName'];
-const firstNameFields = ['firstname', 'firstName', 'first_name', 'firstNameTH', 'first_name_th'];
-const lastNameFields = ['lastname', 'lastName', 'last_name', 'lastNameTH', 'last_name_th'];
-const queueCountFields = ['queue_count', 'queueCount', 'current_job_queue_count', 'currentJobQueueCount', 'job_count', 'jobCount', 'count'];
+const workerIdFields = ["worker_id", "workerId", "staff_id", "staffId", "id"];
+const fullNameFields = [
+  "workerFullname",
+  "worker_fullname",
+  "fullname",
+  "fullName",
+];
+const firstNameFields = [
+  "firstname",
+  "firstName",
+  "first_name",
+  "firstNameTH",
+  "first_name_th",
+];
+const lastNameFields = [
+  "lastname",
+  "lastName",
+  "last_name",
+  "lastNameTH",
+  "last_name_th",
+];
+const queueCountFields = [
+  "queue_count",
+  "queueCount",
+  "current_job_queue_count",
+  "currentJobQueueCount",
+  "job_count",
+  "jobCount",
+  "count",
+];
 
 function getText(item: WorkerQueueItem, fields: string[]) {
   for (const field of fields) {
     const value = item[field];
 
-    if (typeof value === 'string' && value.trim()) {
+    if (typeof value === "string" && value.trim()) {
       return value.trim();
     }
 
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
       return String(value);
     }
   }
 
-  return '';
+  return "";
 }
 
 function getWorkerId(item: WorkerQueueItem) {
@@ -41,19 +72,26 @@ function getWorkerId(item: WorkerQueueItem) {
 }
 
 function getWorkerKey(item: WorkerQueueItem, index: number) {
-  return `${getWorkerId(item) || 'worker'}-${index}`;
+  return `${getWorkerId(item) || "worker"}-${index}`;
 }
 
 function getWorkerFullName(item: WorkerQueueItem) {
   const responseFullName = getText(item, fullNameFields);
   const firstName = getText(item, firstNameFields);
   const lastName = getText(item, lastNameFields);
-  return responseFullName || [firstName, lastName].filter(Boolean).join(' ') || getWorkerId(item) || 'Worker';
+  return (
+    responseFullName ||
+    [firstName, lastName].filter(Boolean).join(" ") ||
+    getWorkerId(item) ||
+    "Worker"
+  );
 }
 
 function sortWorkersByNameAsc(items: WorkerQueueItem[]) {
   return [...items].sort((leftItem, rightItem) => {
-    return getWorkerFullName(leftItem).localeCompare(getWorkerFullName(rightItem));
+    return getWorkerFullName(leftItem).localeCompare(
+      getWorkerFullName(rightItem),
+    );
   });
 }
 
@@ -63,15 +101,23 @@ type WorkerQueueListItemProps = {
   onPhotoError: (workerId: string) => void;
 };
 
-function WorkerQueueListItem({ failedPhotoIds, item, onPhotoError }: WorkerQueueListItemProps) {
+function WorkerQueueListItem({
+  failedPhotoIds,
+  item,
+  onPhotoError,
+}: WorkerQueueListItemProps) {
   const workerId = getWorkerId(item);
   const fullName = getWorkerFullName(item);
-  const queueCount = getText(item, queueCountFields) || '0';
+  const queueCount = getText(item, queueCountFields) || "0";
   const photoUri = `${ENDPOINTS.photoBase}${workerId}.jpg`;
   const shouldShowPhoto = Boolean(workerId) && !failedPhotoIds.has(workerId);
 
   return (
-    <ThemedView style={styles.itemCard} lightColor="#FFFFFF" darkColor="#151718">
+    <ThemedView
+      style={styles.itemCard}
+      lightColor="#FFFFFF"
+      darkColor="#151718"
+    >
       {shouldShowPhoto ? (
         <Image
           onError={() => onPhotoError(workerId)}
@@ -80,7 +126,12 @@ function WorkerQueueListItem({ failedPhotoIds, item, onPhotoError }: WorkerQueue
         />
       ) : (
         <View style={styles.photoPlaceholder}>
-          <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.placeholderText}>
+          <ThemedText
+            lightColor="#0A6E8A"
+            darkColor="#0A6E8A"
+            type="defaultSemiBold"
+            style={styles.placeholderText}
+          >
             {fullName.charAt(0).toUpperCase()}
           </ThemedText>
         </View>
@@ -93,10 +144,17 @@ function WorkerQueueListItem({ failedPhotoIds, item, onPhotoError }: WorkerQueue
       </View>
 
       <View style={styles.queueBadge}>
-        <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.queueCount}>
+        <ThemedText
+          lightColor="#0A6E8A"
+          darkColor="#0A6E8A"
+          type="defaultSemiBold"
+          style={styles.queueCount}
+        >
           {queueCount}
         </ThemedText>
-        <ThemedText style={styles.queueLabel}>{TEXT.REPAIR_COMPUTER_JOBS}</ThemedText>
+        <ThemedText style={styles.queueLabel}>
+          {TEXT.REPAIR_COMPUTER_JOBS}
+        </ThemedText>
       </View>
     </ThemedView>
   );
@@ -109,39 +167,52 @@ export default function RepairComputerQueueScreen() {
   const [failedPhotoIds, setFailedPhotoIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState('');
-  const autoLoadedRouteRef = useRef('');
+  const [error, setError] = useState("");
+  const autoLoadedRouteRef = useRef("");
   const isLoadingQueueRef = useRef(false);
 
-  const loadQueue = useCallback(async (showRefreshing = false, forceReload = false) => {
-    if (isLoadingQueueRef.current || (!forceReload && autoLoadedRouteRef.current === '/repair-computer/queue')) {
-      return;
-    }
+  const loadQueue = useCallback(
+    async (showRefreshing = false, forceReload = false) => {
+      if (
+        isLoadingQueueRef.current ||
+        (!forceReload &&
+          autoLoadedRouteRef.current === "/repair-computer/queue")
+      ) {
+        return;
+      }
 
-    isLoadingQueueRef.current = true;
-    if (showRefreshing) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
+      isLoadingQueueRef.current = true;
+      if (showRefreshing) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
 
-    setError('');
-    const result = await workerQueue();
-    isLoadingQueueRef.current = false;
-
-    if (result.processType === PROCESS.error) {
-      setWorkers([]);
-      setError(result.message || TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_WORKER_QUEUE);
-    } else {
-      setWorkers(Array.isArray(result.data) ? sortWorkersByNameAsc(result.data) : []);
-    }
-
-    setIsLoading(false);
-    setIsRefreshing(false);
-  }, []);
+      setError("");
+      try {
+        const result = await workerQueue();
+        setWorkers(sortWorkersByNameAsc(result.data));
+      } catch (error) {
+        setWorkers([]);
+        setError(
+          error instanceof Error
+            ? error.message
+            : TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_WORKER_QUEUE,
+        );
+      } finally {
+        isLoadingQueueRef.current = false;
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
-    if (pathname === '/repair-computer/queue' && autoLoadedRouteRef.current !== pathname) {
+    if (
+      pathname === "/repair-computer/queue" &&
+      autoLoadedRouteRef.current !== pathname
+    ) {
       autoLoadedRouteRef.current = pathname;
       loadQueue(false, true);
     }
@@ -157,17 +228,35 @@ export default function RepairComputerQueueScreen() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title={TEXT.REPAIR_COMPUTER_LOADING_QUEUE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
+      return (
+        <LoadingAnimate
+          title={TEXT.REPAIR_COMPUTER_LOADING_QUEUE}
+          desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
+        />
+      );
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
-          <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={() => loadQueue(false, true)} style={styles.retryButton}>
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.SHARED_RETRY}</ThemedText>
+          <ThemedText type="subtitle">
+            {TEXT.SHARED_SOMETHING_WENT_WRONG}
+          </ThemedText>
+          <ThemedText style={[styles.stateMessage, styles.errorText]}>
+            {error}
+          </ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => loadQueue(false, true)}
+            style={styles.retryButton}
+          >
+            <ThemedText
+              lightColor="#FFFFFF"
+              darkColor="#FFFFFF"
+              type="defaultSemiBold"
+            >
+              {TEXT.SHARED_RETRY}
+            </ThemedText>
           </Pressable>
         </View>
       );
@@ -179,7 +268,10 @@ export default function RepairComputerQueueScreen() {
         data={workers}
         keyExtractor={getWorkerKey}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadQueue(true, true)} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => loadQueue(true, true)}
+          />
         }
         renderItem={({ item }) => (
           <WorkerQueueListItem
@@ -189,8 +281,14 @@ export default function RepairComputerQueueScreen() {
           />
         )}
         ListEmptyComponent={
-          <ThemedView style={styles.emptyCard} lightColor="#FFFFFF" darkColor="#151718">
-            <ThemedText style={styles.emptyMessage}>{TEXT.REPAIR_COMPUTER_NO_WORKER_QUEUE}</ThemedText>
+          <ThemedView
+            style={styles.emptyCard}
+            lightColor="#FFFFFF"
+            darkColor="#151718"
+          >
+            <ThemedText style={styles.emptyMessage}>
+              {TEXT.REPAIR_COMPUTER_NO_WORKER_QUEUE}
+            </ThemedText>
           </ThemedView>
         }
       />
@@ -199,10 +297,18 @@ export default function RepairComputerQueueScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} backHref="/" rightContent={roleSwitcher} />
+      <NavTopBar
+        title={TEXT.REPAIR_COMPUTER_TITLE}
+        backHref="/"
+        rightContent={roleSwitcher}
+      />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
+        <ThemedView
+          style={styles.panel}
+          lightColor="#FFFFFF"
+          darkColor="#1F2B30"
+        >
           <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_QUEUE}</ThemedText>
           {renderContent()}
         </ThemedView>
@@ -231,26 +337,26 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     minHeight: 92,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
+    borderColor: "#D7E6EC",
     padding: 14,
   },
   workerPhoto: {
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: '#E4F0F6',
+    backgroundColor: "#E4F0F6",
   },
   photoPlaceholder: {
     width: 58,
     height: 58,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 29,
-    backgroundColor: '#E4F0F6',
+    backgroundColor: "#E4F0F6",
   },
   placeholderText: {
     fontSize: 22,
@@ -265,17 +371,17 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   workerMeta: {
-    color: '#687076',
+    color: "#687076",
     fontSize: 13,
     lineHeight: 18,
     marginTop: 4,
   },
   queueBadge: {
     minWidth: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: '#E4F0F6',
+    backgroundColor: "#E4F0F6",
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
@@ -284,45 +390,45 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   queueLabel: {
-    color: '#687076',
+    color: "#687076",
     fontSize: 12,
     lineHeight: 16,
     marginTop: 2,
   },
   stateContent: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingVertical: 24,
   },
   stateMessage: {
-    color: '#687076',
+    color: "#687076",
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
   },
   errorText: {
-    color: '#B42318',
+    color: "#B42318",
   },
   retryButton: {
     minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: '#0A6E8A',
+    backgroundColor: "#0A6E8A",
     marginTop: 24,
   },
   emptyCard: {
     minHeight: 120,
-    justifyContent: 'center',
+    justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
+    borderColor: "#D7E6EC",
     padding: 16,
   },
   emptyMessage: {
-    color: '#687076',
+    color: "#687076",
     fontSize: 14,
     lineHeight: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

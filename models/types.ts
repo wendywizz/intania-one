@@ -7,14 +7,6 @@ export type News = {
   pubDate: string;
 };
 
-export type Result<T = unknown> = {
-  processType: string;
-  data?: T;
-  totalCount?: number;
-  message?: string;
-  success?: boolean;
-};
-
 export type Person = {
   staffId?: string;
   [key: string]: unknown;

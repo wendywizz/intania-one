@@ -1,21 +1,32 @@
-import { router, usePathname } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { TEXT } from '@/constants/text';
-
-import { LoadingAnimate } from '@/components/loading-animate';
-import { NavTopBar } from '@/components/nav-top-bar';
-import { getRepairComputerJobId, RepairComputerJobListItem } from '@/components/repair-computer-job-list-item';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { PROCESS } from '@/constants/domain';
+import { TEXT } from "@/constants/text";
+import { router, usePathname } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  PRIVILEGE_RC_FOREMAN,
-  PRIVILEGE_RC_WORKER,
-  type RepairComputerRole,
-} from '@/constants/type-repair-computer';
-import { useRepairComputerRole } from '@/context/RepairComputerRoleContext';
-import type { RepairComputer, Result } from '@/models/types';
+    ActivityIndicator,
+    FlatList,
+    Pressable,
+    RefreshControl,
+    StyleSheet,
+    useWindowDimensions,
+    View,
+} from "react-native";
+
+import { LoadingAnimate } from "@/components/loading-animate";
+import { NavTopBar } from "@/components/nav-top-bar";
+import {
+    getRepairComputerJobId,
+    RepairComputerJobListItem,
+} from "@/components/repair-computer-job-list-item";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import {
+    PRIVILEGE_RC_FOREMAN,
+    PRIVILEGE_RC_WORKER,
+    type RepairComputerRole,
+} from "@/constants/type-repair-computer";
+import { useRepairComputerRole } from "@/context/RepairComputerRoleContext";
+import type { RepairComputer } from "@/models/types";
+import type { ListResponse } from "@/services/api";
 
 const ESTIMATED_ITEM_HEIGHT = 132;
 const LIST_VERTICAL_CHROME = 260;
@@ -25,17 +36,25 @@ type RepairComputerJobListScreenProps = {
   emptyMessage: string;
   errorMessage: string;
   loadingTitle: string;
-  loadPage: (start: number, length: number) => Promise<Result<RepairComputer[]>>;
+  loadPage: (
+    start: number,
+    length: number,
+  ) => Promise<ListResponse<RepairComputer>>;
   detailBackHref: string;
-  detailPathname?: '/repair-computer/edit-job' | '/repair-computer/foreman-job-detail';
+  detailPathname?:
+    | "/repair-computer/edit-job"
+    | "/repair-computer/foreman-job-detail";
 };
 
 function getJobKey(job: RepairComputer, index: number) {
-  return `${getRepairComputerJobId(job) || 'repair-job'}-${index}`;
+  return `${getRepairComputerJobId(job) || "repair-job"}-${index}`;
 }
 
 function getPageSize(screenHeight: number) {
-  return Math.max(3, Math.ceil((screenHeight - LIST_VERTICAL_CHROME) / ESTIMATED_ITEM_HEIGHT));
+  return Math.max(
+    3,
+    Math.ceil((screenHeight - LIST_VERTICAL_CHROME) / ESTIMATED_ITEM_HEIGHT),
+  );
 }
 
 function getRoleTitlePrefix(role: RepairComputerRole) {
@@ -47,11 +66,15 @@ function getRoleTitlePrefix(role: RepairComputerRole) {
     return TEXT.REPAIR_COMPUTER_WORKER;
   }
 
-  return 'User';
+  return "User";
 }
 
-function getHasMore(currentCount: number, pageSize: number, result: Result<RepairComputer[]>) {
-  if (typeof result.totalCount === 'number') {
+function getHasMore(
+  currentCount: number,
+  pageSize: number,
+  result: ListResponse<RepairComputer>,
+) {
+  if (typeof result.totalCount === "number") {
     return currentCount < result.totalCount;
   }
 
@@ -66,53 +89,62 @@ export function RepairComputerJobListScreen({
   loadingTitle,
   loadPage,
   detailBackHref,
-  detailPathname = '/repair-computer/edit-job',
+  detailPathname = "/repair-computer/edit-job",
 }: RepairComputerJobListScreenProps) {
   const { height } = useWindowDimensions();
   const pathname = usePathname();
   const { currentRole, roleSwitcher } = useRepairComputerRole();
-  const screenTitle = title === TEXT.REPAIR_COMPUTER_NEW_JOB ? `${getRoleTitlePrefix(currentRole)} ${title}` : title;
+  const screenTitle =
+    title === TEXT.REPAIR_COMPUTER_NEW_JOB
+      ? `${getRoleTitlePrefix(currentRole)} ${title}`
+      : title;
   const pageSize = getPageSize(height);
   const [jobs, setJobs] = useState<RepairComputer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [error, setError] = useState('');
-  const autoLoadedRouteRef = useRef('');
+  const [error, setError] = useState("");
+  const autoLoadedRouteRef = useRef("");
   const loadingStartRef = useRef<number | null>(null);
   const loadedStartRef = useRef<Set<number>>(new Set());
 
-  const loadFirstPage = useCallback(async (showRefreshing = false, forceReload = false) => {
-    if (loadingStartRef.current === 0 || (!forceReload && loadedStartRef.current.has(0))) {
-      return;
-    }
+  const loadFirstPage = useCallback(
+    async (showRefreshing = false, forceReload = false) => {
+      if (
+        loadingStartRef.current === 0 ||
+        (!forceReload && loadedStartRef.current.has(0))
+      ) {
+        return;
+      }
 
-    loadingStartRef.current = 0;
-    if (showRefreshing) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
+      loadingStartRef.current = 0;
+      if (showRefreshing) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
 
-    setError('');
-    const result = await loadPage(0, pageSize);
-    loadingStartRef.current = null;
-    loadedStartRef.current = new Set([0]);
+      setError("");
+      try {
+        const result = await loadPage(0, pageSize);
+        const nextJobs = result.data;
 
-    if (result.processType === PROCESS.error) {
-      setJobs([]);
-      setError(result.message || errorMessage);
-      setHasMore(false);
-    } else {
-      const nextJobs = Array.isArray(result.data) ? result.data : [];
-      setJobs(nextJobs);
-      setHasMore(getHasMore(nextJobs.length, pageSize, result));
-    }
-
-    setIsLoading(false);
-    setIsRefreshing(false);
-  }, [errorMessage, loadPage, pageSize]);
+        loadedStartRef.current = new Set([0]);
+        setJobs(nextJobs);
+        setHasMore(getHasMore(nextJobs.length, pageSize, result));
+      } catch (error) {
+        setJobs([]);
+        setError(error instanceof Error ? error.message : errorMessage);
+        setHasMore(false);
+      } finally {
+        loadingStartRef.current = null;
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [errorMessage, loadPage, pageSize],
+  );
 
   const loadMoreJobs = useCallback(async () => {
     if (isLoading || isRefreshing || isLoadingMore || !hasMore) {
@@ -121,26 +153,37 @@ export function RepairComputerJobListScreen({
 
     const start = jobs.length;
 
-    if (loadingStartRef.current === start || loadedStartRef.current.has(start)) {
+    if (
+      loadingStartRef.current === start ||
+      loadedStartRef.current.has(start)
+    ) {
       return;
     }
 
     loadingStartRef.current = start;
     setIsLoadingMore(true);
-    const result = await loadPage(start, pageSize);
-    loadingStartRef.current = null;
-    loadedStartRef.current.add(start);
+    try {
+      const result = await loadPage(start, pageSize);
+      const nextJobs = result.data;
 
-    if (result.processType === PROCESS.error) {
-      setHasMore(false);
-    } else {
-      const nextJobs = Array.isArray(result.data) ? result.data : [];
+      loadedStartRef.current.add(start);
       setJobs((currentJobs) => [...currentJobs, ...nextJobs]);
       setHasMore(getHasMore(start + nextJobs.length, pageSize, result));
+    } catch {
+      setHasMore(false);
+    } finally {
+      loadingStartRef.current = null;
+      setIsLoadingMore(false);
     }
-
-    setIsLoadingMore(false);
-  }, [hasMore, isLoading, isLoadingMore, isRefreshing, jobs.length, loadPage, pageSize]);
+  }, [
+    hasMore,
+    isLoading,
+    isLoadingMore,
+    isRefreshing,
+    jobs.length,
+    loadPage,
+    pageSize,
+  ]);
 
   useEffect(() => {
     if (pathname !== detailBackHref) {
@@ -163,23 +206,41 @@ export function RepairComputerJobListScreen({
 
     router.push({
       pathname: detailPathname,
-      params: { id: jobId, readonly: 'true', backHref: detailBackHref },
+      params: { id: jobId, readonly: "true", backHref: detailBackHref },
     } as Parameters<typeof router.push>[0]);
   };
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title={loadingTitle} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
+      return (
+        <LoadingAnimate
+          title={loadingTitle}
+          desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
+        />
+      );
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
-          <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={() => loadFirstPage(false, true)} style={styles.retryButton}>
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.SHARED_RETRY}</ThemedText>
+          <ThemedText type="subtitle">
+            {TEXT.SHARED_SOMETHING_WENT_WRONG}
+          </ThemedText>
+          <ThemedText style={[styles.stateMessage, styles.errorText]}>
+            {error}
+          </ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => loadFirstPage(false, true)}
+            style={styles.retryButton}
+          >
+            <ThemedText
+              lightColor="#FFFFFF"
+              darkColor="#FFFFFF"
+              type="defaultSemiBold"
+            >
+              {TEXT.SHARED_RETRY}
+            </ThemedText>
           </Pressable>
         </View>
       );
@@ -191,11 +252,16 @@ export function RepairComputerJobListScreen({
         data={jobs}
         keyExtractor={getJobKey}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadFirstPage(true, true)} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => loadFirstPage(true, true)}
+          />
         }
         onEndReached={loadMoreJobs}
         onEndReachedThreshold={0.4}
-        renderItem={({ item }) => <RepairComputerJobListItem job={item} onPress={openJobDetail} />}
+        renderItem={({ item }) => (
+          <RepairComputerJobListItem job={item} onPress={openJobDetail} />
+        )}
         ListFooterComponent={
           isLoadingMore ? (
             <View style={styles.footerLoader}>
@@ -204,7 +270,11 @@ export function RepairComputerJobListScreen({
           ) : null
         }
         ListEmptyComponent={
-          <ThemedView style={styles.emptyCard} lightColor="#FFFFFF" darkColor="#151718">
+          <ThemedView
+            style={styles.emptyCard}
+            lightColor="#FFFFFF"
+            darkColor="#151718"
+          >
             <ThemedText style={styles.emptyMessage}>{emptyMessage}</ThemedText>
           </ThemedView>
         }
@@ -214,10 +284,18 @@ export function RepairComputerJobListScreen({
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} backHref="/" rightContent={roleSwitcher} />
+      <NavTopBar
+        title={TEXT.REPAIR_COMPUTER_TITLE}
+        backHref="/"
+        rightContent={roleSwitcher}
+      />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
+        <ThemedView
+          style={styles.panel}
+          lightColor="#FFFFFF"
+          darkColor="#1F2B30"
+        >
           <ThemedText type="subtitle">{screenTitle}</ThemedText>
           {renderContent()}
         </ThemedView>
@@ -246,42 +324,42 @@ const styles = StyleSheet.create({
   },
   stateContent: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingVertical: 24,
   },
   stateMessage: {
-    color: '#687076',
+    color: "#687076",
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
   },
   errorText: {
-    color: '#B42318',
+    color: "#B42318",
   },
   retryButton: {
     minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: '#0A6E8A',
+    backgroundColor: "#0A6E8A",
     marginTop: 24,
   },
   emptyCard: {
     minHeight: 120,
-    justifyContent: 'center',
+    justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
+    borderColor: "#D7E6EC",
     padding: 16,
   },
   emptyMessage: {
-    color: '#687076',
+    color: "#687076",
     fontSize: 14,
     lineHeight: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   footerLoader: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 14,
   },
 });

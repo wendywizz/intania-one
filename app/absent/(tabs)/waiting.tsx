@@ -1,72 +1,83 @@
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    View,
+} from "react-native";
 
-import { LoadingAnimate } from '@/components/loading-animate';
-import { NavTopBar } from '@/components/nav-top-bar';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { PROCESS } from '@/constants/domain';
-import { TEXT } from '@/constants/text';
+import { LoadingAnimate } from "@/components/loading-animate";
+import { NavTopBar } from "@/components/nav-top-bar";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { TEXT } from "@/constants/text";
 import {
     TYPE_ABSENT_BIRTH,
     TYPE_ABSENT_BUSINESS,
     TYPE_ABSENT_HAJJ,
     TYPE_ABSENT_RELAX,
     TYPE_ABSENT_SICK,
-} from '@/constants/type-absent';
-import { USER_ID } from '@/constants/user';
-import { useAuth } from '@/context/AuthContext';
-import type { Absent } from '@/models/types';
-import { waitingData } from '@/services/absentService';
-import { formatDateRange } from '@/utils/date-format';
+} from "@/constants/type-absent";
+import { USER_ID } from "@/constants/user";
+import { useAuth } from "@/context/AuthContext";
+import type { Absent } from "@/models/types";
+import { waitingData } from "@/services/absentService";
+import { formatDateRange } from "@/utils/date-format";
 
 const absentTypeLabels: Record<string, string> = {
   [TYPE_ABSENT_SICK]: TEXT.ABSENT_SICK_TITLE,
   [TYPE_ABSENT_BUSINESS]: TEXT.ABSENT_BUSINESS_TITLE,
   [TYPE_ABSENT_BIRTH]: TEXT.ABSENT_BIRTH_TITLE,
   [TYPE_ABSENT_RELAX]: TEXT.ABSENT_RELAX_TITLE,
-  [TYPE_ABSENT_HAJJ]: 'Hajj leave',
+  [TYPE_ABSENT_HAJJ]: "Hajj leave",
 };
 
 const absentTypeFields = [
-  'absentType',
-  'absent_type',
-  'typeAbsent',
-  'type_absent',
-  'leaveType',
-  'leave_type',
-  'type',
+  "absentType",
+  "absent_type",
+  "typeAbsent",
+  "type_absent",
+  "leaveType",
+  "leave_type",
+  "type",
 ];
 const absentTypeNameFields = [
-  'absentTypeName',
-  'absent_type_name',
-  'typeName',
-  'type_name',
-  'leaveTypeName',
-  'leave_type_name',
+  "absentTypeName",
+  "absent_type_name",
+  "typeName",
+  "type_name",
+  "leaveTypeName",
+  "leave_type_name",
 ];
-const startDateFields = ['startDate', 'start_date', 'dateStart', 'date_start'];
-const endDateFields = ['endDate', 'end_date', 'dateEnd', 'date_end'];
+const startDateFields = ["startDate", "start_date", "dateStart", "date_start"];
+const endDateFields = ["endDate", "end_date", "dateEnd", "date_end"];
 
 function getText(item: Absent, fields: string[]) {
   for (const field of fields) {
     const value = item[field];
 
-    if (typeof value === 'string' && value.trim()) {
+    if (typeof value === "string" && value.trim()) {
       return value.trim();
     }
 
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
       return String(value);
     }
   }
 
-  return '';
+  return "";
 }
 
 function getAbsentId(item: Absent) {
-  return getText(item, ['id', 'absentId', 'absent_id', 'requestId', 'request_id']);
+  return getText(item, [
+    "id",
+    "absentId",
+    "absent_id",
+    "requestId",
+    "request_id",
+  ]);
 }
 
 function getAbsentType(item: Absent) {
@@ -77,7 +88,11 @@ function getAbsentTypeLabel(item: Absent) {
   const typeName = getText(item, absentTypeNameFields);
   const type = getAbsentType(item);
 
-  return typeName || absentTypeLabels[type] || (type ? `Absent type ${type}` : 'Absent');
+  return (
+    typeName ||
+    absentTypeLabels[type] ||
+    (type ? `Absent type ${type}` : "Absent")
+  );
 }
 
 function getDateRange(item: Absent) {
@@ -85,7 +100,7 @@ function getDateRange(item: Absent) {
   const endDate = getText(item, endDateFields);
   const formattedDateRange = formatDateRange(startDate, endDate);
 
-  return formattedDateRange ? `Absent date: ${formattedDateRange}` : '';
+  return formattedDateRange ? `Absent date: ${formattedDateRange}` : "";
 }
 
 type WaitingListItemProps = {
@@ -100,7 +115,11 @@ function WaitingListItem({ item, label, onPress }: WaitingListItemProps) {
 
   return (
     <Pressable accessibilityRole="button" onPress={() => onPress(item)}>
-      <ThemedView style={styles.itemCard} lightColor="#FFFFFF" darkColor="#151718">
+      <ThemedView
+        style={styles.itemCard}
+        lightColor="#FFFFFF"
+        darkColor="#151718"
+      >
         <View style={styles.itemHeader}>
           <ThemedText type="defaultSemiBold" style={styles.itemLabel}>
             {label}
@@ -111,7 +130,9 @@ function WaitingListItem({ item, label, onPress }: WaitingListItemProps) {
           {type}
         </ThemedText>
 
-        {dateRange ? <ThemedText style={styles.itemMeta}>{dateRange}</ThemedText> : null}
+        {dateRange ? (
+          <ThemedText style={styles.itemMeta}>{dateRange}</ThemedText>
+        ) : null}
       </ThemedView>
     </Pressable>
   );
@@ -119,40 +140,48 @@ function WaitingListItem({ item, label, onPress }: WaitingListItemProps) {
 
 export default function WaitingScreen() {
   const { user: authUser } = useAuth();
-  const [items, setItems] = useState<{ remain: Absent | null; cancel: Absent | null }>({
+  const [items, setItems] = useState<{
+    remain: Absent | null;
+    cancel: Absent | null;
+  }>({
     remain: null,
     cancel: null,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const userId = authUser?.staffId || USER_ID;
 
-  const loadWaitingData = useCallback(async (showRefreshing = false) => {
-    if (showRefreshing) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
+  const loadWaitingData = useCallback(
+    async (showRefreshing = false) => {
+      if (showRefreshing) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
 
-    setError('');
+      setError("");
 
-    const result = await waitingData(userId);
-
-    if (result.processType === PROCESS.error) {
-      setItems({ remain: null, cancel: null });
-      setError(result.message || TEXT.SHARED_UNABLE_TO_LOAD_HISTORY);
-    } else {
-      const data = result.data as any;
-      setItems({
-        remain: (data?.remainResult as Absent | null | undefined) ?? null,
-        cancel: (data?.cancelResult as Absent | null | undefined) ?? null,
-      });
-    }
-
-    setIsLoading(false);
-    setIsRefreshing(false);
-  }, [userId]);
+      try {
+        const result = await waitingData(userId);
+        setItems({
+          remain: result.remainResult,
+          cancel: result.cancelResult,
+        });
+      } catch (error) {
+        setItems({ remain: null, cancel: null });
+        setError(
+          error instanceof Error
+            ? error.message
+            : TEXT.SHARED_UNABLE_TO_LOAD_HISTORY,
+        );
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [userId],
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -162,7 +191,7 @@ export default function WaitingScreen() {
 
   const openDetail = useCallback((item: Absent) => {
     router.push({
-      pathname: '/absent/detail',
+      pathname: "/absent/detail",
       params: {
         id: getAbsentId(item),
         type: getAbsentType(item),
@@ -173,17 +202,35 @@ export default function WaitingScreen() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title={TEXT.SHARED_LOADING_HISTORY} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
+      return (
+        <LoadingAnimate
+          title={TEXT.SHARED_LOADING_HISTORY}
+          desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
+        />
+      );
     }
 
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
-          <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={() => loadWaitingData()} style={styles.retryButton}>
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.SHARED_RETRY}</ThemedText>
+          <ThemedText type="subtitle">
+            {TEXT.SHARED_SOMETHING_WENT_WRONG}
+          </ThemedText>
+          <ThemedText style={[styles.stateMessage, styles.errorText]}>
+            {error}
+          </ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => loadWaitingData()}
+            style={styles.retryButton}
+          >
+            <ThemedText
+              lightColor="#FFFFFF"
+              darkColor="#FFFFFF"
+              type="defaultSemiBold"
+            >
+              {TEXT.SHARED_RETRY}
+            </ThemedText>
           </Pressable>
         </View>
       );
@@ -194,8 +241,14 @@ export default function WaitingScreen() {
     if (!hasItems) {
       return (
         <View style={styles.stateContent}>
-          <ThemedView style={styles.emptyCard} lightColor="#FFFFFF" darkColor="#151718">
-            <ThemedText style={styles.emptyMessage}>{TEXT.SHARED_NO_HISTORY}</ThemedText>
+          <ThemedView
+            style={styles.emptyCard}
+            lightColor="#FFFFFF"
+            darkColor="#151718"
+          >
+            <ThemedText style={styles.emptyMessage}>
+              {TEXT.SHARED_NO_HISTORY}
+            </ThemedText>
           </ThemedView>
         </View>
       );
@@ -205,7 +258,12 @@ export default function WaitingScreen() {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadWaitingData(true)} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => loadWaitingData(true)}
+          />
+        }
       >
         {items.remain ? (
           <WaitingListItem
@@ -216,7 +274,11 @@ export default function WaitingScreen() {
         ) : null}
 
         {items.cancel ? (
-          <WaitingListItem item={items.cancel} label="Waiting for HR Approval" onPress={openDetail} />
+          <WaitingListItem
+            item={items.cancel}
+            label="Waiting for HR Approval"
+            onPress={openDetail}
+          />
         ) : null}
       </ScrollView>
     );
@@ -227,7 +289,11 @@ export default function WaitingScreen() {
       <NavTopBar title={TEXT.ABSENT_TITLE} />
 
       <View style={styles.content}>
-        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
+        <ThemedView
+          style={styles.panel}
+          lightColor="#FFFFFF"
+          darkColor="#1F2B30"
+        >
           <ThemedText type="subtitle">{TEXT.ABSENT_WAITING_TITLE}</ThemedText>
           {renderContent()}
         </ThemedView>
@@ -261,20 +327,20 @@ const styles = StyleSheet.create({
   itemCard: {
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
+    borderColor: "#D7E6EC",
     padding: 16,
   },
   itemHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     gap: 12,
     marginBottom: 8,
   },
   itemLabel: {
     fontSize: 12,
     lineHeight: 18,
-    color: '#0A6E8A',
+    color: "#0A6E8A",
   },
   itemTitle: {
     fontSize: 16,
@@ -282,45 +348,45 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   itemMeta: {
-    color: '#687076',
+    color: "#687076",
     fontSize: 13,
     lineHeight: 19,
     marginTop: 6,
   },
   stateContent: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingVertical: 24,
   },
   stateMessage: {
-    color: '#687076',
+    color: "#687076",
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
   },
   errorText: {
-    color: '#B42318',
+    color: "#B42318",
   },
   retryButton: {
     minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: '#0A6E8A',
+    backgroundColor: "#0A6E8A",
     marginTop: 24,
   },
   emptyCard: {
     minHeight: 120,
-    justifyContent: 'center',
+    justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
+    borderColor: "#D7E6EC",
     padding: 16,
   },
   emptyMessage: {
-    color: '#687076',
+    color: "#687076",
     fontSize: 14,
     lineHeight: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
