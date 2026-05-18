@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import { PROCESS } from '../constants/domain';
 import {
   TYPE_ABSENT_BIRTH,
@@ -9,17 +8,16 @@ import {
 } from '../constants/type-absent';
 import type { Absent, Result } from '../models/types';
 import {
-  createLocalUrl,
   createPhoenixUrl,
   fetchWithTimeout,
   MESSAGE_PROCESS_FAILED,
   requestJson,
-  toErrorResult,
   toErrorListResult,
+  toErrorResult,
   toResultList,
   toResultRow,
   type JsonMap,
-  type UploadableFile,
+  type UploadableFile
 } from './api';
 
 const DEFAULT_DISPLAY_LENGTH = 10;
@@ -67,13 +65,7 @@ export async function initAbsentData(
 ): Promise<Result<Absent>> {
   try {
     const suffixUrl = getRequestUrlSuffix(absentType);
-    const url =
-      Platform.OS === 'web'
-        ? createLocalUrl('/api/absent/init', {
-            staff_id: staffId,
-            absent_type: absentType,
-          })
-        : createPhoenixUrl(`${suffixUrl}init/`, { staff_id: staffId });
+    const url = createPhoenixUrl(`${suffixUrl}init/`, { staff_id: staffId });
     const jsonData = await requestJson(url, { method: 'GET' });
     const processType = String(jsonData.process_type ?? jsonData.processType ?? '');
 
@@ -234,22 +226,38 @@ export async function historyData(
   { length = DEFAULT_DISPLAY_LENGTH, start = 0 } = {},
 ): Promise<Result<Absent[]>> {
   try {
-    const url =
-      Platform.OS === 'web'
-        ? createLocalUrl('/api/absent/history', {
-            staff_id: staffId,
-            start,
-            length,
-          })
-        : createPhoenixUrl('/personnel/apis/absent/history', {
-            staff_id: staffId,
-            start,
-            length,
-          });
+    const url = createPhoenixUrl('/personnel/apis/absent/history', {
+      staff_id: staffId,
+      start,
+      length,
+    });
     const jsonData = await requestJson(url, { method: 'GET' });
     return toResultList<Absent>(jsonData);
   } catch (error) {
     return toErrorListResult<Absent>(error);
+  }
+}
+
+function getCurrentThaiBudgetYear() {
+  const today = new Date();
+  const calendarYear = today.getFullYear();
+  const budgetYear = today.getMonth() >= 9 ? calendarYear + 1 : calendarYear;
+
+  return budgetYear + 543;
+}
+
+export async function statsData(staffId: string): Promise<Result> {
+  try {
+    const budgetYear = getCurrentThaiBudgetYear();
+    const url = createPhoenixUrl('/personnel/apis/absent/stats', {
+      staff_id: staffId,
+      bgyear: budgetYear,
+      year: budgetYear,
+    });
+    const jsonData = await requestJson(url, { method: 'GET' });
+    return toResultRow(jsonData);
+  } catch (error) {
+    return toErrorResult(error);
   }
 }
 

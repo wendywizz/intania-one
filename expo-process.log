@@ -1,0 +1,87 @@
+env: load .env
+env: export EXPO_PUBLIC_SCOOBA_API_TOKEN EXPO_PUBLIC_GOOGLE_API_KEY EXPO_PUBLIC_PHOENIX_API_KEY
+Starting project at C:\Users\kkk\Desktop\intania-staff-buddy
+React Compiler enabled
+Starting Metro Bundler
+Waiting on http://localhost:8083
+Logs for your project will appear below.
+Web node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 3057ms node_modules\expo-router\node\render.js (1583 modules)
+Web node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (1709/1709)
+Web Bundled 4016ms node_modules\expo-router\entry.js (1709 modules)
+Web Bundled 770ms node_modules\expo-router\entry.js (1681 modules)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 46ms node_modules\expo-router\node\render.js (1 module)
+Web Bundled 1917ms node_modules\expo-router\entry.js (1 module)
+Web Bundled 59ms node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 161ms node_modules\expo-router\node\render.js (1 module)
+Web Bundled 1413ms node_modules\expo-router\entry.js (1 module)
+Web Bundled 72ms node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 109ms node_modules\expo-router\node\render.js (1 module)
+Web Bundled 1019ms node_modules\expo-router\entry.js (1 module)
+Web Bundled 65ms node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+ ERROR  SyntaxError: C:\Users\kkk\Desktop\intania-staff-buddy\app\absent\sick.tsx: Unexpected token, expected "," (385:16)
+
+  383 |       {
+  384 |         time: 
+> 385 |         staff_id: userId,
+      |                 ^
+  386 |         approver_position: approver,
+  387 |         approver: approverStaffId,
+  388 |         reason: reason.trim(),
+    at constructor (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:365:19)
+    at TypeScriptParserMixin.raise (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:6616:19)
+    at TypeScriptParserMixin.unexpected (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:6636:16)
+    at TypeScriptParserMixin.expect (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:6916:12)
+    at TypeScriptParserMixin.parseObjectLike (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:11839:14)
+    at TypeScriptParserMixin.parseExprAtom (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:11356:23)
+    at TypeScriptParserMixin.parseExprAtom (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:4776:20)
+    at TypeScriptParserMixin.parseExprSubscripts (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:11098:23)
+    at TypeScriptParserMixin.parseUpdate (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:11083:21)
+    at TypeScriptParserMixin.parseMaybeUnary (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:11063:23)
+    at TypeScriptParserMixin.parseMaybeUnary (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:9854:18)
+    at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:10916:61)
+    at TypeScriptParserMixin.parseExprOps (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:10921:23)
+    at TypeScriptParserMixin.parseMaybeConditional (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:10898:23)
+    at TypeScriptParserMixin.parseMaybeAssign (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:10848:21)
+    at TypeScriptParserMixin.parseMaybeAssign (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:9803:20)
+    at C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:10817:39
+    at TypeScriptParserMixin.allowInAnd (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:12443:12)
+    at TypeScriptParserMixin.parseMaybeAssignAllowIn (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:10817:17)
+    at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:12510:17)
+    at TypeScriptParserMixin.parseExprListItem (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:12192:18)
+    at TypeScriptParserMixin.parseCallExpressionArguments (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:11269:22)
+    at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:11203:29)
+    at TypeScriptParserMixin.parseSubscript (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:11137:19)
+    at TypeScriptParserMixin.parseSubscript (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:9289:18)
+    at TypeScriptParserMixin.parseSubscripts (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:11111:19)
+    at TypeScriptParserMixin.parseExprSubscripts (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:11102:17)
+    at TypeScriptParserMixin.parseUpdate (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:11083:21)
+    at TypeScriptParserMixin.parseMaybeUnary (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:11063:23)
+    at TypeScriptParserMixin.parseMaybeUnary (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:9854:18)
+    at TypeScriptParserMixin.parseAwait (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:12295:28)
+    at TypeScriptParserMixin.parseMaybeUnary (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:11032:25)
+    at TypeScriptParserMixin.parseMaybeUnary (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:9854:18)
+    at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:10916:61)
+    at TypeScriptParserMixin.parseExprOps (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:10921:23)
+    at TypeScriptParserMixin.parseMaybeConditional (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:10898:23)
+    at TypeScriptParserMixin.parseMaybeAssign (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:10848:21)
+    at TypeScriptParserMixin.parseMaybeAssign (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:9803:20)
+    at C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:10817:39
+    at TypeScriptParserMixin.allowInAnd (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:12438:16)
+    at TypeScriptParserMixin.parseMaybeAssignAllowIn (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:10817:17)
+    at TypeScriptParserMixin.parseVar (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:13401:91)
+    at TypeScriptParserMixin.parseVarStatement (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:13247:10)
+    at TypeScriptParserMixin.parseVarStatement (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:9425:31)
+    at TypeScriptParserMixin.parseStatementContent (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:12868:23)
+    at TypeScriptParserMixin.parseStatementContent (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:9525:18)
+    at TypeScriptParserMixin.parseStatementLike (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:12784:17)
+    at TypeScriptParserMixin.parseStatementListItem (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:12764:17)
+    at TypeScriptParserMixin.parseBlockOrModuleBlockBody (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:13333:61)
+    at TypeScriptParserMixin.parseBlockBody (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:13326:10)

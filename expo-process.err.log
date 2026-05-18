@@ -1,0 +1,36 @@
+The following packages should be updated for best compatibility with the installed expo version:
+  react-native-webview@13.16.1 - expected version: 13.15.0
+Your project may not work correctly until you install the expected versions of the packages.
+λ  WARN  props.pointerEvents is deprecated. Use style.pointerEvents 
+  console.warn (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\expo\node_modules\@expo\cli\src\start\server\serverLogLikeMetro.ts:161:21)
+  warnOnce (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-native-web\dist\modules\warnOnce\index.js:24:13)
+  createDOMProps (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-native-web\dist\modules\createDOMProps\index.js:805:13)
+  createElement (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-native-web\dist\exports\createElement\index.js:23:32)
+  Component (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-native-web\dist\exports\View\index.js:111:23)
+  Object.callComponentInDEV [as react-stack-bottom-frame] (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:8970:18)
+  renderWithHooks (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:4699:19)
+  run (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5539:39)
+  retryNode (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5899:31)
+  renderNodeDestructive (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5849:11)
+λ  WARN  props.pointerEvents is deprecated. Use style.pointerEvents 
+  console.warn (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\expo\node_modules\@expo\cli\src\start\server\serverLogLikeMetro.ts:161:21)
+  warnOnce (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-native-web\dist\modules\warnOnce\index.js:24:13)
+  createDOMProps (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-native-web\dist\modules\createDOMProps\index.js:805:13)
+  createElement (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-native-web\dist\exports\createElement\index.js:23:32)
+  Component (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-native-web\dist\exports\View\index.js:111:23)
+  Object.callComponentInDEV [as react-stack-bottom-frame] (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:8970:18)
+  renderWithHooks (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:4699:19)
+  run (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5539:39)
+  retryNode (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5899:31)
+  renderNodeDestructive (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5849:11)
+λ  WARN  props.pointerEvents is deprecated. Use style.pointerEvents 
+  console.warn (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\expo\node_modules\@expo\cli\src\start\server\serverLogLikeMetro.ts:161:21)
+  warnOnce (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-native-web\dist\modules\warnOnce\index.js:24:13)
+  createDOMProps (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-native-web\dist\modules\createDOMProps\index.js:805:13)
+  createElement (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-native-web\dist\exports\createElement\index.js:23:32)
+  Component (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-native-web\dist\exports\View\index.js:111:23)
+  Object.callComponentInDEV [as react-stack-bottom-frame] (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:8970:18)
+  renderWithHooks (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:4699:19)
+  run (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5539:39)
+  retryNode (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5899:31)
+  renderNodeDestructive (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5849:11)

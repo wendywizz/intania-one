@@ -1,26 +1,40 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PROCESS } from '@/constants/domain';
 import { TEXT } from '@/constants/text';
 import {
-  TYPE_ABSENT_BIRTH,
-  TYPE_ABSENT_BUSINESS,
-  TYPE_ABSENT_HAJJ,
-  TYPE_ABSENT_RELAX,
-  TYPE_ABSENT_SICK,
+    TYPE_ABSENT_BIRTH,
+    TYPE_ABSENT_BUSINESS,
+    TYPE_ABSENT_HAJJ,
+    TYPE_ABSENT_RELAX,
+    TYPE_ABSENT_SICK,
 } from '@/constants/type-absent';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import type { Absent } from '@/models/types';
 import { historyData } from '@/services/absentService';
-import { formatDateTime } from '@/utils/date-format';
+import { formatDateRange } from '@/utils/date-format';
 
-const HISTORY_PAGE_LENGTH = 50;
+const ESTIMATED_ITEM_HEIGHT = 132;
+const LIST_VERTICAL_CHROME = 260;
+const HISTORY_PAGE_LENGTH = 10;
+
+function getPageSize(screenHeight: number) {
+  return HISTORY_PAGE_LENGTH;
+}
+
+function getHasMore(currentCount: number, pageSize: number, totalCount?: number) {
+  if (typeof totalCount === 'number') {
+    return currentCount < totalCount;
+  }
+  return currentCount >= pageSize;
+}
 const absentTypeLabels: Record<string, string> = {
   [TYPE_ABSENT_SICK]: TEXT.ABSENT_SICK_TITLE,
   [TYPE_ABSENT_BUSINESS]: TEXT.ABSENT_BUSINESS_TITLE,
@@ -96,14 +110,9 @@ function getAbsentKey(item: Absent, index: number) {
 function getDateRange(item: Absent) {
   const startDate = getText(item, startDateFields);
   const endDate = getText(item, endDateFields);
-  const formattedStartDate = startDate ? formatDateTime(startDate) : '';
-  const formattedEndDate = endDate ? formatDateTime(endDate) : '';
+  const formattedDateRange = formatDateRange(startDate, endDate);
 
-  if (formattedStartDate && formattedEndDate) {
-    return `${formattedStartDate} - ${formattedEndDate}`;
-  }
-
-  return formattedStartDate || formattedEndDate;
+  return formattedDateRange ? `Absent date: ${formattedDateRange}` : '';
 }
 
 function getAbsentTimestamp(item: Absent) {
@@ -123,8 +132,6 @@ type AbsentHistoryListItemProps = {
 function AbsentHistoryListItem({ item, onPress }: AbsentHistoryListItemProps) {
   const type = getAbsentTypeLabel(item);
   const dateRange = getDateRange(item);
-  const reason = getText(item, ['reason', 'travelDetail', 'travel_detail', 'detail', 'description', 'remark']);
-  const status = getText(item, statusFields);
 
   return (
     <Pressable accessibilityRole="button" onPress={() => onPress(item)}>
@@ -133,25 +140,35 @@ function AbsentHistoryListItem({ item, onPress }: AbsentHistoryListItemProps) {
           <ThemedText type="defaultSemiBold" style={styles.itemTitle}>
             {type}
           </ThemedText>
-          {status ? <ThemedText style={styles.statusText}>{status}</ThemedText> : null}
         </View>
 
         {dateRange ? <ThemedText style={styles.itemMeta}>{dateRange}</ThemedText> : null}
-        {reason ? <ThemedText style={styles.itemDetail}>{reason}</ThemedText> : null}
       </ThemedView>
     </Pressable>
   );
 }
 
 export default function HistoryScreen() {
+  const { height } = useWindowDimensions();
   const { user: authUser } = useAuth();
+  const pageSize = getPageSize(height);
   const [items, setItems] = useState<Absent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState('');
   const userId = authUser?.staffId || USER_ID;
+  const loadingStartRef = useRef<number | null>(null);
+  const loadedStartRef = useRef<Set<number>>(new Set());
+  const itemsRef = useRef<Absent[]>([]);
 
-  const loadHistory = useCallback(async (showRefreshing = false) => {
+  const loadFirstPage = useCallback(async (showRefreshing = false, forceReload = false) => {
+    if (loadingStartRef.current === 0 || (!forceReload && loadedStartRef.current.has(0))) {
+      return;
+    }
+
+    loadingStartRef.current = 0;
     if (showRefreshing) {
       setIsRefreshing(true);
     } else {
@@ -159,24 +176,59 @@ export default function HistoryScreen() {
     }
 
     setError('');
+    const result = await historyData(userId, { length: pageSize, start: 0 });
+    loadingStartRef.current = null;
+    loadedStartRef.current = new Set([0]);
 
-    const result = await historyData(userId, { length: HISTORY_PAGE_LENGTH, start: 0 });
-
-    if (result.processType === 'error') {
+    if (result.processType === PROCESS.error) {
       setItems([]);
       setError(result.message || TEXT.SHARED_UNABLE_TO_LOAD_HISTORY);
+      setHasMore(false);
     } else {
-      setItems(sortAbsentHistory(Array.isArray(result.data) ? result.data : []));
+      const nextItems = Array.isArray(result.data) ? result.data : [];
+      setItems(sortAbsentHistory(nextItems));
+      itemsRef.current = sortAbsentHistory(nextItems);
+      setHasMore(getHasMore(nextItems.length, pageSize, result.totalCount));
     }
 
     setIsLoading(false);
     setIsRefreshing(false);
-  }, [userId]);
+  }, [userId, pageSize]);
+
+  const loadMoreItems = useCallback(async () => {
+    if (isLoading || isRefreshing || isLoadingMore || !hasMore) {
+      return;
+    }
+
+    const start = itemsRef.current.length;
+
+    if (loadingStartRef.current === start || loadedStartRef.current.has(start)) {
+      return;
+    }
+
+    loadingStartRef.current = start;
+    setIsLoadingMore(true);
+    const result = await historyData(userId, { length: pageSize, start });
+    loadingStartRef.current = null;
+    loadedStartRef.current.add(start);
+
+    if (result.processType === PROCESS.error) {
+      setHasMore(false);
+    } else {
+      const nextItems = Array.isArray(result.data) ? result.data : [];
+      const updatedItems = sortAbsentHistory([...itemsRef.current, ...nextItems]);
+      setItems(updatedItems);
+      itemsRef.current = updatedItems;
+      setHasMore(getHasMore(start + nextItems.length, pageSize, result.totalCount));
+    }
+
+    setIsLoadingMore(false);
+  }, [hasMore, isLoading, isLoadingMore, isRefreshing, userId, pageSize]);
 
   useFocusEffect(
     useCallback(() => {
-      loadHistory();
-    }, [loadHistory]),
+      loadFirstPage();
+    }, [loadFirstPage]),
   );
 
   const openDetail = useCallback((item: Absent) => {
@@ -200,7 +252,7 @@ export default function HistoryScreen() {
         <View style={styles.stateContent}>
           <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={() => loadHistory()} style={styles.retryButton}>
+          <Pressable accessibilityRole="button" onPress={() => loadFirstPage(false, true)} style={styles.retryButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
               {TEXT.SHARED_RETRY}</ThemedText>
           </Pressable>
@@ -210,11 +262,23 @@ export default function HistoryScreen() {
 
     return (
       <FlatList
+        style={styles.flatList}
         contentContainerStyle={styles.listContent}
         data={items}
         keyExtractor={getAbsentKey}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadHistory(true)} />}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadFirstPage(true, true)} />}
+        onEndReached={() => {
+          loadMoreItems();
+        }}
+        onEndReachedThreshold={0.5}
         renderItem={({ item }) => <AbsentHistoryListItem item={item} onPress={openDetail} />}
+        ListFooterComponent={
+          isLoadingMore ? (
+            <View style={styles.footerLoader}>
+              <ActivityIndicator color="#0A6E8A" size="small" />
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <ThemedView style={styles.emptyCard} lightColor="#FFFFFF" darkColor="#151718">
             <ThemedText style={styles.emptyMessage}>{TEXT.SHARED_NO_HISTORY}</ThemedText>
@@ -251,10 +315,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 0,
   },
+  flatList: {
+    flex: 1,
+  },
   listContent: {
     gap: 12,
+    paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 16,
   },
   itemCard: {
     borderRadius: 8,
@@ -283,11 +351,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     marginTop: 6,
-  },
-  itemDetail: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 10,
   },
   stateContent: {
     flex: 1,
@@ -324,5 +387,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
+  },
+  footerLoader: {
+    paddingVertical: 16,
+    alignItems: 'center',
   },
 });

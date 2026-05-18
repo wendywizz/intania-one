@@ -1,8 +1,8 @@
+import { TEXT } from '@/constants/text';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { TEXT } from '@/constants/text';
 
 import { AppToast } from '@/components/app-toast';
 import { DatePickerField } from '@/components/date-picker-field';
@@ -11,15 +11,18 @@ import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PROCESS } from '@/constants/domain';
+import { AppFonts } from '@/constants/fonts';
 import { TYPE_ABSENT_SICK } from '@/constants/type-absent';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
-import { AppFonts } from '@/constants/fonts';
 import type { Absent } from '@/models/types';
 import { addAbsentData, initAbsentData } from '@/services/absentService';
 
 type Approver = {
   staffId?: string;
+  staff_id?: string;
+  positionId?: string;
+  position_id?: string;
   prefixNameTH?: string;
   firstNameTH?: string;
   lastNameTH?: string;
@@ -27,6 +30,12 @@ type Approver = {
 };
 
 type ValidationErrors = Partial<Record<'approver' | 'reason' | 'date' | 'contact', string>>;
+
+type SelectOption = {
+  label: string;
+  value: string;
+  staffId?: string;
+};
 
 type UploadableFile =
   | Blob
@@ -37,7 +46,21 @@ type UploadableFile =
     };
 
 function getApproverList(data: Absent | null): Approver[] {
-  return Array.isArray(data?.approverList) ? (data.approverList as Approver[]) : [];
+  const approverList = data?.approverList;
+
+  if (Array.isArray(approverList)) {
+    return approverList as Approver[];
+  }
+
+  if (
+    approverList &&
+    typeof approverList === 'object' &&
+    Array.isArray((approverList as { item?: unknown }).item)
+  ) {
+    return (approverList as { item: Approver[] }).item;
+  }
+
+  return [];
 }
 
 function getApproverLabel(approver: Approver) {
@@ -49,6 +72,14 @@ function getApproverLabel(approver: Approver) {
   }
 
   return positionName || fullName || approver.staffId || '';
+}
+
+function getApproverPositionId(approver: Approver) {
+  return String(approver.positionId ?? approver.position_id ?? '').trim();
+}
+
+function getApproverStaffId(approver: Approver) {
+  return String(approver.staffId ?? approver.staff_id ?? '').trim();
 }
 
 const halfDayOptions: string[] = [
@@ -72,12 +103,12 @@ type SelectFieldProps = {
   label: string;
   placeholder: string;
   value: string;
-  options: string[];
+  options: (string | SelectOption)[];
   isOpen: boolean;
   hasError?: boolean;
   errorMessage?: string;
   onToggle: () => void;
-  onSelect: (value: string) => void;
+  onSelect: (value: string, option?: SelectOption) => void;
 };
 
 function SelectField({
@@ -91,6 +122,12 @@ function SelectField({
   onToggle,
   onSelect,
 }: SelectFieldProps) {
+  const normalizedOptions = options.map((option) =>
+    typeof option === 'string' ? { label: option, value: option } : option,
+  );
+  const selectedOption = normalizedOptions.find((option) => option.value === value);
+  const displayValue = selectedOption?.label || value;
+
   return (
     <View style={styles.field}>
       <ThemedText type="defaultSemiBold">{label}</ThemedText>
@@ -98,8 +135,8 @@ function SelectField({
         accessibilityRole="button"
         onPress={onToggle}
         style={[styles.selectButton, hasError ? styles.inputError : undefined]}>
-        <ThemedText style={[styles.selectText, !value && styles.placeholder]}>
-          {value || placeholder}
+        <ThemedText style={[styles.selectText, !displayValue && styles.placeholder]}>
+          {displayValue || placeholder}
         </ThemedText>
         <ThemedText style={styles.chevron}>⌄</ThemedText>
       </Pressable>
@@ -119,18 +156,18 @@ function SelectField({
               </View>
 
               <ScrollView style={styles.optionScroll} contentContainerStyle={styles.optionScrollContent}>
-                {options.length ? (
-                  options.map((option) => (
+                {normalizedOptions.length ? (
+                  normalizedOptions.map((option) => (
                     <Pressable
-                      key={option}
+                      key={option.value}
                       accessibilityRole="button"
-                      onPress={() => onSelect(option)}
-                      style={[styles.option, value === option ? styles.selectedOption : undefined]}>
+                      onPress={() => onSelect(option.value, option)}
+                      style={[styles.option, value === option.value ? styles.selectedOption : undefined]}>
                       <ThemedText
-                        lightColor={value === option ? '#FFFFFF' : undefined}
-                        darkColor={value === option ? '#FFFFFF' : undefined}
+                        lightColor={value === option.value ? '#FFFFFF' : undefined}
+                        darkColor={value === option.value ? '#FFFFFF' : undefined}
                         style={styles.optionText}>
-                        {option}
+                        {option.label}
                       </ThemedText>
                     </Pressable>
                   ))
@@ -146,17 +183,22 @@ function SelectField({
   );
 }
 
-function addDays(date: Date, days: number) {
-  const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + days);
-  return nextDate;
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function getLeaveDayCount(startDate: Date, endDate: Date, hasHalfDay: boolean) {
   const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
   const endDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-  const oneDayMilliseconds = 1000 * 60 * 60 * 24;
-  const fullDayCount = Math.floor((endDay.getTime() - startDay.getTime()) / oneDayMilliseconds) + 1;
+  let fullDayCount = 0;
+
+  for (const currentDay = new Date(startDay); currentDay <= endDay; currentDay.setDate(currentDay.getDate() + 1)) {
+    const dayOfWeek = currentDay.getDay();
+
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      fullDayCount += 1;
+    }
+  }
 
   return fullDayCount + (hasHalfDay ? 0.5 : 0);
 }
@@ -167,10 +209,6 @@ function formatDateParam(date: Date) {
   const day = String(date.getDate()).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
-}
-
-function getSelectedApprover(approverList: Approver[], selectedLabel: string) {
-  return approverList.find((item) => getApproverLabel(item) === selectedLabel);
 }
 
 function getHalfDayValue(selectedHalfDay: string) {
@@ -198,12 +236,15 @@ export default function SickScreen() {
   const [initialAbsentData, setInitialAbsentData] = useState<Absent | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [initialError, setInitialError] = useState('');
+  const [absentTime, setAbsentTime] = useState('');
+  const [absentStatus, setAbsentStatus] = useState('');
   const [approver, setApprover] = useState('');
+  const [approverStaffId, setApproverStaffId] = useState('');
   const [reason, setReason] = useState('');
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [halfDay, setHalfDay] = useState('');
-  const [contact, setContact] = useState('');
+  const [contact, setContact] = useState('');  
   const [selectedFile, setSelectedFile] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [openSelect, setOpenSelect] = useState<'approver' | 'halfDay' | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -211,6 +252,7 @@ export default function SickScreen() {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error' | ''>('');
   const userId = authUser?.staffId || USER_ID;
+  const maximumStartDate = useMemo(() => startOfDay(new Date()), []);
 
   const clearValidationError = useCallback((field: keyof ValidationErrors) => {
     setValidationErrors((currentErrors) => {
@@ -248,26 +290,38 @@ export default function SickScreen() {
   );
 
   const minimumEndDate = useMemo(
-    () => (startDate ? addDays(startDate, 1) : undefined),
+    () => (startDate ? startOfDay(startDate) : undefined),
     [startDate],
   );
   const approverOptions = useMemo(
-    () => getApproverList(initialAbsentData).map(getApproverLabel).filter(Boolean),
+    () =>
+      getApproverList(initialAbsentData)
+        .map((item) => ({
+          label: getApproverLabel(item),
+          value: getApproverPositionId(item),
+          staffId: getApproverStaffId(item),
+        }))
+        .filter((item) => item.label && item.value),
     [initialAbsentData],
   );
-  const approverList = useMemo(() => getApproverList(initialAbsentData), [initialAbsentData]);
-  const dateError =
-    startDate && endDate && endDate <= startDate
-      ? 'วันที่สิ้นสุดต้องมากกว่าวันที่เริ่มต้น'
+  const startDateError =
+    startDate && startOfDay(startDate) > maximumStartDate
+      ? 'วันที่เริ่มต้นต้องไม่เกินวันนี้'
       : '';
-  const displayedDateError = dateError || validationErrors.date || '';
+  const dateError =
+    startDate && endDate && startOfDay(endDate) < startOfDay(startDate)
+      ? 'วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มต้น'
+      : endDate && startOfDay(endDate) > maximumStartDate
+        ? 'วันที่สิ้นสุดต้องไม่เกินวันนี้'
+      : '';
+  const displayedDateError = startDateError || dateError || validationErrors.date || '';
   const leaveDayCount = useMemo(() => {
-    if (!startDate || !endDate || dateError) {
+    if (!startDate || !endDate || startDateError || dateError) {
       return null;
     }
 
     return getLeaveDayCount(startDate, endDate, Boolean(halfDay));
-  }, [dateError, endDate, halfDay, startDate]);
+  }, [dateError, endDate, halfDay, startDate, startDateError]);
 
   const handlePickFile = useCallback(async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -314,7 +368,7 @@ export default function SickScreen() {
 
     setValidationErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length || dateError) {
+    if (Object.keys(nextErrors).length || startDateError || dateError) {
       return;
     }
 
@@ -322,25 +376,23 @@ export default function SickScreen() {
       return;
     }
 
-    const selectedApprover = getSelectedApprover(approverList, approver);
-
     setIsSubmitting(true);
     setToastMessage('');
     setToastType('');
 
     const result = await addAbsentData(
       {
+        absence: TYPE_ABSENT_SICK,
+        time: absentTime,
         staff_id: userId,
-        approver_id: selectedApprover?.staffId,
-        approver: selectedApprover?.staffId ?? approver,
+        approver_position: approver,
+        approver: approverStaffId,
         reason: reason.trim(),
         contact: contact.trim(),
         start_date: formatDateParam(startDate),
-        end_date: formatDateParam(endDate),
-        date_start: formatDateParam(startDate),
-        date_end: formatDateParam(endDate),
-        leave_day: leaveDayCount,
-        half_day: getHalfDayValue(halfDay),
+        end_date: formatDateParam(endDate),        
+        num_days: leaveDayCount,
+        startpart: getHalfDayValue(halfDay),
       },
       TYPE_ABSENT_SICK,
       selectedFile ? { fileUpload: createUploadFile(selectedFile) } : undefined,
@@ -360,8 +412,10 @@ export default function SickScreen() {
     setToastType('error');
     setToastMessage(result.message || SUBMIT_ERROR_MESSAGE);
   }, [
+    absentTime,
+    absentStatus,
     approver,
-    approverList,
+    approverStaffId,
     contact,
     dateError,
     endDate,
@@ -371,6 +425,7 @@ export default function SickScreen() {
     reason,
     selectedFile,
     startDate,
+    startDateError,
     userId,
   ]);
 
@@ -425,8 +480,9 @@ export default function SickScreen() {
               hasError={Boolean(validationErrors.approver)}
               errorMessage={validationErrors.approver}
               onToggle={() => setOpenSelect(openSelect === 'approver' ? null : 'approver')}
-              onSelect={(value) => {
+              onSelect={(value, option) => {
                 setApprover(value);
+                setApproverStaffId(option?.staffId ?? '');
                 clearValidationError('approver');
                 setOpenSelect(null);
               }}
@@ -464,9 +520,13 @@ export default function SickScreen() {
                 <DatePickerField
                   label={TEXT.ABSENT_START_DATE_LABEL}
                   value={startDate}
+                  maximumDate={maximumStartDate}
                   onChange={(date) => {
                     setStartDate(date);
-                    if (endDate && endDate <= date) {
+                    if (
+                      endDate &&
+                      (startOfDay(endDate) < startOfDay(date) || startOfDay(endDate) > maximumStartDate)
+                    ) {
                       setEndDate(null);
                     } else if (endDate) {
                       clearValidationError('date');
@@ -478,6 +538,8 @@ export default function SickScreen() {
                   label={TEXT.ABSENT_END_DATE_LABEL}
                   value={endDate}
                   minimumDate={minimumEndDate}
+                  maximumDate={maximumStartDate}
+                  highlightedStartDate={startDate}
                   hasError={Boolean(displayedDateError)}
                   onChange={(date) => {
                     setEndDate(date);
@@ -490,7 +552,7 @@ export default function SickScreen() {
               <ThemedText style={[styles.hint, displayedDateError ? styles.errorText : undefined]}>
                 {displayedDateError || 'เลือกวันที่เริ่มต้นและวันที่สิ้นสุด'}
               </ThemedText>
-              {leaveDayCount ? (
+              {leaveDayCount !== null ? (
                 <ThemedText type="defaultSemiBold" style={styles.leaveDaySummary}>
                   {TEXT.ABSENT_LEAVE_DAY_COUNT_LABEL}{leaveDayCount.toLocaleString('th-TH')} {TEXT.ABSENT_DAY_UNIT}</ThemedText>
               ) : null}

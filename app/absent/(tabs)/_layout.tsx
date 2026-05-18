@@ -1,6 +1,6 @@
+import { TEXT } from '@/constants/text';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { TEXT } from '@/constants/text';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -36,6 +36,13 @@ export default function AbsentTabLayout() {
         options={{
           title: TEXT.ABSENT_HISTORY_TAB_TITLE,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="stats"
+        options={{
+          title: 'Stats',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
         }}
       />
     </Tabs>

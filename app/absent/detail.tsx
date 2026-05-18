@@ -13,7 +13,7 @@ import {
   TYPE_ABSENT_SICK,
 } from '@/constants/type-absent';
 import type { Absent } from '@/models/types';
-import { formatDateTime } from '@/utils/date-format';
+import { formatDateRange, formatDateTime } from '@/utils/date-format';
 
 const absentTypeLabels: Record<string, string> = {
   [TYPE_ABSENT_SICK]: TEXT.ABSENT_SICK_TITLE,
@@ -86,6 +86,10 @@ function formatValue(value: string) {
   return formatDateTime(value);
 }
 
+function formatAbsentDate(startDate: string, endDate: string) {
+  return formatDateRange(startDate, endDate);
+}
+
 type DetailRowProps = {
   label: string;
   value: string;
@@ -126,7 +130,6 @@ export default function AbsentDetailScreen() {
     'status',
   ]);
   const approver = getText(item, ['approverName', 'approver_name', 'approver', 'approverId', 'approver_id']);
-  const reason = getText(item, ['reason', 'travelDetail', 'travel_detail', 'detail', 'description', 'remark']);
   const contact = getText(item, ['contact', 'contactChannel', 'contact_channel', 'phone']);
   const createdDate = getText(item, ['writeDate', 'write_date', 'createdAt', 'created_at', 'createDate', 'create_date']);
 
@@ -141,12 +144,10 @@ export default function AbsentDetailScreen() {
           <View style={styles.detailList}>
             <DetailRow label="Request ID" value={id} />
             <DetailRow label="Type" value={typeLabel} />
-            <DetailRow label="Start date" value={startDate ? formatValue(startDate) : ''} />
-            <DetailRow label="End date" value={endDate ? formatValue(endDate) : ''} />
+            <DetailRow label="Absent date" value={formatAbsentDate(startDate, endDate)} />
             <DetailRow label="Leave days" value={leaveDay} />
             <DetailRow label="Status" value={status} />
             <DetailRow label="Approver" value={approver} />
-            <DetailRow label="Reason" value={reason} />
             <DetailRow label="Contact" value={contact} />
             <DetailRow label="Created" value={createdDate ? formatValue(createdDate) : ''} />
           </View>

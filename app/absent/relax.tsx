@@ -14,6 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import { AppFonts } from '@/constants/fonts';
 import type { Absent } from '@/models/types';
 import { initAbsentData } from '@/services/absentService';
+import { getStaffDisplayLabel } from '@/utils/staff-label';
 
 type Approver = {
   staffId?: string;
@@ -30,14 +31,7 @@ function getApproverList(data: Absent | null): Approver[] {
 }
 
 function getApproverLabel(approver: Approver) {
-  const fullName = `${approver.firstNameTH ?? ''} ${approver.lastNameTH ?? ''}`.trim();
-  const positionName = approver.positionName?.trim();
-
-  if (positionName && fullName) {
-    return `${positionName} (${fullName})`;
-  }
-
-  return positionName || fullName || approver.staffId || '';
+  return getStaffDisplayLabel(approver);
 }
 
 const halfDayOptions = [
@@ -125,12 +119,6 @@ function SelectField({
   );
 }
 
-function addDays(date: Date, days: number) {
-  const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + days);
-  return nextDate;
-}
-
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
@@ -138,8 +126,15 @@ function startOfDay(date: Date) {
 function getLeaveDayCount(startDate: Date, endDate: Date, hasHalfDay: boolean) {
   const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
   const endDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-  const oneDayMilliseconds = 1000 * 60 * 60 * 24;
-  const fullDayCount = Math.floor((endDay.getTime() - startDay.getTime()) / oneDayMilliseconds) + 1;
+  let fullDayCount = 0;
+
+  for (const currentDay = new Date(startDay); currentDay <= endDay; currentDay.setDate(currentDay.getDate() + 1)) {
+    const dayOfWeek = currentDay.getDay();
+
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      fullDayCount += 1;
+    }
+  }
 
   return fullDayCount + (hasHalfDay ? 0.5 : 0);
 }
@@ -196,7 +191,7 @@ export default function RelaxScreen() {
   );
 
   const minimumEndDate = useMemo(
-    () => (startDate ? addDays(startDate, 1) : undefined),
+    () => (startDate ? startOfDay(startDate) : undefined),
     [startDate],
   );
   const approverOptions = useMemo(
@@ -208,8 +203,8 @@ export default function RelaxScreen() {
       ? 'วันที่เริ่มต้นต้องเป็นวันนี้หรือวันถัดไป'
       : '';
   const dateError =
-    startDate && endDate && endDate <= startDate
-      ? 'วันที่สิ้นสุดต้องมากกว่าวันที่เริ่มต้น'
+    startDate && endDate && startOfDay(endDate) < startOfDay(startDate)
+      ? 'วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มต้น'
       : '';
   const displayedDateError = startDateError || dateError || validationErrors.date || '';
   const leaveDayCount = useMemo(() => {
@@ -339,7 +334,7 @@ export default function RelaxScreen() {
                   minimumDate={minimumStartDate}
                   onChange={(date) => {
                     setStartDate(date);
-                    if (endDate && endDate <= date) {
+                    if (endDate && startOfDay(endDate) < startOfDay(date)) {
                       setEndDate(null);
                     } else if (endDate) {
                       clearValidationError('date');
@@ -351,6 +346,7 @@ export default function RelaxScreen() {
                   label={TEXT.ABSENT_END_DATE_LABEL}
                   value={endDate}
                   minimumDate={minimumEndDate}
+                  highlightedStartDate={startDate}
                   hasError={Boolean(displayedDateError)}
                   onChange={(date) => {
                     setEndDate(date);
@@ -363,7 +359,7 @@ export default function RelaxScreen() {
               <ThemedText style={[styles.hint, displayedDateError ? styles.errorText : undefined]}>
                 {displayedDateError || 'เลือกวันที่เริ่มต้นและวันที่สิ้นสุด'}
               </ThemedText>
-              {leaveDayCount ? (
+              {leaveDayCount !== null ? (
                 <ThemedText type="defaultSemiBold" style={styles.leaveDaySummary}>
                   {TEXT.ABSENT_LEAVE_DAY_COUNT_LABEL}{leaveDayCount.toLocaleString('th-TH')} {TEXT.ABSENT_DAY_UNIT}</ThemedText>
               ) : null}

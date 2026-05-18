@@ -14,6 +14,7 @@ import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import type { Absent } from '@/models/types';
 import { initAbsentData } from '@/services/absentService';
+import { getStaffDisplayLabel } from '@/utils/staff-label';
 
 type Approver = {
   staffId?: string;
@@ -41,14 +42,7 @@ function getApproverList(data: Absent | null): Approver[] {
 }
 
 function getApproverLabel(approver: Approver) {
-  const fullName = `${approver.firstNameTH ?? ''} ${approver.lastNameTH ?? ''}`.trim();
-  const positionName = approver.positionName?.trim();
-
-  if (positionName && fullName) {
-    return `${positionName} (${fullName})`;
-  }
-
-  return positionName || fullName || approver.staffId || '';
+  return getStaffDisplayLabel(approver);
 }
 
 function SelectField({
@@ -117,10 +111,8 @@ function SelectField({
   );
 }
 
-function addDays(date: Date, days: number) {
-  const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + days);
-  return nextDate;
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 export default function BirthScreen() {
@@ -176,12 +168,12 @@ export default function BirthScreen() {
     [initialAbsentData],
   );
   const minimumEndDate = useMemo(
-    () => (startDate ? addDays(startDate, 1) : undefined),
+    () => (startDate ? startOfDay(startDate) : undefined),
     [startDate],
   );
   const dateError =
-    startDate && endDate && endDate <= startDate
-      ? 'วันที่สิ้นสุดต้องมากกว่าวันที่เริ่มต้น'
+    startDate && endDate && startOfDay(endDate) < startOfDay(startDate)
+      ? 'วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มต้น'
       : '';
   const displayedDateError = dateError || validationErrors.date || '';
 
@@ -266,7 +258,7 @@ export default function BirthScreen() {
                   value={startDate}
                   onChange={(date) => {
                     setStartDate(date);
-                    if (endDate && endDate <= date) {
+                    if (endDate && startOfDay(endDate) < startOfDay(date)) {
                       setEndDate(null);
                     } else if (endDate) {
                       clearValidationError('date');
@@ -278,6 +270,7 @@ export default function BirthScreen() {
                   label={TEXT.ABSENT_END_DATE_LABEL}
                   value={endDate}
                   minimumDate={minimumEndDate}
+                  highlightedStartDate={startDate}
                   hasError={Boolean(displayedDateError)}
                   onChange={(date) => {
                     setEndDate(date);

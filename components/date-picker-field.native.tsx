@@ -11,23 +11,30 @@ type DatePickerFieldProps = {
   label: string;
   value: Date | null;
   minimumDate?: Date;
+  maximumDate?: Date;
+  highlightedStartDate?: Date | null;
   hasError?: boolean;
   onChange: (date: Date) => void;
 };
 
-function formatDate(date: Date) {
-  return date.toISOString().slice(0, 10);
+function formatDisplayDate(date: Date) {
+  return date.toLocaleDateString('th-TH', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
 }
 
 export function DatePickerField({
   label,
   value,
   minimumDate,
+  maximumDate,
   hasError,
   onChange,
 }: DatePickerFieldProps) {
   const [isPickerVisible, setIsPickerVisible] = useState(false);
-  const displayValue = value ? formatDate(value) : '';
+  const displayValue = value ? formatDisplayDate(value) : '';
 
   const handlePickerChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS !== 'ios') {
@@ -45,6 +52,7 @@ export function DatePickerField({
         value: value ?? minimumDate ?? new Date(),
         mode: 'date',
         minimumDate,
+        maximumDate,
         onChange: handlePickerChange,
       });
       return;
@@ -71,6 +79,7 @@ export function DatePickerField({
           mode="date"
           display="default"
           minimumDate={minimumDate}
+          maximumDate={maximumDate}
           onChange={handlePickerChange}
         />
       ) : null}

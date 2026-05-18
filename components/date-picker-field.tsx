@@ -9,6 +9,8 @@ type DatePickerFieldProps = {
   label: string;
   value: Date | null;
   minimumDate?: Date;
+  maximumDate?: Date;
+  highlightedStartDate?: Date | null;
   hasError?: boolean;
   onChange: (date: Date) => void;
 };
@@ -17,8 +19,20 @@ function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function formatDate(date: Date) {
-  return date.toISOString().slice(0, 10);
+function formatDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatDisplayDate(date: Date) {
+  return date.toLocaleDateString('th-TH', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
 }
 
 function getMonthTitle(date: Date) {
@@ -49,12 +63,17 @@ export function DatePickerField({
   label,
   value,
   minimumDate,
+  maximumDate,
+  highlightedStartDate,
   hasError,
   onChange,
 }: DatePickerFieldProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(value ?? minimumDate ?? new Date());
   const minimumDay = minimumDate ? startOfDay(minimumDate) : null;
+  const maximumDay = maximumDate ? startOfDay(maximumDate) : null;
+  const rangeStartDay = highlightedStartDate ? startOfDay(highlightedStartDate) : null;
+  const rangeEndDay = rangeStartDay && value ? startOfDay(value) : rangeStartDay;
   const days = useMemo(() => getCalendarDays(visibleMonth), [visibleMonth]);
 
   const changeMonth = (offset: number) => {
@@ -74,7 +93,7 @@ export function DatePickerField({
         onPress={() => setIsOpen(true)}
         style={[styles.button, hasError ? styles.inputError : undefined]}>
         <ThemedText style={[styles.buttonText, !value && styles.placeholder]}>
-          {value ? formatDate(value) : `เลือก${label}`}
+          {value ? formatDisplayDate(value) : `เลือก${label}`}
         </ThemedText>
       </Pressable>
 
@@ -104,27 +123,49 @@ export function DatePickerField({
 
               <View style={styles.dayGrid}>
                 {days.map((date, index) => {
-                  const isDisabled = Boolean(date && minimumDay && startOfDay(date) < minimumDay);
+                  const currentDay = date ? startOfDay(date) : null;
+                  const isWeekend = Boolean(currentDay && (currentDay.getDay() === 0 || currentDay.getDay() === 6));
+                  const isDisabled = Boolean(
+                    currentDay &&
+                      ((minimumDay && currentDay < minimumDay) ||
+                        (maximumDay && currentDay > maximumDay)),
+                  );
                   const isSelected = Boolean(
-                    date && value && formatDate(date) === formatDate(value),
+                    date && value && formatDateKey(date) === formatDateKey(value),
+                  );
+                  const isHighlighted = Boolean(
+                    currentDay &&
+                      rangeStartDay &&
+                      rangeEndDay &&
+                      currentDay >= rangeStartDay &&
+                      currentDay <= rangeEndDay &&
+                      !isDisabled,
                   );
 
                   return (
                     <Pressable
-                      key={date ? formatDate(date) : `empty-${index}`}
+                      key={date ? formatDateKey(date) : `empty-${index}`}
                       accessibilityRole={date ? 'button' : undefined}
                       disabled={!date || isDisabled}
                       onPress={() => date && selectDate(date)}
                       style={[
                         styles.dayButton,
+                        isHighlighted ? styles.highlightedDayButton : undefined,
                         isSelected ? styles.selectedDayButton : undefined,
+                        isWeekend ? styles.weekendDayButton : undefined,
+                        isSelected && isWeekend ? styles.selectedWeekendDayButton : undefined,
                         isDisabled ? styles.disabledDayButton : undefined,
                       ]}>
                       {date ? (
                         <ThemedText
-                          lightColor={isSelected ? '#FFFFFF' : undefined}
-                          darkColor={isSelected ? '#FFFFFF' : undefined}
-                          style={[styles.dayText, isDisabled ? styles.disabledDayText : undefined]}>
+                          lightColor={isSelected && !isWeekend ? '#FFFFFF' : undefined}
+                          darkColor={isSelected && !isWeekend ? '#FFFFFF' : undefined}
+                          style={[
+                            styles.dayText,
+                            isWeekend ? styles.weekendDayText : undefined,
+                            isHighlighted ? styles.highlightedDayText : undefined,
+                            isDisabled ? styles.disabledDayText : undefined,
+                          ]}>
                           {date.getDate()}
                         </ThemedText>
                       ) : null}
@@ -219,11 +260,27 @@ const styles = StyleSheet.create({
   selectedDayButton: {
     backgroundColor: '#0A6E8A',
   },
+  weekendDayButton: {
+    backgroundColor: '#EEF1F3',
+  },
+  selectedWeekendDayButton: {
+    borderWidth: 2,
+    borderColor: '#0A6E8A',
+  },
+  highlightedDayButton: {
+    backgroundColor: '#D8EEF5',
+  },
   disabledDayButton: {
     opacity: 0.35,
   },
   dayText: {
     textAlign: 'center',
+  },
+  weekendDayText: {
+    color: '#687076',
+  },
+  highlightedDayText: {
+    color: '#075E73',
   },
   disabledDayText: {
     color: '#8A969C',
