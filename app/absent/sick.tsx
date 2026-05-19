@@ -3,15 +3,15 @@ import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
 } from "react-native";
 
 import { AppToast } from "@/components/app-toast";
@@ -26,6 +26,14 @@ import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { Absent } from "@/models/types";
 import { addAbsentData, initAbsentData } from "@/services/absentService";
+import {
+  formatDateParam,
+  formatDateTimeParam,
+  getAbsentTextValue,
+  getHalfDayValue,
+  getWeekdayLeaveDayCount,
+  startOfDay,
+} from "@/utils/absent-form";
 
 type Approver = {
   staffId?: string;
@@ -237,52 +245,6 @@ function SelectField({
   );
 }
 
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function getLeaveDayCount(startDate: Date, endDate: Date, hasHalfDay: boolean) {
-  const startDay = new Date(
-    startDate.getFullYear(),
-    startDate.getMonth(),
-    startDate.getDate(),
-  );
-  const endDay = new Date(
-    endDate.getFullYear(),
-    endDate.getMonth(),
-    endDate.getDate(),
-  );
-  let fullDayCount = 0;
-
-  for (
-    const currentDay = new Date(startDay);
-    currentDay <= endDay;
-    currentDay.setDate(currentDay.getDate() + 1)
-  ) {
-    const dayOfWeek = currentDay.getDay();
-
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      fullDayCount += 1;
-    }
-  }
-
-  return fullDayCount + (hasHalfDay ? 0.5 : 0);
-}
-
-function formatDateParam(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function getHalfDayValue(selectedHalfDay: string) {
-  return selectedHalfDay
-    ? String(halfDayOptions.indexOf(selectedHalfDay) + 1)
-    : "";
-}
-
 function getImageFileName(asset: ImagePicker.ImagePickerAsset) {
   return (
     asset.fileName ||
@@ -309,6 +271,8 @@ export default function SickScreen() {
   );
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [initialError, setInitialError] = useState("");
+  const [deptId, setDeptId] = useState("");
+  const [step, setStep] = useState("");
   const [absentTime, setAbsentTime] = useState("");
   const [absentStatus, setAbsentStatus] = useState("");
   const [approver, setApprover] = useState("");
@@ -348,10 +312,18 @@ export default function SickScreen() {
     setIsInitialLoading(true);
     setInitialError("");
     setInitialAbsentData(null);
+    setDeptId("");
+    setStep("");
+    setAbsentTime("");
+    setAbsentStatus("");
 
     try {
       const data = await initAbsentData(userId, TYPE_ABSENT_SICK);
       setInitialAbsentData(data);
+      setDeptId(getAbsentTextValue(data, ["deptId", "dept_id", "departmentId", "department_id"]));
+      setStep(getAbsentTextValue(data, ["step"]));
+      setAbsentStatus(getAbsentTextValue(data, ["absentStatus", "absent_status", "status"]));
+      setAbsentTime(getAbsentTextValue(data, ["absentTime", "absent_time", "times", "time"]));      
     } catch (error) {
       setInitialError(
         error instanceof Error
@@ -401,7 +373,7 @@ export default function SickScreen() {
       return null;
     }
 
-    return getLeaveDayCount(startDate, endDate, Boolean(halfDay));
+    return getWeekdayLeaveDayCount(startDate, endDate, Boolean(halfDay));
   }, [dateError, endDate, halfDay, startDate, startDateError]);
 
   const handlePickFile = useCallback(async () => {
@@ -468,17 +440,20 @@ export default function SickScreen() {
     try {
       const result = await addAbsentData(
         {
-          absence: TYPE_ABSENT_SICK,
-          time: absentTime,
           staff_id: userId,
+          dept_id: deptId,
+          step,
+          status: absentStatus,
+          times: absentTime,
+          main_approver: approverStaffId,
           approver_position: approver,
-          approver: approverStaffId,
           reason: reason.trim(),
+          write_date: formatDateTimeParam(new Date()),
           contact: contact.trim(),
           start_date: formatDateParam(startDate),
           end_date: formatDateParam(endDate),
           num_days: leaveDayCount,
-          startpart: getHalfDayValue(halfDay),
+          startpart: getHalfDayValue(halfDay, halfDayOptions),          
         },
         TYPE_ABSENT_SICK,
         selectedFile ? { fileUpload: createUploadFile(selectedFile) } : undefined,
@@ -498,6 +473,8 @@ export default function SickScreen() {
       setIsSubmitting(false);
     }
   }, [
+    deptId,
+    step,
     absentTime,
     absentStatus,
     approver,

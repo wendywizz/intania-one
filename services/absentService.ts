@@ -1,21 +1,21 @@
 import {
-    TYPE_ABSENT_BIRTH,
-    TYPE_ABSENT_BUSINESS,
-    TYPE_ABSENT_HAJJ,
-    TYPE_ABSENT_RELAX,
-    TYPE_ABSENT_SICK,
+  TYPE_ABSENT_BIRTH,
+  TYPE_ABSENT_BUSINESS,
+  TYPE_ABSENT_HAJJ,
+  TYPE_ABSENT_RELAX,
+  TYPE_ABSENT_SICK,
 } from "../constants/type-absent";
 import type { Absent } from "../models/types";
 import {
-    createPhoenixUrl,
-    ensureSuccess,
-    fetchWithTimeout,
-    MESSAGE_PROCESS_FAILED,
-    requestJson,
-    type ListResponse,
-    type MutationResponse,
-    type JsonMap,
-    type UploadableFile,
+  createPhoenixUrl,
+  ensureSuccess,
+  fetchWithTimeout,
+  MESSAGE_PROCESS_FAILED,
+  requestJson,
+  type JsonMap,
+  type ListResponse,
+  type MutationResponse,
+  type UploadableFile,
 } from "./api";
 
 const DEFAULT_DISPLAY_LENGTH = 10;

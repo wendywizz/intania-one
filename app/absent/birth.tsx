@@ -21,6 +21,7 @@ import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { Absent } from "@/models/types";
 import { initAbsentData } from "@/services/absentService";
+import { startOfDay } from "@/utils/absent-form";
 import { getStaffDisplayLabel } from "@/utils/staff-label";
 
 type Approver = {
@@ -151,10 +152,6 @@ function SelectField({
       </Modal>
     </View>
   );
-}
-
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 export default function BirthScreen() {

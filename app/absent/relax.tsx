@@ -21,6 +21,10 @@ import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { Absent } from "@/models/types";
 import { initAbsentData } from "@/services/absentService";
+import {
+  getWeekdayLeaveDayCount,
+  startOfDay,
+} from "@/utils/absent-form";
 import { getStaffDisplayLabel } from "@/utils/staff-label";
 
 type Approver = {
@@ -161,38 +165,6 @@ function SelectField({
   );
 }
 
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function getLeaveDayCount(startDate: Date, endDate: Date, hasHalfDay: boolean) {
-  const startDay = new Date(
-    startDate.getFullYear(),
-    startDate.getMonth(),
-    startDate.getDate(),
-  );
-  const endDay = new Date(
-    endDate.getFullYear(),
-    endDate.getMonth(),
-    endDate.getDate(),
-  );
-  let fullDayCount = 0;
-
-  for (
-    const currentDay = new Date(startDay);
-    currentDay <= endDay;
-    currentDay.setDate(currentDay.getDate() + 1)
-  ) {
-    const dayOfWeek = currentDay.getDay();
-
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      fullDayCount += 1;
-    }
-  }
-
-  return fullDayCount + (hasHalfDay ? 0.5 : 0);
-}
-
 export default function RelaxScreen() {
   const { user: authUser } = useAuth();
   const [initialAbsentData, setInitialAbsentData] = useState<Absent | null>(
@@ -276,7 +248,7 @@ export default function RelaxScreen() {
       return null;
     }
 
-    return getLeaveDayCount(startDate, endDate, Boolean(halfDay));
+    return getWeekdayLeaveDayCount(startDate, endDate, Boolean(halfDay));
   }, [dateError, endDate, halfDay, startDate, startDateError]);
 
   const handleSubmit = useCallback(() => {
