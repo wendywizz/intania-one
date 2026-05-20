@@ -23,6 +23,7 @@ import type { Absent } from "@/models/types";
 import { initAbsentData } from "@/services/absentService";
 import {
   getWeekdayLeaveDayCount,
+  isRetryableInitialError,
   startOfDay,
 } from "@/utils/absent-form";
 import { getStaffDisplayLabel } from "@/utils/staff-label";
@@ -298,26 +299,30 @@ export default function RelaxScreen() {
   }
 
   if (initialError) {
+    const shouldShowRetry = isRetryableInitialError(initialError);
+
     return (
       <ThemedView style={styles.container}>
         <NavTopBar title={TEXT.ABSENT_RELAX_TITLE} backHref="/absent" />
         <View style={styles.stateContent}>
           <ThemedText type="subtitle">
-            {TEXT.SHARED_ERROR_TITLE_THAI}
+            {shouldShowRetry ? TEXT.SHARED_ERROR_TITLE_THAI : "ไม่สามารถทำเรื่องลาได้"}
           </ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>
             {initialError}
           </ThemedText>
           <View style={styles.errorActions}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={loadInitialAbsentData}
-              style={styles.secondaryButton}
-            >
-              <ThemedText type="defaultSemiBold">
-                {TEXT.SHARED_RETRY_THAI}
-              </ThemedText>
-            </Pressable>
+            {shouldShowRetry ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={loadInitialAbsentData}
+                style={styles.secondaryButton}
+              >
+                <ThemedText type="defaultSemiBold">
+                  {TEXT.SHARED_RETRY_THAI}
+                </ThemedText>
+              </Pressable>
+            ) : null}
             <Pressable
               accessibilityRole="button"
               onPress={() => router.replace("/absent")}
@@ -530,6 +535,7 @@ const styles = StyleSheet.create({
   },
   stateContent: {
     flex: 1,
+    alignItems: "center",
     justifyContent: "center",
     padding: 24,
   },
@@ -537,11 +543,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 14,
     lineHeight: 20,
+    textAlign: "center",
   },
   errorActions: {
     flexDirection: "row",
     gap: 12,
+    justifyContent: "center",
     marginTop: 24,
+    maxWidth: 360,
+    width: "100%",
   },
   panel: {
     borderRadius: 8,
@@ -686,7 +696,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     minHeight: 48,
-    flex: 1,
+    minWidth: 132,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
@@ -696,7 +706,7 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     minHeight: 48,
-    flex: 1,
+    minWidth: 132,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,

@@ -908,6 +908,7 @@ const styles = StyleSheet.create({
   },
   stateContent: {
     flex: 1,
+    alignItems: "center",
     justifyContent: "center",
     paddingVertical: 24,
   },
@@ -916,12 +917,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
+    textAlign: "center",
   },
   errorText: {
     color: "#B42318",
   },
   retryButton: {
     minHeight: 48,
+    minWidth: 132,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,

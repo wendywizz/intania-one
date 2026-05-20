@@ -84,6 +84,21 @@ function getAbsentType(item: Absent) {
   return getText(item, absentTypeFields);
 }
 
+function getEditPathname(type: string) {
+  switch (type) {
+    case TYPE_ABSENT_SICK:
+      return "/absent/sick";
+    case TYPE_ABSENT_BUSINESS:
+      return "/absent/business";
+    case TYPE_ABSENT_RELAX:
+      return "/absent/relax";
+    case TYPE_ABSENT_BIRTH:
+      return "/absent/birth";
+    default:
+      return "/absent/detail";
+  }
+}
+
 function getAbsentTypeLabel(item: Absent) {
   const typeName = getText(item, absentTypeNameFields);
   const type = getAbsentType(item);
@@ -190,11 +205,16 @@ export default function WaitingScreen() {
   );
 
   const openDetail = useCallback((item: Absent) => {
+    const type = getAbsentType(item);
+    const pathname = getEditPathname(type);
+
     router.push({
-      pathname: "/absent/detail",
+      pathname,
       params: {
         id: getAbsentId(item),
-        type: getAbsentType(item),
+        type,
+        mode: "edit",
+        source: "waiting",
         item: encodeURIComponent(JSON.stringify(item)),
       },
     } as Parameters<typeof router.push>[0]);
@@ -355,6 +375,7 @@ const styles = StyleSheet.create({
   },
   stateContent: {
     flex: 1,
+    alignItems: "center",
     justifyContent: "center",
     paddingVertical: 24,
   },
@@ -363,12 +384,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
+    textAlign: "center",
   },
   errorText: {
     color: "#B42318",
   },
   retryButton: {
     minHeight: 48,
+    minWidth: 132,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,

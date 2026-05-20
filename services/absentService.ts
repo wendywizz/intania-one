@@ -184,6 +184,18 @@ export async function updateData(
   };
 }
 
+export async function removeData(id: string, absentType: string): Promise<MutationResponse> {
+  const suffixUri = getSuffixUriEndpoint(absentType);
+  const url = createPhoenixUrl(suffixUri, { id  });
+  const jsonData = await requestJson(url, { method: "DELETE" });
+  ensureSuccess(jsonData);
+
+  return {
+    data: jsonData.data,
+    message: String(jsonData.message ?? ""),
+  };
+}
+
 export async function waitingData(staffId: string) {
   const url = createPhoenixUrl("/personnel/apis/absent/home/waiting", {
     staff_id: staffId,

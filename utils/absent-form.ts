@@ -64,3 +64,19 @@ export function getHalfDayValue(
     ? String(halfDayOptions.indexOf(selectedHalfDay) + 1)
     : "";
 }
+
+export function isRetryableInitialError(message: string) {
+  const normalizedMessage = message.toLowerCase();
+
+  return (
+    normalizedMessage.includes("unable to load") ||
+    normalizedMessage.includes("unable to connect") ||
+    normalizedMessage.includes("cannot connect") ||
+    normalizedMessage.includes("server") ||
+    normalizedMessage.includes("timeout") ||
+    normalizedMessage.includes("network") ||
+    normalizedMessage.includes("ไม่สามารถโหลด") ||
+    normalizedMessage.includes("ไม่สามารถเชื่อมต่อ") ||
+    normalizedMessage.includes("เซิร์ฟเวอร์")
+  );
+}

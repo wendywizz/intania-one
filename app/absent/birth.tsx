@@ -418,6 +418,7 @@ const styles = StyleSheet.create({
   },
   stateContent: {
     flex: 1,
+    alignItems: "center",
     justifyContent: "center",
     padding: 24,
   },
@@ -425,11 +426,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 14,
     lineHeight: 20,
+    textAlign: "center",
   },
   errorActions: {
     flexDirection: "row",
     gap: 12,
+    justifyContent: "center",
     marginTop: 24,
+    maxWidth: 360,
+    width: "100%",
   },
   panel: {
     borderRadius: 8,
@@ -568,7 +573,7 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     minHeight: 48,
-    flex: 1,
+    minWidth: 132,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
