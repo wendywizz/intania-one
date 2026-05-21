@@ -1,16 +1,18 @@
 import { TEXT } from "@/constants/text";
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
+import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
@@ -21,8 +23,16 @@ import { TYPE_ABSENT_BUSINESS } from "@/constants/type-absent";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { Absent } from "@/models/types";
-import { initAbsentData } from "@/services/absentService";
 import {
+  addAbsentData,
+  getAbsentData,
+  initAbsentData,
+  updateAbsentData,
+} from "@/services/absentService";
+import {
+  formatDateTimeParam,
+  getAbsentTextValue,
+  getHalfDayValue,
   getWeekdayLeaveDayCount,
   isRetryableInitialError,
   startOfDay,
@@ -43,6 +53,12 @@ type ValidationErrors = Partial<
   Record<"approver" | "reason" | "date" | "contact" | "agent", string>
 >;
 
+type SelectOption = {
+  label: string;
+  value: string;
+  staffId?: string;
+};
+
 function getApproverList(data: Absent | null): Approver[] {
   return Array.isArray(data?.approverList)
     ? (data.approverList as Approver[])
@@ -57,29 +73,141 @@ function getStaffLabel(staff: Approver | Agent) {
   return getStaffDisplayLabel(staff);
 }
 
+function getStaffId(staff: Approver | Agent) {
+  return getAbsentTextValue(staff as Absent, ["staffId", "staff_id", "STAFF_ID", "id"]);
+}
+
+function getPositionId(staff: Approver | Agent) {
+  return getAbsentTextValue(staff as Absent, ["positionId", "position_id", "POSITION_ID"]);
+}
+
+function getItemText(item: Absent, fields: string[]) {
+  for (const field of fields) {
+    const value = item[field];
+
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+
+    if (typeof value === "number") {
+      return String(value);
+    }
+  }
+
+  return "";
+}
+
+function getItemStringList(item: Absent, fields: string[]) {
+  for (const field of fields) {
+    const value = item[field];
+
+    if (Array.isArray(value)) {
+      return value
+        .map((itemValue) => {
+          if (itemValue && typeof itemValue === "object") {
+            return (
+              getAbsentTextValue(itemValue as Absent, [
+                "staffId",
+                "staff_id",
+                "STAFF_ID",
+                "id",
+              ]) || getStaffDisplayLabel(itemValue)
+            );
+          }
+
+          return String(itemValue);
+        })
+        .filter(Boolean);
+    }
+
+    if (typeof value === "string" && value.trim()) {
+      return value
+        .split(",")
+        .map((itemValue) => itemValue.trim())
+        .filter(Boolean);
+    }
+  }
+
+  return [];
+}
+
+function getAgentSelectionLabels(selectedValues: string[], agentList: Agent[]) {
+  return selectedValues.map((selectedValue) => {
+    const matchedAgent = agentList.find(
+      (agentItem) =>
+        getStaffId(agentItem) === selectedValue ||
+        getStaffLabel(agentItem) === selectedValue,
+    );
+
+    return matchedAgent ? getStaffLabel(matchedAgent) : selectedValue;
+  });
+}
+
+function parseItemParam(value: string | string[] | undefined): Absent {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+
+  if (!rawValue) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(decodeURIComponent(rawValue)) as Absent;
+  } catch {
+    return {};
+  }
+}
+
+function parseDateParamValue(value: string) {
+  const dateText = value.trim();
+
+  if (!dateText) {
+    return null;
+  }
+
+  const datePart = dateText.split(" ")[0]?.split("T")[0] ?? "";
+  const [year, month, day] = datePart.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day);
+}
+
+function getHalfDayLabel(value: string) {
+  if (!value || value === "0") {
+    return "0";
+  }
+
+  const halfDayIndex = Number(value) - 1;
+
+  return halfDayOptions[halfDayIndex + 1]?.value ?? "";
+}
+
 function uniqueValues(values: string[]) {
   return Array.from(new Set(values));
 }
 
-const halfDayOptions = [
-  TEXT.ABSENT_HALF_DAY_FIRST_MORNING,
-  TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON,
-  TEXT.ABSENT_HALF_DAY_LAST_MORNING,
-  TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING,
+const halfDayOptions: SelectOption[] = [
+  { label: TEXT.ABSENT_HALF_DAY_NONE, value: "0" },
+  { label: TEXT.ABSENT_HALF_DAY_FIRST_MORNING, value: "1" },
+  { label: TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON, value: "2" },
+  { label: TEXT.ABSENT_HALF_DAY_LAST_MORNING, value: "3" },
+  { label: TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING, value: "4" },
 ];
 
 type SelectFieldProps = {
   label: string;
   placeholder: string;
   value: string;
-  options: string[];
+  options: (string | SelectOption)[];
   isOpen: boolean;
   searchable?: boolean;
   wideModal?: boolean;
   hasError?: boolean;
   errorMessage?: string;
   onToggle: () => void;
-  onSelect: (value: string) => void;
+  onSelect: (value: string, option?: SelectOption) => void;
 };
 
 function SelectField({
@@ -95,16 +223,27 @@ function SelectField({
   onToggle,
   onSelect,
 }: SelectFieldProps) {
+  const normalizedOptions = useMemo(
+    () =>
+      options.map((option) =>
+        typeof option === "string" ? { label: option, value: option } : option,
+      ),
+    [options],
+  );
   const [searchText, setSearchText] = useState("");
   const filteredOptions = useMemo(() => {
     const keyword = searchText.trim().toLowerCase();
 
     if (!keyword) {
-      return options;
+      return normalizedOptions;
     }
 
-    return options.filter((option) => option.toLowerCase().includes(keyword));
-  }, [options, searchText]);
+    return normalizedOptions.filter((option) => option.label.toLowerCase().includes(keyword));
+  }, [normalizedOptions, searchText]);
+  const selectedOption = normalizedOptions.find(
+    (option) => option.value === value,
+  );
+  const displayValue = selectedOption?.label || value;
 
   const handleToggle = () => {
     if (isOpen) {
@@ -112,11 +251,6 @@ function SelectField({
     }
 
     onToggle();
-  };
-
-  const handleSelect = (selectedValue: string) => {
-    setSearchText("");
-    onSelect(selectedValue);
   };
 
   return (
@@ -127,8 +261,8 @@ function SelectField({
         onPress={handleToggle}
         style={[styles.selectButton, hasError ? styles.inputError : undefined]}
       >
-        <ThemedText style={[styles.selectText, !value && styles.placeholder]}>
-          {value || placeholder}
+        <ThemedText style={[styles.selectText, !displayValue && styles.placeholder]}>
+          {displayValue || placeholder}
         </ThemedText>
         <ThemedText style={styles.chevron}>⌄</ThemedText>
       </Pressable>
@@ -143,7 +277,7 @@ function SelectField({
         onRequestClose={handleToggle}
       >
         <Pressable style={styles.backdrop} onPress={handleToggle}>
-          <Pressable>
+          <Pressable style={styles.modalContent}>
             <ThemedView
               style={[
                 styles.selectModal,
@@ -181,26 +315,32 @@ function SelectField({
               ) : null}
 
               <ScrollView
-                style={styles.optionScroll}
+                style={[
+                  styles.optionScroll,
+                  wideModal ? styles.wideOptionScroll : undefined,
+                ]}
                 contentContainerStyle={styles.optionScrollContent}
               >
                 {filteredOptions.length ? (
                   filteredOptions.map((option) => (
                     <Pressable
-                      key={option}
+                      key={option.value}
                       accessibilityRole="button"
-                      onPress={() => handleSelect(option)}
+                      onPress={() => {
+                        setSearchText("");
+                        onSelect(option.value, option);
+                      }}
                       style={[
                         styles.option,
-                        value === option ? styles.selectedOption : undefined,
+                        value === option.value ? styles.selectedOption : undefined,
                       ]}
                     >
                       <ThemedText
-                        lightColor={value === option ? "#FFFFFF" : undefined}
-                        darkColor={value === option ? "#FFFFFF" : undefined}
+                        lightColor={value === option.value ? "#FFFFFF" : undefined}
+                        darkColor={value === option.value ? "#FFFFFF" : undefined}
                         style={styles.optionText}
                       >
-                        {option}
+                        {option.label}
                       </ThemedText>
                     </Pressable>
                   ))
@@ -220,27 +360,65 @@ function SelectField({
 
 export default function BusinessScreen() {
   const { user: authUser } = useAuth();
+  const params = useLocalSearchParams<{
+    id?: string;
+    item?: string;
+    mode?: string;
+  }>();
+  const routeEditItem = useMemo(() => parseItemParam(params.item), [params.item]);
+  const routeEditId =
+    getItemText(routeEditItem, [
+      "id",
+      "absentId",
+      "absent_id",
+      "requestId",
+      "request_id",
+    ]) || (Array.isArray(params.id) ? params.id[0] : params.id ?? "");
+  const isEditMode =
+    (Array.isArray(params.mode) ? params.mode[0] : params.mode) === "edit" ||
+    Boolean(routeEditId);
   const [initialAbsentData, setInitialAbsentData] = useState<Absent | null>(
     null,
   );
+  const [loadedEditItem, setLoadedEditItem] = useState<Absent | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [initialError, setInitialError] = useState("");
   const [approver, setApprover] = useState("");
+  const [approverStaffId, setApproverStaffId] = useState("");
   const [reason, setReason] = useState("");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [halfDay, setHalfDay] = useState("");
   const [contact, setContact] = useState("");
+  const [travelDetail, setTravelDetail] = useState("");
   const [agent, setAgent] = useState("");
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
+  const [deptId, setDeptId] = useState("");
+  const [step, setStep] = useState("");
+  const [absentTime, setAbsentTime] = useState("");
+  const [absentStatus, setAbsentStatus] = useState("");
+  const [writeDate, setWriteDate] = useState("");
   const [openSelect, setOpenSelect] = useState<
     "approver" | "halfDay" | "agent" | null
   >(null);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
     {},
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error" | "">("");
   const minimumStartDate = useMemo(() => startOfDay(new Date()), []);
   const userId = authUser?.staffId || USER_ID;
+  const editItem = loadedEditItem ?? routeEditItem;
+  const editId =
+    getItemText(editItem, [
+      "id",
+      "absentId",
+      "absent_id",
+      "requestId",
+      "request_id",
+    ]) || routeEditId;
+  const backHref = isEditMode ? "/absent/waiting" : "/absent";
 
   const clearValidationError = useCallback((field: keyof ValidationErrors) => {
     setValidationErrors((currentErrors) => {
@@ -258,20 +436,50 @@ export default function BusinessScreen() {
     setIsInitialLoading(true);
     setInitialError("");
     setInitialAbsentData(null);
+    setLoadedEditItem(null);
+    setDeptId("");
+    setStep("");
+    setAbsentTime("");
+    setAbsentStatus("");
+    setWriteDate("");
 
     try {
       const data = await initAbsentData(userId, TYPE_ABSENT_BUSINESS);
       setInitialAbsentData(data);
+      setDeptId(getAbsentTextValue(data, ["deptId", "dept_id", "departmentId", "department_id"]));
+      setStep(getAbsentTextValue(data, ["step"]));
+      setAbsentStatus(getAbsentTextValue(data, ["absentStatus", "absent_status", "status"]));
+      setAbsentTime(getAbsentTextValue(data, ["absentTime", "absent_time", "times", "time"]));
+      setWriteDate(getAbsentTextValue(data, ["writeDate", "write_date"]));
     } catch (error) {
-      setInitialError(
-        error instanceof Error
-          ? error.message
-          : TEXT.ABSENT_INIT_LOAD_ERROR_MESSAGE,
-      );
+      if (!isEditMode) {
+        setInitialError(
+          error instanceof Error
+            ? error.message
+            : TEXT.ABSENT_INIT_LOAD_ERROR_MESSAGE,
+        );
+      }
     } finally {
+      if (isEditMode && routeEditId) {
+        try {
+          const previousData = await getAbsentData(routeEditId, TYPE_ABSENT_BUSINESS);
+
+          setLoadedEditItem(previousData);
+          setInitialAbsentData((currentData) => ({
+            ...(currentData ?? {}),
+            ...previousData,
+            approverList: currentData?.approverList ?? previousData.approverList,
+            agentList: currentData?.agentList ?? previousData.agentList,
+          }));
+        } catch {
+          setLoadedEditItem(routeEditItem);
+          setInitialAbsentData((currentData) => currentData ?? routeEditItem);
+        }
+      }
+
       setIsInitialLoading(false);
     }
-  }, [userId]);
+  }, [isEditMode, routeEditId, routeEditItem, userId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -284,7 +492,14 @@ export default function BusinessScreen() {
     [startDate],
   );
   const approverOptions = useMemo(
-    () => getApproverList(initialAbsentData).map(getStaffLabel).filter(Boolean),
+    () =>
+      getApproverList(initialAbsentData)
+        .map((item) => ({
+          label: getStaffLabel(item),
+          value: getPositionId(item),
+          staffId: getStaffId(item),
+        }))
+        .filter((item) => item.label && item.value),
     [initialAbsentData],
   );
   const agentOptions = useMemo(
@@ -298,10 +513,77 @@ export default function BusinessScreen() {
     () => agentOptions.filter((option) => !selectedAgents.includes(option)),
     [agentOptions, selectedAgents],
   );
+  const selectedAgentIds = useMemo(
+    () =>
+      selectedAgents
+        .map((selectedAgent) => {
+          const matchedAgent = getAgentList(initialAbsentData).find(
+            (item) => getStaffLabel(item) === selectedAgent,
+          );
+
+          return getStaffId(matchedAgent ?? {}) || selectedAgent;
+        })
+        .filter(Boolean),
+    [initialAbsentData, selectedAgents],
+  );
   const isAgentAlreadySelected = selectedAgents.includes(agent);
+
+  useEffect(() => {
+    if (!isEditMode || !editId) {
+      return;
+    }
+
+    setReason(getItemText(editItem, ["reason", "detail", "description"]));
+    setContact(getItemText(editItem, ["contact", "contactChannel", "contact_channel", "phone"]));
+    setTravelDetail(getItemText(editItem, ["travelDetail", "travel_detail"]));
+
+    const nextStartDate = parseDateParamValue(
+      getItemText(editItem, ["startDate", "start_date", "dateStart", "date_start"]),
+    );
+    const nextEndDate = parseDateParamValue(
+      getItemText(editItem, ["endDate", "end_date", "dateEnd", "date_end"]),
+    );
+
+    setStartDate(nextStartDate);
+    setEndDate(nextEndDate);
+    setHalfDay(
+      getHalfDayLabel(getItemText(editItem, ["partFlag", "part_flag", "startpart", "half_day", "halfDay"])),
+    );
+    setApprover(
+      getItemText(editItem, [
+        "approverPosition",
+        "approver_position",
+        "approver_id",
+        "positionId",
+        "position_id",
+      ]),
+    );
+    setApproverStaffId(
+      getItemText(editItem, [
+        "mainApprover",
+        "main_approver",
+        "approverName",
+        "approver_name",
+        "approver",
+        "staffId",
+        "staff_id",
+      ]),
+    );
+    const nextSelectedAgents = getItemStringList(editItem, [
+        "selectedAgents",
+        "selected_agents",
+        "agents",
+        "agentStaffIds",
+        "agent_staff_ids",
+      ]);
+    setSelectedAgents(
+      getAgentSelectionLabels(nextSelectedAgents, getAgentList(initialAbsentData)),
+    );
+  }, [editId, editItem, initialAbsentData, isEditMode]);
+
   const dateError =
     startDate && endDate && startOfDay(endDate) < startOfDay(startDate)
-      ? "วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มต้น"
+      ? TEXT.ABSENT_VALIDATION_END_DATE_AFTER_START
       : "";
   const displayedDateError = dateError || validationErrors.date || "";
   const leaveDayCount = useMemo(() => {
@@ -309,30 +591,34 @@ export default function BusinessScreen() {
       return null;
     }
 
-    return getWeekdayLeaveDayCount(startDate, endDate, Boolean(halfDay));
+    return getWeekdayLeaveDayCount(startDate, endDate, halfDay !== "0");
   }, [dateError, endDate, halfDay, startDate]);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     const nextErrors: ValidationErrors = {};
 
     if (!approver) {
-      nextErrors.approver = "กรุณาเลือกผู้อนุมัติ";
+      nextErrors.approver = TEXT.ABSENT_VALIDATION_APPROVER_REQUIRED;
     }
 
     if (!reason.trim()) {
-      nextErrors.reason = "กรุณากรอกเหตุผล";
+      nextErrors.reason = TEXT.ABSENT_VALIDATION_REASON_REQUIRED;
     }
 
     if (!startDate || !endDate) {
-      nextErrors.date = "กรุณาเลือกวันที่ลา";
+      nextErrors.date = TEXT.ABSENT_VALIDATION_DATE_REQUIRED;
     }
 
     if (!contact.trim()) {
-      nextErrors.contact = "กรุณากรอกช่องทางติดต่อ";
+      nextErrors.contact = TEXT.ABSENT_VALIDATION_CONTACT_REQUIRED;
     }
 
     if (!selectedAgents.length) {
-      nextErrors.agent = "กรุณาเพิ่มผู้รับมอบหมายอย่างน้อย 1 คน";
+      nextErrors.agent = TEXT.ABSENT_VALIDATION_AGENT_REQUIRED;
     }
 
     setValidationErrors(nextErrors);
@@ -340,14 +626,72 @@ export default function BusinessScreen() {
     if (Object.keys(nextErrors).length || dateError) {
       return;
     }
+
+    if (!startDate || !endDate) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setToastMessage("");
+    setToastType("");
+
+    try {
+      const payload = {
+          staff_id: userId,
+          dept_id: deptId,
+          step,
+          status: absentStatus,
+          times: absentTime,
+          main_approver: approverStaffId,
+          approver_position: approver,
+          reason: reason.trim(),
+          write_date: writeDate || formatDateTimeParam(new Date()),
+          contact: contact.trim(),
+          start_date: formatDateTimeParam(startDate),
+          end_date: formatDateTimeParam(endDate),
+          num_days: leaveDayCount?.toString() ?? "",
+          startpart: getHalfDayValue(halfDay, halfDayOptions),
+          travel_detail: travelDetail.trim(),
+          agents: selectedAgentIds,
+      };
+      const result =
+        isEditMode && editId
+          ? await updateAbsentData(editId, payload, TYPE_ABSENT_BUSINESS)
+          : await addAbsentData(payload, TYPE_ABSENT_BUSINESS);
+
+      setToastType("success");
+      setToastMessage(result.message || TEXT.ABSENT_BUSINESS_SUBMIT_SUCCESS_MESSAGE);
+      setTimeout(() => {
+        router.replace("/absent/waiting");
+      }, 900);
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : TEXT.ABSENT_SUBMIT_ERROR_MESSAGE);
+    } finally {
+      setIsSubmitting(false);
+    }
   }, [
     approver,
+    approverStaffId,
+    absentStatus,
+    absentTime,
     contact,
     dateError,
+    deptId,
+    editId,
     endDate,
+    halfDay,
+    isSubmitting,
+    isEditMode,
+    leaveDayCount,
     reason,
-    selectedAgents.length,
+    selectedAgentIds,
+    selectedAgents,
     startDate,
+    step,
+    travelDetail,
+    userId,
+    writeDate,
   ]);
 
   const handleAddAgent = useCallback(() => {
@@ -381,7 +725,7 @@ export default function BusinessScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENT_BUSINESS_TITLE} backHref="/absent" />
+        <NavTopBar title={TEXT.ABSENT_BUSINESS_TITLE} backHref={backHref} />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -395,10 +739,10 @@ export default function BusinessScreen() {
 
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENT_BUSINESS_TITLE} backHref="/absent" />
+        <NavTopBar title={TEXT.ABSENT_BUSINESS_TITLE} backHref={backHref} />
         <View style={styles.stateContent}>
           <ThemedText type="subtitle">
-            {shouldShowRetry ? TEXT.SHARED_ERROR_TITLE_THAI : "ไม่สามารถทำเรื่องลาได้"}
+            {shouldShowRetry ? TEXT.SHARED_ERROR_TITLE_THAI : TEXT.ABSENT_CANNOT_REQUEST_TITLE}
           </ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>
             {initialError}
@@ -436,7 +780,7 @@ export default function BusinessScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENT_BUSINESS_TITLE} backHref="/absent" />
+      <NavTopBar title={TEXT.ABSENT_BUSINESS_TITLE} backHref={backHref} />
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -468,8 +812,9 @@ export default function BusinessScreen() {
               onToggle={() =>
                 setOpenSelect(openSelect === "approver" ? null : "approver")
               }
-              onSelect={(value) => {
+              onSelect={(value, option) => {
                 setApprover(value);
+                setApproverStaffId(option?.staffId ?? "");
                 clearValidationError("approver");
                 setOpenSelect(null);
               }}
@@ -544,7 +889,7 @@ export default function BusinessScreen() {
                   displayedDateError ? styles.errorText : undefined,
                 ]}
               >
-                {displayedDateError || "เลือกวันที่เริ่มต้นและวันที่สิ้นสุด"}
+                {displayedDateError || TEXT.ABSENT_SELECT_DATE_HINT}
               </ThemedText>
               {leaveDayCount !== null ? (
                 <ThemedText
@@ -596,6 +941,22 @@ export default function BusinessScreen() {
                   {validationErrors.contact}
                 </ThemedText>
               ) : null}
+            </View>
+
+            <View style={styles.field}>
+              <ThemedText type="defaultSemiBold">
+                {TEXT.ABSENT_TRAVEL_DETAIL_LABEL}
+              </ThemedText>
+              <TextInput
+                multiline
+                numberOfLines={2}
+                onChangeText={setTravelDetail}
+                placeholder={TEXT.ABSENT_TRAVEL_DETAIL_PLACEHOLDER}
+                placeholderTextColor="#8A969C"
+                style={[styles.input, styles.textArea]}
+                textAlignVertical="top"
+                value={travelDetail}
+              />
             </View>
 
             <View style={styles.field}>
@@ -670,20 +1031,26 @@ export default function BusinessScreen() {
 
             <Pressable
               accessibilityRole="button"
+              disabled={isSubmitting}
               onPress={handleSubmit}
-              style={styles.submitButton}
+              style={[styles.submitButton, isSubmitting ? styles.disabledButton : undefined]}
             >
+              {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
               <ThemedText
                 lightColor="#FFFFFF"
                 darkColor="#FFFFFF"
                 type="defaultSemiBold"
               >
-                {TEXT.ABSENT_SUBMIT_REQUEST}
+                {isEditMode ? TEXT.SHARED_UPDATE : TEXT.ABSENT_SUBMIT_REQUEST}
               </ThemedText>
             </Pressable>
           </View>
         </ThemedView>
       </ScrollView>
+      <AppToast
+        message={toastMessage}
+        type={toastType === "error" ? "error" : "success"}
+      />
     </ThemedView>
   );
 }
@@ -809,6 +1176,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.35)",
     padding: 24,
   },
+  modalContent: {
+    width: "100%",
+    alignItems: "center",
+  },
   selectModal: {
     width: "100%",
     maxWidth: 420,
@@ -817,8 +1188,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   wideSelectModal: {
-    maxWidth: 620,
-    minHeight: "25%",
+    width: "95%",
+    height: 520,
+    maxHeight: "85%",
   },
   selectModalHeader: {
     flexDirection: "row",
@@ -853,6 +1225,10 @@ const styles = StyleSheet.create({
   },
   optionScroll: {
     maxHeight: 360,
+  },
+  wideOptionScroll: {
+    flex: 1,
+    maxHeight: undefined,
   },
   optionScrollContent: {
     gap: 8,
@@ -940,6 +1316,8 @@ const styles = StyleSheet.create({
   submitButton: {
     minHeight: 48,
     minWidth: 132,
+    flexDirection: "row",
+    gap: 8,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,

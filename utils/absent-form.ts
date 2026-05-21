@@ -58,11 +58,25 @@ export function getAbsentTextValue(data: Absent, keys: string[]) {
 
 export function getHalfDayValue(
   selectedHalfDay: string,
-  halfDayOptions: readonly string[],
+  halfDayOptions: readonly (string | { value: string; label: string })[],
 ) {
-  return selectedHalfDay
-    ? String(halfDayOptions.indexOf(selectedHalfDay) + 1)
-    : "";
+  if (!selectedHalfDay) {
+    return "0";
+  }
+
+  const selectedOption = halfDayOptions.find((option) =>
+    typeof option === "string"
+      ? option === selectedHalfDay
+      : option.value === selectedHalfDay || option.label === selectedHalfDay,
+  );
+
+  if (!selectedOption) {
+    return selectedHalfDay;
+  }
+
+  return typeof selectedOption === "string"
+    ? String(halfDayOptions.indexOf(selectedOption) + 1)
+    : selectedOption.value;
 }
 
 export function isRetryableInitialError(message: string) {

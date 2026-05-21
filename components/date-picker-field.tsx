@@ -27,6 +27,12 @@ function formatDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function isWeekendDate(date: Date) {
+  const dayOfWeek = date.getDay();
+
+  return dayOfWeek === 0 || dayOfWeek === 6;
+}
+
 function formatDisplayDate(date: Date) {
   return date.toLocaleDateString('th-TH', {
     day: '2-digit',
@@ -81,6 +87,10 @@ export function DatePickerField({
   };
 
   const selectDate = (date: Date) => {
+    if (isWeekendDate(date)) {
+      return;
+    }
+
     onChange(date);
     setIsOpen(false);
   };
@@ -124,10 +134,11 @@ export function DatePickerField({
               <View style={styles.dayGrid}>
                 {days.map((date, index) => {
                   const currentDay = date ? startOfDay(date) : null;
-                  const isWeekend = Boolean(currentDay && (currentDay.getDay() === 0 || currentDay.getDay() === 6));
+                  const isWeekend = Boolean(currentDay && isWeekendDate(currentDay));
                   const isDisabled = Boolean(
                     currentDay &&
-                      ((minimumDay && currentDay < minimumDay) ||
+                      (isWeekend ||
+                        (minimumDay && currentDay < minimumDay) ||
                         (maximumDay && currentDay > maximumDay)),
                   );
                   const isSelected = Boolean(
@@ -153,13 +164,12 @@ export function DatePickerField({
                         isHighlighted ? styles.highlightedDayButton : undefined,
                         isSelected ? styles.selectedDayButton : undefined,
                         isWeekend ? styles.weekendDayButton : undefined,
-                        isSelected && isWeekend ? styles.selectedWeekendDayButton : undefined,
                         isDisabled ? styles.disabledDayButton : undefined,
                       ]}>
                       {date ? (
                         <ThemedText
-                          lightColor={isSelected && !isWeekend ? '#FFFFFF' : undefined}
-                          darkColor={isSelected && !isWeekend ? '#FFFFFF' : undefined}
+                          lightColor={isSelected ? '#FFFFFF' : undefined}
+                          darkColor={isSelected ? '#FFFFFF' : undefined}
                           style={[
                             styles.dayText,
                             isWeekend ? styles.weekendDayText : undefined,
@@ -262,10 +272,6 @@ const styles = StyleSheet.create({
   },
   weekendDayButton: {
     backgroundColor: '#EEF1F3',
-  },
-  selectedWeekendDayButton: {
-    borderWidth: 2,
-    borderColor: '#0A6E8A',
   },
   highlightedDayButton: {
     backgroundColor: '#D8EEF5',

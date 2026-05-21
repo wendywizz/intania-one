@@ -2,6 +2,7 @@ import { TEXT } from "@/constants/text";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
+    ActivityIndicator,
     Modal,
     Pressable,
     ScrollView,
@@ -10,6 +11,7 @@ import {
     View,
 } from "react-native";
 
+import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
@@ -20,8 +22,14 @@ import { TYPE_ABSENT_BIRTH } from "@/constants/type-absent";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { Absent } from "@/models/types";
-import { initAbsentData } from "@/services/absentService";
-import { startOfDay } from "@/utils/absent-form";
+import { addAbsentData, initAbsentData } from "@/services/absentService";
+import {
+  formatDateParam,
+  formatDateTimeParam,
+  getAbsentTextValue,
+  getWeekdayLeaveDayCount,
+  startOfDay,
+} from "@/utils/absent-form";
 import { getStaffDisplayLabel } from "@/utils/staff-label";
 
 type Approver = {
@@ -35,16 +43,22 @@ type ValidationErrors = Partial<
   Record<"approver" | "date" | "contact", string>
 >;
 
+type SelectOption = {
+  label: string;
+  value: string;
+  staffId?: string;
+};
+
 type SelectFieldProps = {
   label: string;
   placeholder: string;
   value: string;
-  options: string[];
+  options: (string | SelectOption)[];
   isOpen: boolean;
   hasError?: boolean;
   errorMessage?: string;
   onToggle: () => void;
-  onSelect: (value: string) => void;
+  onSelect: (value: string, option?: SelectOption) => void;
 };
 
 function getApproverList(data: Absent | null): Approver[] {
@@ -55,6 +69,14 @@ function getApproverList(data: Absent | null): Approver[] {
 
 function getApproverLabel(approver: Approver) {
   return getStaffDisplayLabel(approver);
+}
+
+function getStaffId(staff: Approver) {
+  return getAbsentTextValue(staff as Absent, ["staffId", "staff_id", "STAFF_ID", "id"]);
+}
+
+function getPositionId(staff: Approver) {
+  return getAbsentTextValue(staff as Absent, ["positionId", "position_id", "POSITION_ID"]);
 }
 
 function SelectField({
@@ -68,6 +90,14 @@ function SelectField({
   onToggle,
   onSelect,
 }: SelectFieldProps) {
+  const normalizedOptions = options.map((option) =>
+    typeof option === "string" ? { label: option, value: option } : option,
+  );
+  const selectedOption = normalizedOptions.find(
+    (option) => option.value === value,
+  );
+  const displayValue = selectedOption?.label || value;
+
   return (
     <View style={styles.field}>
       <ThemedText type="defaultSemiBold">{label}</ThemedText>
@@ -76,8 +106,8 @@ function SelectField({
         onPress={onToggle}
         style={[styles.selectButton, hasError ? styles.inputError : undefined]}
       >
-        <ThemedText style={[styles.selectText, !value && styles.placeholder]}>
-          {value || placeholder}
+        <ThemedText style={[styles.selectText, !displayValue && styles.placeholder]}>
+          {displayValue || placeholder}
         </ThemedText>
         <ThemedText style={styles.chevron}>⌄</ThemedText>
       </Pressable>
@@ -120,23 +150,23 @@ function SelectField({
                 style={styles.optionScroll}
                 contentContainerStyle={styles.optionScrollContent}
               >
-                {options.length ? (
-                  options.map((option) => (
+                {normalizedOptions.length ? (
+                  normalizedOptions.map((option) => (
                     <Pressable
-                      key={option}
+                      key={option.value}
                       accessibilityRole="button"
-                      onPress={() => onSelect(option)}
+                      onPress={() => onSelect(option.value, option)}
                       style={[
                         styles.option,
-                        value === option ? styles.selectedOption : undefined,
+                        value === option.value ? styles.selectedOption : undefined,
                       ]}
                     >
                       <ThemedText
-                        lightColor={value === option ? "#FFFFFF" : undefined}
-                        darkColor={value === option ? "#FFFFFF" : undefined}
+                        lightColor={value === option.value ? "#FFFFFF" : undefined}
+                        darkColor={value === option.value ? "#FFFFFF" : undefined}
                         style={styles.optionText}
                       >
-                        {option}
+                        {option.label}
                       </ThemedText>
                     </Pressable>
                   ))
@@ -163,13 +193,21 @@ export default function BirthScreen() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [initialError, setInitialError] = useState("");
   const [approver, setApprover] = useState("");
+  const [approverStaffId, setApproverStaffId] = useState("");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [contact, setContact] = useState("");
+  const [deptId, setDeptId] = useState("");
+  const [step, setStep] = useState("");
+  const [absentTime, setAbsentTime] = useState("");
+  const [absentStatus, setAbsentStatus] = useState("");
   const [isApproverOpen, setIsApproverOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
     {},
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error" | "">("");
 
   const clearValidationError = useCallback((field: keyof ValidationErrors) => {
     setValidationErrors((currentErrors) => {
@@ -187,10 +225,18 @@ export default function BirthScreen() {
     setIsInitialLoading(true);
     setInitialError("");
     setInitialAbsentData(null);
+    setDeptId("");
+    setStep("");
+    setAbsentTime("");
+    setAbsentStatus("");
 
     try {
       const data = await initAbsentData(userId, TYPE_ABSENT_BIRTH);
       setInitialAbsentData(data);
+      setDeptId(getAbsentTextValue(data, ["deptId", "dept_id", "departmentId", "department_id"]));
+      setStep(getAbsentTextValue(data, ["step"]));
+      setAbsentStatus(getAbsentTextValue(data, ["absentStatus", "absent_status", "status"]));
+      setAbsentTime(getAbsentTextValue(data, ["absentTime", "absent_time", "times", "time"]));
     } catch (error) {
       setInitialError(
         error instanceof Error
@@ -210,7 +256,13 @@ export default function BirthScreen() {
 
   const approverOptions = useMemo(
     () =>
-      getApproverList(initialAbsentData).map(getApproverLabel).filter(Boolean),
+      getApproverList(initialAbsentData)
+        .map((item) => ({
+          label: getApproverLabel(item),
+          value: getPositionId(item),
+          staffId: getStaffId(item),
+        }))
+        .filter((item) => item.label && item.value),
     [initialAbsentData],
   );
   const minimumEndDate = useMemo(
@@ -219,27 +271,95 @@ export default function BirthScreen() {
   );
   const dateError =
     startDate && endDate && startOfDay(endDate) < startOfDay(startDate)
-      ? "วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มต้น"
+      ? TEXT.ABSENT_VALIDATION_END_DATE_AFTER_START
       : "";
   const displayedDateError = dateError || validationErrors.date || "";
+  const leaveDayCount = useMemo(() => {
+    if (!startDate || !endDate || dateError) {
+      return null;
+    }
 
-  const handleSubmit = useCallback(() => {
+    return getWeekdayLeaveDayCount(startDate, endDate, false);
+  }, [dateError, endDate, startDate]);
+
+  const handleSubmit = useCallback(async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     const nextErrors: ValidationErrors = {};
 
     if (!approver) {
-      nextErrors.approver = "กรุณาเลือกผู้อนุมัติ";
+      nextErrors.approver = TEXT.ABSENT_VALIDATION_APPROVER_REQUIRED;
     }
 
     if (!startDate || !endDate) {
-      nextErrors.date = "กรุณาเลือกวันที่ลา";
+      nextErrors.date = TEXT.ABSENT_VALIDATION_DATE_REQUIRED;
     }
 
     if (!contact.trim()) {
-      nextErrors.contact = "กรุณากรอกช่องทางติดต่อ";
+      nextErrors.contact = TEXT.ABSENT_VALIDATION_CONTACT_REQUIRED;
     }
 
     setValidationErrors(nextErrors);
-  }, [approver, contact, endDate, startDate]);
+
+    if (Object.keys(nextErrors).length || dateError) {
+      return;
+    }
+
+    if (!startDate || !endDate) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setToastMessage("");
+    setToastType("");
+
+    try {
+      const result = await addAbsentData(
+        {
+          staff_id: userId,
+          dept_id: deptId,
+          step,
+          status: absentStatus,
+          times: absentTime,
+          main_approver: approverStaffId,
+          approver_position: approver,
+          write_date: formatDateTimeParam(new Date()),
+          contact: contact.trim(),
+          start_date: formatDateParam(startDate),
+          end_date: formatDateParam(endDate),
+          num_days: leaveDayCount,
+        },
+        TYPE_ABSENT_BIRTH,
+      );
+
+      setToastType("success");
+      setToastMessage(result.message || TEXT.ABSENT_BIRTH_SUBMIT_SUCCESS_MESSAGE);
+      setTimeout(() => {
+        router.replace("/absent/waiting");
+      }, 900);
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : TEXT.ABSENT_SUBMIT_ERROR_MESSAGE);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [
+    absentStatus,
+    absentTime,
+    approver,
+    approverStaffId,
+    contact,
+    dateError,
+    deptId,
+    endDate,
+    isSubmitting,
+    leaveDayCount,
+    startDate,
+    step,
+    userId,
+  ]);
 
   if (isInitialLoading) {
     return (
@@ -314,8 +434,9 @@ export default function BirthScreen() {
               hasError={Boolean(validationErrors.approver)}
               errorMessage={validationErrors.approver}
               onToggle={() => setIsApproverOpen((isOpen) => !isOpen)}
-              onSelect={(value) => {
+              onSelect={(value, option) => {
                 setApprover(value);
+                setApproverStaffId(option?.staffId ?? "");
                 clearValidationError("approver");
                 setIsApproverOpen(false);
               }}
@@ -359,7 +480,7 @@ export default function BirthScreen() {
                   displayedDateError ? styles.errorText : undefined,
                 ]}
               >
-                {displayedDateError || "เลือกวันที่เริ่มต้นและวันที่สิ้นสุด"}
+                {displayedDateError || TEXT.ABSENT_SELECT_DATE_HINT}
               </ThemedText>
             </View>
 
@@ -391,9 +512,11 @@ export default function BirthScreen() {
 
             <Pressable
               accessibilityRole="button"
+              disabled={isSubmitting}
               onPress={handleSubmit}
-              style={styles.submitButton}
+              style={[styles.submitButton, isSubmitting ? styles.disabledButton : undefined]}
             >
+              {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
               <ThemedText
                 lightColor="#FFFFFF"
                 darkColor="#FFFFFF"
@@ -405,6 +528,10 @@ export default function BirthScreen() {
           </View>
         </ThemedView>
       </ScrollView>
+      <AppToast
+        message={toastMessage}
+        type={toastType === "error" ? "error" : "success"}
+      />
     </ThemedView>
   );
 }
@@ -574,10 +701,15 @@ const styles = StyleSheet.create({
   submitButton: {
     minHeight: 48,
     minWidth: 132,
+    flexDirection: "row",
+    gap: 8,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
     backgroundColor: "#0A6E8A",
     marginTop: 6,
+  },
+  disabledButton: {
+    opacity: 0.65,
   },
 });

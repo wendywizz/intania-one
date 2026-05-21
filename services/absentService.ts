@@ -184,10 +184,21 @@ export async function updateData(
   };
 }
 
-export async function removeData(id: string, absentType: string): Promise<MutationResponse> {
+export async function removeData(
+  id: string,
+  absentType: string
+): Promise<MutationResponse> {
   const suffixUri = getSuffixUriEndpoint(absentType);
-  const url = createPhoenixUrl(suffixUri, { id  });
-  const jsonData = await requestJson(url, { method: "DELETE" });
+  const url = createPhoenixUrl(suffixUri);
+
+  const jsonData = await requestJson(url, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ id }).toString(),
+  });
+
   ensureSuccess(jsonData);
 
   return {

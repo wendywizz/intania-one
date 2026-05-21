@@ -3,9 +3,10 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { TEXT } from '@/constants/text';
 
 type DatePickerFieldProps = {
   label: string;
@@ -25,6 +26,12 @@ function formatDisplayDate(date: Date) {
   });
 }
 
+function isWeekendDate(date: Date) {
+  const dayOfWeek = date.getDay();
+
+  return dayOfWeek === 0 || dayOfWeek === 6;
+}
+
 export function DatePickerField({
   label,
   value,
@@ -42,6 +49,17 @@ export function DatePickerField({
     }
 
     if (event.type === 'set' && selectedDate) {
+      if (isWeekendDate(selectedDate)) {
+        if (Platform.OS !== 'ios') {
+          Alert.alert(
+            TEXT.ABSENT_INVALID_WEEKEND_DATE_TITLE,
+            TEXT.ABSENT_INVALID_WEEKEND_DATE_MESSAGE,
+          );
+        }
+
+        return;
+      }
+
       onChange(selectedDate);
     }
   };

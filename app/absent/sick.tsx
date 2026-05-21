@@ -34,12 +34,11 @@ import {
 } from "@/services/absentService";
 import {
   formatDateParam,
-  formatDateTimeParam,
   getAbsentTextValue,
   getHalfDayValue,
   getWeekdayLeaveDayCount,
   isRetryableInitialError,
-  startOfDay,
+  startOfDay
 } from "@/utils/absent-form";
 
 type Approver = {
@@ -157,39 +156,39 @@ function parseDateParamValue(value: string) {
 }
 
 function getHalfDayLabel(value: string) {
-  if (!value) {
-    return "";
+  if (!value || value === "0") {
+    return "0";
   }
 
   const halfDayIndex = Number(value) - 1;
 
-  return halfDayOptions[halfDayIndex] ?? "";
+  return halfDayOptions[halfDayIndex + 1]?.value ?? "";
 }
 
-const halfDayOptions: string[] = [
-  TEXT.ABSENT_HALF_DAY_FIRST_MORNING,
-  TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON,
-  TEXT.ABSENT_HALF_DAY_LAST_MORNING,
-  TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING,
+const halfDayOptions: SelectOption[] = [
+  { label: TEXT.ABSENT_HALF_DAY_NONE, value: "0" },
+  { label: TEXT.ABSENT_HALF_DAY_FIRST_MORNING, value: "1" },
+  { label: TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON, value: "2" },
+  { label: TEXT.ABSENT_HALF_DAY_LAST_MORNING, value: "3" },
+  { label: TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING, value: "4" },
 ];
 
-const FILE_PICKER_LABEL = "Medical certificate";
-const FILE_PICKER_PLACEHOLDER = "No image selected";
-const FILE_PICKER_ACTION = "Choose image";
-const FILE_PICKER_REMOVE = "Remove image";
-const IMAGE_PICKER_PERMISSION_TITLE = "Permission required";
-const IMAGE_PICKER_PERMISSION_MESSAGE =
-  "Permission to access your photo library is required.";
-const SUBMITTING_LABEL = "Submitting...";
-const SUBMIT_SUCCESS_MESSAGE = "Sick leave request submitted successfully.";
-const SUBMIT_ERROR_MESSAGE = "Unable to submit sick leave request.";
-const CONFIRM_SUBMIT_TITLE = "Confirm absent request";
-const CONFIRM_SUBMIT_MESSAGE = "Please confirm before submitting this absent request.";
-const CONFIRM_SUBMIT_CANCEL = "Cancel";
-const CONFIRM_SUBMIT_ACTION = "Confirm";
-const CONFIRM_REMOVE_TITLE = "Confirm remove request";
-const CONFIRM_REMOVE_MESSAGE = "Please confirm before removing this absent request.";
-const PENDING_APPROVAL_TITLE = "ไม่สามารถทำเรื่องลาได้";
+const FILE_PICKER_LABEL = TEXT.ABSENT_MEDICAL_CERTIFICATE_LABEL;
+const FILE_PICKER_PLACEHOLDER = TEXT.ABSENT_MEDICAL_CERTIFICATE_PLACEHOLDER;
+const FILE_PICKER_ACTION = TEXT.ABSENT_MEDICAL_CERTIFICATE_ACTION;
+const FILE_PICKER_REMOVE = TEXT.ABSENT_MEDICAL_CERTIFICATE_REMOVE;
+const IMAGE_PICKER_PERMISSION_TITLE = TEXT.ABSENT_PERMISSION_REQUIRED_TITLE;
+const IMAGE_PICKER_PERMISSION_MESSAGE = TEXT.ABSENT_PERMISSION_REQUIRED_MESSAGE;
+const SUBMITTING_LABEL = TEXT.ABSENT_SUBMITTING_LABEL;
+const SUBMIT_SUCCESS_MESSAGE = TEXT.ABSENT_SICK_SUBMIT_SUCCESS_MESSAGE;
+const SUBMIT_ERROR_MESSAGE = TEXT.ABSENT_SICK_SUBMIT_ERROR_MESSAGE;
+const CONFIRM_SUBMIT_TITLE = TEXT.ABSENT_CONFIRM_SUBMIT_TITLE;
+const CONFIRM_SUBMIT_MESSAGE = TEXT.ABSENT_CONFIRM_SUBMIT_MESSAGE;
+const CONFIRM_SUBMIT_CANCEL = TEXT.ABSENT_CONFIRM_SUBMIT_CANCEL;
+const CONFIRM_SUBMIT_ACTION = TEXT.ABSENT_CONFIRM_SUBMIT_ACTION;
+const CONFIRM_REMOVE_TITLE = TEXT.ABSENT_CONFIRM_REMOVE_TITLE;
+const CONFIRM_REMOVE_MESSAGE = TEXT.ABSENT_CONFIRM_REMOVE_MESSAGE;
+const PENDING_APPROVAL_TITLE = TEXT.ABSENT_CANNOT_REQUEST_TITLE;
 
 type SelectFieldProps = {
   label: string;
@@ -515,13 +514,13 @@ export default function SickScreen() {
   }, [editId, editItem, isEditMode]);
   const startDateError =
     startDate && startOfDay(startDate) > maximumStartDate
-      ? "วันที่เริ่มต้นต้องไม่เกินวันนี้"
+      ? TEXT.ABSENT_VALIDATION_START_DATE_NOT_FUTURE
       : "";
   const dateError =
     startDate && endDate && startOfDay(endDate) < startOfDay(startDate)
-      ? "วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มต้น"
+      ? TEXT.ABSENT_VALIDATION_END_DATE_AFTER_START
       : endDate && startOfDay(endDate) > maximumStartDate
-        ? "วันที่สิ้นสุดต้องไม่เกินวันนี้"
+        ? TEXT.ABSENT_VALIDATION_END_DATE_NOT_FUTURE
         : "";
   const displayedDateError =
     startDateError || dateError || validationErrors.date || "";
@@ -530,7 +529,7 @@ export default function SickScreen() {
       return null;
     }
 
-    return getWeekdayLeaveDayCount(startDate, endDate, Boolean(halfDay));
+    return getWeekdayLeaveDayCount(startDate, endDate, halfDay !== "0");
   }, [dateError, endDate, halfDay, startDate, startDateError]);
 
   const handlePickFile = useCallback(async () => {
@@ -565,19 +564,19 @@ export default function SickScreen() {
     const nextErrors: ValidationErrors = {};
 
     if (!approver) {
-      nextErrors.approver = "กรุณาเลือกผู้อนุมัติ";
+      nextErrors.approver = TEXT.ABSENT_VALIDATION_APPROVER_REQUIRED;
     }
 
     if (!reason.trim()) {
-      nextErrors.reason = "กรุณากรอกเหตุผล";
+      nextErrors.reason = TEXT.ABSENT_VALIDATION_REASON_REQUIRED;
     }
 
     if (!startDate || !endDate) {
-      nextErrors.date = "กรุณาเลือกวันที่ลา";
+      nextErrors.date = TEXT.ABSENT_VALIDATION_DATE_REQUIRED;
     }
 
     if (!contact.trim()) {
-      nextErrors.contact = "กรุณากรอกช่องทางติดต่อ";
+      nextErrors.contact = TEXT.ABSENT_VALIDATION_CONTACT_REQUIRED;
     }
 
     setValidationErrors(nextErrors);
@@ -622,7 +621,6 @@ export default function SickScreen() {
         main_approver: approverStaffId,
         approver_position: approver,
         reason: reason.trim(),
-        write_date: formatDateTimeParam(new Date()),
         contact: contact.trim(),
         start_date: formatDateParam(startDate),
         end_date: formatDateParam(endDate),
@@ -641,7 +639,7 @@ export default function SickScreen() {
       setToastType("success");
       setToastMessage(result.message || SUBMIT_SUCCESS_MESSAGE);
       setTimeout(() => {
-        router.replace(isEditMode ? "/absent/waiting" : "/absent");
+        router.replace("/absent/waiting");
       }, 900);
     } catch (error) {
       setToastType("error");
@@ -877,7 +875,7 @@ export default function SickScreen() {
                   displayedDateError ? styles.errorText : undefined,
                 ]}
               >
-                {displayedDateError || "เลือกวันที่เริ่มต้นและวันที่สิ้นสุด"}
+                {displayedDateError || TEXT.ABSENT_SELECT_DATE_HINT}
               </ThemedText>
               {leaveDayCount !== null ? (
                 <ThemedText

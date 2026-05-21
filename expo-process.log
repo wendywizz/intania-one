@@ -85,3 +85,5 @@ Web Bundled 65ms node_modules\expo-router\entry.js (1 module)
     at TypeScriptParserMixin.parseStatementListItem (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:12764:17)
     at TypeScriptParserMixin.parseBlockOrModuleBlockBody (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:13333:61)
     at TypeScriptParserMixin.parseBlockBody (C:\Users\kkk\Desktop\intania-staff-buddy\node_modules\@babel\parser\lib\index.js:13326:10)
+› Detected a change in metro.config.js. Restart the server to see the new results.
+› Detected a change in babel.config.js. Restart the server to see the new results. You may need to clear the bundler cache with the --clear flag for your changes to take effect.
