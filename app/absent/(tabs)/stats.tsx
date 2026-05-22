@@ -202,8 +202,8 @@ function UsageCard({
 
       {details?.length ? (
         <View style={styles.detailList}>
-          {details.map((detail) => (
-            <ThemedText key={detail} style={styles.detailText}>
+          {details.map((detail, index) => (
+            <ThemedText key={`${String(detail)}-${index}`} style={styles.detailText}>
               {detail}
             </ThemedText>
           ))}

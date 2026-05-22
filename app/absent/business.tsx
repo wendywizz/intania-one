@@ -27,6 +27,7 @@ import {
   addAbsentData,
   getAbsentData,
   initAbsentData,
+  removeData,
   updateAbsentData,
 } from "@/services/absentService";
 import {
@@ -204,6 +205,7 @@ type SelectFieldProps = {
   isOpen: boolean;
   searchable?: boolean;
   wideModal?: boolean;
+  optionActionLabel?: string;
   hasError?: boolean;
   errorMessage?: string;
   onToggle: () => void;
@@ -218,6 +220,7 @@ function SelectField({
   isOpen,
   searchable,
   wideModal,
+  optionActionLabel,
   hasError,
   errorMessage,
   onToggle,
@@ -322,9 +325,9 @@ function SelectField({
                 contentContainerStyle={styles.optionScrollContent}
               >
                 {filteredOptions.length ? (
-                  filteredOptions.map((option) => (
+                  filteredOptions.map((option, index) => (
                     <Pressable
-                      key={option.value}
+                      key={`${String(option.value)}-${index}`}
                       accessibilityRole="button"
                       onPress={() => {
                         setSearchText("");
@@ -332,6 +335,7 @@ function SelectField({
                       }}
                       style={[
                         styles.option,
+                        optionActionLabel ? styles.optionWithAction : undefined,
                         value === option.value ? styles.selectedOption : undefined,
                       ]}
                     >
@@ -342,6 +346,16 @@ function SelectField({
                       >
                         {option.label}
                       </ThemedText>
+                      {optionActionLabel ? (
+                        <ThemedText
+                          lightColor="#0A6E8A"
+                          darkColor="#0A6E8A"
+                          type="defaultSemiBold"
+                          style={styles.optionActionText}
+                        >
+                          {optionActionLabel}
+                        </ThemedText>
+                      ) : null}
                     </Pressable>
                   ))
                 ) : (
@@ -391,7 +405,6 @@ export default function BusinessScreen() {
   const [halfDay, setHalfDay] = useState("");
   const [contact, setContact] = useState("");
   const [travelDetail, setTravelDetail] = useState("");
-  const [agent, setAgent] = useState("");
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [deptId, setDeptId] = useState("");
   const [step, setStep] = useState("");
@@ -405,6 +418,9 @@ export default function BusinessScreen() {
     {},
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+  const [isRemoveConfirmVisible, setIsRemoveConfirmVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "">("");
   const minimumStartDate = useMemo(() => startOfDay(new Date()), []);
@@ -526,8 +542,6 @@ export default function BusinessScreen() {
         .filter(Boolean),
     [initialAbsentData, selectedAgents],
   );
-  const isAgentAlreadySelected = selectedAgents.includes(agent);
-
   useEffect(() => {
     if (!isEditMode || !editId) {
       return;
@@ -594,8 +608,8 @@ export default function BusinessScreen() {
     return getWeekdayLeaveDayCount(startDate, endDate, halfDay !== "0");
   }, [dateError, endDate, halfDay, startDate]);
 
-  const handleSubmit = useCallback(async () => {
-    if (isSubmitting) {
+  const handleSubmit = useCallback(() => {
+    if (isSubmitting || isRemoving) {
       return;
     }
 
@@ -631,6 +645,25 @@ export default function BusinessScreen() {
       return;
     }
 
+    setIsConfirmVisible(true);
+  }, [
+    approver,
+    contact,
+    dateError,
+    endDate,
+    isRemoving,
+    isSubmitting,
+    reason,
+    selectedAgents,
+    startDate,
+  ]);
+
+  const handleConfirmSubmit = useCallback(async () => {
+    if (isSubmitting || isRemoving || !startDate || !endDate) {
+      return;
+    }
+
+    setIsConfirmVisible(false);
     setIsSubmitting(true);
     setToastMessage("");
     setToastType("");
@@ -676,17 +709,16 @@ export default function BusinessScreen() {
     absentStatus,
     absentTime,
     contact,
-    dateError,
     deptId,
     editId,
     endDate,
     halfDay,
+    isRemoving,
     isSubmitting,
     isEditMode,
     leaveDayCount,
     reason,
     selectedAgentIds,
-    selectedAgents,
     startDate,
     step,
     travelDetail,
@@ -694,27 +726,61 @@ export default function BusinessScreen() {
     writeDate,
   ]);
 
-  const handleAddAgent = useCallback(() => {
-    if (!agent) {
+  const handleRemove = useCallback(() => {
+    if (!isEditMode || !editId || isSubmitting || isRemoving) {
+      return;
+    }
+
+    setIsRemoveConfirmVisible(true);
+  }, [editId, isEditMode, isRemoving, isSubmitting]);
+
+  const handleConfirmRemove = useCallback(async () => {
+    if (!isEditMode || !editId || isSubmitting || isRemoving) {
+      return;
+    }
+
+    setIsRemoveConfirmVisible(false);
+    setIsRemoving(true);
+    setToastMessage("");
+    setToastType("");
+
+    try {
+      const result = await removeData(editId, TYPE_ABSENT_BUSINESS);
+      setToastType("success");
+      setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
+      setTimeout(() => {
+        router.replace("/absent/waiting");
+      }, 900);
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : TEXT.ABSENT_SUBMIT_ERROR_MESSAGE);
+    } finally {
+      setIsRemoving(false);
+    }
+  }, [editId, isEditMode, isRemoving, isSubmitting]);
+
+  const handleSelectAgent = useCallback((selectedAgent: string) => {
+    if (!selectedAgent) {
       return;
     }
 
     let didAddAgent = false;
 
     setSelectedAgents((currentAgents) => {
-      if (currentAgents.includes(agent)) {
+      if (currentAgents.includes(selectedAgent)) {
         return currentAgents;
       }
 
       didAddAgent = true;
-      return [...currentAgents, agent];
+      return [...currentAgents, selectedAgent];
     });
 
     if (didAddAgent) {
       clearValidationError("agent");
-      setAgent("");
     }
-  }, [agent, clearValidationError]);
+
+    setOpenSelect(null);
+  }, [clearValidationError]);
 
   const handleRemoveAgent = useCallback((agentToRemove: string) => {
     setSelectedAgents((currentAgents) =>
@@ -960,50 +1026,25 @@ export default function BusinessScreen() {
             </View>
 
             <View style={styles.field}>
-              <View style={styles.agentRow}>
-                <View style={styles.agentSelect}>
-                  <SelectField
-                    label={TEXT.ABSENT_DELEGATE_LABEL}
-                    placeholder={TEXT.ABSENT_DELEGATE_PLACEHOLDER}
-                    value={agent}
-                    options={availableAgentOptions}
-                    isOpen={openSelect === "agent"}
-                    searchable
-                    wideModal
-                    hasError={Boolean(validationErrors.agent)}
-                    onToggle={() =>
-                      setOpenSelect(openSelect === "agent" ? null : "agent")
-                    }
-                    onSelect={(value) => {
-                      setAgent(value);
-                      setOpenSelect(null);
-                    }}
-                  />
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={!agent || isAgentAlreadySelected}
-                  onPress={handleAddAgent}
-                  style={[
-                    styles.addButton,
-                    !agent || isAgentAlreadySelected
-                      ? styles.disabledButton
-                      : undefined,
-                  ]}
-                >
-                  <ThemedText
-                    lightColor="#0A6E8A"
-                    darkColor="#0A6E8A"
-                    type="defaultSemiBold"
-                  >
-                    {TEXT.SHARED_ADD_THAI}
-                  </ThemedText>
-                </Pressable>
-              </View>
+              <SelectField
+                label={TEXT.ABSENT_DELEGATE_LABEL}
+                placeholder={TEXT.ABSENT_DELEGATE_PLACEHOLDER}
+                value=""
+                options={availableAgentOptions}
+                isOpen={openSelect === "agent"}
+                searchable
+                wideModal
+                optionActionLabel={TEXT.SHARED_ADD_THAI}
+                hasError={Boolean(validationErrors.agent)}
+                onToggle={() =>
+                  setOpenSelect(openSelect === "agent" ? null : "agent")
+                }
+                onSelect={handleSelectAgent}
+              />
               {selectedAgents.length ? (
                 <View style={styles.agentList}>
-                  {selectedAgents.map((selectedAgent) => (
-                    <View key={selectedAgent} style={styles.agentListItem}>
+                  {selectedAgents.map((selectedAgent, index) => (
+                    <View key={`${String(selectedAgent)}-${index}`} style={styles.agentListItem}>
                       <Text style={styles.agentListText}>{selectedAgent}</Text>
                       <Pressable
                         accessibilityRole="button"
@@ -1029,24 +1070,169 @@ export default function BusinessScreen() {
               ) : null}
             </View>
 
-            <Pressable
-              accessibilityRole="button"
-              disabled={isSubmitting}
-              onPress={handleSubmit}
-              style={[styles.submitButton, isSubmitting ? styles.disabledButton : undefined]}
-            >
-              {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
-              <ThemedText
-                lightColor="#FFFFFF"
-                darkColor="#FFFFFF"
-                type="defaultSemiBold"
+            <View style={isEditMode ? styles.actionRow : undefined}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSubmitting || isRemoving}
+                onPress={handleSubmit}
+                style={[
+                  styles.submitButton,
+                  isEditMode ? styles.actionButton : undefined,
+                  isSubmitting || isRemoving ? styles.disabledButton : undefined,
+                ]}
               >
-                {isEditMode ? TEXT.SHARED_UPDATE : TEXT.ABSENT_SUBMIT_REQUEST}
-              </ThemedText>
-            </Pressable>
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : null}
+                <ThemedText
+                  lightColor="#FFFFFF"
+                  darkColor="#FFFFFF"
+                  type="defaultSemiBold"
+                >
+                  {isEditMode ? TEXT.SHARED_UPDATE : TEXT.ABSENT_SUBMIT_REQUEST}
+                </ThemedText>
+              </Pressable>
+
+              {isEditMode ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isSubmitting || isRemoving}
+                  onPress={handleRemove}
+                  style={[
+                    styles.removeRequestButton,
+                    isSubmitting || isRemoving ? styles.disabledButton : undefined,
+                  ]}
+                >
+                  {isRemoving ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : null}
+                  <ThemedText
+                    lightColor="#FFFFFF"
+                    darkColor="#FFFFFF"
+                    type="defaultSemiBold"
+                  >
+                    {TEXT.SHARED_DELETE_THAI}
+                  </ThemedText>
+                </Pressable>
+              ) : null}
+            </View>
           </View>
         </ThemedView>
       </ScrollView>
+      <Modal
+        transparent
+        visible={isConfirmVisible}
+        animationType="fade"
+        onRequestClose={() => setIsConfirmVisible(false)}
+      >
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setIsConfirmVisible(false)}
+        >
+          <Pressable>
+            <ThemedView
+              style={styles.confirmModal}
+              lightColor="#FFFFFF"
+              darkColor="#151718"
+            >
+              <ThemedText type="subtitle">
+                {TEXT.ABSENT_CONFIRM_SUBMIT_TITLE}
+              </ThemedText>
+              <ThemedText style={styles.confirmMessage}>
+                {TEXT.ABSENT_CONFIRM_SUBMIT_MESSAGE}
+              </ThemedText>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setIsConfirmVisible(false)}
+                  style={styles.secondaryButton}
+                >
+                  <ThemedText type="defaultSemiBold">
+                    {TEXT.ABSENT_CONFIRM_SUBMIT_CANCEL}
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isSubmitting}
+                  onPress={handleConfirmSubmit}
+                  style={[
+                    styles.submitButton,
+                    isSubmitting ? styles.disabledButton : undefined,
+                  ]}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : null}
+                  <ThemedText
+                    lightColor="#FFFFFF"
+                    darkColor="#FFFFFF"
+                    type="defaultSemiBold"
+                  >
+                    {TEXT.ABSENT_CONFIRM_SUBMIT_ACTION}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </ThemedView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+      <Modal
+        transparent
+        visible={isRemoveConfirmVisible}
+        animationType="fade"
+        onRequestClose={() => setIsRemoveConfirmVisible(false)}
+      >
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setIsRemoveConfirmVisible(false)}
+        >
+          <Pressable>
+            <ThemedView
+              style={styles.confirmModal}
+              lightColor="#FFFFFF"
+              darkColor="#151718"
+            >
+              <ThemedText type="subtitle">
+                {TEXT.ABSENT_CONFIRM_REMOVE_TITLE}
+              </ThemedText>
+              <ThemedText style={styles.confirmMessage}>
+                {TEXT.ABSENT_CONFIRM_REMOVE_MESSAGE}
+              </ThemedText>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setIsRemoveConfirmVisible(false)}
+                  style={styles.secondaryButton}
+                >
+                  <ThemedText type="defaultSemiBold">
+                    {TEXT.ABSENT_CONFIRM_SUBMIT_CANCEL}
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isRemoving}
+                  onPress={handleConfirmRemove}
+                  style={[
+                    styles.removeConfirmButton,
+                    isRemoving ? styles.disabledButton : undefined,
+                  ]}
+                >
+                  {isRemoving ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : null}
+                  <ThemedText
+                    lightColor="#FFFFFF"
+                    darkColor="#FFFFFF"
+                    type="defaultSemiBold"
+                  >
+                    {TEXT.SHARED_DELETE_THAI}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </ThemedView>
+          </Pressable>
+        </Pressable>
+      </Modal>
       <AppToast
         message={toastMessage}
         type={toastType === "error" ? "error" : "success"}
@@ -1093,19 +1279,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   form: {
-    gap: 18,
-    marginTop: 20,
+    gap: 24,
+    marginTop: 24,
   },
   field: {
-    gap: 8,
-  },
-  agentRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 12,
-  },
-  agentSelect: {
-    flex: 1,
+    gap: 10,
   },
   input: {
     minHeight: 48,
@@ -1127,7 +1305,7 @@ const styles = StyleSheet.create({
   },
   dateRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 14,
   },
   hint: {
     color: "#687076",
@@ -1187,6 +1365,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
   },
+  confirmModal: {
+    width: "100%",
+    maxWidth: 420,
+    borderRadius: 8,
+    padding: 20,
+  },
+  confirmMessage: {
+    marginTop: 10,
+    color: "#687076",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  confirmActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 20,
+  },
   wideSelectModal: {
     width: "95%",
     height: 520,
@@ -1243,13 +1438,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
+  optionWithAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
   selectedOption: {
     borderColor: "#0A6E8A",
     backgroundColor: "#0A6E8A",
   },
   optionText: {
+    flex: 1,
     color: "#11181C",
     lineHeight: 20,
+  },
+  optionActionText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   emptyOption: {
     color: "#687076",
@@ -1267,21 +1473,11 @@ const styles = StyleSheet.create({
     borderColor: "#BFD2DA",
     backgroundColor: "#FFFFFF",
   },
-  addButton: {
-    minHeight: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#0A6E8A",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 18,
-  },
   disabledButton: {
     opacity: 0.45,
   },
   agentList: {
-    gap: 8,
+    gap: 10,
   },
   agentListItem: {
     minHeight: 44,
@@ -1303,6 +1499,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  actionRow: {
+    flexDirection: "row",
+    gap: 14,
+    justifyContent: "center",
+    marginTop: 6,
+  },
+  actionButton: {
+    flex: 1,
+    marginTop: 0,
+  },
   deleteAgentButton: {
     minHeight: 36,
     alignItems: "center",
@@ -1323,5 +1529,27 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#0A6E8A",
     marginTop: 6,
+  },
+  removeRequestButton: {
+    minHeight: 48,
+    minWidth: 132,
+    flex: 1,
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "#B42318",
+  },
+  removeConfirmButton: {
+    minHeight: 48,
+    minWidth: 132,
+    flex: 1,
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "#B42318",
   },
 });

@@ -1,5 +1,5 @@
 import { TEXT } from "@/constants/text";
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -22,7 +22,12 @@ import { TYPE_ABSENT_BIRTH } from "@/constants/type-absent";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { Absent } from "@/models/types";
-import { addAbsentData, initAbsentData } from "@/services/absentService";
+import {
+  addAbsentData,
+  initAbsentData,
+  removeData,
+  updateAbsentData,
+} from "@/services/absentService";
 import {
   formatDateParam,
   formatDateTimeParam,
@@ -151,9 +156,9 @@ function SelectField({
                 contentContainerStyle={styles.optionScrollContent}
               >
                 {normalizedOptions.length ? (
-                  normalizedOptions.map((option) => (
+                  normalizedOptions.map((option, index) => (
                     <Pressable
-                      key={option.value}
+                      key={`${String(option.value)}-${index}`}
                       accessibilityRole="button"
                       onPress={() => onSelect(option.value, option)}
                       style={[
@@ -186,7 +191,13 @@ function SelectField({
 
 export default function BirthScreen() {
   const { user: authUser } = useAuth();
+  const params = useLocalSearchParams<{ id?: string; mode?: string }>();
+  const routeEditId = Array.isArray(params.id) ? params.id[0] : params.id ?? "";
+  const isEditMode =
+    (Array.isArray(params.mode) ? params.mode[0] : params.mode) === "edit" ||
+    Boolean(routeEditId);
   const userId = authUser?.staffId || USER_ID;
+  const backHref = isEditMode ? "/absent/waiting" : "/absent";
   const [initialAbsentData, setInitialAbsentData] = useState<Absent | null>(
     null,
   );
@@ -206,6 +217,9 @@ export default function BirthScreen() {
     {},
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+  const [isRemoveConfirmVisible, setIsRemoveConfirmVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "">("");
 
@@ -282,8 +296,8 @@ export default function BirthScreen() {
     return getWeekdayLeaveDayCount(startDate, endDate, false);
   }, [dateError, endDate, startDate]);
 
-  const handleSubmit = useCallback(async () => {
-    if (isSubmitting) {
+  const handleSubmit = useCallback(() => {
+    if (isSubmitting || isRemoving) {
       return;
     }
 
@@ -311,13 +325,29 @@ export default function BirthScreen() {
       return;
     }
 
+    setIsConfirmVisible(true);
+  }, [
+    approver,
+    contact,
+    dateError,
+    endDate,
+    isRemoving,
+    isSubmitting,
+    startDate,
+  ]);
+
+  const handleConfirmSubmit = useCallback(async () => {
+    if (isSubmitting || isRemoving || !startDate || !endDate) {
+      return;
+    }
+
+    setIsConfirmVisible(false);
     setIsSubmitting(true);
     setToastMessage("");
     setToastType("");
 
     try {
-      const result = await addAbsentData(
-        {
+      const payload = {
           staff_id: userId,
           dept_id: deptId,
           step,
@@ -330,9 +360,11 @@ export default function BirthScreen() {
           start_date: formatDateParam(startDate),
           end_date: formatDateParam(endDate),
           num_days: leaveDayCount,
-        },
-        TYPE_ABSENT_BIRTH,
-      );
+      };
+      const result =
+        isEditMode && routeEditId
+          ? await updateAbsentData(routeEditId, payload, TYPE_ABSENT_BIRTH)
+          : await addAbsentData(payload, TYPE_ABSENT_BIRTH);
 
       setToastType("success");
       setToastMessage(result.message || TEXT.ABSENT_BIRTH_SUBMIT_SUCCESS_MESSAGE);
@@ -351,20 +383,55 @@ export default function BirthScreen() {
     approver,
     approverStaffId,
     contact,
-    dateError,
     deptId,
     endDate,
+    isRemoving,
     isSubmitting,
+    isEditMode,
     leaveDayCount,
+    routeEditId,
     startDate,
     step,
     userId,
   ]);
 
+  const handleRemove = useCallback(() => {
+    if (!isEditMode || !routeEditId || isSubmitting || isRemoving) {
+      return;
+    }
+
+    setIsRemoveConfirmVisible(true);
+  }, [isEditMode, isRemoving, isSubmitting, routeEditId]);
+
+  const handleConfirmRemove = useCallback(async () => {
+    if (!isEditMode || !routeEditId || isSubmitting || isRemoving) {
+      return;
+    }
+
+    setIsRemoveConfirmVisible(false);
+    setIsRemoving(true);
+    setToastMessage("");
+    setToastType("");
+
+    try {
+      const result = await removeData(routeEditId, TYPE_ABSENT_BIRTH);
+      setToastType("success");
+      setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
+      setTimeout(() => {
+        router.replace("/absent/waiting");
+      }, 900);
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : TEXT.ABSENT_SUBMIT_ERROR_MESSAGE);
+    } finally {
+      setIsRemoving(false);
+    }
+  }, [isEditMode, isRemoving, isSubmitting, routeEditId]);
+
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENT_BIRTH_TITLE} backHref="/absent" />
+        <NavTopBar title={TEXT.ABSENT_BIRTH_TITLE} backHref={backHref} />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -376,7 +443,7 @@ export default function BirthScreen() {
   if (initialError) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENT_BIRTH_TITLE} backHref="/absent" />
+        <NavTopBar title={TEXT.ABSENT_BIRTH_TITLE} backHref={backHref} />
         <View style={styles.stateContent}>
           <ThemedText type="subtitle">
             {TEXT.SHARED_ERROR_TITLE_THAI}
@@ -406,7 +473,7 @@ export default function BirthScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENT_BIRTH_TITLE} backHref="/absent" />
+      <NavTopBar title={TEXT.ABSENT_BIRTH_TITLE} backHref={backHref} />
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -510,24 +577,169 @@ export default function BirthScreen() {
               ) : null}
             </View>
 
-            <Pressable
-              accessibilityRole="button"
-              disabled={isSubmitting}
-              onPress={handleSubmit}
-              style={[styles.submitButton, isSubmitting ? styles.disabledButton : undefined]}
-            >
-              {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
-              <ThemedText
-                lightColor="#FFFFFF"
-                darkColor="#FFFFFF"
-                type="defaultSemiBold"
+            <View style={isEditMode ? styles.actionRow : undefined}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSubmitting || isRemoving}
+                onPress={handleSubmit}
+                style={[
+                  styles.submitButton,
+                  isEditMode ? styles.actionButton : undefined,
+                  isSubmitting || isRemoving ? styles.disabledButton : undefined,
+                ]}
               >
-                {TEXT.ABSENT_SUBMIT_REQUEST}
-              </ThemedText>
-            </Pressable>
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : null}
+                <ThemedText
+                  lightColor="#FFFFFF"
+                  darkColor="#FFFFFF"
+                  type="defaultSemiBold"
+                >
+                  {isEditMode ? TEXT.SHARED_UPDATE : TEXT.ABSENT_SUBMIT_REQUEST}
+                </ThemedText>
+              </Pressable>
+
+              {isEditMode ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isSubmitting || isRemoving}
+                  onPress={handleRemove}
+                  style={[
+                    styles.removeRequestButton,
+                    isSubmitting || isRemoving ? styles.disabledButton : undefined,
+                  ]}
+                >
+                  {isRemoving ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : null}
+                  <ThemedText
+                    lightColor="#FFFFFF"
+                    darkColor="#FFFFFF"
+                    type="defaultSemiBold"
+                  >
+                    {TEXT.SHARED_DELETE_THAI}
+                  </ThemedText>
+                </Pressable>
+              ) : null}
+            </View>
           </View>
         </ThemedView>
       </ScrollView>
+      <Modal
+        transparent
+        visible={isConfirmVisible}
+        animationType="fade"
+        onRequestClose={() => setIsConfirmVisible(false)}
+      >
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setIsConfirmVisible(false)}
+        >
+          <Pressable>
+            <ThemedView
+              style={styles.confirmModal}
+              lightColor="#FFFFFF"
+              darkColor="#151718"
+            >
+              <ThemedText type="subtitle">
+                {TEXT.ABSENT_CONFIRM_SUBMIT_TITLE}
+              </ThemedText>
+              <ThemedText style={styles.confirmMessage}>
+                {TEXT.ABSENT_CONFIRM_SUBMIT_MESSAGE}
+              </ThemedText>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setIsConfirmVisible(false)}
+                  style={styles.secondaryButton}
+                >
+                  <ThemedText type="defaultSemiBold">
+                    {TEXT.ABSENT_CONFIRM_SUBMIT_CANCEL}
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isSubmitting}
+                  onPress={handleConfirmSubmit}
+                  style={[
+                    styles.submitButton,
+                    isSubmitting ? styles.disabledButton : undefined,
+                  ]}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : null}
+                  <ThemedText
+                    lightColor="#FFFFFF"
+                    darkColor="#FFFFFF"
+                    type="defaultSemiBold"
+                  >
+                    {TEXT.ABSENT_CONFIRM_SUBMIT_ACTION}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </ThemedView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+      <Modal
+        transparent
+        visible={isRemoveConfirmVisible}
+        animationType="fade"
+        onRequestClose={() => setIsRemoveConfirmVisible(false)}
+      >
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setIsRemoveConfirmVisible(false)}
+        >
+          <Pressable>
+            <ThemedView
+              style={styles.confirmModal}
+              lightColor="#FFFFFF"
+              darkColor="#151718"
+            >
+              <ThemedText type="subtitle">
+                {TEXT.ABSENT_CONFIRM_REMOVE_TITLE}
+              </ThemedText>
+              <ThemedText style={styles.confirmMessage}>
+                {TEXT.ABSENT_CONFIRM_REMOVE_MESSAGE}
+              </ThemedText>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setIsRemoveConfirmVisible(false)}
+                  style={styles.secondaryButton}
+                >
+                  <ThemedText type="defaultSemiBold">
+                    {TEXT.ABSENT_CONFIRM_SUBMIT_CANCEL}
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isRemoving}
+                  onPress={handleConfirmRemove}
+                  style={[
+                    styles.removeConfirmButton,
+                    isRemoving ? styles.disabledButton : undefined,
+                  ]}
+                >
+                  {isRemoving ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : null}
+                  <ThemedText
+                    lightColor="#FFFFFF"
+                    darkColor="#FFFFFF"
+                    type="defaultSemiBold"
+                  >
+                    {TEXT.SHARED_DELETE_THAI}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </ThemedView>
+          </Pressable>
+        </Pressable>
+      </Modal>
       <AppToast
         message={toastMessage}
         type={toastType === "error" ? "error" : "success"}
@@ -574,11 +786,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   form: {
-    gap: 18,
-    marginTop: 20,
+    gap: 24,
+    marginTop: 24,
   },
   field: {
-    gap: 8,
+    gap: 10,
   },
   input: {
     minHeight: 48,
@@ -597,7 +809,7 @@ const styles = StyleSheet.create({
   },
   dateRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 14,
   },
   hint: {
     color: "#687076",
@@ -650,6 +862,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
   },
+  confirmModal: {
+    width: "100%",
+    maxWidth: 420,
+    borderRadius: 8,
+    padding: 20,
+  },
+  confirmMessage: {
+    marginTop: 10,
+    color: "#687076",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  confirmActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 20,
+  },
   selectModalHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -698,6 +927,26 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     textAlign: "center",
   },
+  secondaryButton: {
+    minHeight: 48,
+    minWidth: 132,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#BFD2DA",
+    backgroundColor: "#FFFFFF",
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 14,
+    justifyContent: "center",
+    marginTop: 6,
+  },
+  actionButton: {
+    flex: 1,
+    marginTop: 0,
+  },
   submitButton: {
     minHeight: 48,
     minWidth: 132,
@@ -708,6 +957,28 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#0A6E8A",
     marginTop: 6,
+  },
+  removeRequestButton: {
+    minHeight: 48,
+    minWidth: 132,
+    flex: 1,
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "#B42318",
+  },
+  removeConfirmButton: {
+    minHeight: 48,
+    minWidth: 132,
+    flex: 1,
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "#B42318",
   },
   disabledButton: {
     opacity: 0.65,

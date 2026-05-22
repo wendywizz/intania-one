@@ -114,8 +114,8 @@ export default function HomeScreen() {
                 <LoadingAnimate fill={false} title={TEXT.HOME_LOADING_NEWS_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
               </ThemedView>
             ) : newsItems.length > 0 ? (
-              newsItems.map((item) => (
-                <Pressable key={item.guid || item.link || item.title} onPress={() => openNews(item.link)}>
+              newsItems.map((item, index) => (
+                <Pressable key={`${String(item.guid || item.link || item.title)}-${index}`} onPress={() => openNews(item.link)}>
                   <ThemedView style={styles.newsCard} lightColor="#FFFFFF" darkColor="#1F2B30">
                     <ThemedText type="defaultSemiBold" numberOfLines={2}>
                       {item.title}
@@ -141,8 +141,8 @@ export default function HomeScreen() {
           <ThemedText style={styles.description}>{TEXT.HOME_MENU_SECTION_DESCRIPTION}</ThemedText>
         </ThemedView>
         <ThemedView style={styles.grid}>
-          {screens.map((screen) => (
-            <Link key={screen.href} href={screen.href as Parameters<typeof Link>[0]['href']} asChild>
+          {screens.map((screen, index) => (
+            <Link key={`${String(screen.href)}-${index}`} href={screen.href as Parameters<typeof Link>[0]['href']} asChild>
               <TouchableOpacity style={styles.card}>
                 <ThemedText type="subtitle">{screen.title}</ThemedText>
               </TouchableOpacity>

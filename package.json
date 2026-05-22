@@ -5,7 +5,8 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
+    "android": "node ./scripts/start-android.js --offline",
+    "android:online": "node ./scripts/start-android.js",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint"

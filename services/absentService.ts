@@ -42,19 +42,38 @@ export function getSuffixUriEndpoint(absentType: string) {
 }
 
 function generateMedUploadFileName(staffId: unknown) {
-  return `${String(staffId ?? "unknown")}_${Date.now()}`;
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const year = now.getFullYear();
+  const hour = String(now.getHours()).padStart(2, "0");
+  const minute = String(now.getMinutes()).padStart(2, "0");
+  const safeStaffId = String(staffId ?? "unknown").replace(/[^A-Za-z0-9_-]/g, "");
+
+  return `${day}-${month}-${year}_${hour}-${minute}_${safeStaffId || "unknown"}.jpg`;
 }
 
-function getUploadFileExtension(fileUpload: UploadableFile) {
-  const fileName =
-    fileUpload instanceof Blob && "name" in fileUpload
-      ? String(fileUpload.name)
-      : "name" in fileUpload
-        ? fileUpload.name
-        : "";
-  const extension = fileName?.match(/\.[A-Za-z0-9]+$/)?.[0];
+async function readBlobAsBase64(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
 
-  return extension || ".jpg";
+    reader.onload = () => {
+      const result = String(reader.result ?? "");
+      resolve(result.includes(",") ? result.split(",")[1] : result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error(MESSAGE_PROCESS_FAILED));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function readUploadFileAsBase64(fileUpload: UploadableFile) {
+  if (fileUpload instanceof Blob) {
+    return readBlobAsBase64(fileUpload);
+  }
+
+  const response = await fetch(fileUpload.uri);
+  const blob = await response.blob();
+  return readBlobAsBase64(blob);
 }
 
 export async function initAbsentData(
@@ -87,13 +106,14 @@ export async function uploadMedFile(
   params?: Record<string, unknown>,
 ): Promise<MutationResponse> {
   const formData = new FormData();
+  const imageBase64 = await readUploadFileAsBase64(fileUpload);
 
   Object.entries(params ?? {}).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       formData.append(key, String(value));
     }
   });
-  formData.append("file", fileUpload as never);
+  formData.append("image", imageBase64);
 
   const response = await fetchWithTimeout(endpoint, {
     method: "POST",
@@ -101,11 +121,16 @@ export async function uploadMedFile(
   });
   const body = await response.text();
 
-  if (!response.ok || !body) {
+  if (!body) {
     throw new Error(MESSAGE_PROCESS_FAILED);
   }
 
   const jsonData = JSON.parse(body) as JsonMap;
+
+  if (!response.ok) {
+    throw new Error(String(jsonData.message ?? MESSAGE_PROCESS_FAILED));
+  }
+
   ensureSuccess(jsonData);
 
   return {
@@ -123,7 +148,7 @@ export async function addData(
   let fileName: string | undefined;
 
   if (options?.fileUpload) {
-    fileName = `${generateMedUploadFileName(data.staff_id)}${getUploadFileExtension(options.fileUpload)}`;
+    fileName = generateMedUploadFileName(data.staff_id);
     const endpoint = createPhoenixUrl(`${suffixUri}upload`);
     await uploadMedFile(endpoint, options.fileUpload, {
       file_name: fileName,
@@ -157,7 +182,7 @@ export async function updateData(
   let reUpload = false;
 
   if (options?.fileUpload) {
-    fileName = `${generateMedUploadFileName(data.staff_id)}${getUploadFileExtension(options.fileUpload)}`;
+    fileName = generateMedUploadFileName(data.staff_id);
     const endpoint = createPhoenixUrl(`${suffixUri}upload`);
     reUpload = true;
 

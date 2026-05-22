@@ -39,8 +39,8 @@ export default function AbsentScreen() {
         <ThemedText style={styles.description}>{TEXT.ABSENT_REQUEST_TYPE_PROMPT}</ThemedText>
 
         <View style={styles.grid}>
-          {absentMenus.map((menu) => (
-            <Link key={menu.title} href={menu.href} asChild>
+          {absentMenus.map((menu, index) => (
+            <Link key={`${String(menu.title)}-${index}`} href={menu.href} asChild>
               <Pressable accessibilityRole="button" style={styles.card}>
                 <ThemedText type="defaultSemiBold">{menu.title}</ThemedText>
                 <ThemedText style={styles.cardDescription}>{menu.description}</ThemedText>

@@ -231,7 +231,7 @@ export default function CalendarScreen() {
       <NavTopBar title={TEXT.CALENDAR_TITLE} backHref="/" />
       <FlatList
         data={selectedEvents}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => `${String(item.id || "calendar-event")}-${index}`}
         renderItem={renderEvent}
         contentContainerStyle={styles.content}
         refreshControl={
@@ -284,11 +284,11 @@ export default function CalendarScreen() {
 
                     <ScrollView style={styles.optionScroll} contentContainerStyle={styles.optionScrollContent}>
                       {sources.length ? (
-                        sources.map((source) => {
+                        sources.map((source, index) => {
                           const active = selectedSource?.source === source.source;
                           return (
                             <Pressable
-                              key={source.source}
+                              key={`${String(source.source)}-${index}`}
                               accessibilityRole="button"
                               onPress={() => handleSelectSource(source)}
                               style={[styles.option, active ? styles.selectedOption : undefined]}

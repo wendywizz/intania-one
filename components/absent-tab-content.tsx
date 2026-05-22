@@ -22,8 +22,8 @@ export function AbsentTabContent({ title, description, items }: AbsentTabContent
           <ThemedText style={styles.message}>{description}</ThemedText>
 
           <View style={styles.list}>
-            {items.map((item) => (
-              <View key={item} style={styles.listItem}>
+            {items.map((item, index) => (
+              <View key={`${String(item)}-${index}`} style={styles.listItem}>
                 <View style={styles.dot} />
                 <ThemedText>{item}</ThemedText>
               </View>

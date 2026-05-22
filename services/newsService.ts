@@ -8,6 +8,23 @@ import { fetchWithApiDelay } from './api';
 const parser = new XMLParser({ignoreAttributes: false});
 const WEB_NEWS_PROXY = '/api/staff-news-feed';
 
+function getFeedText(value: unknown) {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return String(value);
+  }
+
+  if (value && typeof value === 'object') {
+    const item = value as Record<string, unknown>;
+    return getFeedText(item['#text'] ?? item.text ?? item.value ?? '');
+  }
+
+  return '';
+}
+
 function getDevServerHost() {
   const constants = Constants as typeof Constants & {
     manifest?: {debuggerHost?: string; hostUri?: string};
@@ -35,12 +52,12 @@ function parseNewsFeed(xml: string): News[] {
   const list = Array.isArray(items) ? items : items ? [items] : [];
 
   return list.map((item: any) => ({
-    title: item.title ?? '',
-    link: item.link ?? '',
-    guid: item.guid ?? '',
-    description: item.description ?? '',
-    category: item.category ?? '',
-    pubDate: item.pubDate ?? '',
+    title: getFeedText(item.title),
+    link: getFeedText(item.link),
+    guid: getFeedText(item.guid),
+    description: getFeedText(item.description),
+    category: getFeedText(item.category),
+    pubDate: getFeedText(item.pubDate),
   }));
 }
 

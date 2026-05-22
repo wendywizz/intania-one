@@ -22,8 +22,8 @@ export function AbsentRequestScreen({ title, description, fields }: AbsentReques
           <ThemedText style={styles.description}>{description}</ThemedText>
 
           <View style={styles.fieldList}>
-            {fields.map((field) => (
-              <ThemedView key={field} style={styles.field} lightColor="#FFFFFF" darkColor="#151718">
+            {fields.map((field, index) => (
+              <ThemedView key={`${String(field)}-${index}`} style={styles.field} lightColor="#FFFFFF" darkColor="#151718">
                 <ThemedText type="defaultSemiBold">{field}</ThemedText>
                 <ThemedText style={styles.fieldHint}>{TEXT.SHARED_REQUIRED_INFORMATION}</ThemedText>
               </ThemedView>

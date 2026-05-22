@@ -289,12 +289,12 @@ export default function RepairComputerTabLayout() {
               <ScrollView style={styles.optionScroll} contentContainerStyle={styles.optionScrollContent}>
                 {repairComputerRoleOptions
                   .filter((option) => accessibleRoleOptions.some((accessibleOption) => accessibleOption.value === option.value))
-                  .map((option) => {
+                  .map((option, index) => {
                   const isSelected = currentRole === option.value;
 
                   return (
                     <Pressable
-                      key={option.value}
+                      key={`${String(option.value)}-${index}`}
                       accessibilityRole="button"
                       onPress={() => handleSelectRole(option.value)}
                       style={[styles.option, isSelected ? styles.selectedOption : undefined]}>

@@ -1,10 +1,9 @@
 import { TEXT } from "@/constants/text";
-import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Platform,
   Pressable,
@@ -177,8 +176,6 @@ const FILE_PICKER_LABEL = TEXT.ABSENT_MEDICAL_CERTIFICATE_LABEL;
 const FILE_PICKER_PLACEHOLDER = TEXT.ABSENT_MEDICAL_CERTIFICATE_PLACEHOLDER;
 const FILE_PICKER_ACTION = TEXT.ABSENT_MEDICAL_CERTIFICATE_ACTION;
 const FILE_PICKER_REMOVE = TEXT.ABSENT_MEDICAL_CERTIFICATE_REMOVE;
-const IMAGE_PICKER_PERMISSION_TITLE = TEXT.ABSENT_PERMISSION_REQUIRED_TITLE;
-const IMAGE_PICKER_PERMISSION_MESSAGE = TEXT.ABSENT_PERMISSION_REQUIRED_MESSAGE;
 const SUBMITTING_LABEL = TEXT.ABSENT_SUBMITTING_LABEL;
 const SUBMIT_SUCCESS_MESSAGE = TEXT.ABSENT_SICK_SUBMIT_SUCCESS_MESSAGE;
 const SUBMIT_ERROR_MESSAGE = TEXT.ABSENT_SICK_SUBMIT_ERROR_MESSAGE;
@@ -276,9 +273,9 @@ function SelectField({
                 contentContainerStyle={styles.optionScrollContent}
               >
                 {normalizedOptions.length ? (
-                  normalizedOptions.map((option) => (
+                  normalizedOptions.map((option, index) => (
                     <Pressable
-                      key={option.value}
+                      key={`${String(option.value)}-${index}`}
                       accessibilityRole="button"
                       onPress={() => onSelect(option.value, option)}
                       style={[
@@ -315,21 +312,18 @@ function SelectField({
   );
 }
 
-function getImageFileName(asset: ImagePicker.ImagePickerAsset) {
-  return (
-    asset.fileName ||
-    `medical-certificate.${asset.mimeType?.split("/")[1] || "jpg"}`
-  );
+function getUploadFileName(asset: DocumentPicker.DocumentPickerAsset) {
+  return asset.name || `medical-certificate.${asset.mimeType?.split("/")[1] || "jpg"}`;
 }
 
-function createUploadFile(asset: ImagePicker.ImagePickerAsset): UploadableFile {
+function createUploadFile(asset: DocumentPicker.DocumentPickerAsset): UploadableFile {
   if (Platform.OS === "web" && asset.file) {
     return asset.file;
   }
 
   return {
     uri: asset.uri,
-    name: getImageFileName(asset),
+    name: getUploadFileName(asset),
     type: asset.mimeType,
   };
 }
@@ -368,7 +362,7 @@ export default function SickScreen() {
   const [halfDay, setHalfDay] = useState("");
   const [contact, setContact] = useState("");
   const [selectedFile, setSelectedFile] =
-    useState<ImagePicker.ImagePickerAsset | null>(null);
+    useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [openSelect, setOpenSelect] = useState<"approver" | "halfDay" | null>(
     null,
   );
@@ -533,22 +527,10 @@ export default function SickScreen() {
   }, [dateError, endDate, halfDay, startDate, startDateError]);
 
   const handlePickFile = useCallback(async () => {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permissionResult.granted) {
-      Alert.alert(
-        IMAGE_PICKER_PERMISSION_TITLE,
-        IMAGE_PICKER_PERMISSION_MESSAGE,
-      );
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: false,
-      allowsMultipleSelection: false,
-      mediaTypes: ["images"],
-      quality: 1,
+    const result = await DocumentPicker.getDocumentAsync({
+      copyToCacheDirectory: true,
+      multiple: false,
+      type: "image/*",
     });
 
     if (!result.canceled) {
@@ -970,7 +952,7 @@ export default function SickScreen() {
                 ]}
               >
                 {selectedFile
-                  ? getImageFileName(selectedFile)
+                  ? getUploadFileName(selectedFile)
                   : FILE_PICKER_PLACEHOLDER}
               </ThemedText>
             </View>
@@ -1013,11 +995,11 @@ export default function SickScreen() {
                   ]}
                 >
                   {isRemoving ? (
-                    <ActivityIndicator color="#B42318" size="small" />
+                    <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : null}
                   <ThemedText
-                    lightColor="#B42318"
-                    darkColor="#B42318"
+                    lightColor="#FFFFFF"
+                    darkColor="#FFFFFF"
                     type="defaultSemiBold"
                   >
                     {TEXT.SHARED_DELETE_THAI}
@@ -1184,11 +1166,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   form: {
-    gap: 18,
-    marginTop: 20,
+    gap: 24,
+    marginTop: 24,
   },
   field: {
-    gap: 8,
+    gap: 10,
   },
   input: {
     minHeight: 48,
@@ -1210,7 +1192,7 @@ const styles = StyleSheet.create({
   },
   dateRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 14,
   },
   hint: {
     color: "#687076",
@@ -1343,7 +1325,7 @@ const styles = StyleSheet.create({
   },
   filePickerRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 14,
   },
   filePickerButton: {
     minHeight: 46,
@@ -1373,7 +1355,7 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 14,
     justifyContent: "center",
     marginTop: 6,
   },
@@ -1401,9 +1383,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#F0B4AE",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#B42318",
   },
   removeConfirmButton: {
     minHeight: 48,

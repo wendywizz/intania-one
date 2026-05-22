@@ -242,8 +242,8 @@ function WorkerSummary({ worker }: { worker: Person }) {
         <ThemedText type="defaultSemiBold" style={styles.workerName}>
           {getWorkerName(worker)}
         </ThemedText>
-        {details.map((detail) => (
-          <ThemedText key={detail} style={styles.workerMeta}>
+        {details.map((detail, index) => (
+          <ThemedText key={`${String(detail)}-${index}`} style={styles.workerMeta}>
             {detail}
           </ThemedText>
         ))}
@@ -490,9 +490,9 @@ export default function AssignJobScreen() {
           >
             {getWorkerName(item)}
           </ThemedText>
-          {details.map((detail) => (
+          {details.map((detail, index) => (
             <ThemedText
-              key={detail}
+              key={`${String(detail)}-${index}`}
               lightColor={isSelected ? "#E8F5F8" : "#687076"}
               darkColor={isSelected ? "#E8F5F8" : "#687076"}
               style={styles.workerMeta}
@@ -628,9 +628,9 @@ export default function AssignJobScreen() {
     return (
       <ScrollView contentContainerStyle={styles.confirmContent}>
         <ThemedText type="defaultSemiBold">Job Detail</ThemedText>
-        {jobRows.map((row) => (
+        {jobRows.map((row, index) => (
           <RowDetail
-            key={row.title}
+            key={`${String(row.title)}-${index}`}
             title={row.title}
             description={row.description}
           />
