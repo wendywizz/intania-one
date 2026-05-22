@@ -9,6 +9,11 @@ dist/
 web-build/
 expo-env.d.ts
 
+# local Expo/runtime output
+.expo-server*.log
+expo-*.log
+Expo-Go-*.apk
+
 # Native
 .kotlin/
 *.orig.*
@@ -31,6 +36,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
