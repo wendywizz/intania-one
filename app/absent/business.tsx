@@ -7,11 +7,11 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from "react-native";
 
+import { AgentSelectField } from "@/components/agent-select-field";
 import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
 import { LoadingAnimate } from "@/components/loading-animate";
@@ -1025,50 +1025,18 @@ export default function BusinessScreen() {
               />
             </View>
 
-            <View style={styles.field}>
-              <SelectField
-                label={TEXT.ABSENT_DELEGATE_LABEL}
-                placeholder={TEXT.ABSENT_DELEGATE_PLACEHOLDER}
-                value=""
-                options={availableAgentOptions}
-                isOpen={openSelect === "agent"}
-                searchable
-                wideModal
-                optionActionLabel={TEXT.SHARED_ADD_THAI}
-                hasError={Boolean(validationErrors.agent)}
-                onToggle={() =>
-                  setOpenSelect(openSelect === "agent" ? null : "agent")
-                }
-                onSelect={handleSelectAgent}
-              />
-              {selectedAgents.length ? (
-                <View style={styles.agentList}>
-                  {selectedAgents.map((selectedAgent, index) => (
-                    <View key={`${String(selectedAgent)}-${index}`} style={styles.agentListItem}>
-                      <Text style={styles.agentListText}>{selectedAgent}</Text>
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={() => handleRemoveAgent(selectedAgent)}
-                        style={styles.deleteAgentButton}
-                      >
-                        <ThemedText
-                          lightColor="#B42318"
-                          darkColor="#B42318"
-                          type="defaultSemiBold"
-                        >
-                          {TEXT.SHARED_DELETE_THAI}
-                        </ThemedText>
-                      </Pressable>
-                    </View>
-                  ))}
-                </View>
-              ) : null}
-              {validationErrors.agent ? (
-                <ThemedText style={styles.fieldError}>
-                  {validationErrors.agent}
-                </ThemedText>
-              ) : null}
-            </View>
+            <AgentSelectField
+              options={availableAgentOptions}
+              selectedAgents={selectedAgents}
+              isOpen={openSelect === "agent"}
+              hasError={Boolean(validationErrors.agent)}
+              errorMessage={validationErrors.agent}
+              onToggle={() =>
+                setOpenSelect(openSelect === "agent" ? null : "agent")
+              }
+              onSelect={handleSelectAgent}
+              onRemove={handleRemoveAgent}
+            />
 
             <View style={isEditMode ? styles.actionRow : undefined}>
               <Pressable
@@ -1476,29 +1444,6 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.45,
   },
-  agentList: {
-    gap: 10,
-  },
-  agentListItem: {
-    minHeight: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  agentListText: {
-    flex: 1,
-    color: "#11181C",
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 14,
-    lineHeight: 20,
-  },
   actionRow: {
     flexDirection: "row",
     gap: 14,
@@ -1508,16 +1453,6 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     marginTop: 0,
-  },
-  deleteAgentButton: {
-    minHeight: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#F0B4AE",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
   },
   submitButton: {
     minHeight: 48,

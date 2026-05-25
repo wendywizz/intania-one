@@ -1,9 +1,13 @@
 import { TEXT } from "@/constants/text";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as DocumentPicker from "expo-document-picker";
+import { Image } from "expo-image";
+import { openBrowserAsync } from "expo-web-browser";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -173,9 +177,8 @@ const halfDayOptions: SelectOption[] = [
 ];
 
 const FILE_PICKER_LABEL = TEXT.ABSENT_MEDICAL_CERTIFICATE_LABEL;
-const FILE_PICKER_PLACEHOLDER = TEXT.ABSENT_MEDICAL_CERTIFICATE_PLACEHOLDER;
 const FILE_PICKER_ACTION = TEXT.ABSENT_MEDICAL_CERTIFICATE_ACTION;
-const FILE_PICKER_REMOVE = TEXT.ABSENT_MEDICAL_CERTIFICATE_REMOVE;
+const FILE_PICKER_REUPLOAD_ACTION = "Re-upload file";
 const SUBMITTING_LABEL = TEXT.ABSENT_SUBMITTING_LABEL;
 const SUBMIT_SUCCESS_MESSAGE = TEXT.ABSENT_SICK_SUBMIT_SUCCESS_MESSAGE;
 const SUBMIT_ERROR_MESSAGE = TEXT.ABSENT_SICK_SUBMIT_ERROR_MESSAGE;
@@ -316,6 +319,16 @@ function getUploadFileName(asset: DocumentPicker.DocumentPickerAsset) {
   return asset.name || `medical-certificate.${asset.mimeType?.split("/")[1] || "jpg"}`;
 }
 
+function isImageFile(uri: string, fileName: string, mimeType?: string) {
+  if (mimeType?.startsWith("image/")) {
+    return true;
+  }
+
+  return /\.(avif|bmp|gif|heic|heif|jpe?g|png|webp)(?:[?#].*)?$/i.test(
+    fileName || uri,
+  );
+}
+
 function createUploadFile(asset: DocumentPicker.DocumentPickerAsset): UploadableFile {
   if (Platform.OS === "web" && asset.file) {
     return asset.file;
@@ -373,6 +386,8 @@ export default function SickScreen() {
   const [isRemoving, setIsRemoving] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
   const [isRemoveConfirmVisible, setIsRemoveConfirmVisible] = useState(false);
+  const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
+  const [viewerFile, setViewerFile] = useState({ name: "", url: "" });
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "">("");
   const userId = authUser?.staffId || USER_ID;
@@ -386,6 +401,23 @@ export default function SickScreen() {
     "request_id",
   ]) || routeEditId;
   const backHref = isEditMode ? "/absent/waiting" : "/absent";
+  const uploadedFileName = getItemText(editItem, [
+    "fileUpload",
+    "file_upload",
+    "medicalCertificate",
+    "medical_certificate",
+    "image",
+    "image_url",
+  ]);
+  const uploadedFileUrl = getItemText(editItem, [
+    "fileUploadLink",
+    "file_upload_link",
+  ]);
+  const activeFileUrl = selectedFile?.uri || uploadedFileUrl;
+  const activeFileName = selectedFile
+    ? getUploadFileName(selectedFile)
+    : uploadedFileName;
+  const hasUploadedFile = Boolean(uploadedFileUrl);
 
   const clearValidationError = useCallback((field: keyof ValidationErrors) => {
     setValidationErrors((currentErrors) => {
@@ -530,13 +562,52 @@ export default function SickScreen() {
     const result = await DocumentPicker.getDocumentAsync({
       copyToCacheDirectory: true,
       multiple: false,
-      type: "image/*",
+      type: "*/*",
     });
 
     if (!result.canceled) {
       setSelectedFile(result.assets[0] ?? null);
     }
   }, []);
+
+  const handleOpenFile = useCallback(
+    async (fileUrl: string, fileName: string, mimeType?: string) => {
+      if (!fileUrl) {
+        return;
+      }
+
+      if (isImageFile(fileUrl, fileName, mimeType)) {
+        setViewerFile({ name: fileName, url: fileUrl });
+        setIsImageViewerVisible(true);
+        return;
+      }
+
+      try {
+        if (/^https?:/i.test(fileUrl)) {
+          await openBrowserAsync(fileUrl);
+          return;
+        }
+
+        await Linking.openURL(fileUrl);
+      } catch {
+        setToastType("error");
+        setToastMessage("Unable to open file.");
+      }
+    },
+    [],
+  );
+
+  const handleViewFile = useCallback(async () => {
+    if (!activeFileUrl) {
+      return;
+    }
+
+    await handleOpenFile(activeFileUrl, activeFileName, selectedFile?.mimeType);
+  }, [activeFileName, activeFileUrl, handleOpenFile, selectedFile?.mimeType]);
+
+  const handleViewUploadedFile = useCallback(async () => {
+    await handleOpenFile(uploadedFileUrl, uploadedFileName);
+  }, [handleOpenFile, uploadedFileName, uploadedFileUrl]);
 
   const handleSubmit = useCallback(() => {
     if (isSubmitting) {
@@ -926,35 +997,64 @@ export default function SickScreen() {
                     darkColor="#0A6E8A"
                     type="defaultSemiBold"
                   >
-                    {FILE_PICKER_ACTION}
+                    {isEditMode && hasUploadedFile
+                      ? FILE_PICKER_REUPLOAD_ACTION
+                      : FILE_PICKER_ACTION}
                   </ThemedText>
                 </Pressable>
+                {selectedFile && activeFileUrl ? (
+                  <Pressable
+                    accessibilityLabel="View selected file"
+                    accessibilityRole="button"
+                    onPress={handleViewFile}
+                    style={[styles.fileIconButton, styles.viewFileButton]}
+                  >
+                    <MaterialIcons
+                      name="visibility"
+                      size={22}
+                      color="#FFFFFF"
+                    />
+                  </Pressable>
+                ) : null}
                 {selectedFile ? (
                   <Pressable
+                    accessibilityLabel="Remove selected file"
                     accessibilityRole="button"
                     onPress={() => setSelectedFile(null)}
-                    style={styles.removeFileButton}
+                    style={[styles.fileIconButton, styles.removeFileButton]}
                   >
-                    <ThemedText
-                      lightColor="#B42318"
-                      darkColor="#B42318"
-                      type="defaultSemiBold"
-                    >
-                      {FILE_PICKER_REMOVE}
-                    </ThemedText>
+                    <MaterialIcons
+                      name="delete-outline"
+                      size={22}
+                      color="#FFFFFF"
+                    />
                   </Pressable>
                 ) : null}
               </View>
-              <ThemedText
-                style={[
-                  styles.fileName,
-                  !selectedFile ? styles.placeholder : undefined,
-                ]}
-              >
-                {selectedFile
-                  ? getUploadFileName(selectedFile)
-                  : FILE_PICKER_PLACEHOLDER}
-              </ThemedText>
+              {uploadedFileUrl ? (
+                <View style={styles.uploadedFileRow}>
+                  <Pressable
+                    accessibilityRole="link"
+                    onPress={handleViewUploadedFile}
+                    style={styles.uploadedFileLink}
+                  >
+                    <MaterialIcons
+                      name="attach-file"
+                      size={18}
+                      color="#12805C"
+                    />
+                    <ThemedText
+                      lightColor="#12805C"
+                      darkColor="#5EC6A3"
+                      type="defaultSemiBold"
+                      style={styles.uploadedFileLinkText}
+                      numberOfLines={1}
+                    >
+                      Uploaded file
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              ) : null}
             </View>
 
             <View style={isEditMode ? styles.actionRow : undefined}>
@@ -1119,6 +1219,52 @@ export default function SickScreen() {
             </ThemedView>
           </Pressable>
         </Pressable>
+      </Modal>
+      <Modal
+        transparent
+        visible={isImageViewerVisible}
+        animationType="fade"
+        onRequestClose={() => setIsImageViewerVisible(false)}
+      >
+        <View style={styles.imageViewerBackdrop}>
+          <View style={styles.imageViewerHeader}>
+            <ThemedText
+              lightColor="#FFFFFF"
+              darkColor="#FFFFFF"
+              type="defaultSemiBold"
+              style={styles.imageViewerTitle}
+              numberOfLines={1}
+            >
+              {viewerFile.name}
+            </ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setIsImageViewerVisible(false)}
+              style={styles.imageViewerCloseButton}
+            >
+              <ThemedText
+                lightColor="#FFFFFF"
+                darkColor="#FFFFFF"
+                type="defaultSemiBold"
+              >
+                {TEXT.SHARED_CLOSE_THAI}
+              </ThemedText>
+            </Pressable>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setIsImageViewerVisible(false)}
+            style={styles.imageViewerBody}
+          >
+            {viewerFile.url ? (
+              <Image
+                source={{ uri: viewerFile.url }}
+                contentFit="contain"
+                style={styles.imageViewerImage}
+              />
+            ) : null}
+          </Pressable>
+        </View>
       </Modal>
       <AppToast
         message={toastMessage}
@@ -1325,7 +1471,8 @@ const styles = StyleSheet.create({
   },
   filePickerRow: {
     flexDirection: "row",
-    gap: 14,
+    alignItems: "center",
+    gap: 8,
   },
   filePickerButton: {
     minHeight: 46,
@@ -1338,20 +1485,73 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 14,
   },
-  removeFileButton: {
+  uploadedFileRow: {
     minHeight: 46,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  uploadedFileLink: {
+    flex: 1,
+    minHeight: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  uploadedFileLinkText: {
+    fontSize: 13,
+    lineHeight: 18,
+    textDecorationLine: "underline",
+  },
+  fileIconButton: {
+    width: 46,
+    height: 46,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#F0B4AE",
+    borderColor: "#0A6E8A",
     backgroundColor: "#FFFFFF",
+  },
+  viewFileButton: {
+    borderColor: "#12805C",
+    backgroundColor: "#12805C",
+  },
+  removeFileButton: {
+    borderColor: "#B42318",
+    backgroundColor: "#B42318",
+  },
+  imageViewerBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.92)",
+  },
+  imageViewerHeader: {
+    minHeight: 64,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+  },
+  imageViewerTitle: {
+    flex: 1,
+    fontSize: 14,
+  },
+  imageViewerCloseButton: {
+    minHeight: 40,
+    justifyContent: "center",
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255, 255, 255, 0.35)",
     paddingHorizontal: 14,
   },
-  fileName: {
-    color: "#11181C",
-    fontSize: 13,
-    lineHeight: 18,
+  imageViewerBody: {
+    flex: 1,
+    padding: 16,
+  },
+  imageViewerImage: {
+    flex: 1,
+    width: "100%",
   },
   actionRow: {
     flexDirection: "row",

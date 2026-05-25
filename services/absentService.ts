@@ -1,9 +1,18 @@
 import {
+  EncodingType,
+  readAsStringAsync,
+} from "expo-file-system/legacy";
+import { Platform } from "react-native";
+
+import {
   TYPE_ABSENT_BIRTH,
   TYPE_ABSENT_BUSINESS,
   TYPE_ABSENT_HAJJ,
+  TYPE_ABSENT_HELPMATE,
+  TYPE_ABSENT_ORDAIN,
   TYPE_ABSENT_RELAX,
   TYPE_ABSENT_SICK,
+  TYPE_ABSENT_SOLDIER
 } from "../constants/type-absent";
 import type { Absent } from "../models/types";
 import {
@@ -32,6 +41,12 @@ export function getRequestUrlSuffix(absentType: string) {
       return "/personnel/apis/absent/birth/";
     case TYPE_ABSENT_HAJJ:
       return "/personnel/apis/absent/hajj/";
+    case TYPE_ABSENT_HELPMATE:
+      return "/personnel/apis/absent/birth/";
+    case TYPE_ABSENT_SOLDIER:
+      return "/personnel/apis/absent/soldier/";       
+    case TYPE_ABSENT_ORDAIN:
+      return "/personnel/apis/absent/ordain/";  
     default:
       return "";
   }
@@ -41,16 +56,29 @@ export function getSuffixUriEndpoint(absentType: string) {
   return getRequestUrlSuffix(absentType);
 }
 
-function generateMedUploadFileName(staffId: unknown) {
+function getFileExtension(fileUpload?: UploadableFile) {
+  if (!fileUpload || fileUpload instanceof Blob) {
+    return "jpg";
+  }
+
+  const fileName = fileUpload.name || fileUpload.uri;
+  const extension = fileName.split(/[?#]/)[0]?.match(/\.([A-Za-z0-9]+)$/)?.[1];
+
+  return extension ? extension.toLowerCase() : "jpg";
+}
+
+function generateMedUploadFileName(staffId: unknown, fileUpload?: UploadableFile) {
   const now = new Date();
   const day = String(now.getDate()).padStart(2, "0");
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const year = now.getFullYear();
   const hour = String(now.getHours()).padStart(2, "0");
   const minute = String(now.getMinutes()).padStart(2, "0");
+  const second = String(now.getSeconds()).padStart(2, "0");
   const safeStaffId = String(staffId ?? "unknown").replace(/[^A-Za-z0-9_-]/g, "");
+  const extension = getFileExtension(fileUpload);
 
-  return `${day}-${month}-${year}_${hour}-${minute}_${safeStaffId || "unknown"}.jpg`;
+  return `${year}-${month}-${day}_${hour}-${minute}-${second}_${safeStaffId || "unknown"}.${extension}`;
 }
 
 async function readBlobAsBase64(blob: Blob) {
@@ -69,6 +97,12 @@ async function readBlobAsBase64(blob: Blob) {
 async function readUploadFileAsBase64(fileUpload: UploadableFile) {
   if (fileUpload instanceof Blob) {
     return readBlobAsBase64(fileUpload);
+  }
+
+  if (Platform.OS !== "web") {
+    return readAsStringAsync(fileUpload.uri, {
+      encoding: EncodingType.Base64,
+    });
   }
 
   const response = await fetch(fileUpload.uri);
@@ -92,8 +126,8 @@ export async function getData(
   id: string,
   absentType: string,
 ): Promise<Absent> {
-  const suffixUri = getRequestUrlSuffix(absentType);
-  const url = createPhoenixUrl(suffixUri, { id });
+  const suffixUri = getRequestUrlSuffix(absentType);  
+  const url = createPhoenixUrl(suffixUri, { id });  
   const jsonData = await requestJson(url, { method: "GET" });
   ensureSuccess(jsonData);
 
@@ -148,7 +182,7 @@ export async function addData(
   let fileName: string | undefined;
 
   if (options?.fileUpload) {
-    fileName = generateMedUploadFileName(data.staff_id);
+    fileName = generateMedUploadFileName(data.staff_id, options.fileUpload);
     const endpoint = createPhoenixUrl(`${suffixUri}upload`);
     await uploadMedFile(endpoint, options.fileUpload, {
       file_name: fileName,
@@ -164,7 +198,7 @@ export async function addData(
     }),
   });
   ensureSuccess(jsonData);
-
+wd
   return {
     data: jsonData.data,
     message: String(jsonData.message ?? ""),
@@ -182,7 +216,7 @@ export async function updateData(
   let reUpload = false;
 
   if (options?.fileUpload) {
-    fileName = generateMedUploadFileName(data.staff_id);
+    fileName = generateMedUploadFileName(data.staff_id, options.fileUpload);
     const endpoint = createPhoenixUrl(`${suffixUri}upload`);
     reUpload = true;
 
