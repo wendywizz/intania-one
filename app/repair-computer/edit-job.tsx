@@ -296,7 +296,7 @@ export default function RepairComputerEditJobScreen() {
       );
       setTimeout(() => {
         router.replace("/repair-computer/worker-current-job");
-      }, 900);
+      }, 1500);
     } catch (error) {
       setToastType("error");
       setToastMessage(
@@ -339,7 +339,7 @@ export default function RepairComputerEditJobScreen() {
       );
       setTimeout(() => {
         router.replace("/repair-computer/worker-current-job");
-      }, 900);
+      }, 1500);
     } catch (error) {
       setToastType("error");
       setToastMessage(

@@ -693,7 +693,7 @@ export default function SickScreen() {
       setToastMessage(result.message || SUBMIT_SUCCESS_MESSAGE);
       setTimeout(() => {
         router.replace("/absent/waiting");
-      }, 900);
+      }, 1500);
     } catch (error) {
       setToastType("error");
       setToastMessage(
@@ -747,7 +747,7 @@ export default function SickScreen() {
       setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
       setTimeout(() => {
         router.replace("/absent/waiting");
-      }, 900);
+      }, 1500);
     } catch (error) {
       setToastType("error");
       setToastMessage(

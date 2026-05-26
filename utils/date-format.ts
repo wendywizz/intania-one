@@ -1,6 +1,7 @@
 import moment from 'moment';
 
 const DATE_TIME_FORMAT = 'DD MMMM YYYY - H:mm';
+const FULL_DATE_FORMAT = 'DD MMMM YYYY';
 const DATE_FORMAT = 'D MMMM YYYY';
 const PARSE_FORMATS = [
   moment.ISO_8601,
@@ -44,6 +45,16 @@ export function formatDateOnly(value: string) {
   }
 
   return parsedDate.format(DATE_FORMAT);
+}
+
+export function formatFullDate(value: string) {
+  const parsedDate = parseDateTime(value);
+
+  if (!parsedDate) {
+    return value.split(/[T ]/)[0] || value;
+  }
+
+  return parsedDate.format(FULL_DATE_FORMAT);
 }
 
 export function formatDateRange(startDate: string, endDate: string) {

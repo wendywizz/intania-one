@@ -62,7 +62,7 @@ export default function WorkerRejectJobScreen() {
       );
       setTimeout(() => {
         router.replace("/repair-computer/worker-new-job");
-      }, 900);
+      }, 1500);
     } catch (error) {
       setToastType("error");
       setToastMessage(

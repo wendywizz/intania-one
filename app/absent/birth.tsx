@@ -370,7 +370,7 @@ export default function BirthScreen() {
       setToastMessage(result.message || TEXT.ABSENT_BIRTH_SUBMIT_SUCCESS_MESSAGE);
       setTimeout(() => {
         router.replace("/absent/waiting");
-      }, 900);
+      }, 1500);
     } catch (error) {
       setToastType("error");
       setToastMessage(error instanceof Error ? error.message : TEXT.ABSENT_SUBMIT_ERROR_MESSAGE);
@@ -419,7 +419,7 @@ export default function BirthScreen() {
       setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
       setTimeout(() => {
         router.replace("/absent/waiting");
-      }, 900);
+      }, 1500);
     } catch (error) {
       setToastType("error");
       setToastMessage(error instanceof Error ? error.message : TEXT.ABSENT_SUBMIT_ERROR_MESSAGE);

@@ -393,7 +393,7 @@ export default function AssignJobScreen() {
       );
       setTimeout(() => {
         router.replace("/repair-computer/foreman-new-job");
-      }, 900);
+      }, 1500);
     } catch (error) {
       setToastType("error");
       setToastMessage(

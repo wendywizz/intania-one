@@ -161,7 +161,7 @@ export default function RepairComputerInformScreen() {
       setPhone("");
       setTimeout(() => {
         router.replace("/repair-computer/current-job");
-      }, 1200);
+      }, 1500);
     } catch (error) {
       setToastType("error");
       setToastMessage(

@@ -47,6 +47,7 @@ export default function RootLayout() {
             <Stack.Screen name="repair-computer" options={{ headerShown: false }} />
             <Stack.Screen name="calendar" options={{ headerShown: false }} />
             <Stack.Screen name="forgot-timestamp" options={{ headerShown: false }} />
+            <Stack.Screen name="forgot-timestamp-detail" options={{ headerShown: false }} />
             <Stack.Screen name="login-callback" options={{ headerShown: false }} />
             <Stack.Screen name="person-search" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: TEXT.SHARED_MODAL }} />

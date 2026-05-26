@@ -184,7 +184,7 @@ export default function ForemanJobDetailScreen() {
       );
       setTimeout(() => {
         router.replace(backHref as Parameters<typeof router.replace>[0]);
-      }, 900);
+      }, 1500);
     } catch (error) {
       setToastType("error");
       setToastMessage(
