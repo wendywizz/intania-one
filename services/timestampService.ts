@@ -6,6 +6,11 @@ export type ForgotTimestamp = {
   [key: string]: unknown;
 };
 
+export type ForgotTimestampHistory = {
+  id?: string;
+  [key: string]: unknown;
+};
+
 export type SubmitForgotTimestampData = {
   id?: string;
   staff_id: string;
@@ -31,6 +36,28 @@ function normalizeForgotTimestampData(data: unknown): ForgotTimestamp[] {
 
     if (item && typeof item === "object") {
       return [item as ForgotTimestamp];
+    }
+  }
+
+  return [];
+}
+
+function normalizeForgotTimestampHistoryData(
+  data: unknown,
+): ForgotTimestampHistory[] {
+  if (Array.isArray(data)) {
+    return data as ForgotTimestampHistory[];
+  }
+
+  if (data && typeof data === "object") {
+    const item = (data as { item?: unknown }).item;
+
+    if (Array.isArray(item)) {
+      return item as ForgotTimestampHistory[];
+    }
+
+    if (item && typeof item === "object") {
+      return [item as ForgotTimestampHistory];
     }
   }
 
@@ -80,6 +107,23 @@ export async function getForgotTimestampData(
 
   return {
     data: normalizeForgotTimestampData(jsonData.data),
+    message: String(jsonData.message ?? ""),
+  };
+}
+
+export async function getForgotTimestampHistoryData(
+  staffId: string,
+  currentYear: number,
+) {
+  const url = createPhoenixUrl("/personnel/apis/timestamp/forget/history", {
+    staff_id: staffId,
+    year: currentYear,
+  });
+  const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
+  ensureSuccess(jsonData);
+
+  return {
+    data: normalizeForgotTimestampHistoryData(jsonData.data),
     message: String(jsonData.message ?? ""),
   };
 }

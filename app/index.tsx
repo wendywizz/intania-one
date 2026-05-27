@@ -1,12 +1,10 @@
-import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking, Pressable, StyleSheet, TouchableOpacity } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/context/AuthContext';
@@ -98,14 +96,7 @@ export default function HomeScreen() {
         showHomeButton={false}
         rightContent={renderAuthAction()}
       />
-      <ParallaxScrollView
-        headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-        headerImage={
-          <Image
-            source={require('@/assets/images/partial-react-logo.png')}
-            style={styles.reactLogo}
-          />
-        }>
+      <ScrollView contentContainerStyle={styles.content}>
         <ThemedView style={styles.section}>
           <ThemedText type="subtitle">{TEXT.HOME_NEWS_SECTION_TITLE}</ThemedText>
           <ThemedView style={styles.newsList}>
@@ -149,7 +140,7 @@ export default function HomeScreen() {
             </Link>
           ))}
         </ThemedView>
-      </ParallaxScrollView>
+      </ScrollView>
     </ThemedView>
   );
 }
@@ -157,6 +148,10 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  content: {
+    gap: 16,
+    padding: 32,
   },
   section: {
     marginBottom: 16,
@@ -216,12 +211,5 @@ const styles = StyleSheet.create({
     boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
     elevation: 3,
     marginBottom: 12,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
   },
 });

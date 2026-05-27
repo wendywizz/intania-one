@@ -378,7 +378,7 @@ export default function ForgotTimestampScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.FORGOT_TIMESTAMP_TITLE} />
+      <NavTopBar title={TEXT.FORGOT_TIMESTAMP_TITLE} backHref="/" />
       <View style={styles.content}>
         <ThemedView
           style={styles.panel}
