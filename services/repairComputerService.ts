@@ -9,7 +9,6 @@ import type {
     RepairComputerPrivilege,
 } from "../models/types";
 import {
-    buildHttpsUrl,
     ensureSuccess,
     fetchWithApiDelay,
     type ListResponse,
@@ -19,8 +18,22 @@ import {
     rowRequest,
 } from "./api";
 
-const base = "/repairComputer/api/";
 const SCOOBA_API_TOKEN = "";
+
+function createRepairComputerUrl(
+  path = "",
+  query?: Record<string, string | number | undefined | null>,
+) {
+  const url = new URL(`${ENDPOINTS.repairComputer}${path}`);
+
+  Object.entries(query ?? {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      url.searchParams.set(key, String(value));
+    }
+  });
+
+  return url.toString();
+}
 
 export type AddRepairComputerJobPayload = {
   staff_id: string;
@@ -34,7 +47,7 @@ export function update(
   id: string,
   data?: Record<string, unknown>,
 ) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}${path}`);
+  const url = createRepairComputerUrl(`/${path}`);
   return mutationRequest(url, "PUT", { ...(data ?? {}), id });
 }
 
@@ -63,19 +76,19 @@ export function updateOperateData(
 }
 
 export function checkCanInform(staffId: string) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform/check_can_inform`, {
+  const url = createRepairComputerUrl("/inform/check_can_inform", {
     staff_id: staffId,
   });
   return rowRequest<unknown>(url);
 }
 
 export function getJobDetail(id: string): Promise<RepairComputer> {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform`, { id });
+  const url = createRepairComputerUrl("/inform", { id });
   return rowRequest<RepairComputer>(url);
 }
 
 export function addRepairComputerJob(data: AddRepairComputerJobPayload) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform`);
+  const url = createRepairComputerUrl("/inform");
   return mutationRequest(url, "POST", data);
 }
 
@@ -86,7 +99,7 @@ export function closeJob(id: string) {
 }
 
 export async function removeJob(id: string): Promise<MutationResponse> {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform`);
+  const url = createRepairComputerUrl("/inform");
   const response = await fetchWithApiDelay(url, {
     method: "DELETE",
     headers: {
@@ -110,7 +123,7 @@ export async function removeJob(id: string): Promise<MutationResponse> {
 
 /* Inform */
 export function getUserCurrentJob(staffId: string, start = 0, length = 10) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform/current`, {
+  const url = createRepairComputerUrl("/inform/current", {
     staff_id: staffId,
     start,
     length,
@@ -119,7 +132,7 @@ export function getUserCurrentJob(staffId: string, start = 0, length = 10) {
 }
 
 export function workerQueue(): Promise<ListResponse<Record<string, unknown>>> {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform/queue`);
+  const url = createRepairComputerUrl("/inform/queue");
   return listRequest<Record<string, unknown>>(url);
 }
 
@@ -129,7 +142,7 @@ export function getUserHistory(
   start = 0,
   length = 10,
 ) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform/history`, {
+  const url = createRepairComputerUrl("/inform/history", {
     staff_id: staffId,
     type,
     start,
@@ -139,7 +152,7 @@ export function getUserHistory(
 }
 
 export function getUncloseJob(staffId: string, start = 0, length = 10) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform/unclose_job`, {
+  const url = createRepairComputerUrl("/inform/unclose_job", {
     staff_id: staffId,
     start,
     length,
@@ -149,7 +162,7 @@ export function getUncloseJob(staffId: string, start = 0, length = 10) {
 
 /* Manage */
 export function listForemanNewJob(start = 0, length = 10) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}manage/new`, {
+  const url = createRepairComputerUrl("/manage/new", {
     start,
     length,
   });
@@ -157,7 +170,7 @@ export function listForemanNewJob(start = 0, length = 10) {
 }
 
 export function listForemanManageJob(foreman: string, start = 0, length = 10) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}manage/current`, {
+  const url = createRepairComputerUrl("/manage/current", {
     staff_id: foreman,
     start,
     length,
@@ -166,7 +179,7 @@ export function listForemanManageJob(foreman: string, start = 0, length = 10) {
 }
 
 export function listForemanHistory(foreman: string, start = 0, length = 10) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}manage/history`, {
+  const url = createRepairComputerUrl("/manage/history", {
     staff_id: foreman,
     start,
     length,
@@ -220,12 +233,12 @@ export function assignJob(
 }
 
 export function getRepairTypes() {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}manage/repair_type_list`);
+  const url = createRepairComputerUrl("/manage/repair_type_list");
   return listRequest<Record<string, string>>(url);
 }
 
 export async function getRejectReason(jobId: string, worker?: string) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}inform/reject_reason`, {
+  const url = createRepairComputerUrl("/inform/reject_reason", {
     id: jobId,
     worker,
   });
@@ -239,7 +252,7 @@ export async function getRejectReason(jobId: string, worker?: string) {
 
 /* Operate */
 export function listWorkerNewJob(worker: string, start = 0, length = 10) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}operate/new`, {
+  const url = createRepairComputerUrl("/operate/new", {
     staff_id: worker,
     start,
     length,
@@ -248,7 +261,7 @@ export function listWorkerNewJob(worker: string, start = 0, length = 10) {
 }
 
 export function listWorkerCurrentJob(worker: string, start = 0, length = 10) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}operate/current`, {
+  const url = createRepairComputerUrl("/operate/current", {
     staff_id: worker,
     start,
     length,
@@ -257,7 +270,7 @@ export function listWorkerCurrentJob(worker: string, start = 0, length = 10) {
 }
 
 export function listWorkerHistory(worker: string, start = 0, length = 10) {
-  const url = buildHttpsUrl(ENDPOINTS.infor, `${base}operate/history`, {
+  const url = createRepairComputerUrl("/operate/history", {
     staff_id: worker,
     start,
     length,
@@ -308,10 +321,7 @@ export function submitJob(jobId: string, userTip?: string) {
 }
 
 export function getRepairComputerWorkers(): Promise<ListResponse<Person>> {
-  const url = buildHttpsUrl(
-    ENDPOINTS.infor,
-    "/repairComputer/api/manage/tech_list",
-  );
+  const url = createRepairComputerUrl("/manage/tech_list");
   return listRequest<Person>(url);
 }
 
@@ -319,7 +329,7 @@ export async function checkPrivilege(
   staffId: string,
 ): Promise<RepairComputerPrivilege | null> {
   try {
-    const url = buildHttpsUrl(ENDPOINTS.infor, `${base}privilege`, {
+    const url = createRepairComputerUrl("/privilege", {
       app_id: RP_APP_ID,
       staff_id: staffId,
     });

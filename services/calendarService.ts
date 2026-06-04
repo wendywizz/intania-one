@@ -1,7 +1,6 @@
-import { fetchWithApiDelay } from './api';
+import { ENDPOINTS } from '../constants/endpoints';
+import { buildHttpsUrl, fetchWithApiDelay } from './api';
 
-const SCUBA_API_ENDPOINT = 'https://apis.eng.psu.ac.th/scooba/api/';
-const GOOGLE_CALENDAR_API_ENDPOINT = 'https://www.googleapis.com/calendar/v3/';
 const SCHEDULE_TYPE_EXECUTIVE = 'exc';
 
 type ScoobaScheduleItem = {
@@ -118,7 +117,9 @@ export async function getExecutiveCalendarSources(): Promise<CalendarSource[]> {
   }
 
   const response = await fetchWithApiDelay(
-    `${SCUBA_API_ENDPOINT}schedules/?filters[type][$eq]=${SCHEDULE_TYPE_EXECUTIVE}`,
+    buildHttpsUrl(ENDPOINTS.scooba_dev, '/scooba/api/schedules/', {
+      'filters[type][$eq]': SCHEDULE_TYPE_EXECUTIVE,
+    }),
     {
       headers: {
         'Content-Type': 'application/json',
@@ -158,7 +159,11 @@ export async function getCalendarEventsOfMonth(
   }
 
   const response = await fetchWithApiDelay(
-    `${GOOGLE_CALENDAR_API_ENDPOINT}calendars/${encodeURIComponent(googleCalendarId)}/events?${params.toString()}`,
+    buildHttpsUrl(
+      ENDPOINTS.scooba_dev,
+      `/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}/events`,
+      Object.fromEntries(params),
+    ),
     {
       headers: {
         'Content-Type': 'application/json',

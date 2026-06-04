@@ -1,6 +1,8 @@
-import { ENDPOINTS } from "../constants/endpoints";
+import { API_BASE_URL } from "../constants/apiConfig";
 
 const TIMEOUT_MS = 10000;
+
+export { API_BASE_URL };
 export const API_DELAY_MS = 500;
 export const MESSAGE_CANNOT_CONNECT_TO_SERVER =
   "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้";
@@ -50,25 +52,35 @@ export async function fetchWithApiDelay(
   return fetch(input, init);
 }
 
-export function buildHttpsUrl(
-  host: string,
+function createUrl(
+  baseUrl: string,
   path: string,
   query?: Record<string, string | number | undefined | null>,
 ) {
-  const url = new URL(`https://${host}${path}`);
+  const url = new URL(path, baseUrl);
+
   Object.entries(query ?? {}).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
       url.searchParams.set(key, String(value));
     }
   });
+
   return url.toString();
 }
 
-export function createPhoenixUrl(
+export function createApiUrl(
   path: string,
-  query?: Record<string, string | number | undefined>,
+  query?: Record<string, string | number | undefined | null>,
 ) {
-  return buildHttpsUrl(ENDPOINTS.phoenix, path, query);
+  return createUrl(API_BASE_URL, path, query);
+}
+
+export function buildHttpsUrl(
+  _host: string,
+  path: string,
+  query?: Record<string, string | number | undefined | null>,
+) {
+  return createApiUrl(path, query);
 }
 
 export function createLocalUrl(

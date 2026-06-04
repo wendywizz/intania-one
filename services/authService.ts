@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import {Platform} from 'react-native';
 import {AUTH} from '../constants/auth';
@@ -9,11 +8,174 @@ import {fetchWithApiDelay} from './api';
 type TokenResponse = {
   access_token?: string;
   refresh_token?: string;
+  id_token?: string;
   accessToken?: string;
   refreshToken?: string;
 };
 
 WebBrowser.maybeCompleteAuthSession();
+
+type OpenIdDiscovery = {
+  authorization_endpoint?: string;
+  token_endpoint?: string;
+  userinfo_endpoint?: string;
+  issuer?: string;
+};
+
+let discoveryPromise: Promise<OpenIdDiscovery> | null = null;
+
+function getDiscoveryUrl() {
+  return Platform.OS === 'web' ? AUTH.webProxy.discovery : AUTH.discoveryUrl;
+}
+
+function getTokenRequestUrl(tokenEndpoint: string) {
+  return Platform.OS === 'web' ? AUTH.webProxy.token : tokenEndpoint;
+}
+
+function getUserInfoRequestUrl(userInfoEndpoint: string) {
+  return Platform.OS === 'web' ? AUTH.webProxy.userInfo : userInfoEndpoint;
+}
+
+function textClaim(claims: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = claims[key];
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+    if (typeof value === 'number') {
+      return String(value);
+    }
+  }
+
+  return '';
+}
+
+function decodeJwtPayload(token?: string) {
+  if (!token || typeof atob === 'undefined') {
+    return {};
+  }
+
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) {
+      return {};
+    }
+
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function logAuthClaims(source: string, claims: Record<string, unknown>) {
+  if (process.env.NODE_ENV === 'production') {
+    return;
+  }
+
+  const keys = Object.keys(claims).sort();
+  const staffCandidates = [
+    'psu_id',
+    'staffId',
+    'staff_id',
+    'STAFF_ID',
+    'employee_id',
+    'employeeId',
+    'preferred_username',
+    'username',
+    'sub',
+  ].reduce<Record<string, unknown>>((result, key) => {
+    if (claims[key] !== undefined) {
+      result[key] = claims[key];
+    }
+
+    return result;
+  }, {});
+
+  console.info(`[auth] ${source} claim keys`, keys);
+  console.info(`[auth] ${source} staff id candidates`, staffCandidates);
+}
+
+function normalizeUser(claims: Record<string, unknown>): AuthUser {
+  const firstName = textClaim(claims, ['given_name', 'firstName', 'first_name', 'staffFirstName', 'staff_first_name']);
+  const lastName = textClaim(claims, ['family_name', 'lastName', 'last_name', 'staffLastName', 'staff_last_name']);
+  const fullName = textClaim(claims, [
+    'name',
+    'displayName',
+    'display_name',
+    'fullName',
+    'full_name',
+    'staffName',
+    'staff_name',
+    'staffFullName',
+    'staff_full_name',
+    'staffFullname',
+    'staff_fullname',
+  ]);
+  const staffId = textClaim(claims, [
+    'psu_id',
+    'staffId',
+    'staff_id',
+    'STAFF_ID',
+    'employee_id',
+    'employeeId',
+    'preferred_username',
+    'username',
+    'sub',
+  ]);
+
+  return {
+    ...claims,
+    staffId,
+    name: fullName || [firstName, lastName].filter(Boolean).join(' ') || staffId,
+    email: textClaim(claims, ['email', 'mail', 'staffEmail', 'staff_email']),
+    displayName: fullName || [firstName, lastName].filter(Boolean).join(' ') || staffId,
+    fullName: fullName || [firstName, lastName].filter(Boolean).join(' '),
+  };
+}
+
+async function getOAuthErrorMessage(response: Response, fallback: string) {
+  try {
+    const json = (await response.json()) as Record<string, unknown>;
+    const errorDescription = textClaim(json, ['error_description', 'errorDescription', 'message']);
+    const error = textClaim(json, ['error']);
+    return [fallback, errorDescription || error].filter(Boolean).join(': ');
+  } catch {
+    return fallback;
+  }
+}
+
+async function getDiscovery() {
+  if (!discoveryPromise) {
+    discoveryPromise = fetchWithApiDelay(getDiscoveryUrl())
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error('Unable to load OpenID configuration');
+        }
+
+        return response.json() as Promise<OpenIdDiscovery>;
+      })
+      .catch(() => ({}));
+  }
+
+  return discoveryPromise;
+}
+
+async function getAuthorizeEndpoint() {
+  const discovery = await getDiscovery();
+  return discovery.authorization_endpoint ?? AUTH.endpoints.authorize;
+}
+
+async function getTokenEndpoint() {
+  const discovery = await getDiscovery();
+  return discovery.token_endpoint ?? AUTH.endpoints.token;
+}
+
+async function getUserInfoEndpoint() {
+  const discovery = await getDiscovery();
+  return discovery.userinfo_endpoint ?? AUTH.endpoints.userInfo;
+}
 
 function createRandomState() {
   const bytes = new Uint8Array(16);
@@ -31,12 +193,12 @@ function getRedirectUrl() {
     return AUTH.webRedirectUrl;
   }
 
-  return Linking.createURL(AUTH.webRedirectPath.replace(/^\//, ''));
+  return AUTH.nativeRedirectUrl;
 }
 
 async function createAuthorizeUrl() {
   const state = createRandomState();
-  const url = new URL(`${AUTH.issuer}${AUTH.endpoints.authorize}`);
+  const url = new URL(await getAuthorizeEndpoint());
 
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('client_id', AUTH.clientId);
@@ -64,8 +226,8 @@ async function persistSession(user: AuthUser, tokens?: {accessToken?: string; re
   }
 }
 
-async function fetchCurrentUser(accessToken: string): Promise<AuthUser> {
-  const response = await fetchWithApiDelay(`https://${AUTH.domain}${AUTH.endpoints.userInfo}`, {
+async function fetchCurrentUser(accessToken: string, idToken?: string): Promise<AuthUser> {
+  const response = await fetchWithApiDelay(getUserInfoRequestUrl(await getUserInfoEndpoint()), {
     headers: {Authorization: `Bearer ${accessToken}`},
   });
 
@@ -73,47 +235,68 @@ async function fetchCurrentUser(accessToken: string): Promise<AuthUser> {
     throw new Error('Unable to fetch user profile');
   }
 
-  return response.json();
+  const userInfoClaims = (await response.json()) as Record<string, unknown>;
+  const idTokenClaims = decodeJwtPayload(idToken);
+  const claims = {
+    ...idTokenClaims,
+    ...userInfoClaims,
+  };
+
+  logAuthClaims('userinfo', userInfoClaims);
+  logAuthClaims('id_token', idTokenClaims);
+  logAuthClaims('normalized', claims);
+
+  return normalizeUser(claims);
 }
 
 async function exchangeCodeForToken(code: string): Promise<TokenResponse> {
-  const response = await fetchWithApiDelay(`${AUTH.issuer}${AUTH.endpoints.token}`, {
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: getRedirectUrl(),
+    client_id: AUTH.clientId,
+  });
+
+  if (AUTH.clientSecret) {
+    body.set('client_secret', AUTH.clientSecret);
+  }
+
+  const response = await fetchWithApiDelay(getTokenRequestUrl(await getTokenEndpoint()), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: getRedirectUrl(),
-      client_id: AUTH.clientId,
-      client_secret: AUTH.clientSecret,
-    }).toString(),
+    body: body.toString(),
   });
 
   if (!response.ok) {
-    throw new Error('Unable to exchange authorization code');
+    throw new Error(await getOAuthErrorMessage(response, 'Unable to exchange authorization code'));
   }
 
   return response.json();
 }
 
 async function exchangeRefreshToken(refreshToken: string): Promise<TokenResponse> {
-  const response = await fetchWithApiDelay(`${AUTH.issuer}${AUTH.endpoints.token}`, {
+  const body = new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+    client_id: AUTH.clientId,
+  });
+
+  if (AUTH.clientSecret) {
+    body.set('client_secret', AUTH.clientSecret);
+  }
+
+  const response = await fetchWithApiDelay(getTokenRequestUrl(await getTokenEndpoint()), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-      client_id: AUTH.clientId,
-      client_secret: AUTH.clientSecret,
-    }).toString(),
+    body: body.toString(),
   });
 
   if (!response.ok) {
-    throw new Error('Unable to refresh access token');
+    throw new Error(await getOAuthErrorMessage(response, 'Unable to refresh access token'));
   }
 
   return response.json();
@@ -170,7 +353,7 @@ async function persistTokenUser(token: TokenResponse): Promise<AuthUser> {
     throw new Error('Access token is missing');
   }
 
-  const user = await fetchCurrentUser(accessToken);
+  const user = await fetchCurrentUser(accessToken, token.id_token);
   await persistSession(user, {
     accessToken,
     refreshToken: token.refresh_token ?? token.refreshToken,

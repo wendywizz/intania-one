@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Linking, Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -21,19 +21,25 @@ const screens = [
   { title: TEXT.PERSON_SEARCH_TITLE, href: '/person-search' },
 ] as const;
 
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function getAuthDisplayName(user: AuthUser | null) {
   if (!user) {
     return '';
   }
 
-  const displayName = user.name || user.displayName || user.fullName || user.staffId;
+  const displayName = user.staffId || user.name || user.displayName || user.fullName;
   return typeof displayName === 'string' ? displayName : '';
 }
 
 export default function HomeScreen() {
   const [newsItems, setNewsItems] = useState<News[]>([]);
   const [isNewsLoading, setIsNewsLoading] = useState(true);
-  const { loading: isAuthLoading, signIn, user: authUser } = useAuth();
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const { loading: isAuthLoading, signIn, signOut, user: authUser } = useAuth();
 
   useEffect(() => {
     let isMounted = true;
@@ -65,6 +71,22 @@ export default function HomeScreen() {
     await signIn();
   };
 
+  const handleLogout = async () => {
+    setIsLogoutConfirmOpen(true);
+  };
+
+  const handleConfirmLogout = async () => {
+    setIsLogoutConfirmOpen(false);
+    setIsSigningOut(true);
+
+    try {
+      await wait(900);
+      await signOut();
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
   const authDisplayName = getAuthDisplayName(authUser);
 
   const renderAuthAction = () => {
@@ -74,9 +96,16 @@ export default function HomeScreen() {
 
     if (authUser) {
       return (
-        <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.authName}>
-          {authDisplayName}
-        </ThemedText>
+        <View style={styles.authContainer}>
+          <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.authName}>
+            {authDisplayName}
+          </ThemedText>
+          <Pressable accessibilityRole="button" onPress={handleLogout} style={styles.logoutButton}>
+            <ThemedText lightColor="#B42318" darkColor="#B42318" type="defaultSemiBold" style={styles.logoutButtonText}>
+              Logout
+            </ThemedText>
+          </Pressable>
+        </View>
       );
     }
 
@@ -141,6 +170,49 @@ export default function HomeScreen() {
           ))}
         </ThemedView>
       </ScrollView>
+
+      <Modal
+        transparent
+        visible={isLogoutConfirmOpen}
+        animationType="fade"
+        onRequestClose={() => setIsLogoutConfirmOpen(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setIsLogoutConfirmOpen(false)}>
+          <Pressable accessibilityRole="none" onPress={(event) => event.stopPropagation()}>
+            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
+              <ThemedText type="subtitle">Confirm logout</ThemedText>
+              <ThemedText style={styles.confirmMessage}>
+                Do you want to sign out from this account?
+              </ThemedText>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setIsLogoutConfirmOpen(false)}
+                  style={styles.cancelButton}>
+                  <ThemedText type="defaultSemiBold" style={styles.cancelButtonText}>
+                    Cancel
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={handleConfirmLogout}
+                  style={styles.confirmLogoutButton}>
+                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                    Logout
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </ThemedView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal transparent visible={isSigningOut} animationType="fade">
+        <View style={styles.backdrop}>
+          <ThemedView style={styles.signingOutModal} lightColor="#FFFFFF" darkColor="#151718">
+            <LoadingAnimate fill={false} title="Signing out" desc="Please wait a moment" />
+          </ThemedView>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -164,6 +236,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'right',
+  },
+  authContainer: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  logoutButton: {
+    minHeight: 26,
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#F4C7C3',
+    backgroundColor: '#FFF4F2',
+    paddingHorizontal: 8,
+  },
+  logoutButtonText: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   loginButton: {
     minHeight: 36,
@@ -194,6 +283,62 @@ const styles = StyleSheet.create({
     color: '#687076',
     fontSize: 12,
     lineHeight: 18,
+  },
+  backdrop: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(17, 24, 28, 0.36)',
+    padding: 24,
+  },
+  confirmModal: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 8,
+    padding: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#D7E6EC',
+    boxShadow: '0 18px 38px rgba(17, 24, 28, 0.2)',
+  },
+  confirmMessage: {
+    color: '#687076',
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 8,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 20,
+  },
+  cancelButton: {
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#B9CDD6',
+    paddingHorizontal: 14,
+  },
+  cancelButtonText: {
+    color: '#52656D',
+  },
+  confirmLogoutButton: {
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#B42318',
+    paddingHorizontal: 16,
+  },
+  signingOutModal: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#D7E6EC',
   },
   grid: {
     flexDirection: 'row',

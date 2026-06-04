@@ -1,12 +1,6 @@
-import Constants from 'expo-constants';
-import { XMLParser } from 'fast-xml-parser';
-import { Platform } from 'react-native';
 import { ENDPOINTS } from '../constants/endpoints';
 import type { News } from '../models/types';
 import { fetchWithApiDelay } from './api';
-
-const parser = new XMLParser({ignoreAttributes: false});
-const WEB_NEWS_PROXY = '/api/staff-news-feed';
 
 function getFeedText(value: unknown) {
   if (typeof value === 'string') {
@@ -25,65 +19,28 @@ function getFeedText(value: unknown) {
   return '';
 }
 
-function getDevServerHost() {
-  const constants = Constants as typeof Constants & {
-    manifest?: {debuggerHost?: string; hostUri?: string};
-    manifest2?: {extra?: {expoGo?: {debuggerHost?: string; hostUri?: string}}};
-  };
-
-  return (
-    Constants.expoConfig?.hostUri ||
-    constants.manifest2?.extra?.expoGo?.debuggerHost ||
-    constants.manifest2?.extra?.expoGo?.hostUri ||
-    constants.manifest?.debuggerHost ||
-    constants.manifest?.hostUri ||
-    ''
-  );
-}
-
-function getNativeNewsProxyUrl() {
-  const host = getDevServerHost();
-  return host ? `http://${host}${WEB_NEWS_PROXY}` : '';
-}
-
-function parseNewsFeed(xml: string): News[] {
-  const parsed = parser.parse(xml);
-  const items = parsed?.rss?.channel?.item;
-  const list = Array.isArray(items) ? items : items ? [items] : [];
-
-  return list.map((item: any) => ({
+function normalizeNewsItem(item: Record<string, unknown>): News {
+  return {
     title: getFeedText(item.title),
     link: getFeedText(item.link),
     guid: getFeedText(item.guid),
     description: getFeedText(item.description),
     category: getFeedText(item.category),
     pubDate: getFeedText(item.pubDate),
-  }));
+  };
 }
 
 export async function staffNewsFeed(): Promise<News[]> {
   try {
-    if (Platform.OS === 'web') {
-      const response = await fetchWithApiDelay(WEB_NEWS_PROXY);
-      const news = await response.json();
-      return Array.isArray(news) ? news : [];
-    }
-
-    const proxyUrl = getNativeNewsProxyUrl();
-
-    if (proxyUrl) {
-      try {
-        const response = await fetchWithApiDelay(proxyUrl);
-        const news = await response.json();
-        return Array.isArray(news) ? news : [];
-      } catch (error) {
-        console.warn('News proxy request failed, falling back to RSS feed', error);
-      }
-    }
-
     const response = await fetchWithApiDelay(ENDPOINTS.staffNewsFeed);
-    const xml = await response.text();
-    return parseNewsFeed(xml);
+
+    if (!response.ok) {
+      throw new Error(`Unable to load news feed (${response.status})`);
+    }
+
+    const json = await response.json();
+    const items = Array.isArray(json?.data) ? json.data : [];
+    return items.map((item: Record<string, unknown>) => normalizeNewsItem(item));
   } catch (error) {
     console.warn(error);
     return [];

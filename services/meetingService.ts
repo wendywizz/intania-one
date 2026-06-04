@@ -1,11 +1,26 @@
+import { ENDPOINTS } from '../constants/endpoints';
 import type { Meeting } from '../models/types';
-import { createPhoenixUrl, ensureSuccess, requestJson, type JsonMap } from './api';
+import { ensureSuccess, requestJson, type JsonMap } from './api';
+
+function createMeetingUrl(
+  query?: Record<string, string | number | undefined | null>,
+) {
+  const url = new URL(ENDPOINTS.meeting);
+
+  Object.entries(query ?? {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, String(value));
+    }
+  });
+
+  return url.toString();
+}
 
 export async function listMeeting(
   userId = '',
   type = '',
 ): Promise<Meeting[]> {
-  const url = createPhoenixUrl('/meetingv2/api/index.php/meeting/list', {
+  const url = createMeetingUrl({
     user_id: userId,
     type,
   });

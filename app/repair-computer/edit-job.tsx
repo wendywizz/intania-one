@@ -23,7 +23,7 @@ import {
     REPAIR_STATUS_WORKING,
 } from "@/constants/type-repair-computer";
 import type { RepairComputer } from "@/models/types";
-import { getPersonPhoto } from "@/services/personnelService";
+import { getPersonPhoto } from "@/services/personService";
 import {
     getJobDetail,
     submitJob,

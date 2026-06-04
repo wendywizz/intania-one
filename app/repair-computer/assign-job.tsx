@@ -22,7 +22,7 @@ import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import { setRepairComputerSelectedRole } from "@/context/repairComputerRoleSelection";
 import type { Person, RepairComputer } from "@/models/types";
-import { getPersonPhoto } from "@/services/personnelService";
+import { getPersonPhoto } from "@/services/personService";
 import {
     assignJob,
     getJobDetail,

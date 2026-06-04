@@ -32,7 +32,7 @@ const absentMenus = [
 export default function AbsentScreen() {
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENT_TITLE} />
+      <NavTopBar title={TEXT.ABSENT_TITLE} backHref="/" />
 
       <View style={styles.content}>
         <ThemedText type="subtitle">{TEXT.ABSENT_TITLE}</ThemedText>

@@ -1,5 +1,6 @@
+import { ENDPOINTS } from "../constants/endpoints";
 import type { JsonMap } from "./api";
-import { createPhoenixUrl, ensureSuccess, requestJson } from "./api";
+import { ensureSuccess, requestJson } from "./api";
 
 export type ForgotTimestamp = {
   id?: string;
@@ -21,6 +22,21 @@ export type SubmitForgotTimestampData = {
   in_time: string;
   out_time: string;
 };
+
+function createForgotTimestampUrl(
+  path = "",
+  query?: Record<string, string | number | undefined | null>,
+) {
+  const url = new URL(`${ENDPOINTS.forgotTimestamp}${path}`);
+
+  Object.entries(query ?? {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      url.searchParams.set(key, String(value));
+    }
+  });
+
+  return url.toString();
+}
 
 function normalizeForgotTimestampData(data: unknown): ForgotTimestamp[] {
   if (Array.isArray(data)) {
@@ -98,9 +114,9 @@ export async function getForgotTimestampData(
   staffId: string,
   currentYear: number,
 ) {
-  const url = createPhoenixUrl("/personnel/apis/timestamp/forget", {
+  const url = createForgotTimestampUrl("", {
     staff_id: staffId,
-    year: currentYear,
+    current_year: currentYear,
   });
   const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
   ensureSuccess(jsonData);
@@ -115,9 +131,9 @@ export async function getForgotTimestampHistoryData(
   staffId: string,
   currentYear: number,
 ) {
-  const url = createPhoenixUrl("/personnel/apis/timestamp/forget/history", {
+  const url = createForgotTimestampUrl("/history", {
     staff_id: staffId,
-    year: currentYear,
+    current_year: currentYear,
   });
   const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
   ensureSuccess(jsonData);
@@ -131,7 +147,7 @@ export async function getForgotTimestampHistoryData(
 export async function getForgotTimestampViewData(
   forgetId: string,
 ) {
-  const url = createPhoenixUrl("/personnel/apis/timestamp/forget/view", {
+  const url = createForgotTimestampUrl("/view", {
     id: forgetId,
   });
   const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
@@ -148,7 +164,7 @@ export async function getForgotTimestampInitData(
   timestamp: string,
   type: string,
 ) {
-  const url = createPhoenixUrl("/personnel/apis/timestamp/forget/init", {
+  const url = createForgotTimestampUrl("/init", {
     staff_id: staffId,
     timestamp,
     type,
@@ -166,7 +182,7 @@ export async function submitForgotTimestamp(
   data: SubmitForgotTimestampData,
   method: "POST" | "PUT" = "POST",
 ) {
-  const url = createPhoenixUrl("/personnel/apis/timestamp/forget");
+  const url = ENDPOINTS.forgotTimestamp;
   const jsonData = await requestJson<JsonMap>(url, {
     method,
     headers: {
@@ -183,7 +199,7 @@ export async function submitForgotTimestamp(
 }
 
 export async function removeForgotTimestamp(id: string) {
-  const url = createPhoenixUrl("/personnel/apis/timestamp/forget");
+  const url = ENDPOINTS.forgotTimestamp;
   const jsonData = await requestJson<JsonMap>(url, {
     method: "DELETE",
     headers: {

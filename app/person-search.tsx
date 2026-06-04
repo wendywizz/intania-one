@@ -15,7 +15,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
 import type { Person } from '@/models/types';
-import { getPersonnelSuggestions, getPersonPhoto } from '@/services/personnelService';
+import { getPersonnelSuggestions, getPersonPhoto } from '@/services/personService';
 
 const SEARCH_DEBOUNCE_MS = 350;
 

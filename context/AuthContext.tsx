@@ -1,5 +1,4 @@
 import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
-import {MOCK_AUTH_USER} from '../constants/user';
 import type {AuthUser} from '../models/types';
 import * as authService from '../services/authService';
 
@@ -15,13 +14,13 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({children}: {children: React.ReactNode}) {
-  const [user, setUser] = useState<AuthUser | null>(MOCK_AUTH_USER);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     authService
       .restoreSession()
-      .then((restoredUser) => setUser(restoredUser ?? MOCK_AUTH_USER))
+      .then((restoredUser) => setUser(restoredUser))
       .finally(() => setLoading(false));
   }, []);
 

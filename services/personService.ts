@@ -2,6 +2,21 @@ import { ENDPOINTS } from "../constants/endpoints";
 import type { Person } from "../models/types";
 import { fetchWithApiDelay } from "./api";
 
+function createPersonUrl(
+  path = "",
+  query?: Record<string, string | number | undefined | null>,
+) {
+  const url = new URL(`${ENDPOINTS.person}${path}`);
+
+  Object.entries(query ?? {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      url.searchParams.set(key, String(value));
+    }
+  });
+
+  return url.toString();
+}
+
 function normalizePhoenixPerson(row: Record<string, unknown>): Person {
   const uni = row.UNI_STAFF_ID;
   const staffId =
@@ -13,11 +28,12 @@ function normalizePhoenixPerson(row: Record<string, unknown>): Person {
 }
 
 async function fetchPersonnelByKeyword(keyword: string): Promise<Person[]> {
-  const url = new URL(ENDPOINTS.personnelSearch);
-  url.searchParams.set("searchword", keyword);
-  url.searchParams.set("lean", "1");
+  const url = createPersonUrl("/api/person_search", {
+    searchword: keyword,
+    lean: 1,
+  });
 
-  const response = await fetchWithApiDelay(url.toString(), {
+  const response = await fetchWithApiDelay(url, {
     method: "POST",
     headers: {
       "x-api-key": "abcdefgh12345678",
@@ -53,5 +69,5 @@ export async function getPersonnelSuggestions(
 }
 
 export function getPersonPhoto(person: Person) {
-  return `${ENDPOINTS.photoBase}${person.staffId}.jpg`;
+  return createPersonUrl(`/v1/photo/${person.staffId}.jpg`);
 }

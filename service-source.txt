@@ -1,5 +1,5 @@
 Scooba Service
 
-http://172.31.0.136:8033/
+http://localhost:1337/
 user: ykraisuwan@eng.psu.ac.th
 pass: Str12123?

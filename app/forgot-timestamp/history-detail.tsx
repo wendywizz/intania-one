@@ -7,7 +7,7 @@ import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { TEXT } from "@/constants/text";
-import type { ForgotTimestampHistory } from "@/services/timestampService";
+import type { ForgotTimestampHistory } from "@/services/forgotTimestampService";
 import { formatDateAndTime, formatFullDate } from "@/utils/date-format";
 
 const dateFields = new Set([

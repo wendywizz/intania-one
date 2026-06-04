@@ -4,19 +4,8 @@ import {
 } from "expo-file-system/legacy";
 import { Platform } from "react-native";
 
-import {
-  TYPE_ABSENT_BIRTH,
-  TYPE_ABSENT_BUSINESS,
-  TYPE_ABSENT_HAJJ,
-  TYPE_ABSENT_HELPMATE,
-  TYPE_ABSENT_ORDAIN,
-  TYPE_ABSENT_RELAX,
-  TYPE_ABSENT_SICK,
-  TYPE_ABSENT_SOLDIER
-} from "../constants/type-absent";
 import type { Absent } from "../models/types";
 import {
-  createPhoenixUrl,
   ensureSuccess,
   fetchWithTimeout,
   MESSAGE_PROCESS_FAILED,
@@ -26,34 +15,23 @@ import {
   type MutationResponse,
   type UploadableFile,
 } from "./api";
+import { ENDPOINTS } from "../constants/endpoints";
 
 const DEFAULT_DISPLAY_LENGTH = 10;
 
-export function getRequestUrlSuffix(absentType: string) {
-  switch (absentType) {
-    case TYPE_ABSENT_SICK:
-      return "/personnel/apis/absent/leave/";
-    case TYPE_ABSENT_BUSINESS:
-      return "/personnel/apis/absent/business/";
-    case TYPE_ABSENT_RELAX:
-      return "/personnel/apis/absent/relax/";
-    case TYPE_ABSENT_BIRTH:
-      return "/personnel/apis/absent/birth/";
-    case TYPE_ABSENT_HAJJ:
-      return "/personnel/apis/absent/hajj/";
-    case TYPE_ABSENT_HELPMATE:
-      return "/personnel/apis/absent/birth/";
-    case TYPE_ABSENT_SOLDIER:
-      return "/personnel/apis/absent/soldier/";       
-    case TYPE_ABSENT_ORDAIN:
-      return "/personnel/apis/absent/ordain/";  
-    default:
-      return "";
-  }
-}
+function createAbsentUrl(
+  path = "",
+  query?: Record<string, string | number | undefined | null>,
+) {
+  const url = new URL(`${ENDPOINTS.absent}${path}`);
 
-export function getSuffixUriEndpoint(absentType: string) {
-  return getRequestUrlSuffix(absentType);
+  Object.entries(query ?? {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      url.searchParams.set(key, String(value));
+    }
+  });
+
+  return url.toString();
 }
 
 function getFileExtension(fileUpload?: UploadableFile) {
@@ -114,8 +92,7 @@ export async function initAbsentData(
   staffId: string,
   absentType: string,
 ): Promise<Absent> {
-  const suffixUrl = getRequestUrlSuffix(absentType);
-  const url = createPhoenixUrl(`${suffixUrl}init/`, { staff_id: staffId });
+  const url = createAbsentUrl("/init", { staff_id: staffId, type: absentType });
   const jsonData = await requestJson(url, { method: "GET" });
   ensureSuccess(jsonData);
 
@@ -126,8 +103,7 @@ export async function getData(
   id: string,
   absentType: string,
 ): Promise<Absent> {
-  const suffixUri = getRequestUrlSuffix(absentType);  
-  const url = createPhoenixUrl(suffixUri, { id });  
+  const url = createAbsentUrl("", { id, type: absentType });
   const jsonData = await requestJson(url, { method: "GET" });
   ensureSuccess(jsonData);
 
@@ -178,18 +154,18 @@ export async function addData(
   absentType: string,
   options?: { fileUpload?: UploadableFile },
 ): Promise<MutationResponse> {
-  const suffixUri = getSuffixUriEndpoint(absentType);
   let fileName: string | undefined;
 
   if (options?.fileUpload) {
     fileName = generateMedUploadFileName(data.staff_id, options.fileUpload);
-    const endpoint = createPhoenixUrl(`${suffixUri}upload`);
+    const endpoint = ENDPOINTS.absent;
     await uploadMedFile(endpoint, options.fileUpload, {
       file_name: fileName,
+      type: absentType,
     });
   }
 
-  const url = createPhoenixUrl(suffixUri);
+  const url = ENDPOINTS.absent;
   const jsonData = await requestJson(url, {
     method: "POST",
     body: JSON.stringify({
@@ -198,7 +174,7 @@ export async function addData(
     }),
   });
   ensureSuccess(jsonData);
-wd
+
   return {
     data: jsonData.data,
     message: String(jsonData.message ?? ""),
@@ -211,13 +187,12 @@ export async function updateData(
   absentType: string,
   options?: { fileUpload?: UploadableFile },
 ): Promise<MutationResponse> {
-  const suffixUri = getSuffixUriEndpoint(absentType);
   let fileName: string | undefined;
   let reUpload = false;
 
   if (options?.fileUpload) {
     fileName = generateMedUploadFileName(data.staff_id, options.fileUpload);
-    const endpoint = createPhoenixUrl(`${suffixUri}upload`);
+    const endpoint = ENDPOINTS.absent;
     reUpload = true;
 
     await uploadMedFile(endpoint, options.fileUpload, {
@@ -226,7 +201,7 @@ export async function updateData(
     });
   }
 
-  const url = createPhoenixUrl(suffixUri);
+  const url = ENDPOINTS.absent;
   const jsonData = await requestJson(url, {
     method: "PUT",
     body: JSON.stringify({
@@ -247,8 +222,7 @@ export async function removeData(
   id: string,
   absentType: string
 ): Promise<MutationResponse> {
-  const suffixUri = getSuffixUriEndpoint(absentType);
-  const url = createPhoenixUrl(suffixUri);
+  const url = ENDPOINTS.absent;
 
   const jsonData = await requestJson(url, {
     method: "DELETE",
@@ -267,7 +241,7 @@ export async function removeData(
 }
 
 export async function waitingData(staffId: string) {
-  const url = createPhoenixUrl("/personnel/apis/absent/home/waiting", {
+  const url = createAbsentUrl("/waiting", {
     staff_id: staffId,
   });
   const jsonData = await requestJson(url, { method: "GET" });
@@ -283,7 +257,7 @@ export async function historyData(
   staffId: string,
   { length = DEFAULT_DISPLAY_LENGTH, start = 0 } = {},
 ): Promise<ListResponse<Absent>> {
-  const url = createPhoenixUrl("/personnel/apis/absent/history", {
+  const url = createAbsentUrl("/history", {
     staff_id: staffId,
     start,
     length,
@@ -309,7 +283,7 @@ function getCurrentThaiBudgetYear() {
 
 export async function statsData(staffId: string) {
   const budgetYear = getCurrentThaiBudgetYear();
-  const url = createPhoenixUrl("/personnel/apis/absent/stats", {
+  const url = createAbsentUrl("/stats", {
     staff_id: staffId,
     bgyear: budgetYear,
     year: budgetYear,

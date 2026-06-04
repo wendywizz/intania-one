@@ -19,7 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
   getForgotTimestampData,
   type ForgotTimestamp,
-} from "@/services/timestampService";
+} from "@/services/forgotTimestampService";
 import { formatFullDate } from "@/utils/date-format";
 
 const APPEAL_DOCUMENT_MESSAGE =

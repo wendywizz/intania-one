@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { TEXT } from '@/constants/text';
 
@@ -16,14 +16,27 @@ export default function LoginCallbackScreen() {
     state?: string;
   }>();
   const [errorMessage, setErrorMessage] = useState('');
+  const processedCallbackRef = useRef('');
   const { completeWebSignIn } = useAuth();
+  const completeWebSignInRef = useRef(completeWebSignIn);
+
+  useEffect(() => {
+    completeWebSignInRef.current = completeWebSignIn;
+  }, [completeWebSignIn]);
 
   useEffect(() => {
     let isMounted = true;
+    const callbackKey = [params.code, params.error, params.state].filter(Boolean).join(':');
 
     async function completeLogin() {
+      if (callbackKey && processedCallbackRef.current === callbackKey) {
+        return;
+      }
+
+      processedCallbackRef.current = callbackKey;
+
       try {
-        await completeWebSignIn({
+        await completeWebSignInRef.current({
           code: params.code,
           error: params.error,
           errorDescription: params.error_description,
@@ -40,12 +53,14 @@ export default function LoginCallbackScreen() {
       }
     }
 
-    completeLogin();
+    if (callbackKey) {
+      completeLogin();
+    }
 
     return () => {
       isMounted = false;
     };
-  }, [completeWebSignIn, params.code, params.error, params.error_description, params.state]);
+  }, [params.code, params.error, params.error_description, params.state]);
 
   return (
     <ThemedView style={styles.container}>
