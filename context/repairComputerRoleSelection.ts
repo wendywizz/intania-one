@@ -3,7 +3,7 @@ import {
   PRIVILEGE_RC_USER,
   PRIVILEGE_RC_WORKER,
   type RepairComputerRole,
-} from '@/constants/type-repair-computer';
+} from '@/constants/types';
 import { TEXT } from '@/constants/text';
 
 export const repairComputerRoleOptions = [

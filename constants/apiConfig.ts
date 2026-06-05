@@ -1,7 +1,3 @@
-const DEVELOPMENT_API_BASE_URL = 'http://localhost:1337';
-const PRODUCTION_API_BASE_URL = 'https://saas.eng.psu.ac.th';
+import { API_BASE_URL, API_MODE } from './endpoints';
 
-export const API_MODE = process.env.EXPO_PUBLIC_MODE ?? 'development';
-
-export const API_BASE_URL =
-  API_MODE === 'production' ? PRODUCTION_API_BASE_URL : DEVELOPMENT_API_BASE_URL;
+export { API_BASE_URL };

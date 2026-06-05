@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../constants/apiConfig";
+import { API_BASE_URL, LOCAL_URL_BASE } from "../constants/endpoints";
 
 const TIMEOUT_MS = 10000;
 
@@ -44,12 +44,53 @@ export function waitApiDelay() {
   return new Promise((resolve) => setTimeout(resolve, API_DELAY_MS));
 }
 
+function isNodeRuntime() {
+  return typeof process !== "undefined" &&
+    typeof process.versions === "object" &&
+    typeof process.versions.node === "string";
+}
+
+function createLegacyTlsDispatcher(url: string) {
+  if (!isNodeRuntime()) {
+    return undefined;
+  }
+
+  try {
+    const { Agent } = require("undici");
+    const crypto = require("node:crypto");
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== "https:") {
+      return undefined;
+    }
+
+    return new Agent({
+      connect: {
+        secureSocketOptions: crypto.constants?.SSL_OP_LEGACY_SERVER_CONNECT,
+      },
+    });
+  } catch {
+    return undefined;
+  }
+}
+
 export async function fetchWithApiDelay(
   input: RequestInfo | URL,
   init?: RequestInit,
 ) {
   await waitApiDelay();
-  return fetch(input, init);
+
+  const fetchInit = { ...(init as Record<string, unknown>) } as RequestInit;
+  const inputUrl =
+    input instanceof URL ? input.toString() : typeof input === "string" ? input : undefined;
+
+  if (inputUrl) {
+    const dispatcher = createLegacyTlsDispatcher(inputUrl);
+    if (dispatcher) {
+      (fetchInit as any).dispatcher = dispatcher;
+    }
+  }
+
+  return fetch(input, fetchInit);
 }
 
 function createUrl(
@@ -87,7 +128,7 @@ export function createLocalUrl(
   path: string,
   query?: Record<string, string | number | undefined>,
 ) {
-  const url = new URL(path, "http://localhost");
+  const url = new URL(path, LOCAL_URL_BASE);
 
   Object.entries(query ?? {}).forEach(([key, value]) => {
     if (value !== undefined) {
@@ -108,11 +149,26 @@ export async function fetchWithTimeout(
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
+    const fetchInit = { ...(init as Record<string, unknown>) } as RequestInit;
+    const inputUrl =
+      input instanceof URL ? input.toString() : typeof input === "string" ? input : undefined;
+
+    if (inputUrl) {
+      const dispatcher = createLegacyTlsDispatcher(inputUrl);
+      if (dispatcher) {
+        (fetchInit as any).dispatcher = dispatcher;
+      }
+    }
+
     return await fetch(input, {
-      ...init,
+      ...fetchInit,
       signal: controller.signal,
     });
   } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[api] request failed", String(input), error);
+    }
+
     if (error instanceof Error && error.name === "AbortError") {
       throw new Error(MESSAGE_CANNOT_CONNECT_TO_SERVER);
     }

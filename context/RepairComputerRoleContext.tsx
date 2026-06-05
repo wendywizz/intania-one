@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
-import { REPAIR_COMPUTER_DEFAULT_ROLE, type RepairComputerRole } from '@/constants/type-repair-computer';
+import { REPAIR_COMPUTER_DEFAULT_ROLE, type RepairComputerRole } from '@/constants/types';
 
 type RepairComputerRoleContextValue = {
   currentRole: RepairComputerRole;

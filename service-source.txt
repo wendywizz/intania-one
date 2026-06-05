@@ -1,5 +1,3 @@
 Scooba Service
 
-http://localhost:1337/
-user: ykraisuwan@eng.psu.ac.th
-pass: Str12123?
+See constants/endpoints.ts API_DOMAINS.development.

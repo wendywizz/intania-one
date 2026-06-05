@@ -1,6 +1,6 @@
-import { Link } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Linking, Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Link, router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -35,11 +35,62 @@ function getAuthDisplayName(user: AuthUser | null) {
 }
 
 export default function HomeScreen() {
+  const params = useLocalSearchParams<{
+    code?: string;
+    error?: string;
+    error_description?: string;
+    state?: string;
+  }>();
   const [newsItems, setNewsItems] = useState<News[]>([]);
   const [isNewsLoading, setIsNewsLoading] = useState(true);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [authCallbackErrorMessage, setAuthCallbackErrorMessage] = useState('');
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const { loading: isAuthLoading, signIn, signOut, user: authUser } = useAuth();
+  const processedCallbackRef = useRef('');
+  const { completeWebSignIn, loading: isAuthLoading, signIn, signOut, user: authUser } = useAuth();
+  const completeWebSignInRef = useRef(completeWebSignIn);
+
+  useEffect(() => {
+    completeWebSignInRef.current = completeWebSignIn;
+  }, [completeWebSignIn]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const callbackKey = [params.code, params.error, params.state].filter(Boolean).join(':');
+
+    async function completeLogin() {
+      if (callbackKey && processedCallbackRef.current === callbackKey) {
+        return;
+      }
+
+      processedCallbackRef.current = callbackKey;
+
+      try {
+        await completeWebSignInRef.current({
+          code: params.code,
+          error: params.error,
+          errorDescription: params.error_description,
+          state: params.state,
+        });
+
+        if (isMounted) {
+          router.replace('/');
+        }
+      } catch (error) {
+        if (isMounted) {
+          setAuthCallbackErrorMessage(error instanceof Error ? error.message : String(error));
+        }
+      }
+    }
+
+    if (callbackKey) {
+      completeLogin();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [params.code, params.error, params.error_description, params.state]);
 
   useEffect(() => {
     let isMounted = true;
@@ -61,10 +112,18 @@ export default function HomeScreen() {
     };
   }, []);
 
-  const openNews = (link: string) => {
-    if (link) {
-      Linking.openURL(link);
-    }
+  const openNews = (item: News) => {
+    router.push({
+      pathname: '/news-detail',
+      params: {
+        title: item.title,
+        link: item.link,
+        guid: item.guid,
+        description: item.description,
+        category: item.category,
+        pubDate: item.pubDate,
+      },
+    });
   };
 
   const handleLogin = async () => {
@@ -135,7 +194,7 @@ export default function HomeScreen() {
               </ThemedView>
             ) : newsItems.length > 0 ? (
               newsItems.map((item, index) => (
-                <Pressable key={`${String(item.guid || item.link || item.title)}-${index}`} onPress={() => openNews(item.link)}>
+                <Pressable key={`${String(item.guid || item.link || item.title)}-${index}`} onPress={() => openNews(item)}>
                   <ThemedView style={styles.newsCard} lightColor="#FFFFFF" darkColor="#1F2B30">
                     <ThemedText type="defaultSemiBold" numberOfLines={2}>
                       {item.title}
@@ -212,6 +271,31 @@ export default function HomeScreen() {
             <LoadingAnimate fill={false} title="Signing out" desc="Please wait a moment" />
           </ThemedView>
         </View>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={Boolean(authCallbackErrorMessage)}
+        animationType="fade"
+        onRequestClose={() => setAuthCallbackErrorMessage('')}>
+        <Pressable style={styles.backdrop} onPress={() => setAuthCallbackErrorMessage('')}>
+          <Pressable accessibilityRole="none" onPress={(event) => event.stopPropagation()}>
+            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
+              <ThemedText type="subtitle">{TEXT.AUTH_LOGIN_FAILED}</ThemedText>
+              <ThemedText style={styles.confirmMessage}>{authCallbackErrorMessage}</ThemedText>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setAuthCallbackErrorMessage('')}
+                  style={styles.confirmLogoutButton}>
+                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                    OK
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </ThemedView>
+          </Pressable>
+        </Pressable>
       </Modal>
     </ThemedView>
   );

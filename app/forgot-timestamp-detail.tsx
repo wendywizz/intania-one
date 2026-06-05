@@ -31,7 +31,7 @@ import {
   removeForgotTimestamp,
   submitForgotTimestamp,
   type ForgotTimestamp,
-} from "@/services/forgotTimestampService";
+} from "@/services/forgetTimestampService";
 import { formatFullDate } from "@/utils/date-format";
 
 type Approver = {

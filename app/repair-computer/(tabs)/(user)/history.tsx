@@ -19,7 +19,7 @@ import {
 } from "@/components/repair-computer-job-list-item";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { PRIVILEGE_RC_USER } from "@/constants/type-repair-computer";
+import { PRIVILEGE_RC_USER } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import { useRepairComputerRole } from "@/context/RepairComputerRoleContext";

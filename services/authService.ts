@@ -24,16 +24,11 @@ type OpenIdDiscovery = {
 
 let discoveryPromise: Promise<OpenIdDiscovery> | null = null;
 
-function getDiscoveryUrl() {
-  return Platform.OS === 'web' ? AUTH.webProxy.discovery : AUTH.discoveryUrl;
-}
-
-function getTokenRequestUrl(tokenEndpoint: string) {
-  return Platform.OS === 'web' ? AUTH.webProxy.token : tokenEndpoint;
-}
-
-function getUserInfoRequestUrl(userInfoEndpoint: string) {
-  return Platform.OS === 'web' ? AUTH.webProxy.userInfo : userInfoEndpoint;
+function getOpenIdCorsMessage(action: string) {
+  return [
+    `Unable to ${action}`,
+    `OpenID server must allow CORS for ${AUTH.webRedirectUrl} when running on web`,
+  ].join('. ');
 }
 
 function textClaim(claims: Record<string, unknown>, keys: string[]) {
@@ -147,8 +142,12 @@ async function getOAuthErrorMessage(response: Response, fallback: string) {
 }
 
 async function getDiscovery() {
+  if (Platform.OS === 'web') {
+    return {};
+  }
+
   if (!discoveryPromise) {
-    discoveryPromise = fetchWithApiDelay(getDiscoveryUrl())
+    discoveryPromise = fetchWithApiDelay(AUTH.discoveryUrl)
       .then(async (response) => {
         if (!response.ok) {
           throw new Error('Unable to load OpenID configuration');
@@ -160,6 +159,18 @@ async function getDiscovery() {
   }
 
   return discoveryPromise;
+}
+
+async function fetchOpenId(input: RequestInfo | URL, init?: RequestInit, action = 'connect to OpenID') {
+  try {
+    return await fetchWithApiDelay(input, init);
+  } catch (error) {
+    if (Platform.OS === 'web') {
+      throw new Error(getOpenIdCorsMessage(action));
+    }
+
+    throw error;
+  }
 }
 
 async function getAuthorizeEndpoint() {
@@ -227,9 +238,9 @@ async function persistSession(user: AuthUser, tokens?: {accessToken?: string; re
 }
 
 async function fetchCurrentUser(accessToken: string, idToken?: string): Promise<AuthUser> {
-  const response = await fetchWithApiDelay(getUserInfoRequestUrl(await getUserInfoEndpoint()), {
+  const response = await fetchOpenId(await getUserInfoEndpoint(), {
     headers: {Authorization: `Bearer ${accessToken}`},
-  });
+  }, 'fetch user profile');
 
   if (!response.ok) {
     throw new Error('Unable to fetch user profile');
@@ -261,13 +272,13 @@ async function exchangeCodeForToken(code: string): Promise<TokenResponse> {
     body.set('client_secret', AUTH.clientSecret);
   }
 
-  const response = await fetchWithApiDelay(getTokenRequestUrl(await getTokenEndpoint()), {
+  const response = await fetchOpenId(await getTokenEndpoint(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: body.toString(),
-  });
+  }, 'exchange authorization code');
 
   if (!response.ok) {
     throw new Error(await getOAuthErrorMessage(response, 'Unable to exchange authorization code'));
@@ -287,13 +298,13 @@ async function exchangeRefreshToken(refreshToken: string): Promise<TokenResponse
     body.set('client_secret', AUTH.clientSecret);
   }
 
-  const response = await fetchWithApiDelay(getTokenRequestUrl(await getTokenEndpoint()), {
+  const response = await fetchOpenId(await getTokenEndpoint(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: body.toString(),
-  });
+  }, 'refresh access token');
 
   if (!response.ok) {
     throw new Error(await getOAuthErrorMessage(response, 'Unable to refresh access token'));

@@ -19,7 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
   getForgotTimestampHistoryData,
   type ForgotTimestampHistory,
-} from "@/services/forgotTimestampService";
+} from "@/services/forgetTimestampService";
 import { formatFullDate } from "@/utils/date-format";
 
 const dateFields = new Set([

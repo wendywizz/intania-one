@@ -17,7 +17,7 @@ import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { TEXT } from "@/constants/text";
-import { PRIVILEGE_RC_FOREMAN } from "@/constants/type-repair-computer";
+import { PRIVILEGE_RC_FOREMAN } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import { setRepairComputerSelectedRole } from "@/context/repairComputerRoleSelection";

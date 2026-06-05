@@ -27,20 +27,23 @@ function normalizePhoenixPerson(row: Record<string, unknown>): Person {
   };
 }
 
-async function fetchPersonnelByKeyword(keyword: string): Promise<Person[]> {
-  const url = createPersonUrl("/api/person_search", {
-    searchword: keyword,
-    lean: 1,
-  });
+export async function getPersonnelSuggestions(
+  keyword: string,
+): Promise<Person[]> {
+  const trimmed = keyword.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const url = createPersonUrl("/search", { searchword: trimmed });
 
   const response = await fetchWithApiDelay(url, {
     method: "POST",
     headers: {
-      "x-api-key": "abcdefgh12345678",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      searchword: keyword,
+      searchword: trimmed,
     }),
   });
 
@@ -49,25 +52,21 @@ async function fetchPersonnelByKeyword(keyword: string): Promise<Person[]> {
   }
 
   const json: unknown = await response.json();
-  if (!Array.isArray(json)) {
+  const rows = Array.isArray(json)
+    ? json
+    : Array.isArray((json as { data?: unknown }).data)
+      ? (json as { data: unknown[] }).data
+      : [];
+
+  if (!rows.length) {
     return [];
   }
 
-  return json.map((row) =>
+  return rows.map((row) =>
     normalizePhoenixPerson(row as Record<string, unknown>),
   );
 }
 
-export async function getPersonnelSuggestions(
-  keyword: string,
-): Promise<Person[]> {
-  const trimmed = keyword.trim();
-  if (!trimmed) {
-    return [];
-  }
-  return fetchPersonnelByKeyword(trimmed);
-}
-
 export function getPersonPhoto(person: Person) {
-  return createPersonUrl(`/v1/photo/${person.staffId}.jpg`);
+  return `${ENDPOINTS.photoBase}${person.staffId}.jpg`;
 }

@@ -14,7 +14,7 @@ import {
   PRIVILEGE_RC_WORKER,
   REPAIR_COMPUTER_DEFAULT_ROLE,
   type RepairComputerRole,
-} from '@/constants/type-repair-computer';
+} from '@/constants/types';
 import { Colors } from '@/constants/theme';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';

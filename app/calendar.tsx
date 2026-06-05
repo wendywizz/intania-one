@@ -22,7 +22,7 @@ import {
     getExecutiveCalendarSources,
     type CalendarEvent,
     type CalendarSource,
-} from "@/services/calendarService";
+} from "@/services/executiveCalendarService";
 
 const todayKey = toDateKey(new Date());
 

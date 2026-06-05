@@ -117,7 +117,7 @@ export async function getExecutiveCalendarSources(): Promise<CalendarSource[]> {
   }
 
   const response = await fetchWithApiDelay(
-    buildHttpsUrl(ENDPOINTS.scooba_dev, '/scooba/api/schedules/', {
+    buildHttpsUrl(ENDPOINTS.scooba_dev, ENDPOINTS.execCalendar, {
       'filters[type][$eq]': SCHEDULE_TYPE_EXECUTIVE,
     }),
     {

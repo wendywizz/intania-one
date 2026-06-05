@@ -10,9 +10,10 @@
 
 ## Project rules
 
-### Authenticate system
+### OpenID auth
 
-- Do not edit code in the authenticate system unless the user explicitly asks to change this rule.
+- The OpenID auth system must be called directly from the client. Do not call OpenID through the `scooba-service` gateway.
+- If OpenID auth is working without errors, do not edit the OpenID auth code.
 
 ### Sending requests
 

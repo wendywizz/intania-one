@@ -1,10 +1,13 @@
-const AUTH_MODE = process.env.EXPO_PUBLIC_MODE ?? 'development';
-const OPENID_BASE_URL = 'https://psusso.psu.ac.th';
-const AUTH_API_BASE_URL =
-  AUTH_MODE === 'production' ? 'https://saas.eng.psu.ac.th' : 'http://localhost:1337';
-const AUTH_DOMAIN =
-  AUTH_MODE === 'production' ? 'com.ecs.intaniaSB.psu.ac.th' : 'http://localhost:8081';
-const AUTH_REDIRECT_PATH = '/oauth/callback';
+import {
+  AUTH_MODE,
+  AUTH_REDIRECT_DOMAIN,
+  AUTH_REDIRECT_PATH,
+  OPENID_AUTHORIZE_URL,
+  OPENID_DISCOVERY_URL,
+  OPENID_TOKEN_URL,
+  OPENID_USERINFO_URL,
+} from './endpoints';
+
 const OPENID_ENV_PREFIX =
   AUTH_MODE === 'production' ? 'EXPO_PUBLIC_OPENID_PRODUCTION' : 'EXPO_PUBLIC_OPENID_DEVELOPMENT';
 
@@ -18,16 +21,17 @@ const OPENID_CONFIG = {
     readEnv(`${OPENID_ENV_PREFIX}_CLIENT_SECRET`) || readEnv('EXPO_PUBLIC_OPENID_CLIENT_SECRET'),
   discoveryUrl:
     readEnv(`${OPENID_ENV_PREFIX}_CONFIGURATION_URL`) ||
-    readEnv('EXPO_PUBLIC_OPENID_CONFIGURATION_URL'),
+    readEnv('EXPO_PUBLIC_OPENID_CONFIGURATION_URL') ||
+    OPENID_DISCOVERY_URL,
   issuer: readEnv(`${OPENID_ENV_PREFIX}_ISSUER`) || readEnv('EXPO_PUBLIC_OPENID_ISSUER'),
 };
 
 function createAuthRedirectUrl() {
-  if (AUTH_DOMAIN.startsWith('http')) {
-    return `${AUTH_DOMAIN}${AUTH_REDIRECT_PATH}`;
+  if (AUTH_REDIRECT_DOMAIN.startsWith('http')) {
+    return `${AUTH_REDIRECT_DOMAIN}${AUTH_REDIRECT_PATH}`;
   }
 
-  return `${AUTH_DOMAIN}://${AUTH_REDIRECT_PATH.replace(/^\//, '')}`;
+  return `${AUTH_REDIRECT_DOMAIN}://${AUTH_REDIRECT_PATH.replace(/^\//, '')}`;
 }
 
 export const AUTH = {
@@ -35,20 +39,15 @@ export const AUTH = {
   clientSecret: OPENID_CONFIG.clientSecret,
   discoveryUrl: OPENID_CONFIG.discoveryUrl,
   issuer: OPENID_CONFIG.issuer,
-  authDomain: AUTH_DOMAIN,
+  authDomain: AUTH_REDIRECT_DOMAIN,
   nativeRedirectUrl: createAuthRedirectUrl(),
   webRedirectUrl: createAuthRedirectUrl(),
   webRedirectPath: AUTH_REDIRECT_PATH,
-  webProxy: {
-    discovery: `${AUTH_API_BASE_URL}/api/openid/discovery`,
-    token: `${AUTH_API_BASE_URL}/api/openid/token`,
-    userInfo: `${AUTH_API_BASE_URL}/api/openid/userinfo`,
-  },
   scopes: ['openid', 'profile', 'email', 'psu_profile'],
   endpoints: {
-    authorize: `${OPENID_BASE_URL}/application/o/authorize/`,
-    token: `${OPENID_BASE_URL}/application/o/token/`,
-    userInfo: `${OPENID_BASE_URL}/application/o/userinfo/`,
+    authorize: OPENID_AUTHORIZE_URL,
+    token: OPENID_TOKEN_URL,
+    userInfo: OPENID_USERINFO_URL,
   },
   storageKeys: {
     user: 'AUTH_USER',

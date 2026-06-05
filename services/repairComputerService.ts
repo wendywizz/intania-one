@@ -2,7 +2,7 @@ import { ENDPOINTS } from "../constants/endpoints";
 import {
     PRIVILEGE_RC_USER,
     RP_APP_ID,
-} from "../constants/type-repair-computer";
+} from "../constants/types";
 import type {
     Person,
     RepairComputer,

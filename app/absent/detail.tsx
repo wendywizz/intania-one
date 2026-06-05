@@ -15,7 +15,7 @@ import {
   TYPE_ABSENT_HAJJ,
   TYPE_ABSENT_RELAX,
   TYPE_ABSENT_SICK,
-} from '@/constants/type-absent';
+} from '@/constants/types';
 import type { Absent } from '@/models/types';
 import { getAbsentData } from '@/services/absentService';
 import { formatDateRange, formatDateTime } from '@/utils/date-format';

@@ -23,7 +23,7 @@ import {
     PRIVILEGE_RC_FOREMAN,
     PRIVILEGE_RC_WORKER,
     type RepairComputerRole,
-} from "@/constants/type-repair-computer";
+} from "@/constants/types";
 import { useRepairComputerRole } from "@/context/RepairComputerRoleContext";
 import type { RepairComputer } from "@/models/types";
 import type { ListResponse } from "@/services/api";

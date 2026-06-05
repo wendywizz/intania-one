@@ -21,7 +21,7 @@ import { AppFonts } from "@/constants/fonts";
 import {
     REPAIR_STATUS_WAIT_WORKER,
     REPAIR_STATUS_WORKING,
-} from "@/constants/type-repair-computer";
+} from "@/constants/types";
 import type { RepairComputer } from "@/models/types";
 import { getPersonPhoto } from "@/services/personService";
 import {

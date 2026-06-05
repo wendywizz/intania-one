@@ -19,7 +19,7 @@ import {
     REPAIR_STATUS_NEW_JOB,
     REPAIR_STATUS_WAIT_FOREMAN,
     REPAIR_STATUS_WORKER_REJECT,
-} from "@/constants/type-repair-computer";
+} from "@/constants/types";
 import type { RepairComputer } from "@/models/types";
 import {
     foremanCloseJob,

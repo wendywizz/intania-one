@@ -13,7 +13,7 @@ import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { TYPE_MEETING_INCOMING } from "@/constants/type-meeting";
+import { TYPE_MEETING_INCOMING } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { Meeting } from "@/models/types";
