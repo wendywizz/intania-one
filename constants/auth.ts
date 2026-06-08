@@ -24,6 +24,7 @@ const OPENID_CONFIG = {
     readEnv('EXPO_PUBLIC_OPENID_CONFIGURATION_URL') ||
     OPENID_DISCOVERY_URL,
   issuer: readEnv(`${OPENID_ENV_PREFIX}_ISSUER`) || readEnv('EXPO_PUBLIC_OPENID_ISSUER'),
+  webRedirectUrl: readEnv('EXPO_PUBLIC_OPENID_WEB_REDIRECT_URL'),
 };
 
 function createAuthRedirectUrl() {
@@ -41,7 +42,7 @@ export const AUTH = {
   issuer: OPENID_CONFIG.issuer,
   authDomain: AUTH_REDIRECT_DOMAIN,
   nativeRedirectUrl: createAuthRedirectUrl(),
-  webRedirectUrl: createAuthRedirectUrl(),
+  webRedirectUrl: OPENID_CONFIG.webRedirectUrl || createAuthRedirectUrl(),
   webRedirectPath: AUTH_REDIRECT_PATH,
   scopes: ['openid', 'profile', 'email', 'psu_profile'],
   endpoints: {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     FlatList,
     Modal,
@@ -68,6 +68,7 @@ export default function CalendarScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [sourceModalOpen, setSourceModalOpen] = useState(false);
+  const eventRequestIdRef = useRef(0);
 
   const loadSources = useCallback(async () => {
     setLoadingSources(true);
@@ -88,19 +89,27 @@ export default function CalendarScreen() {
 
   const loadEvents = useCallback(
     async (source: CalendarSource, monthKey: string) => {
+      const requestId = eventRequestIdRef.current + 1;
+      eventRequestIdRef.current = requestId;
       setLoadingEvents(true);
       setErrorMessage("");
 
       try {
         const result = await getCalendarEventsOfMonth(source.source, monthKey);
-        setEvents(result);
+        if (eventRequestIdRef.current === requestId) {
+          setEvents(result);
+        }
       } catch (error) {
-        setEvents([]);
-        setErrorMessage(
-          error instanceof Error ? error.message : TEXT.SHARED_SOMETHING_WENT_WRONG,
-        );
+        if (eventRequestIdRef.current === requestId) {
+          setEvents([]);
+          setErrorMessage(
+            error instanceof Error ? error.message : TEXT.SHARED_SOMETHING_WENT_WRONG,
+          );
+        }
       } finally {
-        setLoadingEvents(false);
+        if (eventRequestIdRef.current === requestId) {
+          setLoadingEvents(false);
+        }
       }
     },
     [],
@@ -145,6 +154,15 @@ export default function CalendarScreen() {
   };
 
   const handleSelectSource = (source: CalendarSource) => {
+    if (selectedSource?.source === source.source) {
+      setSourceModalOpen(false);
+      return;
+    }
+
+    eventRequestIdRef.current += 1;
+    setEvents([]);
+    setErrorMessage("");
+    setLoadingEvents(true);
     setSelectedSource(source);
     setSelectedDate(todayKey);
     setVisibleMonth(getMonthKey(todayKey));
@@ -199,6 +217,7 @@ export default function CalendarScreen() {
   }
 
   const sourceLoadFailed = !sources.length && Boolean(errorMessage);
+  const eventLoadFailed = Boolean(errorMessage);
   if (sourceLoadFailed) {
     return (
       <ThemedView style={styles.container}>
@@ -229,7 +248,110 @@ export default function CalendarScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar title={TEXT.CALENDAR_TITLE} backHref="/" />
+      <View style={styles.fixedCalendarPane}>
+        <View style={styles.sourceField}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setSourceModalOpen(true)}
+            style={styles.selectButton}
+          >
+            <ThemedText
+              style={[styles.selectText, !selectedSource ? styles.placeholder : undefined]}
+              numberOfLines={1}
+            >
+              {selectedSource?.name || "Select calendar"}
+            </ThemedText>
+            <ThemedText style={styles.chevron}>v</ThemedText>
+          </Pressable>
+        </View>
+
+        <Modal
+          transparent
+          visible={sourceModalOpen}
+          animationType="fade"
+          onRequestClose={() => setSourceModalOpen(false)}
+        >
+          <Pressable style={styles.backdrop} onPress={() => setSourceModalOpen(false)}>
+            <Pressable>
+              <ThemedView
+                style={styles.selectModal}
+                lightColor="#FFFFFF"
+                darkColor="#151718"
+              >
+                <View style={styles.selectModalHeader}>
+                  <ThemedText type="defaultSemiBold" style={styles.selectModalTitle}>
+                    Calendar
+                  </ThemedText>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setSourceModalOpen(false)}
+                    style={styles.closeButton}
+                  >
+                    <ThemedText type="defaultSemiBold">{TEXT.SHARED_CLOSE_THAI}</ThemedText>
+                  </Pressable>
+                </View>
+
+                <ScrollView style={styles.optionScroll} contentContainerStyle={styles.optionScrollContent}>
+                  {sources.length ? (
+                    sources.map((source, index) => {
+                      const active = selectedSource?.source === source.source;
+                      return (
+                        <Pressable
+                          key={`${String(source.source)}-${index}`}
+                          accessibilityRole="button"
+                          onPress={() => handleSelectSource(source)}
+                          style={[styles.option, active ? styles.selectedOption : undefined]}
+                        >
+                          <ThemedText
+                            lightColor={active ? "#FFFFFF" : undefined}
+                            darkColor={active ? "#FFFFFF" : undefined}
+                            style={styles.optionText}
+                          >
+                            {source.name}
+                          </ThemedText>
+                        </Pressable>
+                      );
+                    })
+                  ) : (
+                    <ThemedText style={styles.emptyOption}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
+                  )}
+                </ScrollView>
+              </ThemedView>
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        {eventLoadFailed ? null : (
+          <>
+            <ThemedView
+              style={styles.calendarWrap}
+              lightColor="#FFFFFF"
+              darkColor="#151718"
+            >
+              <Calendar
+                current={selectedDate}
+                markedDates={markedDates}
+                markingType="dot"
+                onDayPress={(date) => setSelectedDate(date.dateString)}
+                onMonthChange={handleMonthChange}
+                theme={calendarTheme}
+              />
+            </ThemedView>
+
+            <View style={styles.selectedDateHeader}>
+              <ThemedText
+                type="defaultSemiBold"
+                style={styles.selectedDateText}
+              >
+                Date: {formatSelectedDate(selectedDate)}
+              </ThemedText>
+            </View>
+          </>
+        )}
+      </View>
+
       <FlatList
+        style={styles.eventList}
         data={selectedEvents}
         keyExtractor={(item, index) => `${String(item.id || "calendar-event")}-${index}`}
         renderItem={renderEvent}
@@ -238,81 +360,17 @@ export default function CalendarScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         ListHeaderComponent={
-          <>
-            <View style={styles.sourceField}>
-              <ThemedText type="defaultSemiBold">Calendar</ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setSourceModalOpen(true)}
-                style={styles.selectButton}
-              >
-                <ThemedText
-                  style={[styles.selectText, !selectedSource ? styles.placeholder : undefined]}
-                  numberOfLines={1}
-                >
-                  {selectedSource?.name || "Select calendar"}
-                </ThemedText>
-                <ThemedText style={styles.chevron}>v</ThemedText>
-              </Pressable>
-            </View>
-
-            <Modal
-              transparent
-              visible={sourceModalOpen}
-              animationType="fade"
-              onRequestClose={() => setSourceModalOpen(false)}
-            >
-              <Pressable style={styles.backdrop} onPress={() => setSourceModalOpen(false)}>
-                <Pressable>
-                  <ThemedView
-                    style={styles.selectModal}
-                    lightColor="#FFFFFF"
-                    darkColor="#151718"
-                  >
-                    <View style={styles.selectModalHeader}>
-                      <ThemedText type="defaultSemiBold" style={styles.selectModalTitle}>
-                        Calendar
-                      </ThemedText>
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={() => setSourceModalOpen(false)}
-                        style={styles.closeButton}
-                      >
-                        <ThemedText type="defaultSemiBold">{TEXT.SHARED_CLOSE_THAI}</ThemedText>
-                      </Pressable>
-                    </View>
-
-                    <ScrollView style={styles.optionScroll} contentContainerStyle={styles.optionScrollContent}>
-                      {sources.length ? (
-                        sources.map((source, index) => {
-                          const active = selectedSource?.source === source.source;
-                          return (
-                            <Pressable
-                              key={`${String(source.source)}-${index}`}
-                              accessibilityRole="button"
-                              onPress={() => handleSelectSource(source)}
-                              style={[styles.option, active ? styles.selectedOption : undefined]}
-                            >
-                              <ThemedText
-                                lightColor={active ? "#FFFFFF" : undefined}
-                                darkColor={active ? "#FFFFFF" : undefined}
-                                style={styles.optionText}
-                              >
-                                {source.name}
-                              </ThemedText>
-                            </Pressable>
-                          );
-                        })
-                      ) : (
-                        <ThemedText style={styles.emptyOption}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
-                      )}
-                    </ScrollView>
-                  </ThemedView>
-                </Pressable>
-              </Pressable>
-            </Modal>
-
-            {errorMessage ? (
+          loadingEvents ? (
+            <LoadingAnimate
+              fill={false}
+              title="Loading events"
+              desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
+            />
+          ) : null
+        }
+        ListEmptyComponent={
+          loadingEvents ? null : (
+            errorMessage ? (
               <ThemedView
                 style={styles.messageBox}
                 lightColor="#FFF8F8"
@@ -330,56 +388,20 @@ export default function CalendarScreen() {
                   </ThemedText>
                 </Pressable>
               </ThemedView>
-            ) : null}
-
-            <ThemedView
-              style={styles.calendarWrap}
-              lightColor="#FFFFFF"
-              darkColor="#151718"
-            >
-              <Calendar
-                current={selectedDate}
-                markedDates={markedDates}
-                markingType="dot"
-                onDayPress={(date) => setSelectedDate(date.dateString)}
-                onMonthChange={handleMonthChange}
-                theme={calendarTheme}
-              />
-            </ThemedView>
-
-            <View style={styles.selectedDateHeader}>
-              <ThemedText type="subtitle">Events for selected date</ThemedText>
-              <ThemedText
-                type="defaultSemiBold"
-                style={styles.selectedDateText}
+            ) : (
+              <ThemedView
+                style={styles.emptyState}
+                lightColor="#F6FAFC"
+                darkColor="#151718"
               >
-                {formatSelectedDate(selectedDate)}
-              </ThemedText>
-            </View>
-
-            {loadingEvents ? (
-              <LoadingAnimate
-                fill={false}
-                title="Loading events"
-                desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
-              />
-            ) : null}
-          </>
-        }
-        ListEmptyComponent={
-          loadingEvents ? null : (
-            <ThemedView
-              style={styles.emptyState}
-              lightColor="#F6FAFC"
-              darkColor="#151718"
-            >
-              <ThemedText type="defaultSemiBold" style={styles.emptyTitle}>
-                {TEXT.SHARED_EMPTY_DATA}
-              </ThemedText>
-              <ThemedText style={styles.emptyMessage}>
-                No schedule for this date
-              </ThemedText>
-            </ThemedView>
+                <ThemedText type="defaultSemiBold" style={styles.emptyTitle}>
+                  {TEXT.SHARED_EMPTY_DATA}
+                </ThemedText>
+                <ThemedText style={styles.emptyMessage}>
+                  No schedule for this date
+                </ThemedText>
+              </ThemedView>
+            )
           )
         }
       />
@@ -409,6 +431,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  fixedCalendarPane: {
+    backgroundColor: "#FFFFFF",
+    paddingBottom: 8,
+  },
+  eventList: {
+    flex: 1,
+  },
   content: {
     paddingBottom: 24,
   },
@@ -429,7 +458,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   sourceField: {
-    gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },

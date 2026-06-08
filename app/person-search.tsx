@@ -15,7 +15,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
 import type { Person } from '@/models/types';
-import { getPersonnelSuggestions, getPersonPhoto } from '@/services/personService';
+import { getPersonnelSuggestions } from '@/services/personService';
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -64,18 +64,63 @@ function getPersonDetails(person: Person): {
   };
 }
 
+function getPersonResponsePhoto(person: Person) {
+  const photo = (person as Record<string, unknown>).photo;
+
+  if (typeof photo === 'string' && photo.trim()) {
+    const value = photo.trim();
+    if (/^(data:|https?:\/\/|file:|content:|asset:)/i.test(value)) {
+      return value;
+    }
+    return `data:image/jpeg;base64,${value}`;
+  }
+
+  if (photo && typeof photo === 'object') {
+    const record = photo as Record<string, unknown>;
+    const uri = record.uri || record.url || record.src;
+    const base64 = record.base64 || record.data;
+
+    if (typeof uri === 'string' && uri.trim()) {
+      return uri.trim();
+    }
+
+    if (typeof base64 === 'string' && base64.trim()) {
+      return `data:image/jpeg;base64,${base64.trim()}`;
+    }
+  }
+
+  return '';
+}
+
+function getPersonSearchKey(person: Person, index: number) {
+  const record = person as Record<string, unknown>;
+  const parts = [
+    person.staffId,
+    record.EMAIL,
+    record.email,
+    record.FNAME_TH,
+    record.SNAME_TH,
+    record.FNAME_ENG,
+    record.SNAME_ENG,
+    index,
+  ]
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean);
+
+  return parts.length ? parts.join('-') : `person-${index}`;
+}
+
 function PersonSearchListItem({ item }: { item: Person }) {
   const [photoFailed, setPhotoFailed] = useState(false);
-  const hasStaffId =
-    item.staffId != null && String(item.staffId).trim().length > 0;
+  const photoUri = getPersonResponsePhoto(item);
 
   useEffect(() => {
     setPhotoFailed(false);
-  }, [item.staffId]);
+  }, [photoUri]);
 
   const title = getPersonLabel(item);
   const details = getPersonDetails(item);
-  const showPhoto = hasStaffId && !photoFailed;
+  const showPhoto = Boolean(photoUri) && !photoFailed;
 
   return (
     <View style={styles.listItemRow}>
@@ -87,7 +132,7 @@ function PersonSearchListItem({ item }: { item: Person }) {
             onError={() => {
               setPhotoFailed(true);
             }}
-            source={{ uri: getPersonPhoto(item) }}
+            source={{ uri: photoUri }}
             style={styles.avatar}
             transition={200}
           />
@@ -138,9 +183,12 @@ export default function PersonSearchScreen() {
         }
         setResults(data);
       })
-      .catch(() => {
+      .catch((searchError) => {
         if (id !== requestIdRef.current) {
           return;
+        }
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('[person-search] search failed', searchError);
         }
         setResults([]);
         setError(TEXT.SHARED_SOMETHING_WENT_WRONG);
@@ -196,7 +244,7 @@ export default function PersonSearchScreen() {
             autoCorrect={false}
             clearButtonMode="while-editing"
             onChangeText={setKeyword}
-            placeholder="Search by name or staff ID"
+            placeholder="Search by name or Department"
             placeholderTextColor="#8A969C"
             returnKeyType="search"
             style={styles.input}
@@ -225,11 +273,7 @@ export default function PersonSearchScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
-        keyExtractor={(item, index) =>
-          item.staffId != null && String(item.staffId).length > 0
-            ? String(item.staffId)
-            : `person-${index}`
-        }
+        keyExtractor={getPersonSearchKey}
         ListEmptyComponent={
           showEmptyHint ? (
             <ThemedText style={styles.emptyText}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>

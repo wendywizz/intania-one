@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
 import {Platform} from 'react-native';
 import {AUTH} from '../constants/auth';
+import {METRO_PROXY_ENDPOINTS} from '../constants/endpoints';
 import type {AuthUser} from '../models/types';
 import {fetchWithApiDelay} from './api';
 
@@ -21,6 +22,8 @@ type OpenIdDiscovery = {
   userinfo_endpoint?: string;
   issuer?: string;
 };
+
+const CHROME_ANDROID_PACKAGE = 'com.android.chrome';
 
 let discoveryPromise: Promise<OpenIdDiscovery> | null = null;
 
@@ -131,13 +134,21 @@ function normalizeUser(claims: Record<string, unknown>): AuthUser {
 }
 
 async function getOAuthErrorMessage(response: Response, fallback: string) {
+  const statusText = response.status ? `HTTP ${response.status}` : '';
+
   try {
-    const json = (await response.json()) as Record<string, unknown>;
+    const json = (await response.clone().json()) as Record<string, unknown>;
     const errorDescription = textClaim(json, ['error_description', 'errorDescription', 'message']);
     const error = textClaim(json, ['error']);
-    return [fallback, errorDescription || error].filter(Boolean).join(': ');
+    return [fallback, errorDescription || error || statusText].filter(Boolean).join(': ');
   } catch {
-    return fallback;
+    try {
+      const text = (await response.text()).trim();
+      const shortText = text.replace(/\s+/g, ' ').slice(0, 240);
+      return [fallback, shortText || statusText].filter(Boolean).join(': ');
+    } catch {
+      return [fallback, statusText].filter(Boolean).join(': ');
+    }
   }
 }
 
@@ -179,11 +190,19 @@ async function getAuthorizeEndpoint() {
 }
 
 async function getTokenEndpoint() {
+  if (Platform.OS === 'web') {
+    return METRO_PROXY_ENDPOINTS.routes.openIdToken;
+  }
+
   const discovery = await getDiscovery();
   return discovery.token_endpoint ?? AUTH.endpoints.token;
 }
 
 async function getUserInfoEndpoint() {
+  if (Platform.OS === 'web') {
+    return METRO_PROXY_ENDPOINTS.routes.openIdUserInfo;
+  }
+
   const discovery = await getDiscovery();
   return discovery.userinfo_endpoint ?? AUTH.endpoints.userInfo;
 }
@@ -207,7 +226,54 @@ function getRedirectUrl() {
   return AUTH.nativeRedirectUrl;
 }
 
-async function createAuthorizeUrl() {
+function readOptionalEnv(name: string) {
+  const value = process.env[name];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+async function getAndroidAuthSessionOptions(authUrl: string): Promise<WebBrowser.AuthSessionOpenOptions> {
+  const options: WebBrowser.AuthSessionOpenOptions = {
+    createTask: false,
+    enableDefaultShareMenuItem: false,
+    showTitle: true,
+  };
+
+  if (Platform.OS !== 'android') {
+    return options;
+  }
+
+  const configuredBrowserPackage = readOptionalEnv('EXPO_PUBLIC_OPENID_ANDROID_BROWSER_PACKAGE');
+
+  try {
+    const browsers = await WebBrowser.getCustomTabsSupportingBrowsersAsync();
+    const browserPackage =
+      configuredBrowserPackage ||
+      (browsers.browserPackages.includes(CHROME_ANDROID_PACKAGE) ||
+      browsers.servicePackages.includes(CHROME_ANDROID_PACKAGE)
+        ? CHROME_ANDROID_PACKAGE
+        : browsers.preferredBrowserPackage || browsers.defaultBrowserPackage);
+
+    if (browserPackage) {
+      options.browserPackage = browserPackage;
+      await WebBrowser.coolDownAsync(browserPackage).catch(() => undefined);
+      await WebBrowser.warmUpAsync(browserPackage).catch(() => undefined);
+      await WebBrowser.mayInitWithUrlAsync(authUrl, browserPackage).catch(() => undefined);
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.info('[auth] Android OpenID browser package', browserPackage || 'default');
+      console.info('[auth] Android Custom Tabs browsers', browsers.browserPackages);
+    }
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[auth] Unable to inspect Android Custom Tabs browsers', error);
+    }
+  }
+
+  return options;
+}
+
+export async function createAuthorizeUrl() {
   const state = createRandomState();
   const url = new URL(await getAuthorizeEndpoint());
 
@@ -336,11 +402,19 @@ export async function login(): Promise<AuthUser> {
   const authUrl = await createAuthorizeUrl();
 
   if (Platform.OS === 'web') {
+    if (typeof window === 'undefined') {
+      throw new Error('Browser login is not available');
+    }
+
     window.location.assign(authUrl);
     return new Promise<AuthUser>(() => {});
   }
 
-  const result = await WebBrowser.openAuthSessionAsync(authUrl, getRedirectUrl());
+  const result = await WebBrowser.openAuthSessionAsync(
+    authUrl,
+    getRedirectUrl(),
+    await getAndroidAuthSessionOptions(authUrl),
+  );
 
   if (result.type !== 'success') {
     throw new Error('Login was cancelled');

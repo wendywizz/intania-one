@@ -44,53 +44,12 @@ export function waitApiDelay() {
   return new Promise((resolve) => setTimeout(resolve, API_DELAY_MS));
 }
 
-function isNodeRuntime() {
-  return typeof process !== "undefined" &&
-    typeof process.versions === "object" &&
-    typeof process.versions.node === "string";
-}
-
-function createLegacyTlsDispatcher(url: string) {
-  if (!isNodeRuntime()) {
-    return undefined;
-  }
-
-  try {
-    const { Agent } = require("undici");
-    const crypto = require("node:crypto");
-    const parsedUrl = new URL(url);
-    if (parsedUrl.protocol !== "https:") {
-      return undefined;
-    }
-
-    return new Agent({
-      connect: {
-        secureSocketOptions: crypto.constants?.SSL_OP_LEGACY_SERVER_CONNECT,
-      },
-    });
-  } catch {
-    return undefined;
-  }
-}
-
 export async function fetchWithApiDelay(
   input: RequestInfo | URL,
   init?: RequestInit,
 ) {
   await waitApiDelay();
-
-  const fetchInit = { ...(init as Record<string, unknown>) } as RequestInit;
-  const inputUrl =
-    input instanceof URL ? input.toString() : typeof input === "string" ? input : undefined;
-
-  if (inputUrl) {
-    const dispatcher = createLegacyTlsDispatcher(inputUrl);
-    if (dispatcher) {
-      (fetchInit as any).dispatcher = dispatcher;
-    }
-  }
-
-  return fetch(input, fetchInit);
+  return fetch(input, init);
 }
 
 function createUrl(
@@ -117,11 +76,11 @@ export function createApiUrl(
 }
 
 export function buildHttpsUrl(
-  _host: string,
+  host: string,
   path: string,
   query?: Record<string, string | number | undefined | null>,
 ) {
-  return createApiUrl(path, query);
+  return createUrl(host, path, query);
 }
 
 export function createLocalUrl(
@@ -149,19 +108,8 @@ export async function fetchWithTimeout(
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    const fetchInit = { ...(init as Record<string, unknown>) } as RequestInit;
-    const inputUrl =
-      input instanceof URL ? input.toString() : typeof input === "string" ? input : undefined;
-
-    if (inputUrl) {
-      const dispatcher = createLegacyTlsDispatcher(inputUrl);
-      if (dispatcher) {
-        (fetchInit as any).dispatcher = dispatcher;
-      }
-    }
-
     return await fetch(input, {
-      ...fetchInit,
+      ...init,
       signal: controller.signal,
     });
   } catch (error) {

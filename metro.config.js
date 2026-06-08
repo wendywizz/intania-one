@@ -7,6 +7,8 @@ const {
   API_BASE_URL,
   LOCAL_URL_BASE,
   METRO_PROXY_ENDPOINTS,
+  OPENID_TOKEN_URL,
+  OPENID_USERINFO_URL,
   STAFF_NEWS_FEED_URL,
 } = require('./constants/endpoints.ts');
 
@@ -79,6 +81,56 @@ function fetchTextWithLegacyTls(url, headers) {
     request.setTimeout(10000, () => {
       request.destroy(new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'));
     });
+  });
+}
+
+function readRequestBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+
+    req.on('data', (chunk) => {
+      body += chunk;
+    });
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
+  });
+}
+
+function postTextWithLegacyTls(url, headers, body) {
+  const targetUrl = new URL(url);
+  const client = targetUrl.protocol === 'http:' ? http : https;
+  const agent = new https.Agent({
+    ciphers: 'DEFAULT@SECLEVEL=0',
+    secureOptions: crypto.constants.SSL_OP_LEGACY_SERVER_CONNECT,
+  });
+
+  return new Promise((resolve, reject) => {
+    const request = client.request(targetUrl, {
+      method: 'POST',
+      agent: client === https ? agent : undefined,
+      headers,
+    }, (response) => {
+      let responseBody = '';
+
+      response.on('data', (chunk) => {
+        responseBody += chunk;
+      });
+      response.on('end', () => {
+        resolve({
+          body: responseBody,
+          statusCode: response.statusCode ?? 500,
+        });
+      });
+    });
+
+    request.on('error', reject);
+    request.setTimeout(10000, () => {
+      request.destroy(new Error('Unable to connect to OpenID server'));
+    });
+    if (body) {
+      request.write(body);
+    }
+    request.end();
   });
 }
 
@@ -199,6 +251,46 @@ config.server = {
           res.setHeader('Access-Control-Allow-Origin', '*');
           res.setHeader('Content-Type', 'application/json');
           res.end(response.body || JSON.stringify({ data: '' }));
+        } catch (error) {
+          writeJson(res, 500, {
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
+        return;
+      }
+
+      if (req.url?.startsWith(METRO_PROXY_ENDPOINTS.routes.openIdToken)) {
+        try {
+          const body = await readRequestBody(req);
+          const response = await postTextWithLegacyTls(OPENID_TOKEN_URL, {
+            Accept: 'application/json',
+            'Content-Type': req.headers['content-type'] || 'application/x-www-form-urlencoded',
+            'Content-Length': Buffer.byteLength(body),
+          }, body);
+
+          res.statusCode = response.statusCode;
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Content-Type', 'application/json');
+          res.end(response.body || JSON.stringify({ message: 'No data returned from OpenID server' }));
+        } catch (error) {
+          writeJson(res, 500, {
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
+        return;
+      }
+
+      if (req.url?.startsWith(METRO_PROXY_ENDPOINTS.routes.openIdUserInfo)) {
+        try {
+          const response = await fetchTextWithLegacyTls(OPENID_USERINFO_URL, {
+            Accept: 'application/json',
+            Authorization: req.headers.authorization || '',
+          });
+
+          res.statusCode = response.statusCode;
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Content-Type', 'application/json');
+          res.end(response.body || JSON.stringify({ message: 'No data returned from OpenID server' }));
         } catch (error) {
           writeJson(res, 500, {
             message: error instanceof Error ? error.message : String(error),

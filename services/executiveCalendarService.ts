@@ -2,6 +2,7 @@ import { ENDPOINTS } from '../constants/endpoints';
 import { buildHttpsUrl, fetchWithApiDelay } from './api';
 
 const SCHEDULE_TYPE_EXECUTIVE = 'exc';
+const GOOGLE_CALENDAR_API_BASE_URL = 'https://www.googleapis.com';
 
 type ScoobaScheduleItem = {
   attributes?: {
@@ -42,8 +43,18 @@ export type CalendarEvent = {
 
 function getEnv(name: string) {
   switch (name) {
+    case 'EXPO_PUBLIC_SCOOBA_API_KEY':
+      return (
+        process.env.EXPO_PUBLIC_SCOOBA_API_KEY ??
+        process.env.EXPO_PUBLIC_SCOOBA_API_TOKEN ??
+        ''
+      );
     case 'EXPO_PUBLIC_SCOOBA_API_TOKEN':
-      return process.env.EXPO_PUBLIC_SCOOBA_API_TOKEN ?? '';
+      return (
+        process.env.EXPO_PUBLIC_SCOOBA_API_TOKEN ??
+        process.env.EXPO_PUBLIC_SCOOBA_API_KEY ??
+        ''
+      );
     case 'EXPO_PUBLIC_GOOGLE_API_KEY':
       return process.env.EXPO_PUBLIC_GOOGLE_API_KEY ?? '';
     default:
@@ -109,11 +120,30 @@ function mapCalendarEvent(item: GoogleCalendarItem): CalendarEvent {
   };
 }
 
-export async function getExecutiveCalendarSources(): Promise<CalendarSource[]> {
-  const token = getEnv('EXPO_PUBLIC_SCOOBA_API_TOKEN').trim();
+function dedupeCalendarSources(sources: CalendarSource[]) {
+  const uniqueSources = new Map<string, CalendarSource>();
 
-  if (!token) {
-    throw new Error('Missing EXPO_PUBLIC_SCOOBA_API_TOKEN');
+  sources.forEach((source) => {
+    const name = source.name.trim();
+    const calendarSource = source.source.trim().replace(/^"+|"+$/g, '');
+    const key = calendarSource.toLowerCase();
+
+    if (name && calendarSource && !uniqueSources.has(key)) {
+      uniqueSources.set(key, {
+        name,
+        source: calendarSource,
+      });
+    }
+  });
+
+  return Array.from(uniqueSources.values());
+}
+
+export async function getExecutiveCalendarSources(): Promise<CalendarSource[]> {
+  const apiKey = getEnv('EXPO_PUBLIC_SCOOBA_API_KEY').trim();
+
+  if (!apiKey) {
+    throw new Error('Missing EXPO_PUBLIC_SCOOBA_API_KEY');
   }
 
   const response = await fetchWithApiDelay(
@@ -123,7 +153,7 @@ export async function getExecutiveCalendarSources(): Promise<CalendarSource[]> {
     {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${apiKey}`,
       },
     },
   );
@@ -133,12 +163,12 @@ export async function getExecutiveCalendarSources(): Promise<CalendarSource[]> {
   }
 
   const json = (await response.json()) as {data?: ScoobaScheduleItem[]};
-  return (json.data ?? [])
+  return dedupeCalendarSources((json.data ?? [])
     .map((item) => ({
       name: item.attributes?.name ?? '',
       source: item.attributes?.source ?? '',
     }))
-    .filter((item) => item.name && item.source);
+    .filter((item) => item.name && item.source));
 }
 
 export async function getCalendarEventsOfMonth(
@@ -160,7 +190,7 @@ export async function getCalendarEventsOfMonth(
 
   const response = await fetchWithApiDelay(
     buildHttpsUrl(
-      ENDPOINTS.scooba_dev,
+      GOOGLE_CALENDAR_API_BASE_URL,
       `/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}/events`,
       Object.fromEntries(params),
     ),

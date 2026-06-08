@@ -127,7 +127,11 @@ export default function HomeScreen() {
   };
 
   const handleLogin = async () => {
-    await signIn();
+    try {
+      await signIn();
+    } catch (error) {
+      setAuthCallbackErrorMessage(error instanceof Error ? error.message : String(error));
+    }
   };
 
   const handleLogout = async () => {
@@ -215,19 +219,23 @@ export default function HomeScreen() {
           </ThemedView>
         </ThemedView>
 
-        <ThemedView style={styles.section}>
-          <ThemedText type="subtitle">{TEXT.HOME_MENU_SECTION_TITLE}</ThemedText>
-          <ThemedText style={styles.description}>{TEXT.HOME_MENU_SECTION_DESCRIPTION}</ThemedText>
-        </ThemedView>
-        <ThemedView style={styles.grid}>
-          {screens.map((screen, index) => (
-            <Link key={`${String(screen.href)}-${index}`} href={screen.href as Parameters<typeof Link>[0]['href']} asChild>
-              <TouchableOpacity style={styles.card}>
-                <ThemedText type="subtitle">{screen.title}</ThemedText>
-              </TouchableOpacity>
-            </Link>
-          ))}
-        </ThemedView>
+        {authUser ? (
+          <>
+            <ThemedView style={styles.section}>
+              <ThemedText type="subtitle">{TEXT.HOME_MENU_SECTION_TITLE}</ThemedText>
+              <ThemedText style={styles.description}>{TEXT.HOME_MENU_SECTION_DESCRIPTION}</ThemedText>
+            </ThemedView>
+            <ThemedView style={styles.grid}>
+              {screens.map((screen, index) => (
+                <Link key={`${String(screen.href)}-${index}`} href={screen.href as Parameters<typeof Link>[0]['href']} asChild>
+                  <TouchableOpacity style={styles.card}>
+                    <ThemedText type="subtitle">{screen.title}</ThemedText>
+                  </TouchableOpacity>
+                </Link>
+              ))}
+            </ThemedView>
+          </>
+        ) : null}
       </ScrollView>
 
       <Modal

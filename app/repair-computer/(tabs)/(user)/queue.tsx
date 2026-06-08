@@ -14,7 +14,6 @@ import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { ENDPOINTS } from "@/constants/endpoints";
 import { useRepairComputerRole } from "@/context/RepairComputerRoleContext";
 import { workerQueue } from "@/services/repairComputerService";
 
@@ -95,6 +94,34 @@ function sortWorkersByNameAsc(items: WorkerQueueItem[]) {
   });
 }
 
+function getResponsePhoto(item: WorkerQueueItem) {
+  const photo = item.photo;
+
+  if (typeof photo === "string" && photo.trim()) {
+    const value = photo.trim();
+    if (/^(data:|https?:\/\/|file:|content:|asset:)/i.test(value)) {
+      return value;
+    }
+    return `data:image/jpeg;base64,${value}`;
+  }
+
+  if (photo && typeof photo === "object") {
+    const record = photo as Record<string, unknown>;
+    const uri = record.uri || record.url || record.src;
+    const base64 = record.base64 || record.data;
+
+    if (typeof uri === "string" && uri.trim()) {
+      return uri.trim();
+    }
+
+    if (typeof base64 === "string" && base64.trim()) {
+      return `data:image/jpeg;base64,${base64.trim()}`;
+    }
+  }
+
+  return "";
+}
+
 type WorkerQueueListItemProps = {
   failedPhotoIds: Set<string>;
   item: WorkerQueueItem;
@@ -109,8 +136,9 @@ function WorkerQueueListItem({
   const workerId = getWorkerId(item);
   const fullName = getWorkerFullName(item);
   const queueCount = getText(item, queueCountFields) || "0";
-  const photoUri = `${ENDPOINTS.photoBase}${workerId}.jpg`;
-  const shouldShowPhoto = Boolean(workerId) && !failedPhotoIds.has(workerId);
+  const photoUri = getResponsePhoto(item);
+  const photoKey = photoUri || workerId;
+  const shouldShowPhoto = Boolean(photoUri) && !failedPhotoIds.has(photoKey);
 
   return (
     <ThemedView
@@ -120,7 +148,7 @@ function WorkerQueueListItem({
     >
       {shouldShowPhoto ? (
         <Image
-          onError={() => onPhotoError(workerId)}
+          onError={() => onPhotoError(photoKey)}
           source={{ uri: photoUri }}
           style={styles.workerPhoto}
         />

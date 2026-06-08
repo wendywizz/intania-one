@@ -18,7 +18,10 @@ import {
     rowRequest,
 } from "./api";
 
-const SCOOBA_API_TOKEN = "";
+const SCOOBA_API_KEY =
+  process.env.EXPO_PUBLIC_SCOOBA_API_KEY ??
+  process.env.EXPO_PUBLIC_SCOOBA_API_TOKEN ??
+  "";
 
 function createRepairComputerUrl(
   path = "",
@@ -336,7 +339,7 @@ export async function checkPrivilege(
     const response = await fetchWithApiDelay(url, {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${SCOOBA_API_TOKEN}`,
+        Authorization: `Bearer ${SCOOBA_API_KEY}`,
       },
     });
 
