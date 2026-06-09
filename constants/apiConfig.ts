@@ -1,3 +1,3 @@
-import { API_BASE_URL, API_MODE } from './endpoints';
+import { API_BASE_URL } from './endpoints';
 
 export { API_BASE_URL };

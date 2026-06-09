@@ -3,14 +3,60 @@ const { XMLParser } = require('fast-xml-parser');
 const crypto = require('node:crypto');
 const http = require('node:http');
 const https = require('node:https');
-const {
-  API_BASE_URL,
-  LOCAL_URL_BASE,
-  METRO_PROXY_ENDPOINTS,
-  OPENID_TOKEN_URL,
-  OPENID_USERINFO_URL,
-  STAFF_NEWS_FEED_URL,
-} = require('./constants/endpoints.ts');
+
+const EXPO_OS = process.env.EXPO_OS ?? '';
+const APP_MODE = process.env.EXPO_PUBLIC_MODE ?? 'development';
+
+const API_DOMAINS = {
+  development: 'http://localhost:1337',
+  production: 'https://saas.eng.psu.ac.th',
+};
+
+const AUTH_REDIRECT_DOMAINS = {
+  development: 'http://localhost:8081',
+  native: process.env.EXPO_PUBLIC_AUTH_NATIVE_REDIRECT_DOMAIN || 'com.ecs.staffbuddy',
+};
+
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL ||
+  (APP_MODE === 'production'
+    ? API_DOMAINS.production
+    : EXPO_OS === 'android'
+    ? 'http://10.0.2.2:1337'
+    : API_DOMAINS.development);
+
+const LOCAL_URL_BASE = 'http://localhost';
+const OPENID_BASE_URL = 'https://psusso.psu.ac.th';
+const OPENID_TOKEN_URL = `${OPENID_BASE_URL}/application/o/token/`;
+const OPENID_USERINFO_URL = `${OPENID_BASE_URL}/application/o/userinfo/`;
+const STAFF_NEWS_FEED_URL =
+  'https://www.eng.psu.ac.th/index.php?option=com_content&view=category&id=15&format=feed&type=rss';
+
+const METRO_PROXY_ENDPOINTS = {
+  routes: {
+    staffNewsFeed: '/api/staff-news-feed',
+    absentInit: '/api/absent/init',
+    absentHistory: '/api/absent/history',
+    meetingList: '/api/meeting/list',
+    repairComputerPrivilege: '/api/repair-computer/privilege',
+    openIdToken: '/api/openid/token',
+    openIdUserInfo: '/api/openid/userinfo',
+  },
+  absent: {
+    leave: '/personnel/apis/absent/leave/',
+    business: '/personnel/apis/absent/business/',
+    birth: '/personnel/apis/absent/birth/',
+    relax: '/personnel/apis/absent/relax/',
+    hajj: '/personnel/apis/absent/hajj/',
+    history: '/personnel/apis/absent/history',
+  },
+  meeting: {
+    list: '/meetingv2/api/index.php/meeting/list',
+  },
+  repairComputer: {
+    privilege: '/repairComputer/api/privilege',
+  },
+};
 
 const config = getDefaultConfig(__dirname);
 const parser = new XMLParser({ ignoreAttributes: false });

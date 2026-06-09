@@ -1,4 +1,5 @@
 import { ENDPOINTS } from '../constants/endpoints';
+import { ENV } from '../constants/config';
 import { buildHttpsUrl, fetchWithApiDelay } from './api';
 
 const SCHEDULE_TYPE_EXECUTIVE = 'exc';
@@ -41,26 +42,6 @@ export type CalendarEvent = {
   isAllDay: boolean;
 };
 
-function getEnv(name: string) {
-  switch (name) {
-    case 'EXPO_PUBLIC_SCOOBA_API_KEY':
-      return (
-        process.env.EXPO_PUBLIC_SCOOBA_API_KEY ??
-        process.env.EXPO_PUBLIC_SCOOBA_API_TOKEN ??
-        ''
-      );
-    case 'EXPO_PUBLIC_SCOOBA_API_TOKEN':
-      return (
-        process.env.EXPO_PUBLIC_SCOOBA_API_TOKEN ??
-        process.env.EXPO_PUBLIC_SCOOBA_API_KEY ??
-        ''
-      );
-    case 'EXPO_PUBLIC_GOOGLE_API_KEY':
-      return process.env.EXPO_PUBLIC_GOOGLE_API_KEY ?? '';
-    default:
-      return '';
-  }
-}
 
 function toDateKey(date: Date) {
   const year = date.getFullYear();
@@ -140,7 +121,7 @@ function dedupeCalendarSources(sources: CalendarSource[]) {
 }
 
 export async function getExecutiveCalendarSources(): Promise<CalendarSource[]> {
-  const apiKey = getEnv('EXPO_PUBLIC_SCOOBA_API_KEY').trim();
+  const apiKey = ENV.scoobaApiKey.trim();
 
   if (!apiKey) {
     throw new Error('Missing EXPO_PUBLIC_SCOOBA_API_KEY');
@@ -175,7 +156,7 @@ export async function getCalendarEventsOfMonth(
   googleCalendarId: string,
   activeDateKey: string,
 ): Promise<CalendarEvent[]> {
-  const apiKey = getEnv('EXPO_PUBLIC_GOOGLE_API_KEY');
+  const apiKey = ENV.googleApiKey;
   const {timeMin, timeMax} = monthRange(activeDateKey);
   const params = new URLSearchParams({
     singleEvents: 'true',

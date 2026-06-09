@@ -1,4 +1,5 @@
 import { ENDPOINTS } from "../constants/endpoints";
+import { ENV } from "../constants/config";
 import {
     PRIVILEGE_RC_USER,
     RP_APP_ID,
@@ -18,10 +19,7 @@ import {
     rowRequest,
 } from "./api";
 
-const SCOOBA_API_KEY =
-  process.env.EXPO_PUBLIC_SCOOBA_API_KEY ??
-  process.env.EXPO_PUBLIC_SCOOBA_API_TOKEN ??
-  "";
+const SCOOBA_API_KEY = ENV.scoobaApiKey;
 
 function createRepairComputerUrl(
   path = "",

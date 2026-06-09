@@ -4,16 +4,13 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 import { ENDPOINTS } from "@/constants/endpoints";
+import { ENV } from "@/constants/config";
 import type { AuthUser } from "@/models/types";
 import { fetchWithApiDelay } from "./api";
 
 const DEVICE_ID_STORAGE_KEY = "PUSH_DEVICE_ID";
 const REGISTERED_DEVICE_OWNERS_STORAGE_KEY = "REGISTERED_DEVICE_OWNERS";
-const DEVICE_REGISTER_API_KEY =
-  process.env.EXPO_PUBLIC_DEVICE_REGISTER_API_KEY ??
-  process.env.EXPO_PUBLIC_SCOOBA_API_KEY ??
-  process.env.EXPO_PUBLIC_SCOOBA_API_TOKEN ??
-  "";
+const DEVICE_REGISTER_API_KEY = ENV.deviceRegisterApiKey;
 
 function textValue(value: unknown) {
   if (typeof value === "string") {

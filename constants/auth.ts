@@ -1,5 +1,6 @@
+import { Platform } from 'react-native';
+import { ENV } from './config';
 import {
-  AUTH_MODE,
   AUTH_REDIRECT_DOMAIN,
   AUTH_REDIRECT_PATH,
   OPENID_AUTHORIZE_URL,
@@ -8,24 +9,7 @@ import {
   OPENID_USERINFO_URL,
 } from './endpoints';
 
-const OPENID_ENV_PREFIX =
-  AUTH_MODE === 'production' ? 'EXPO_PUBLIC_OPENID_PRODUCTION' : 'EXPO_PUBLIC_OPENID_DEVELOPMENT';
-
-function readEnv(name: string) {
-  return process.env[name] ?? '';
-}
-
-const OPENID_CONFIG = {
-  clientId: readEnv(`${OPENID_ENV_PREFIX}_CLIENT_ID`) || readEnv('EXPO_PUBLIC_OPENID_CLIENT_ID'),
-  clientSecret:
-    readEnv(`${OPENID_ENV_PREFIX}_CLIENT_SECRET`) || readEnv('EXPO_PUBLIC_OPENID_CLIENT_SECRET'),
-  discoveryUrl:
-    readEnv(`${OPENID_ENV_PREFIX}_CONFIGURATION_URL`) ||
-    readEnv('EXPO_PUBLIC_OPENID_CONFIGURATION_URL') ||
-    OPENID_DISCOVERY_URL,
-  issuer: readEnv(`${OPENID_ENV_PREFIX}_ISSUER`) || readEnv('EXPO_PUBLIC_OPENID_ISSUER'),
-  webRedirectUrl: readEnv('EXPO_PUBLIC_OPENID_WEB_REDIRECT_URL'),
-};
+const isWeb = Platform.OS === 'web';
 
 function createAuthRedirectUrl() {
   if (AUTH_REDIRECT_DOMAIN.startsWith('http')) {
@@ -35,10 +19,18 @@ function createAuthRedirectUrl() {
   return `${AUTH_REDIRECT_DOMAIN}://${AUTH_REDIRECT_PATH.replace(/^\//, '')}`;
 }
 
+const OPENID_CONFIG = {
+  clientId: isWeb ? ENV.openIdWebClientId || ENV.openIdClientId : ENV.openIdClientId,
+  clientSecret: isWeb ? ENV.openIdWebClientSecret || ENV.openIdClientSecret : ENV.openIdClientSecret,
+  discoveryUrl: isWeb ? ENV.openIdWebConfigurationUrl || ENV.openIdConfigurationUrl : ENV.openIdConfigurationUrl,
+  issuer: isWeb ? ENV.openIdWebIssuer || ENV.openIdIssuer : ENV.openIdIssuer,
+  webRedirectUrl: ENV.openIdWebRedirectUrl,
+};
+
 export const AUTH = {
   clientId: OPENID_CONFIG.clientId,
   clientSecret: OPENID_CONFIG.clientSecret,
-  discoveryUrl: OPENID_CONFIG.discoveryUrl,
+  discoveryUrl: OPENID_CONFIG.discoveryUrl || OPENID_DISCOVERY_URL,
   issuer: OPENID_CONFIG.issuer,
   authDomain: AUTH_REDIRECT_DOMAIN,
   nativeRedirectUrl: createAuthRedirectUrl(),
