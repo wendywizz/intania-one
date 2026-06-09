@@ -1,6 +1,7 @@
 import { Link, router, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
 
 import { ThemedText } from '@/components/themed-text';
@@ -24,6 +25,8 @@ export function NavTopBar({
   showHomeButton = false,
   rightContent,
 }: NavTopBarProps) {
+  const insets = useSafeAreaInsets();
+
   const goBack = () => {
     if (onBackPress) {
       onBackPress();
@@ -44,7 +47,10 @@ export function NavTopBar({
   };
 
   return (
-    <ThemedView style={styles.container} lightColor="#FFFFFF" darkColor="#151718">
+    <ThemedView
+      style={[styles.container, { paddingTop: insets.top + 8 }]}
+      lightColor="#FFFFFF"
+      darkColor="#151718">
       <View style={styles.leftActions}>
         {showBackButton ? (
           <Pressable

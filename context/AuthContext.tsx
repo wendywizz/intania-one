@@ -1,4 +1,4 @@
-import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
+import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import type {AuthUser} from '../models/types';
 import * as authService from '../services/authService';
 import {registerLoggedInDevice} from '../services/deviceService';
@@ -29,6 +29,7 @@ function registerDeviceInBackground(user: AuthUser | null) {
 export function AuthProvider({children}: {children: React.ReactNode}) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const signInPromiseRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     authService
@@ -56,14 +57,23 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         }
       },
       signIn: async () => {
-        setLoading(true);
-        try {
-          const signedInUser = await authService.login();
-          setUser(signedInUser);
-          registerDeviceInBackground(signedInUser);
-        } finally {
-          setLoading(false);
+        if (signInPromiseRef.current) {
+          return signInPromiseRef.current;
         }
+
+        setLoading(true);
+        signInPromiseRef.current = authService
+          .login()
+          .then((signedInUser) => {
+            setUser(signedInUser);
+            registerDeviceInBackground(signedInUser);
+          })
+          .finally(() => {
+            setLoading(false);
+            signInPromiseRef.current = null;
+          });
+
+        return signInPromiseRef.current;
       },
       signOut: async () => {
         await authService.logout();

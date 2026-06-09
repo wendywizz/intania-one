@@ -108,6 +108,7 @@ delete env.Path;
 env.ANDROID_HOME = androidSdkRoot;
 env.ANDROID_SDK_ROOT = androidSdkRoot;
 env.EXPO_PUBLIC_API_BASE_URL = getAndroidApiBaseUrl();
+env.EXPO_PACKAGER_HOSTNAME = env.EXPO_PACKAGER_HOSTNAME || "127.0.0.1";
 env.Path = pathParts.filter(Boolean).join(path.delimiter);
 warnAboutAndroidOpenIdBrowser();
 

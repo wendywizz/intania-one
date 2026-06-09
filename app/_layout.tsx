@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
 
 import { AppFonts } from '@/constants/fonts';
@@ -38,26 +39,29 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={DefaultTheme}>
+      <SafeAreaProvider>
         <AuthProvider>
-          <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="absent" options={{ headerShown: false }} />
-            <Stack.Screen name="meeting" options={{ headerShown: false }} />
-            <Stack.Screen name="repair-computer" options={{ headerShown: false }} />
-            <Stack.Screen name="calendar" options={{ headerShown: false }} />
-            <Stack.Screen name="news-detail" options={{ headerShown: false }} />
-            <Stack.Screen name="forgot-timestamp" options={{ headerShown: false }} />
-            <Stack.Screen name="forgot-timestamp-detail" options={{ headerShown: false }} />
-            <Stack.Screen name="clear-auth" options={{ headerShown: false }} />
-            <Stack.Screen name="login-callback" options={{ headerShown: false }} />
-            <Stack.Screen name="oauth/callback" options={{ headerShown: false }} />
-            <Stack.Screen name="person-search" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: TEXT.SHARED_MODAL }} />
-          </Stack>
-          <StatusBar style="dark" />
+          <ThemeProvider value={DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="absent" options={{ headerShown: false }} />
+              <Stack.Screen name="meeting" options={{ headerShown: false }} />
+              <Stack.Screen name="repair-computer" options={{ headerShown: false }} />
+              <Stack.Screen name="calendar" options={{ headerShown: false }} />
+              <Stack.Screen name="news-detail" options={{ headerShown: false }} />
+              <Stack.Screen name="forgot-timestamp" options={{ headerShown: false }} />
+              <Stack.Screen name="forgot-timestamp-detail" options={{ headerShown: false }} />
+              <Stack.Screen name="clear-auth" options={{ headerShown: false }} />
+              <Stack.Screen name="login-callback" options={{ headerShown: false }} />
+              <Stack.Screen name="openid-webview" options={{ headerShown: false }} />
+              <Stack.Screen name="oauth/callback" options={{ headerShown: false }} />
+              <Stack.Screen name="person-search" options={{ headerShown: false }} />
+              <Stack.Screen name="modal" options={{ presentation: 'modal', title: TEXT.SHARED_MODAL }} />
+            </Stack>
+            <StatusBar style="dark" />
+          </ThemeProvider>
         </AuthProvider>
-      </ThemeProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

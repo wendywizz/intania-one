@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "com.ecs.staffbuddy",
+    "scheme": "com.ecs.intaniaSB",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -45,6 +45,7 @@
           "photosPermission": "Allow Intania Staff Buddy to access your photos so you can attach a medical certificate image."
         }
       ],
+      "expo-notifications",
       "@react-native-community/datetimepicker"
     ],
     "experiments": {

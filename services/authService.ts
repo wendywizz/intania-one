@@ -1,4 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+import {router} from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import {Platform} from 'react-native';
 import {AUTH} from '../constants/auth';
@@ -24,8 +26,27 @@ type OpenIdDiscovery = {
 };
 
 const CHROME_ANDROID_PACKAGE = 'com.android.chrome';
+const ANDROID_OPENID_BROWSER_MESSAGE = [
+  'OpenID login needs a modern Android browser on this emulator.',
+  'Install or update Chrome, or use an Android Studio emulator image with Play Store.',
+  'The current emulator WebView can fail inside PSU SSO with window.customElements.getName.',
+].join(' ');
 
 let discoveryPromise: Promise<OpenIdDiscovery> | null = null;
+let androidWebViewAuthSession:
+  | {
+      resolve: (user: AuthUser) => void;
+      reject: (error: Error) => void;
+    }
+  | null = null;
+let completedAuthCallback:
+  | {
+      code: string;
+      state: string;
+      user: AuthUser;
+    }
+  | null = null;
+let pendingAuthStates: string[] = [];
 
 function getOpenIdCorsMessage(action: string) {
   return [
@@ -218,6 +239,45 @@ function createRandomState() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+async function getPendingAuthStates() {
+  const storedState = await AsyncStorage.getItem(AUTH.storageKeys.oauthState);
+  const storedStates =
+    storedState
+      ? (() => {
+          try {
+            const parsed = JSON.parse(storedState) as unknown;
+            if (Array.isArray(parsed)) {
+              return parsed.filter((state): state is string => typeof state === 'string' && Boolean(state));
+            }
+          } catch {
+            return [storedState];
+          }
+
+          return [];
+        })()
+      : [];
+
+  return Array.from(new Set([...storedStates, ...pendingAuthStates]));
+}
+
+async function savePendingAuthState(state: string) {
+  const states = [state, ...(await getPendingAuthStates()).filter((pendingState) => pendingState !== state)].slice(0, 5);
+  pendingAuthStates = states;
+  await AsyncStorage.setItem(AUTH.storageKeys.oauthState, JSON.stringify(states));
+}
+
+async function removePendingAuthState(state: string) {
+  const states = (await getPendingAuthStates()).filter((pendingState) => pendingState !== state);
+  pendingAuthStates = states;
+
+  if (states.length) {
+    await AsyncStorage.setItem(AUTH.storageKeys.oauthState, JSON.stringify(states));
+    return;
+  }
+
+  await AsyncStorage.removeItem(AUTH.storageKeys.oauthState);
+}
+
 function getRedirectUrl() {
   if (Platform.OS === 'web') {
     return AUTH.webRedirectUrl;
@@ -231,7 +291,7 @@ function readOptionalEnv(name: string) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-async function getAndroidAuthSessionOptions(authUrl: string): Promise<WebBrowser.AuthSessionOpenOptions> {
+async function getAndroidAuthSessionOptions(authUrl: string): Promise<WebBrowser.AuthSessionOpenOptions | null> {
   const options: WebBrowser.AuthSessionOpenOptions = {
     createTask: false,
     enableDefaultShareMenuItem: false,
@@ -242,16 +302,30 @@ async function getAndroidAuthSessionOptions(authUrl: string): Promise<WebBrowser
     return options;
   }
 
+  if (Constants.appOwnership === 'expo') {
+    if (process.env.NODE_ENV !== 'production') {
+      console.info('[auth] Using in-app OpenID WebView for Android Expo Go redirect handling');
+    }
+
+    return null;
+  }
+
   const configuredBrowserPackage = readOptionalEnv('EXPO_PUBLIC_OPENID_ANDROID_BROWSER_PACKAGE');
 
   try {
     const browsers = await WebBrowser.getCustomTabsSupportingBrowsersAsync();
-    const browserPackage =
-      configuredBrowserPackage ||
-      (browsers.browserPackages.includes(CHROME_ANDROID_PACKAGE) ||
-      browsers.servicePackages.includes(CHROME_ANDROID_PACKAGE)
-        ? CHROME_ANDROID_PACKAGE
-        : browsers.preferredBrowserPackage || browsers.defaultBrowserPackage);
+    const hasChrome =
+      browsers.browserPackages.includes(CHROME_ANDROID_PACKAGE) ||
+      browsers.servicePackages.includes(CHROME_ANDROID_PACKAGE);
+    const browserPackage = configuredBrowserPackage || (hasChrome ? CHROME_ANDROID_PACKAGE : '');
+
+    if (!browserPackage) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[auth] Falling back to in-app OpenID WebView', ANDROID_OPENID_BROWSER_MESSAGE);
+      }
+
+      return null;
+    }
 
     if (browserPackage) {
       options.browserPackage = browserPackage;
@@ -268,9 +342,62 @@ async function getAndroidAuthSessionOptions(authUrl: string): Promise<WebBrowser
     if (process.env.NODE_ENV !== 'production') {
       console.warn('[auth] Unable to inspect Android Custom Tabs browsers', error);
     }
+
+    if (Platform.OS === 'android') {
+      return null;
+    }
   }
 
   return options;
+}
+
+function loginWithAndroidWebView(authUrl: string) {
+  if (androidWebViewAuthSession) {
+    androidWebViewAuthSession.reject(new Error('Login was cancelled'));
+    androidWebViewAuthSession = null;
+  }
+
+  return new Promise<AuthUser>((resolve, reject) => {
+    androidWebViewAuthSession = {resolve, reject};
+    router.push({
+      pathname: '/openid-webview',
+      params: {authUrl},
+    });
+  });
+}
+
+export async function completeAndroidWebViewLogin(callbackUrl: string) {
+  const session = androidWebViewAuthSession;
+  if (!session) {
+    return;
+  }
+
+  androidWebViewAuthSession = null;
+
+  try {
+    const url = new URL(callbackUrl);
+    const user = await completeWebLogin({
+      code: url.searchParams.get('code'),
+      error: url.searchParams.get('error'),
+      errorDescription: url.searchParams.get('error_description'),
+      state: url.searchParams.get('state'),
+    });
+
+    session.resolve(user);
+    await Promise.resolve();
+    router.replace('/');
+  } catch (error) {
+    session.reject(error instanceof Error ? error : new Error(String(error)));
+  }
+}
+
+export function cancelAndroidWebViewLogin() {
+  if (!androidWebViewAuthSession) {
+    return;
+  }
+
+  androidWebViewAuthSession.reject(new Error('Login was cancelled'));
+  androidWebViewAuthSession = null;
 }
 
 export async function createAuthorizeUrl() {
@@ -283,7 +410,7 @@ export async function createAuthorizeUrl() {
   url.searchParams.set('scope', AUTH.scopes.join(' '));
   url.searchParams.set('state', state);
 
-  await AsyncStorage.setItem(AUTH.storageKeys.oauthState, state);
+  await savePendingAuthState(state);
 
   return url.toString();
 }
@@ -410,11 +537,13 @@ export async function login(): Promise<AuthUser> {
     return new Promise<AuthUser>(() => {});
   }
 
-  const result = await WebBrowser.openAuthSessionAsync(
-    authUrl,
-    getRedirectUrl(),
-    await getAndroidAuthSessionOptions(authUrl),
-  );
+  const authSessionOptions = await getAndroidAuthSessionOptions(authUrl);
+
+  if (Platform.OS === 'android' && !authSessionOptions) {
+    return loginWithAndroidWebView(authUrl);
+  }
+
+  const result = await WebBrowser.openAuthSessionAsync(authUrl, getRedirectUrl(), authSessionOptions ?? undefined);
 
   if (result.type !== 'success') {
     throw new Error('Login was cancelled');
@@ -461,14 +590,34 @@ export async function completeWebLogin(params: {
     throw new Error('Authorization code is missing');
   }
 
-  const expectedState = await AsyncStorage.getItem(AUTH.storageKeys.oauthState);
+  const expectedStates = await getPendingAuthStates();
+  const callbackState = params.state ?? '';
 
-  if (!params.state || !expectedState || params.state !== expectedState) {
+  if (
+    completedAuthCallback &&
+    completedAuthCallback.code === params.code &&
+    completedAuthCallback.state === callbackState
+  ) {
+    return completedAuthCallback.user;
+  }
+
+  if (!callbackState || !expectedStates.includes(callbackState)) {
+    const currentUser = await getCurrentUser();
+
+    if (currentUser && expectedStates.length === 0) {
+      return currentUser;
+    }
+
     throw new Error('Invalid authorization state');
   }
 
   const user = await persistTokenUser(await exchangeCodeForToken(params.code));
-  await AsyncStorage.removeItem(AUTH.storageKeys.oauthState);
+  completedAuthCallback = {
+    code: params.code,
+    state: callbackState,
+    user,
+  };
+  await removePendingAuthState(callbackState);
 
   return user;
 }
@@ -491,6 +640,8 @@ export async function getAccessToken() {
 }
 
 export async function logout() {
+  completedAuthCallback = null;
+  pendingAuthStates = [];
   await AsyncStorage.multiRemove([
     AUTH.storageKeys.user,
     AUTH.storageKeys.accessToken,

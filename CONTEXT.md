@@ -13,7 +13,6 @@
 ### OpenID auth
 
 - The OpenID auth system must be called directly from the client. Do not call OpenID through the `scooba-service` gateway.
-- If OpenID auth is working without errors, do not edit the OpenID auth code.
 
 ### Sending requests
 
