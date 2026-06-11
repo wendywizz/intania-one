@@ -6,7 +6,6 @@ import {
     Pressable,
     RefreshControl,
     StyleSheet,
-    useWindowDimensions,
     View,
 } from "react-native";
 
@@ -28,13 +27,7 @@ import type { Absent } from "@/models/types";
 import { historyData } from "@/services/absentService";
 import { formatDateRange } from "@/utils/date-format";
 
-const ESTIMATED_ITEM_HEIGHT = 132;
-const LIST_VERTICAL_CHROME = 260;
 const HISTORY_PAGE_LENGTH = 10;
-
-function getPageSize(screenHeight: number) {
-  return HISTORY_PAGE_LENGTH;
-}
 
 function getHasMore(
   currentCount: number,
@@ -73,15 +66,6 @@ const absentTypeNameFields = [
 ];
 const startDateFields = ["startDate", "start_date", "dateStart", "date_start"];
 const endDateFields = ["endDate", "end_date", "dateEnd", "date_end"];
-const statusFields = [
-  "progressTypeName",
-  "progress_type_name",
-  "statusName",
-  "status_name",
-  "statusLabel",
-  "status_label",
-  "status",
-];
 
 function getText(item: Absent, fields: string[]) {
   for (const field of fields) {
@@ -179,9 +163,8 @@ function AbsentHistoryListItem({ item, onPress }: AbsentHistoryListItemProps) {
 }
 
 export default function HistoryScreen() {
-  const { height } = useWindowDimensions();
   const { user: authUser } = useAuth();
-  const pageSize = getPageSize(height);
+  const pageSize = HISTORY_PAGE_LENGTH;
   const [items, setItems] = useState<Absent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);

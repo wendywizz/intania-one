@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
+import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
@@ -127,19 +128,39 @@ async function getErrorMessage(response: Response) {
   }
 }
 
+async function requestPushPermission() {
+  const existing = await Notifications.getPermissionsAsync();
+  if (existing.granted || existing.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {
+    return true;
+  }
+
+  const requested = await Notifications.requestPermissionsAsync();
+  return requested.granted || requested.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
+}
+
 async function getPushToken() {
   if (Platform.OS === "web") {
     return "";
   }
 
-  try {
-    const existingPermission = await Notifications.getPermissionsAsync();
-    const permission =
-      existingPermission.granted || existingPermission.status === "granted"
-        ? existingPermission
-        : await Notifications.requestPermissionsAsync();
+  if (Constants.executionEnvironment === "storeClient" || Constants.appOwnership === "expo") {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[push] Expo Go does not support Android remote push notifications. Use a development build.");
+    }
 
-    if (!permission.granted && permission.status !== "granted") {
+    return "";
+  }
+
+  if (!Device.isDevice) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[push] physical device is required for push notifications");
+    }
+
+    return "";
+  }
+
+  try {
+    if (!(await requestPushPermission())) {
       if (process.env.NODE_ENV !== "production") {
         console.warn("[push] notification permission was not granted");
       }
@@ -147,24 +168,27 @@ async function getPushToken() {
       return "";
     }
 
-    const token = await Notifications.getDevicePushTokenAsync();
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ||
+      Constants.easConfig?.projectId;
+    const token = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
     return textValue(token.data);
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("[push] unable to get native push token", error);
+      console.warn("[push] unable to get Expo push token", error);
     }
 
     return "";
   }
 }
 
-async function registerDevice(user: AuthUser, staffId: string, deviceId: string, fcmToken: string) {
+async function registerDevice(user: AuthUser, staffId: string, deviceId: string, expoPushToken: string) {
   const deviceName = getDeviceName();
   const payload = {
     owner: staffId,
     staff_id: staffId,
     device_id: deviceId,
-    ...(fcmToken ? { fcm_token: fcmToken } : {}),
+    ...(expoPushToken ? { expo_push_token: expoPushToken } : {}),
     device_name: deviceName,
     model_name: deviceName,
     os: Platform.OS,
@@ -209,9 +233,9 @@ export async function registerLoggedInDevice(user: AuthUser) {
 export async function registerLoggedInDeviceOnce(user: AuthUser) {
   const staffId = getStaffId(user);
   const deviceId = await getDeviceId();
-  const fcmToken = await getPushToken();
+  const expoPushToken = await getPushToken();
   const ownerKey = `${staffId}:${deviceId}`;
-  const registeredOwnerKey = `${ownerKey}:${fcmToken || "no-token"}`;
+  const registeredOwnerKey = `${ownerKey}:${expoPushToken || "no-token"}`;
 
   if (staffId && (await getRegisteredDeviceOwners()).includes(registeredOwnerKey)) {
     return;
@@ -222,7 +246,7 @@ export async function registerLoggedInDeviceOnce(user: AuthUser) {
     return;
   }
 
-  await registerDevice(user, staffId, deviceId, fcmToken);
+  await registerDevice(user, staffId, deviceId, expoPushToken);
 
   if (staffId) {
     await rememberRegisteredDeviceOwner(registeredOwnerKey);

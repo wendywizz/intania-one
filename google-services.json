@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1025590840672",
+    "project_id": "intaniasb-ca4c7",
+    "storage_bucket": "intaniasb-ca4c7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1025590840672:android:b1898692316c9bb8832205",
+        "android_client_info": {
+          "package_name": "com.ecs.intaniasb"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCSM-e-t6sFFtyxNrKSUQHhw4Wsb1Zoav4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

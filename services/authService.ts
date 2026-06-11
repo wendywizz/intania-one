@@ -537,11 +537,11 @@ export async function login(): Promise<AuthUser> {
     return new Promise<AuthUser>(() => {});
   }
 
-  const authSessionOptions = await getAndroidAuthSessionOptions(authUrl);
-
-  if (Platform.OS === 'android' && !authSessionOptions) {
+  if (Platform.OS === 'android') {
     return loginWithAndroidWebView(authUrl);
   }
+
+  const authSessionOptions = await getAndroidAuthSessionOptions(authUrl);
 
   const result = await WebBrowser.openAuthSessionAsync(authUrl, getRedirectUrl(), authSessionOptions ?? undefined);
 

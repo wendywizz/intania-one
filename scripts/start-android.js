@@ -112,7 +112,8 @@ env.EXPO_PACKAGER_HOSTNAME = env.EXPO_PACKAGER_HOSTNAME || "127.0.0.1";
 env.Path = pathParts.filter(Boolean).join(path.delimiter);
 warnAboutAndroidOpenIdBrowser();
 
-const expoArgs = ["expo", "start", "--android", ...process.argv.slice(2)];
+const passthroughArgs = process.argv.slice(2).filter((arg) => arg !== "--offline");
+const expoArgs = ["expo", "run:android", ...passthroughArgs];
 const command = process.platform === "win32" ? "cmd.exe" : "npx";
 const commandArgs =
   process.platform === "win32"

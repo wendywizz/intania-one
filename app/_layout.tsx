@@ -11,6 +11,7 @@ import { TEXT } from '@/constants/text';
 
 import { AppFonts } from '@/constants/fonts';
 import { AuthProvider } from '@/context/AuthContext';
+import { registerForegroundNotificationHandler } from '@/services/notificationService';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -32,6 +33,10 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  useEffect(() => {
+    registerForegroundNotificationHandler();
+  }, []);
 
   if (!loaded) {
     return null;

@@ -9,9 +9,15 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "bundleIdentifier": "com.ecs.intaniasb",
       "supportsTablet": true
     },
     "android": {
+      "package": "com.ecs.intaniasb",
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -27,6 +33,14 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#0A7EA4",
+          "defaultChannel": "default"
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -45,7 +59,6 @@
           "photosPermission": "Allow Intania Staff Buddy to access your photos so you can attach a medical certificate image."
         }
       ],
-      "expo-notifications",
       "@react-native-community/datetimepicker"
     ],
     "experiments": {
