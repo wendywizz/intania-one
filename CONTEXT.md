@@ -1,6 +1,6 @@
 # Project Notes
 
-- Before editing this project, read this CONTEXT.md first.
+- Before editing this project, read this CONTEXT.md and AGENT.md first.
 - Before adding an external package, prefer existing project dependencies first.
 - If a new package is needed, use an official React Native or Expo package when available.
 - If there is no official package, use a well-maintained package that is among the most popular choices in the React Native Community.

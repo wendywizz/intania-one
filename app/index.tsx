@@ -1,15 +1,18 @@
 import { Link, router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/AuthContext';
 import type { AuthUser, News } from '@/models/types';
 import { staffNewsFeed } from '@/services/newsService';
+import { getUnreadNotificationCount } from '@/services/notificationService';
 import { formatDateTime } from '@/utils/date-format';
 
 const screens = [
@@ -46,6 +49,7 @@ export default function HomeScreen() {
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [authCallbackErrorMessage, setAuthCallbackErrorMessage] = useState('');
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const processedCallbackRef = useRef('');
   const { completeWebSignIn, loading: isAuthLoading, signIn, signOut, user: authUser } = useAuth();
   const completeWebSignInRef = useRef(completeWebSignIn);
@@ -112,6 +116,22 @@ export default function HomeScreen() {
     };
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      void getUnreadNotificationCount().then((count) => {
+        if (isActive) {
+          setUnreadNotificationCount(count);
+        }
+      });
+
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
   const openNews = (item: News) => {
     router.push({
       pathname: '/news-detail',
@@ -152,6 +172,10 @@ export default function HomeScreen() {
 
   const authDisplayName = getAuthDisplayName(authUser);
 
+  const openNotificationHistory = () => {
+    router.push('/notification-history');
+  };
+
   const renderAuthAction = () => {
     if (isAuthLoading) {
       return <ThemedText style={styles.authName}>...</ThemedText>;
@@ -180,13 +204,27 @@ export default function HomeScreen() {
     );
   };
 
+  const renderHomeActions = () => (
+    <View style={styles.headerActions}>
+      <Pressable
+        accessibilityLabel="Open notification history"
+        accessibilityRole="button"
+        onPress={openNotificationHistory}
+        style={styles.notificationButton}>
+        <IconSymbol name="bell.fill" size={23} color="#0A6E8A" />
+        {unreadNotificationCount > 0 ? <View style={styles.notificationBadge} /> : null}
+      </Pressable>
+      {renderAuthAction()}
+    </View>
+  );
+
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
         title={TEXT.HOME_TITLE}
         showBackButton={false}
         showHomeButton={false}
-        rightContent={renderAuthAction()}
+        rightContent={renderHomeActions()}
       />
       <ScrollView contentContainerStyle={styles.content}>
         <ThemedView style={styles.section}>
@@ -328,6 +366,31 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'right',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  notificationButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#D92D20',
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
   },
   authContainer: {
     alignItems: 'flex-end',

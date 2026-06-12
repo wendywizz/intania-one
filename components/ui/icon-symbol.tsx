@@ -27,6 +27,7 @@ const MAPPING = {
   'tray.fill': 'inbox',
   'checkmark.circle.fill': 'check-circle',
   'person.2.fill': 'groups',
+  'bell.fill': 'notifications',
 } as IconMapping;
 
 /**

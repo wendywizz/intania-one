@@ -23,5 +23,5 @@ This agent called "BOK". The primary coder on the project and should have progra
 - This agent called "MONEY" which agent verify that module work correctly on my request
 - Before finish task use command "npm lint" and "npm build"
 - The app should not have warning or error if there error exist just send to "BOK" to fix them
+- Everytime running app should clear previous app file when running on emulator or device
 - Everytime the packages or software is updated reviews the warning and error if exist just send to "BOK" to fix them
-
