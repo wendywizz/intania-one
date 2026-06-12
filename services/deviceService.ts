@@ -170,6 +170,17 @@ function emptyPushRegistrationToken(): PushRegistrationToken {
   };
 }
 
+function getPushRegistrationTokenFromDeviceToken(token: ExpoNotifications.DevicePushToken): PushRegistrationToken {
+  if (Platform.OS === "android") {
+    return {
+      expoPushToken: "",
+      fcmToken: textValue(token.data),
+    };
+  }
+
+  return emptyPushRegistrationToken();
+}
+
 async function getPushRegistrationToken(): Promise<PushRegistrationToken> {
   if (Platform.OS === "web") {
     return emptyPushRegistrationToken();
@@ -207,10 +218,11 @@ async function getPushRegistrationToken(): Promise<PushRegistrationToken> {
 
     if (Platform.OS === "android") {
       const token = await Notifications.getDevicePushTokenAsync();
-      return {
-        expoPushToken: "",
-        fcmToken: textValue(token.data),
-      };
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[push] Android FCM token", textValue(token.data));
+      }
+
+      return getPushRegistrationTokenFromDeviceToken(token);
     }
 
     const projectId =
@@ -270,7 +282,7 @@ async function registerDevice(user: AuthUser, staffId: string, deviceId: string,
   }
 }
 
-export async function registerLoggedInDevice(user: AuthUser) {
+async function registerLoggedInDeviceWithToken(user: AuthUser, pushToken: PushRegistrationToken) {
   const staffId = getStaffId(user);
   if (!staffId || !DEVICE_REGISTER_API_KEY) {
     if (process.env.NODE_ENV !== "production") {
@@ -283,13 +295,17 @@ export async function registerLoggedInDevice(user: AuthUser) {
     return;
   }
 
-  const deviceId = await getDeviceId();
-  const pushToken = await getPushRegistrationToken();
   if (!pushToken.expoPushToken && !pushToken.fcmToken && !canRegisterDeviceWithoutPushToken()) {
     return;
   }
 
+  const deviceId = await getDeviceId();
   await registerDevice(user, staffId, deviceId, pushToken);
+}
+
+export async function registerLoggedInDevice(user: AuthUser) {
+  const pushToken = await getPushRegistrationToken();
+  await registerLoggedInDeviceWithToken(user, pushToken);
 }
 
 export async function registerLoggedInDeviceOnce(user: AuthUser) {
@@ -317,4 +333,33 @@ export async function registerLoggedInDeviceOnce(user: AuthUser) {
   if (staffId) {
     await rememberRegisteredDeviceOwner(registeredOwnerKey);
   }
+}
+
+export function subscribeToLoggedInDevicePushTokenChanges(user: AuthUser) {
+  let subscription: { remove: () => void } | null = null;
+  let isDisposed = false;
+
+  void loadNotifications().then((Notifications) => {
+    if (!Notifications || isDisposed) {
+      return;
+    }
+
+    subscription = Notifications.addPushTokenListener((token) => {
+      const pushToken = getPushRegistrationTokenFromDeviceToken(token);
+      if (process.env.NODE_ENV !== "production" && pushToken.fcmToken) {
+        console.log("[push] Android FCM token refreshed", pushToken.fcmToken);
+      }
+
+      void registerLoggedInDeviceWithToken(user, pushToken).catch((error) => {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[push] device token refresh registration failed", error);
+        }
+      });
+    });
+  });
+
+  return () => {
+    isDisposed = true;
+    subscription?.remove();
+  };
 }

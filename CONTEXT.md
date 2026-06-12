@@ -1,4 +1,4 @@
-# Project Notes
+# Project Note
 
 - Before editing this project, read this CONTEXT.md and AGENT.md first.
 - Before adding an external package, prefer existing project dependencies first.
@@ -33,8 +33,8 @@ But the client does not link with the API Service directly. There is one project
 
 # Project Struction
 
-- Client (Mobile Application) on the "intania-staff-buddy": This project use React Native
-- Gateway on the "scooba-service": This project use Strapi the opensource to create API Service and database use MySQL
+This project use React Native and Expo for development
+
 
 # Module Description
 
@@ -128,10 +128,6 @@ About Push Notification the app can receive notification every environment such 
 - Every submit action that sends a POST, PUT, or DELETE request must show a YES/NO confirmation modal before sending the request.
 - After the user confirms, show the loading/prefix animation and wait 1000ms before sending the request.
 - After receiving the response data, wait 1500ms before continuing to the next operation.
-
-# Tool
-- React Native for Client called "intania-staff-buddy"
-- Strapi for Gateway Service called "scooba-service"
 
 # Other
 - Bottom tab navigation: Screens inside a bottom tab menu must load data only when their tab is active. Do not load data for inactive tabs.

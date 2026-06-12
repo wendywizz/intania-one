@@ -3,9 +3,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import type * as ExpoNotifications from "expo-notifications";
 import { Platform } from "react-native";
 
-const DEFAULT_CHANNEL_ID = "default";
+const DEFAULT_CHANNEL_ID = "push_alerts";
 const NOTIFICATION_HISTORY_STORAGE_KEY = "PUSH_NOTIFICATION_HISTORY";
 const MAX_NOTIFICATION_HISTORY_ITEMS = 80;
+const LOCAL_DISPLAY_DATA_KEY = "__localNotificationDisplay";
+const SOURCE_NOTIFICATION_ID_DATA_KEY = "__sourceNotificationId";
 
 export type PushNotificationHistoryItem = {
   id: string;
@@ -68,6 +70,14 @@ function normalizeNotificationData(data: ExpoNotifications.Notification["request
   );
 }
 
+function isLocalDisplayNotification(notification: ExpoNotifications.Notification) {
+  return notification.request.content.data?.[LOCAL_DISPLAY_DATA_KEY] === "true";
+}
+
+function getSourceNotificationId(notification: ExpoNotifications.Notification) {
+  return textValue(notification.request.content.data?.[SOURCE_NOTIFICATION_ID_DATA_KEY]);
+}
+
 function getNotificationHistoryItem(notification: ExpoNotifications.Notification, status: PushNotificationHistoryItem["status"]) {
   const content = notification.request.content;
   const receivedAt = new Date(notification.date || Date.now()).toISOString();
@@ -81,6 +91,32 @@ function getNotificationHistoryItem(notification: ExpoNotifications.Notification
     status,
     data: normalizeNotificationData(content.data),
   };
+}
+
+async function showForegroundNotificationCopy(
+  Notifications: typeof ExpoNotifications,
+  notification: ExpoNotifications.Notification,
+) {
+  if (isLocalDisplayNotification(notification)) {
+    return;
+  }
+
+  const content = notification.request.content;
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: textValue(content.title) || "Notification",
+      body: textValue(content.body),
+      data: {
+        ...normalizeNotificationData(content.data),
+        [LOCAL_DISPLAY_DATA_KEY]: "true",
+        [SOURCE_NOTIFICATION_ID_DATA_KEY]: textValue(notification.request.identifier),
+      },
+      sound: "default",
+    },
+    trigger: {
+      channelId: DEFAULT_CHANNEL_ID,
+    },
+  });
 }
 
 async function readStoredHistory() {
@@ -143,10 +179,29 @@ function registerNotificationHistoryListeners(Notifications: typeof ExpoNotifica
   listenersRegistered = true;
 
   Notifications.addNotificationReceivedListener((notification) => {
+    if (isLocalDisplayNotification(notification)) {
+      return;
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[push] notification received", {
+        id: notification.request.identifier,
+        title: notification.request.content.title,
+        body: notification.request.content.body,
+      });
+    }
+
     void upsertNotificationHistoryItem(getNotificationHistoryItem(notification, "unread"));
+    void showForegroundNotificationCopy(Notifications, notification);
   });
 
   Notifications.addNotificationResponseReceivedListener((response) => {
+    const sourceNotificationId = getSourceNotificationId(response.notification);
+    if (sourceNotificationId) {
+      void markNotificationRead(sourceNotificationId);
+      return;
+    }
+
     void upsertNotificationHistoryItem(getNotificationHistoryItem(response.notification, "read"));
   });
 }

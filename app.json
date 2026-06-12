@@ -38,7 +38,7 @@
         {
           "icon": "./assets/images/android-icon-monochrome.png",
           "color": "#0A7EA4",
-          "defaultChannel": "default"
+          "defaultChannel": "push_alerts"
         }
       ],
       [

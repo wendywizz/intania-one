@@ -1,7 +1,8 @@
 import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
+import {AppState} from 'react-native';
 import type {AuthUser} from '../models/types';
 import * as authService from '../services/authService';
-import {registerLoggedInDevice} from '../services/deviceService';
+import {registerLoggedInDevice, subscribeToLoggedInDevicePushTokenChanges} from '../services/deviceService';
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -30,6 +31,11 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const signInPromiseRef = useRef<Promise<void> | null>(null);
+  const userRef = useRef<AuthUser | null>(null);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   useEffect(() => {
     authService
@@ -40,6 +46,24 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        registerDeviceInBackground(userRef.current);
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      return undefined;
+    }
+
+    return subscribeToLoggedInDevicePushTokenChanges(user);
+  }, [user]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
