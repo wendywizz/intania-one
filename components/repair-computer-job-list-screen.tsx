@@ -1,6 +1,7 @@
 import { TEXT } from "@/constants/text";
-import { router, usePathname } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { navPush } from "@/utils/navigation";
+import { useCallback, useRef, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
@@ -92,7 +93,6 @@ export function RepairComputerJobListScreen({
   detailPathname = "/repair-computer/edit-job",
 }: RepairComputerJobListScreenProps) {
   const { height } = useWindowDimensions();
-  const pathname = usePathname();
   const { currentRole, roleSwitcher } = useRepairComputerRole();
   const screenTitle =
     title === TEXT.REPAIR_COMPUTER_NEW_JOB
@@ -105,7 +105,6 @@ export function RepairComputerJobListScreen({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState("");
-  const autoLoadedRouteRef = useRef("");
   const loadingStartRef = useRef<number | null>(null);
   const loadedStartRef = useRef<Set<number>>(new Set());
 
@@ -185,17 +184,12 @@ export function RepairComputerJobListScreen({
     pageSize,
   ]);
 
-  useEffect(() => {
-    if (pathname !== detailBackHref) {
-      return;
-    }
-
-    if (autoLoadedRouteRef.current !== pathname) {
-      autoLoadedRouteRef.current = pathname;
+  useFocusEffect(
+    useCallback(() => {
       loadedStartRef.current = new Set();
       loadFirstPage(false, true);
-    }
-  }, [detailBackHref, loadFirstPage, pathname]);
+    }, [loadFirstPage]),
+  );
 
   const openJobDetail = (job: RepairComputer) => {
     const jobId = getRepairComputerJobId(job);
@@ -204,10 +198,10 @@ export function RepairComputerJobListScreen({
       return;
     }
 
-    router.push({
+    navPush({
       pathname: detailPathname,
       params: { id: jobId, readonly: "true", backHref: detailBackHref },
-    } as Parameters<typeof router.push>[0]);
+    } as Parameters<typeof navPush>[0]);
   };
 
   const renderContent = () => {

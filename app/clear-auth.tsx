@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
+import { navReplace } from '@/utils/navigation';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
@@ -83,7 +83,7 @@ export default function ClearAuthScreen() {
       <View style={styles.content}>
         <ThemedText type="subtitle">{message}</ThemedText>
         {done ? (
-          <Pressable accessibilityRole="button" onPress={() => router.replace('/')} style={styles.button}>
+          <Pressable accessibilityRole="button" onPress={() => navReplace('/')} style={styles.button}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
               Back to home
             </ThemedText>

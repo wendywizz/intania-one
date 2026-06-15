@@ -1,5 +1,6 @@
 import { TEXT } from "@/constants/text";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { navReplace } from "@/utils/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
@@ -770,7 +771,7 @@ export default function RelaxScreen() {
             ) : null}
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.replace("/absent")}
+              onPress={() => navReplace("/absent")}
               style={styles.submitButton}
             >
               <ThemedText

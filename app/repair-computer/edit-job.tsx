@@ -1,5 +1,6 @@
 import { TEXT } from "@/constants/text";
 import { router, useLocalSearchParams } from "expo-router";
+import { navPush } from "@/utils/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -315,10 +316,10 @@ export default function RepairComputerEditJobScreen() {
       return;
     }
 
-    router.push({
+    navPush({
       pathname: "/repair-computer/worker-reject-job",
       params: { id: jobId },
-    } as Parameters<typeof router.push>[0]);
+    } as Parameters<typeof navPush>[0]);
   };
 
   const handleWorkerCloseJob = async () => {
@@ -623,10 +624,10 @@ export default function RepairComputerEditJobScreen() {
           <Pressable
             accessibilityRole="button"
             onPress={() => {
-              router.push({
+              navPush({
                 pathname: "/repair-computer/operate-job",
                 params: { id: jobId },
-              } as Parameters<typeof router.push>[0]);
+              } as Parameters<typeof navPush>[0]);
             }}
             style={styles.operateButton}
           >

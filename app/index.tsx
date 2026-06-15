@@ -1,6 +1,6 @@
-import { Link, router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { TEXT } from '@/constants/text';
 
@@ -11,18 +11,25 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/AuthContext';
 import type { AuthUser, News } from '@/models/types';
-import { staffNewsFeed } from '@/services/newsService';
 import { getUnreadNotificationCount } from '@/services/notificationService';
+import { staffNewsFeed } from '@/services/newsService';
 import { formatDateTime } from '@/utils/date-format';
+import { acquireNavLock, navPush } from '@/utils/navigation';
+
+const CONTENT_PADDING = 32;
 
 const screens = [
   { title: TEXT.ABSENT_TITLE, href: '/absent' },
   { title: TEXT.FORGOT_TIMESTAMP_TITLE, href: '/forgot-timestamp' },
   { title: TEXT.MEETING_MENU_TITLE, href: '/meeting' },
-  { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: '/repair-computer/current-job' },
+  { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: '/repair-computer' },
   { title: TEXT.CALENDAR_TITLE, href: '/calendar' },
   { title: TEXT.PERSON_SEARCH_TITLE, href: '/person-search' },
 ] as const;
+
+function getNewsKey(item: News, index: number) {
+  return `${String(item.guid || item.link || item.title)}-${index}`;
+}
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -44,12 +51,14 @@ export default function HomeScreen() {
     error_description?: string;
     state?: string;
   }>();
-  const [newsItems, setNewsItems] = useState<News[]>([]);
-  const [isNewsLoading, setIsNewsLoading] = useState(true);
+  const { width: screenWidth } = useWindowDimensions();
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [authCallbackErrorMessage, setAuthCallbackErrorMessage] = useState('');
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [newsItems, setNewsItems] = useState<News[]>([]);
+  const [isNewsLoading, setIsNewsLoading] = useState(false);
+  const [newsCarouselIndex, setNewsCarouselIndex] = useState(0);
   const processedCallbackRef = useRef('');
   const { completeWebSignIn, loading: isAuthLoading, signIn, signOut, user: authUser } = useAuth();
   const completeWebSignInRef = useRef(completeWebSignIn);
@@ -96,26 +105,6 @@ export default function HomeScreen() {
     };
   }, [params.code, params.error, params.error_description, params.state]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadNews() {
-      setIsNewsLoading(true);
-      const feedItems = await staffNewsFeed();
-
-      if (isMounted) {
-        setNewsItems(feedItems.slice(0, 3));
-        setIsNewsLoading(false);
-      }
-    }
-
-    loadNews();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -126,25 +115,23 @@ export default function HomeScreen() {
         }
       });
 
+      setIsNewsLoading(true);
+      setNewsCarouselIndex(0);
+      void staffNewsFeed().then((items) => {
+        if (!isActive) return;
+        setNewsItems(items);
+        setIsNewsLoading(false);
+      }).catch(() => {
+        if (!isActive) return;
+        setNewsItems([]);
+        setIsNewsLoading(false);
+      });
+
       return () => {
         isActive = false;
       };
     }, []),
   );
-
-  const openNews = (item: News) => {
-    router.push({
-      pathname: '/news-detail',
-      params: {
-        title: item.title,
-        link: item.link,
-        guid: item.guid,
-        description: item.description,
-        category: item.category,
-        pubDate: item.pubDate,
-      },
-    });
-  };
 
   const handleLogin = async () => {
     try {
@@ -170,10 +157,89 @@ export default function HomeScreen() {
     }
   };
 
+  const openNews = useCallback((item: News) => {
+    navPush({
+      pathname: '/news-detail',
+      params: {
+        title: item.title,
+        link: item.link,
+        guid: item.guid,
+        description: item.description,
+        category: item.category,
+        pubDate: item.pubDate,
+      },
+    } as Parameters<typeof navPush>[0]);
+  }, []);
+
   const authDisplayName = getAuthDisplayName(authUser);
 
+  if (isAuthLoading) {
+    return (
+      <ThemedView style={styles.container}>
+        <LoadingAnimate title={TEXT.AUTH_SIGNING_IN_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
+      </ThemedView>
+    );
+  }
+
+  if (!authUser) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={styles.welcomeContent}>
+          <View style={styles.welcomeTextGroup}>
+            <ThemedText type="title" style={styles.welcomeTitle}>
+              {TEXT.HOME_TITLE}
+            </ThemedText>
+            <ThemedText style={styles.welcomeDesc}>ระบบสำหรับบุคลากรมหาวิทยาลัยสงขลานครินทร์</ThemedText>
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleLogin}
+            style={styles.welcomeLoginButton}
+          >
+            <ThemedText
+              lightColor="#FFFFFF"
+              darkColor="#FFFFFF"
+              type="defaultSemiBold"
+              style={styles.welcomeLoginText}
+            >
+              {TEXT.AUTH_LOGIN}
+            </ThemedText>
+          </Pressable>
+        </View>
+
+        <Modal
+          transparent
+          visible={Boolean(authCallbackErrorMessage)}
+          animationType="fade"
+          onRequestClose={() => setAuthCallbackErrorMessage('')}>
+          <Pressable style={styles.backdrop} onPress={() => setAuthCallbackErrorMessage('')}>
+            <Pressable accessibilityRole="none" onPress={(event) => event.stopPropagation()}>
+              <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
+                <ThemedText type="subtitle">{TEXT.AUTH_LOGIN_FAILED}</ThemedText>
+                <ThemedText style={styles.confirmMessage}>{authCallbackErrorMessage}</ThemedText>
+                <View style={styles.confirmActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setAuthCallbackErrorMessage('')}
+                    style={styles.confirmLogoutButton}>
+                    <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                      OK
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              </ThemedView>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      </ThemedView>
+    );
+  }
+
+  const displayedNews = newsItems.slice(0, 3);
+
   const openNotificationHistory = () => {
-    router.push('/notification-history');
+    navPush('/notification-history');
   };
 
   const renderAuthAction = () => {
@@ -227,53 +293,80 @@ export default function HomeScreen() {
         rightContent={renderHomeActions()}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        <ThemedView style={styles.section}>
+        <View style={styles.newsSectionHeader}>
           <ThemedText type="subtitle">{TEXT.HOME_NEWS_SECTION_TITLE}</ThemedText>
-          <ThemedView style={styles.newsList}>
-            {isNewsLoading ? (
-              <ThemedView style={styles.newsCard} lightColor="#FFFFFF" darkColor="#1F2B30">
-                <LoadingAnimate fill={false} title={TEXT.HOME_LOADING_NEWS_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
+          <Pressable accessibilityRole="button" onPress={() => navPush('/news')} style={styles.viewAllButton}>
+            <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.viewAllText}>
+              ดูทั้งหมด
+            </ThemedText>
+          </Pressable>
+        </View>
+
+        <View style={styles.newsCarouselWrapper}>
+          {isNewsLoading ? (
+            <View style={[styles.newsCarouselPage, { width: screenWidth }]}>
+              <ThemedView style={styles.newsCarouselCard} lightColor="#E4F0F6" darkColor="#1D2B32">
+                <ActivityIndicator color="#0A6E8A" />
               </ThemedView>
-            ) : newsItems.length > 0 ? (
-              newsItems.map((item, index) => (
-                <Pressable key={`${String(item.guid || item.link || item.title)}-${index}`} onPress={() => openNews(item)}>
-                  <ThemedView style={styles.newsCard} lightColor="#FFFFFF" darkColor="#1F2B30">
-                    <ThemedText type="defaultSemiBold" numberOfLines={2}>
+            </View>
+          ) : displayedNews.length === 0 ? (
+            <View style={[styles.newsCarouselPage, { width: screenWidth }]}>
+              <ThemedView style={styles.newsCarouselCard} lightColor="#E4F0F6" darkColor="#1D2B32">
+                <ThemedText style={styles.newsEmptyText}>{TEXT.HOME_NO_NEWS_MESSAGE}</ThemedText>
+              </ThemedView>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) => {
+                const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+                setNewsCarouselIndex(Math.max(0, Math.min(idx, displayedNews.length - 1)));
+              }}
+            >
+              {displayedNews.map((item, index) => (
+                <Pressable
+                  key={getNewsKey(item, index)}
+                  accessibilityRole="button"
+                  style={[styles.newsCarouselPage, { width: screenWidth }]}
+                  onPress={() => openNews(item)}
+                >
+                  <ThemedView style={styles.newsCarouselCard} lightColor="#E4F0F6" darkColor="#1D2B32">
+                    <ThemedText type="defaultSemiBold" numberOfLines={2} style={styles.newsCarouselTitle}>
                       {item.title}
                     </ThemedText>
-                    <ThemedText style={styles.newsMeta}>
-                      {[item.category, item.pubDate ? formatDateTime(item.pubDate) : '']
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </ThemedText>
+                    {(item.category || item.pubDate) ? (
+                      <ThemedText style={styles.newsCarouselMeta}>
+                        {[item.category, item.pubDate ? formatDateTime(item.pubDate) : ''].filter(Boolean).join(' · ')}
+                      </ThemedText>
+                    ) : null}
                   </ThemedView>
                 </Pressable>
-              ))
-            ) : (
-              <ThemedView style={styles.newsCard} lightColor="#FFFFFF" darkColor="#1F2B30">
-                <ThemedText>{TEXT.HOME_NO_NEWS_MESSAGE}</ThemedText>
-              </ThemedView>
-            )}
-          </ThemedView>
-        </ThemedView>
-
-        {authUser ? (
-          <>
-            <ThemedView style={styles.section}>
-              <ThemedText type="subtitle">{TEXT.HOME_MENU_SECTION_TITLE}</ThemedText>
-              <ThemedText style={styles.description}>{TEXT.HOME_MENU_SECTION_DESCRIPTION}</ThemedText>
-            </ThemedView>
-            <ThemedView style={styles.grid}>
-              {screens.map((screen, index) => (
-                <Link key={`${String(screen.href)}-${index}`} href={screen.href as Parameters<typeof Link>[0]['href']} asChild>
-                  <TouchableOpacity style={styles.card}>
-                    <ThemedText type="subtitle">{screen.title}</ThemedText>
-                  </TouchableOpacity>
-                </Link>
               ))}
-            </ThemedView>
-          </>
+            </ScrollView>
+          )}
+        </View>
+
+        {displayedNews.length > 1 ? (
+          <View style={styles.dotsRow}>
+            {displayedNews.map((_, i) => (
+              <View key={i} style={[styles.dot, i === newsCarouselIndex ? styles.dotActive : undefined]} />
+            ))}
+          </View>
         ) : null}
+
+        <ThemedView style={styles.section}>
+          <ThemedText type="subtitle">{TEXT.HOME_MENU_SECTION_TITLE}</ThemedText>
+          <ThemedText style={styles.description}>{TEXT.HOME_MENU_SECTION_DESCRIPTION}</ThemedText>
+        </ThemedView>
+        <ThemedView style={styles.grid}>
+          {screens.map((screen, index) => (
+            <Pressable key={`${String(screen.href)}-${index}`} style={styles.card} onPress={() => navPush(screen.href as Parameters<typeof navPush>[0])}>
+              <ThemedText type="subtitle">{screen.title}</ThemedText>
+            </Pressable>
+          ))}
+        </ThemedView>
       </ScrollView>
 
       <Modal
@@ -319,30 +412,6 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      <Modal
-        transparent
-        visible={Boolean(authCallbackErrorMessage)}
-        animationType="fade"
-        onRequestClose={() => setAuthCallbackErrorMessage('')}>
-        <Pressable style={styles.backdrop} onPress={() => setAuthCallbackErrorMessage('')}>
-          <Pressable accessibilityRole="none" onPress={(event) => event.stopPropagation()}>
-            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
-              <ThemedText type="subtitle">{TEXT.AUTH_LOGIN_FAILED}</ThemedText>
-              <ThemedText style={styles.confirmMessage}>{authCallbackErrorMessage}</ThemedText>
-              <View style={styles.confirmActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setAuthCallbackErrorMessage('')}
-                  style={styles.confirmLogoutButton}>
-                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                    OK
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </ThemedView>
   );
 }
@@ -353,7 +422,7 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: 16,
-    padding: 32,
+    padding: CONTENT_PADDING,
   },
   section: {
     marginBottom: 16,
@@ -423,22 +492,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  newsList: {
-    gap: 10,
-    marginTop: 12,
-  },
-  newsCard: {
-    borderRadius: 8,
-    padding: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
-  },
-  newsMeta: {
-    marginTop: 4,
-    color: '#687076',
-    fontSize: 12,
-    lineHeight: 18,
-  },
   backdrop: {
     flex: 1,
     alignItems: 'center',
@@ -495,6 +548,39 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#D7E6EC',
   },
+  welcomeContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    gap: 36,
+  },
+  welcomeTextGroup: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  welcomeTitle: {
+    textAlign: 'center',
+  },
+  welcomeDesc: {
+    color: '#687076',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  welcomeLoginButton: {
+    minHeight: 52,
+    minWidth: 220,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#0A6E8A',
+    paddingHorizontal: 32,
+  },
+  welcomeLoginText: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -511,5 +597,67 @@ const styles = StyleSheet.create({
     boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
     elevation: 3,
     marginBottom: 12,
+  },
+  newsSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  viewAllButton: {
+    paddingLeft: 8,
+    paddingVertical: 4,
+  },
+  viewAllText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  newsCarouselWrapper: {
+    marginHorizontal: -CONTENT_PADDING,
+  },
+  newsCarouselPage: {
+    paddingHorizontal: CONTENT_PADDING,
+  },
+  newsCarouselCard: {
+    borderRadius: 16,
+    padding: 16,
+    minHeight: 110,
+    justifyContent: 'center',
+    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
+    elevation: 3,
+  },
+  newsCarouselTitle: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  newsCarouselMeta: {
+    marginTop: 6,
+    color: '#687076',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  newsEmptyText: {
+    color: '#687076',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: -4,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#B9CDD6',
+  },
+  dotActive: {
+    width: 18,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#0A6E8A',
   },
 });

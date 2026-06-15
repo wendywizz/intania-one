@@ -262,6 +262,7 @@ export async function historyData(
     start,
     length,
   });
+  
   const jsonData = await requestJson(url, { method: "GET" });
   ensureSuccess(jsonData);
   const data = Array.isArray(jsonData.data) ? (jsonData.data as Absent[]) : [];

@@ -1,8 +1,10 @@
 import { TEXT } from "@/constants/text";
 import { router, useFocusEffect } from "expo-router";
+import { navReplace } from "@/utils/navigation";
 import { useCallback, useState } from "react";
 import {
     ActivityIndicator,
+    Modal,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -58,6 +60,7 @@ export default function RepairComputerInformScreen() {
   const [canInform, setCanInform] = useState(false);
   const [canInformMessage, setCanInformMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -118,7 +121,7 @@ export default function RepairComputerInformScreen() {
     });
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (isSubmitting) {
       return;
     }
@@ -141,6 +144,11 @@ export default function RepairComputerInformScreen() {
       return;
     }
 
+    setShowConfirm(true);
+  };
+
+  const handleConfirm = async () => {
+    setShowConfirm(false);
     setIsSubmitting(true);
 
     try {
@@ -298,7 +306,7 @@ export default function RepairComputerInformScreen() {
 
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.replace("/repair-computer/current-job")}
+            onPress={() => navReplace("/repair-computer/current-job")}
             style={styles.secondaryButton}
           >
             <ThemedText
@@ -311,6 +319,56 @@ export default function RepairComputerInformScreen() {
           </Pressable>
         </View>
       )}
+
+      <Modal
+        transparent
+        visible={showConfirm}
+        animationType="fade"
+        onRequestClose={() => setShowConfirm(false)}
+      >
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setShowConfirm(false)}
+        >
+          <Pressable>
+            <ThemedView
+              style={styles.confirmModal}
+              lightColor="#FFFFFF"
+              darkColor="#151718"
+            >
+              <ThemedText type="subtitle">
+                {TEXT.REPAIR_COMPUTER_INFORM}
+              </ThemedText>
+              <ThemedText style={styles.confirmMessage}>
+                Are you sure you want to submit this repair computer request?
+              </ThemedText>
+
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setShowConfirm(false)}
+                  style={styles.cancelButton}
+                >
+                  <ThemedText type="defaultSemiBold">{TEXT.CANCEL}</ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={handleConfirm}
+                  style={styles.confirmSubmitButton}
+                >
+                  <ThemedText
+                    lightColor="#FFFFFF"
+                    darkColor="#FFFFFF"
+                    type="defaultSemiBold"
+                  >
+                    Confirm
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </ThemedView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <AppToast
         message={toastMessage}
@@ -385,5 +443,46 @@ const styles = StyleSheet.create({
     borderColor: "#0A6E8A",
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 18,
+  },
+  backdrop: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    padding: 24,
+  },
+  confirmModal: {
+    width: "100%",
+    maxWidth: 420,
+    borderRadius: 8,
+    padding: 18,
+  },
+  confirmMessage: {
+    color: "#687076",
+    lineHeight: 20,
+    marginTop: 10,
+  },
+  confirmActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 18,
+  },
+  cancelButton: {
+    minHeight: 46,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#BFD2DA",
+    backgroundColor: "#FFFFFF",
+  },
+  confirmSubmitButton: {
+    minHeight: 46,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "#0A6E8A",
   },
 });

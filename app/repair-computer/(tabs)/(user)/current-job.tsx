@@ -1,6 +1,7 @@
 import { TEXT } from "@/constants/text";
-import { router, usePathname } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { navPush } from "@/utils/navigation";
+import { useCallback, useRef, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
@@ -92,7 +93,6 @@ function blurActiveWebElement() {
 
 export default function RepairComputerCurrentJobScreen() {
   const { height } = useWindowDimensions();
-  const pathname = usePathname();
   const { user: authUser } = useAuth();
   const { roleSwitcher } = useRepairComputerRole();
   const staffId = authUser?.staffId || USER_ID;
@@ -107,7 +107,6 @@ export default function RepairComputerCurrentJobScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "">("");
-  const autoLoadedRouteRef = useRef("");
   const loadingStartRef = useRef<number | null>(null);
   const loadedStartRef = useRef<Set<number>>(new Set());
 
@@ -191,16 +190,11 @@ export default function RepairComputerCurrentJobScreen() {
     staffId,
   ]);
 
-  useEffect(() => {
-    if (pathname !== "/repair-computer/current-job") {
-      return;
-    }
-
-    if (autoLoadedRouteRef.current !== pathname) {
-      autoLoadedRouteRef.current = pathname;
+  useFocusEffect(
+    useCallback(() => {
       loadFirstPage(false, true);
-    }
-  }, [loadFirstPage, pathname]);
+    }, [loadFirstPage]),
+  );
 
   const openDeleteConfirm = (job: RepairComputer) => {
     blurActiveWebElement();
@@ -217,13 +211,13 @@ export default function RepairComputerCurrentJobScreen() {
     }
 
     blurActiveWebElement();
-    router.push({
+    navPush({
       pathname: "/repair-computer/edit-job",
       params: {
         id: jobId,
         ...(canEditJob(job) ? {} : { readonly: "true" }),
       },
-    } as Parameters<typeof router.push>[0]);
+    } as Parameters<typeof navPush>[0]);
   };
 
   const closeDeleteConfirm = () => {
@@ -237,6 +231,8 @@ export default function RepairComputerCurrentJobScreen() {
 
   const handleDelete = async () => {
     const jobId = selectedJob ? getRepairComputerJobId(selectedJob) : "";
+    console.log("[handleDelete] selectedJob keys:", selectedJob ? Object.keys(selectedJob) : null);
+    console.log("[handleDelete] jobId:", JSON.stringify(jobId));
 
     if (!jobId || isDeleting) {
       return;

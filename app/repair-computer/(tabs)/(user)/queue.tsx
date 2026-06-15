@@ -1,6 +1,6 @@
 import { TEXT } from "@/constants/text";
-import { usePathname } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useRef, useState } from "react";
 import {
     FlatList,
     Image,
@@ -189,23 +189,17 @@ function WorkerQueueListItem({
 }
 
 export default function RepairComputerQueueScreen() {
-  const pathname = usePathname();
   const { roleSwitcher } = useRepairComputerRole();
   const [workers, setWorkers] = useState<WorkerQueueItem[]>([]);
   const [failedPhotoIds, setFailedPhotoIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const autoLoadedRouteRef = useRef("");
   const isLoadingQueueRef = useRef(false);
 
   const loadQueue = useCallback(
-    async (showRefreshing = false, forceReload = false) => {
-      if (
-        isLoadingQueueRef.current ||
-        (!forceReload &&
-          autoLoadedRouteRef.current === "/repair-computer/queue")
-      ) {
+    async (showRefreshing = false) => {
+      if (isLoadingQueueRef.current) {
         return;
       }
 
@@ -236,15 +230,11 @@ export default function RepairComputerQueueScreen() {
     [],
   );
 
-  useEffect(() => {
-    if (
-      pathname === "/repair-computer/queue" &&
-      autoLoadedRouteRef.current !== pathname
-    ) {
-      autoLoadedRouteRef.current = pathname;
-      loadQueue(false, true);
-    }
-  }, [loadQueue, pathname]);
+  useFocusEffect(
+    useCallback(() => {
+      loadQueue();
+    }, [loadQueue]),
+  );
 
   const handlePhotoError = (workerId: string) => {
     setFailedPhotoIds((currentIds) => {
@@ -275,7 +265,7 @@ export default function RepairComputerQueueScreen() {
           </ThemedText>
           <Pressable
             accessibilityRole="button"
-            onPress={() => loadQueue(false, true)}
+            onPress={() => loadQueue()}
             style={styles.retryButton}
           >
             <ThemedText
@@ -298,7 +288,7 @@ export default function RepairComputerQueueScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => loadQueue(true, true)}
+            onRefresh={() => loadQueue(true)}
           />
         }
         renderItem={({ item }) => (

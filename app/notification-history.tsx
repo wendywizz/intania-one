@@ -1,4 +1,4 @@
-import { router, type Href } from "expo-router";
+import { type Href } from "expo-router";
 import { useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
@@ -14,6 +14,7 @@ import {
   type PushNotificationHistoryItem,
 } from "@/services/notificationService";
 import { formatDateTime } from "@/utils/date-format";
+import { navPush } from "@/utils/navigation";
 
 function getTargetUrl(item: PushNotificationHistoryItem) {
   const url = item.data?.url;
@@ -49,7 +50,7 @@ export default function NotificationHistoryScreen() {
 
     const targetUrl = getTargetUrl(item);
     if (targetUrl) {
-      router.push(targetUrl as Href);
+      navPush(targetUrl as Href);
     }
   };
 

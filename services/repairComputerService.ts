@@ -100,13 +100,11 @@ export function closeJob(id: string) {
 }
 
 export async function removeJob(id: string): Promise<MutationResponse> {
-  const url = createRepairComputerUrl("/inform");
+  // Send id as a query param — Strapi/Koa does not parse DELETE request bodies
+  const url = createRepairComputerUrl("/inform", { id });
+  console.log("[removeJob] id:", JSON.stringify(id), "url:", url);
   const response = await fetchWithApiDelay(url, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({ id }).toString(),
   });
   const text = await response.text();
 

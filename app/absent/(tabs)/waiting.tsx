@@ -1,4 +1,5 @@
-import { router, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
+import { navPush } from "@/utils/navigation";
 import { useCallback, useState } from "react";
 import {
     Pressable,
@@ -208,7 +209,7 @@ export default function WaitingScreen() {
     const type = getAbsentType(item);
     const pathname = getEditPathname(type);
 
-    router.push({
+    navPush({
       pathname,
       params: {
         id: getAbsentId(item),
@@ -217,7 +218,7 @@ export default function WaitingScreen() {
         source: "waiting",
         item: encodeURIComponent(JSON.stringify(item)),
       },
-    } as Parameters<typeof router.push>[0]);
+    } as Parameters<typeof navPush>[0]);
   }, []);
 
   const renderContent = () => {

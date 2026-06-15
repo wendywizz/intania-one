@@ -1,4 +1,4 @@
-import { Link, router, type Href } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { TEXT } from '@/constants/text';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { acquireNavLock, navReplace } from '@/utils/navigation';
 
 type NavTopBarProps = {
   title: string;
@@ -28,6 +29,8 @@ export function NavTopBar({
   const insets = useSafeAreaInsets();
 
   const goBack = () => {
+    if (!acquireNavLock()) return;
+
     if (onBackPress) {
       onBackPress();
       return;
@@ -73,11 +76,9 @@ export function NavTopBar({
         {rightContent ? (
           rightContent
         ) : showHomeButton ? (
-          <Link href="/" asChild>
-            <Pressable accessibilityLabel={TEXT.NAV_HOME_ACCESSIBILITY_LABEL} accessibilityRole="button" style={styles.iconButton}>
-              <IconSymbol name="house.fill" size={23} color="#0A6E8A" />
-            </Pressable>
-          </Link>
+          <Pressable accessibilityLabel={TEXT.NAV_HOME_ACCESSIBILITY_LABEL} accessibilityRole="button" onPress={() => navReplace('/')} style={styles.iconButton}>
+            <IconSymbol name="house.fill" size={23} color="#0A6E8A" />
+          </Pressable>
         ) : (
           <View style={styles.iconButtonSpacer} />
         )}

@@ -1,5 +1,6 @@
 import { TEXT } from "@/constants/text";
 import { router, useLocalSearchParams } from "expo-router";
+import { navPush } from "@/utils/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -300,7 +301,7 @@ export default function ForemanJobDetailScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => {
-                router.push({
+                navPush({
                   pathname: "/repair-computer/assign-job",
                   params: {
                     id: jobId,
@@ -322,7 +323,7 @@ export default function ForemanJobDetailScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => {
-                router.push({
+                navPush({
                   pathname: "/repair-computer/reject-job",
                   params: {
                     id: jobId,

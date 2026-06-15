@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { navReplace } from '@/utils/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { TEXT } from '@/constants/text';
@@ -74,7 +75,7 @@ export default function LoginCallbackScreen() {
           <LoadingAnimate title={TEXT.AUTH_SIGNING_IN_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
         )}
         {errorMessage ? (
-          <Pressable accessibilityRole="button" onPress={() => router.replace('/')} style={styles.button}>
+          <Pressable accessibilityRole="button" onPress={() => navReplace('/')} style={styles.button}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
               {TEXT.SHARED_BACK_TO_HOME_THAI}</ThemedText>
           </Pressable>

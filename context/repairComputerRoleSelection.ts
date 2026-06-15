@@ -12,7 +12,16 @@ export const repairComputerRoleOptions = [
   { label: TEXT.REPAIR_COMPUTER_FOREMAN, value: PRIVILEGE_RC_FOREMAN },
 ] as const;
 
+const privilegeRoleCache = new Map<string, RepairComputerRole>();
 const selectedRoleCache = new Map<string, RepairComputerRole>();
+
+export function getCachedRepairComputerPrivilege(userId: string): RepairComputerRole | undefined {
+  return privilegeRoleCache.get(userId);
+}
+
+export function setCachedRepairComputerPrivilege(userId: string, role: RepairComputerRole) {
+  privilegeRoleCache.set(userId, role);
+}
 
 export function getAccessibleRepairComputerRoleOptions(role: RepairComputerRole) {
   if (role === PRIVILEGE_RC_FOREMAN) {

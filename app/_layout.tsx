@@ -53,6 +53,7 @@ export default function RootLayout() {
               <Stack.Screen name="meeting" options={{ headerShown: false }} />
               <Stack.Screen name="repair-computer" options={{ headerShown: false }} />
               <Stack.Screen name="calendar" options={{ headerShown: false }} />
+              <Stack.Screen name="news" options={{ headerShown: false }} />
               <Stack.Screen name="news-detail" options={{ headerShown: false }} />
               <Stack.Screen name="notification-history" options={{ headerShown: false }} />
               <Stack.Screen name="forgot-timestamp" options={{ headerShown: false }} />

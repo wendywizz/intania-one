@@ -1,6 +1,7 @@
 import { TEXT } from "@/constants/text";
-import { router, usePathname } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { navPush } from "@/utils/navigation";
+import { useCallback, useRef, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
@@ -56,7 +57,6 @@ function getHasMore(
 
 export default function RepairComputerHistoryScreen() {
   const { height } = useWindowDimensions();
-  const pathname = usePathname();
   const { user: authUser } = useAuth();
   const { roleSwitcher } = useRepairComputerRole();
   const staffId = authUser?.staffId || USER_ID;
@@ -67,7 +67,6 @@ export default function RepairComputerHistoryScreen() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState("");
-  const autoLoadedRouteRef = useRef("");
   const loadingStartRef = useRef<number | null>(null);
   const loadedStartRef = useRef<Set<number>>(new Set());
 
@@ -161,16 +160,11 @@ export default function RepairComputerHistoryScreen() {
     staffId,
   ]);
 
-  useEffect(() => {
-    if (pathname !== "/repair-computer/history") {
-      return;
-    }
-
-    if (autoLoadedRouteRef.current !== pathname) {
-      autoLoadedRouteRef.current = pathname;
+  useFocusEffect(
+    useCallback(() => {
       loadFirstPage(false, true);
-    }
-  }, [loadFirstPage, pathname]);
+    }, [loadFirstPage]),
+  );
 
   const openJobDetail = (job: RepairComputer) => {
     const jobId = getRepairComputerJobId(job);
@@ -179,14 +173,14 @@ export default function RepairComputerHistoryScreen() {
       return;
     }
 
-    router.push({
+    navPush({
       pathname: "/repair-computer/edit-job",
       params: {
         id: jobId,
         readonly: "true",
         backHref: "/repair-computer/history",
       },
-    } as Parameters<typeof router.push>[0]);
+    } as Parameters<typeof navPush>[0]);
   };
 
   const renderContent = () => {

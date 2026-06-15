@@ -1,4 +1,5 @@
 import { Tabs, router, usePathname } from 'expo-router';
+import { navPush } from '@/utils/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { TEXT } from '@/constants/text';
@@ -22,14 +23,14 @@ import { RepairComputerRoleProvider } from '@/context/RepairComputerRoleContext'
 import {
   canAccessRepairComputerRole,
   getAccessibleRepairComputerRoleOptions,
+  getCachedRepairComputerPrivilege,
   getRepairComputerSelectedRole,
   repairComputerRoleOptions,
+  setCachedRepairComputerPrivilege,
   setRepairComputerSelectedRole,
 } from '@/context/repairComputerRoleSelection';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { checkPrivilege } from '@/services/repairComputerService';
-
-const privilegeRoleCache = new Map<string, RepairComputerRole>();
 
 function normalizeRepairComputerRole(privilege?: string): RepairComputerRole {
   if (privilege === PRIVILEGE_RC_WORKER || privilege === PRIVILEGE_RC_FOREMAN) {
@@ -114,12 +115,11 @@ export default function RepairComputerTabLayout() {
   const pathname = usePathname();
   const { user: authUser } = useAuth();
   const userId = authUser?.staffId || USER_ID;
-  const cachedPrivilegeRole = privilegeRoleCache.get(userId) ?? REPAIR_COMPUTER_DEFAULT_ROLE;
+  const cachedPrivilegeRole = getCachedRepairComputerPrivilege(userId) ?? REPAIR_COMPUTER_DEFAULT_ROLE;
   const cachedCurrentRole = getCurrentRoleFromCache(userId, cachedPrivilegeRole);
   const [privilegeRole, setPrivilegeRole] = useState<RepairComputerRole>(cachedPrivilegeRole);
   const [currentRole, setCurrentRole] = useState<RepairComputerRole>(cachedCurrentRole);
-  const [roleResetKey, setRoleResetKey] = useState(0);
-  const [isCheckingPrivilege, setIsCheckingPrivilege] = useState(!privilegeRoleCache.has(userId));
+  const [isCheckingPrivilege, setIsCheckingPrivilege] = useState(!getCachedRepairComputerPrivilege(userId));
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const lastRedirectRef = useRef('');
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -157,7 +157,7 @@ export default function RepairComputerTabLayout() {
     let isMounted = true;
 
     async function loadPrivilege() {
-      const cachedUserRole = privilegeRoleCache.get(userId);
+      const cachedUserRole = getCachedRepairComputerPrivilege(userId);
 
       if (cachedUserRole) {
         const cachedCurrentUserRole = getCurrentRoleFromCache(userId, cachedUserRole);
@@ -178,7 +178,7 @@ export default function RepairComputerTabLayout() {
       }
 
       setPrivilegeRole(nextRole);
-      privilegeRoleCache.set(userId, nextRole);
+      setCachedRepairComputerPrivilege(userId, nextRole);
       const nextCurrentRole = getCurrentRoleFromCache(userId, nextRole);
       if (!switchingRoleRef.current) {
         setCurrentRole(nextCurrentRole);
@@ -260,10 +260,8 @@ export default function RepairComputerTabLayout() {
 
     setRepairComputerSelectedRole(userId, role);
     switchingRoleRef.current = role;
-    setRoleResetKey((key) => key + 1);
     setCurrentRole(role);
-    const nextRoute = getDefaultRoute(role);
-    replaceRoute(nextRoute);
+    // Navigation is handled exclusively by the routing useEffect to avoid double-triggering
   };
 
   const roleSwitcher = canSwitchRole ? (
@@ -318,7 +316,7 @@ export default function RepairComputerTabLayout() {
     currentRole === PRIVILEGE_RC_USER && pathname === '/repair-computer/current-job' ? (
       <Pressable
         accessibilityRole="button"
-        onPress={() => router.push('/repair-computer/inform' as Parameters<typeof router.push>[0])}
+        onPress={() => navPush('/repair-computer/inform' as Parameters<typeof navPush>[0])}
         style={styles.switchButton}>
         <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.switchButtonText}>
           {TEXT.REPAIR_COMPUTER_INFORM}</ThemedText>
@@ -333,11 +331,9 @@ export default function RepairComputerTabLayout() {
     ) : (
       roleSwitcher ?? informAction
     );
-  const tabsResetKey = `${userId}-${currentRole}-${roleResetKey}`;
-
   return (
     <RepairComputerRoleProvider currentRole={currentRole} roleSwitcher={topRightAction}>
-      <View key={tabsResetKey} style={styles.container}>
+      <View style={styles.container}>
         <Tabs
           screenOptions={{
             tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,

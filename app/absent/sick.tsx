@@ -4,6 +4,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { Image } from "expo-image";
 import { openBrowserAsync } from "expo-web-browser";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { navReplace } from "@/utils/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -797,7 +798,7 @@ export default function SickScreen() {
             ) : null}
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.replace("/absent")}
+              onPress={() => navReplace("/absent")}
               style={styles.submitButton}
             >
               <ThemedText
