@@ -28,6 +28,10 @@ const MAPPING = {
   'checkmark.circle.fill': 'check-circle',
   'person.2.fill': 'groups',
   'bell.fill': 'notifications',
+  'person.fill': 'person',
+  'magnifyingglass': 'search',
+  'doc.text.fill': 'article',
+  'person.circle.fill': 'account-circle',
 } as IconMapping;
 
 /**

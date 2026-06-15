@@ -50,10 +50,7 @@ export function NavTopBar({
   };
 
   return (
-    <ThemedView
-      style={[styles.container, { paddingTop: insets.top + 8 }]}
-      lightColor="#FFFFFF"
-      darkColor="#151718">
+    <View style={[styles.container, { paddingTop: insets.top + 8, backgroundColor: '#b33939' }]}>
       <View style={styles.leftActions}>
         {showBackButton ? (
           <Pressable
@@ -61,14 +58,14 @@ export function NavTopBar({
             accessibilityRole="button"
             onPress={goBack}
             style={styles.iconButton}>
-            <IconSymbol name="arrow.left" size={24} color="#0A6E8A" />
+            <IconSymbol name="arrow.left" size={24} color="#FFFFFF" />
           </Pressable>
         ) : (
           <View style={styles.iconButtonSpacer} />
         )}
       </View>
 
-      <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.title}>
+      <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold" numberOfLines={1} style={styles.title}>
         {title}
       </ThemedText>
 
@@ -77,13 +74,13 @@ export function NavTopBar({
           rightContent
         ) : showHomeButton ? (
           <Pressable accessibilityLabel={TEXT.NAV_HOME_ACCESSIBILITY_LABEL} accessibilityRole="button" onPress={() => navReplace('/')} style={styles.iconButton}>
-            <IconSymbol name="house.fill" size={23} color="#0A6E8A" />
+            <IconSymbol name="house.fill" size={23} color="#FFFFFF" />
           </Pressable>
         ) : (
           <View style={styles.iconButtonSpacer} />
         )}
       </View>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -92,8 +89,6 @@ const styles = StyleSheet.create({
     minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#D7E6EC',
     paddingHorizontal: 12,
   },
   leftActions: {

@@ -1,6 +1,7 @@
 import moment from 'moment';
 
 const DATE_TIME_FORMAT = 'DD MMMM YYYY - H:mm';
+const NEWS_DATE_FORMAT = 'DD MM YYYY HH:mm';
 const FULL_DATE_FORMAT = 'DD MMMM YYYY';
 const DATE_FORMAT = 'D MMMM YYYY';
 const PARSE_FORMATS = [
@@ -35,6 +36,12 @@ export function formatDateTime(value: string) {
   }
 
   return parsedDate.format(DATE_TIME_FORMAT);
+}
+
+export function formatNewsDate(value: string) {
+  const parsedDate = parseDateTime(value);
+  if (!parsedDate) return value;
+  return parsedDate.format(NEWS_DATE_FORMAT);
 }
 
 export function formatDateOnly(value: string) {
