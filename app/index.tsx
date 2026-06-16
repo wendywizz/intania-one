@@ -46,14 +46,13 @@ const MENU_ITEMS: ReadonlyArray<{
   title: string;
   href: string;
   icon: IconName;
-  iconColor: string;
 }> = [
-  { title: TEXT.ABSENT_TITLE, href: '/absent', icon: 'calendar', iconColor: '#D32F2F' },
-  { title: TEXT.FORGOT_TIMESTAMP_TITLE, href: '/forgot-timestamp', icon: 'clock.fill', iconColor: '#1565C0' },
-  { title: TEXT.MEETING_MENU_TITLE, href: '/meeting', icon: 'person.2.fill', iconColor: '#6A1B9A' },
-  { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: '/repair-computer', icon: 'wrench.fill', iconColor: '#E65100' },
-  { title: TEXT.CALENDAR_TITLE, href: '/calendar', icon: 'list.bullet', iconColor: '#2E7D32' },
-  { title: TEXT.PERSON_SEARCH_TITLE, href: '/person-search', icon: 'magnifyingglass', iconColor: '#922124' },
+  { title: TEXT.ABSENT_TITLE, href: '/absent', icon: 'calendar' },
+  { title: TEXT.FORGOT_TIMESTAMP_TITLE, href: '/forgot-timestamp', icon: 'clock.fill' },
+  { title: TEXT.MEETING_MENU_TITLE, href: '/meeting', icon: 'person.2.fill' },
+  { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: '/repair-computer', icon: 'wrench.fill' },
+  { title: TEXT.CALENDAR_TITLE, href: '/calendar', icon: 'list.bullet' },
+  { title: TEXT.PERSON_SEARCH_TITLE, href: '/person-search', icon: 'magnifyingglass' },
 ];
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -385,7 +384,7 @@ export default function HomeScreen() {
               style={[styles.menuCard, { width: menuCardWidth }]}
               onPress={() => navPush(item.href as Parameters<typeof navPush>[0])}>
               <View style={styles.menuIconWrap}>
-                <IconSymbol name={item.icon} size={28} color={item.iconColor} />
+                <IconSymbol name={item.icon} size={28} color={D.primary} />
               </View>
               <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} numberOfLines={2} style={styles.menuLabel}>
                 {item.title}
