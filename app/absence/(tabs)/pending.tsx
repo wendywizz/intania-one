@@ -15,38 +15,38 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { TEXT } from "@/constants/text";
 import {
-    TYPE_ABSENT_BIRTH,
-    TYPE_ABSENT_BUSINESS,
-    TYPE_ABSENT_HAJJ,
-    TYPE_ABSENT_RELAX,
-    TYPE_ABSENT_SICK,
+    TYPE_absence_BIRTH,
+    TYPE_absence_BUSINESS,
+    TYPE_absence_HAJJ,
+    TYPE_absence_RELAX,
+    TYPE_absence_SICK,
 } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
-import type { Absent } from "@/models/types";
-import { waitingData } from "@/services/absentService";
+import type { absence } from "@/models/types";
+import { waitingData } from "@/services/absenceService";
 import { formatDateRange } from "@/utils/date-format";
 
-const absentTypeLabels: Record<string, string> = {
-  [TYPE_ABSENT_SICK]: TEXT.ABSENT_SICK_TITLE,
-  [TYPE_ABSENT_BUSINESS]: TEXT.ABSENT_BUSINESS_TITLE,
-  [TYPE_ABSENT_BIRTH]: TEXT.ABSENT_BIRTH_TITLE,
-  [TYPE_ABSENT_RELAX]: TEXT.ABSENT_RELAX_TITLE,
-  [TYPE_ABSENT_HAJJ]: "Hajj leave",
+const absenceTypeLabels: Record<string, string> = {
+  [TYPE_absence_SICK]: TEXT.absence_SICK_TITLE,
+  [TYPE_absence_BUSINESS]: TEXT.absence_BUSINESS_TITLE,
+  [TYPE_absence_BIRTH]: TEXT.absence_BIRTH_TITLE,
+  [TYPE_absence_RELAX]: TEXT.absence_RELAX_TITLE,
+  [TYPE_absence_HAJJ]: "Hajj leave",
 };
 
-const absentTypeFields = [
-  "absentType",
-  "absent_type",
-  "typeAbsent",
-  "type_absent",
+const absenceTypeFields = [
+  "absenceType",
+  "absence_type",
+  "typeabsence",
+  "type_absence",
   "leaveType",
   "leave_type",
   "type",
 ];
-const absentTypeNameFields = [
-  "absentTypeName",
-  "absent_type_name",
+const absenceTypeNameFields = [
+  "absenceTypeName",
+  "absence_type_name",
   "typeName",
   "type_name",
   "leaveTypeName",
@@ -55,7 +55,7 @@ const absentTypeNameFields = [
 const startDateFields = ["startDate", "start_date", "dateStart", "date_start"];
 const endDateFields = ["endDate", "end_date", "dateEnd", "date_end"];
 
-function getText(item: Absent, fields: string[]) {
+function getText(item: absence, fields: string[]) {
   for (const field of fields) {
     const value = item[field];
 
@@ -71,62 +71,62 @@ function getText(item: Absent, fields: string[]) {
   return "";
 }
 
-function getAbsentId(item: Absent) {
+function getabsenceId(item: absence) {
   return getText(item, [
     "id",
-    "absentId",
-    "absent_id",
+    "absenceId",
+    "absence_id",
     "requestId",
     "request_id",
   ]);
 }
 
-function getAbsentType(item: Absent) {
-  return getText(item, absentTypeFields);
+function getabsenceType(item: absence) {
+  return getText(item, absenceTypeFields);
 }
 
 function getEditPathname(type: string) {
   switch (type) {
-    case TYPE_ABSENT_SICK:
-      return "/absent/sick";
-    case TYPE_ABSENT_BUSINESS:
-      return "/absent/business";
-    case TYPE_ABSENT_RELAX:
-      return "/absent/relax";
-    case TYPE_ABSENT_BIRTH:
-      return "/absent/birth";
+    case TYPE_absence_SICK:
+      return "/absence/sick";
+    case TYPE_absence_BUSINESS:
+      return "/absence/business";
+    case TYPE_absence_RELAX:
+      return "/absence/relax";
+    case TYPE_absence_BIRTH:
+      return "/absence/birth";
     default:
-      return "/absent/detail";
+      return "/absence/detail";
   }
 }
 
-function getAbsentTypeLabel(item: Absent) {
-  const typeName = getText(item, absentTypeNameFields);
-  const type = getAbsentType(item);
+function getabsenceTypeLabel(item: absence) {
+  const typeName = getText(item, absenceTypeNameFields);
+  const type = getabsenceType(item);
 
   return (
     typeName ||
-    absentTypeLabels[type] ||
-    (type ? `Absent type ${type}` : "Absent")
+    absenceTypeLabels[type] ||
+    (type ? `absence type ${type}` : "absence")
   );
 }
 
-function getDateRange(item: Absent) {
+function getDateRange(item: absence) {
   const startDate = getText(item, startDateFields);
   const endDate = getText(item, endDateFields);
   const formattedDateRange = formatDateRange(startDate, endDate);
 
-  return formattedDateRange ? `Absent date: ${formattedDateRange}` : "";
+  return formattedDateRange ? `absence date: ${formattedDateRange}` : "";
 }
 
 type WaitingListItemProps = {
-  item: Absent;
+  item: absence;
   label: string;
-  onPress: (item: Absent) => void;
+  onPress: (item: absence) => void;
 };
 
 function WaitingListItem({ item, label, onPress }: WaitingListItemProps) {
-  const type = getAbsentTypeLabel(item);
+  const type = getabsenceTypeLabel(item);
   const dateRange = getDateRange(item);
 
   return (
@@ -157,8 +157,8 @@ function WaitingListItem({ item, label, onPress }: WaitingListItemProps) {
 export default function WaitingScreen() {
   const { user: authUser } = useAuth();
   const [items, setItems] = useState<{
-    remain: Absent | null;
-    cancel: Absent | null;
+    remain: absence | null;
+    cancel: absence | null;
   }>({
     remain: null,
     cancel: null,
@@ -205,14 +205,14 @@ export default function WaitingScreen() {
     }, [loadWaitingData]),
   );
 
-  const openDetail = useCallback((item: Absent) => {
-    const type = getAbsentType(item);
+  const openDetail = useCallback((item: absence) => {
+    const type = getabsenceType(item);
     const pathname = getEditPathname(type);
 
     navPush({
       pathname,
       params: {
-        id: getAbsentId(item),
+        id: getabsenceId(item),
         type,
         mode: "edit",
         source: "waiting",
@@ -307,7 +307,7 @@ export default function WaitingScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENT_TITLE} />
+      <NavTopBar title={TEXT.absence_TITLE} />
 
       <View style={styles.content}>
         <ThemedView
@@ -315,7 +315,7 @@ export default function WaitingScreen() {
           lightColor="#FFFFFF"
           darkColor="#1F2B30"
         >
-          <ThemedText type="subtitle">{TEXT.ABSENT_WAITING_TITLE}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.absence_WAITING_TITLE}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>

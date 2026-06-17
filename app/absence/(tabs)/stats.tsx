@@ -9,17 +9,17 @@ import { ThemedView } from "@/components/themed-view";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
-import { statsData } from "@/services/absentService";
+import { statsData } from "@/services/absenceService";
 
 interface StatsData {
   staffId: string;
   servantAge: number;
   budgetStartDate: string;
   budgetEndDate: string;
-  absentLimitCount: number;
-  absentLimitDays: number;
-  absentUsedCount: number;
-  absentUsedDays: number;
+  absenceLimitCount: number;
+  absenceLimitDays: number;
+  absenceUsedCount: number;
+  absenceUsedDays: number;
   sickUsedCount: number;
   sickUsedDays: number;
   businessUsedCount: number;
@@ -55,10 +55,10 @@ function mapStatsData(data: unknown): StatsData | null {
     servantAge: toNumber(row.servantAge),
     budgetStartDate: toText(row.budgetStartDate),
     budgetEndDate: toText(row.budgetEndDate),
-    absentLimitCount: toNumber(row.absentLimitCount),
-    absentLimitDays: toNumber(row.absentLimitDays),
-    absentUsedCount: toNumber(row.absentUsedCount),
-    absentUsedDays: toNumber(row.absentUsedDays),
+    absenceLimitCount: toNumber(row.absenceLimitCount),
+    absenceLimitDays: toNumber(row.absenceLimitDays),
+    absenceUsedCount: toNumber(row.absenceUsedCount),
+    absenceUsedDays: toNumber(row.absenceUsedDays),
     sickUsedCount: toNumber(row.sickUsedCount),
     sickUsedDays: toNumber(row.sickUsedDays),
     businessUsedCount: toNumber(row.businessUsedCount),
@@ -327,40 +327,40 @@ export default function StatsScreen() {
             <UsageCard
               title="All absences"
               count={formatRatio(
-                stats.absentUsedCount,
-                stats.absentLimitCount,
+                stats.absenceUsedCount,
+                stats.absenceLimitCount,
                 "times",
               )}
               days={formatRatio(
-                stats.absentUsedDays,
-                stats.absentLimitDays,
+                stats.absenceUsedDays,
+                stats.absenceLimitDays,
                 "days",
               )}
               color="#0A6E8A"
               progress={getProgress(
-                stats.absentUsedDays,
-                stats.absentLimitDays,
+                stats.absenceUsedDays,
+                stats.absenceLimitDays,
               )}
             />
             <UsageCard
-              title={TEXT.ABSENT_SICK_TITLE}
+              title={TEXT.absence_SICK_TITLE}
               count={formatUnit(stats.sickUsedCount, "times")}
               days={formatUnit(stats.sickUsedDays, "days")}
               color="#D92D20"
             />
             <UsageCard
-              title={TEXT.ABSENT_BUSINESS_TITLE}
+              title={TEXT.absence_BUSINESS_TITLE}
               count={formatUnit(stats.businessUsedCount, "times")}
               days={formatUnit(stats.businessUsedDays, "days")}
               color="#7A5AF8"
             />
             <UsageCard
-              title={TEXT.ABSENT_BIRTH_TITLE}
+              title={TEXT.absence_BIRTH_TITLE}
               count={formatUnit(stats.birthUsedCount, "times")}
               color="#C11574"
             />
             <UsageCard
-              title={TEXT.ABSENT_RELAX_TITLE}
+              title={TEXT.absence_RELAX_TITLE}
               days={formatRatio(
                 stats.relaxUsedDays,
                 stats.relaxTotalYearDays,
@@ -398,7 +398,7 @@ export default function StatsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENT_TITLE} />
+      <NavTopBar title={TEXT.absence_TITLE} />
 
       <View style={styles.content}>
         <ThemedView

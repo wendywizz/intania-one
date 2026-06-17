@@ -49,7 +49,7 @@ export default function RootLayout() {
           <ThemeProvider value={DefaultTheme}>
             <Stack>
               <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="absent" options={{ headerShown: false }} />
+              <Stack.Screen name="absence" options={{ headerShown: false }} />
               <Stack.Screen name="meeting" options={{ headerShown: false }} />
               <Stack.Screen name="repair-computer" options={{ headerShown: false }} />
               <Stack.Screen name="calendar" options={{ headerShown: false }} />

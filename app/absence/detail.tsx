@@ -10,43 +10,43 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TEXT } from '@/constants/text';
 import {
-  TYPE_ABSENT_BIRTH,
-  TYPE_ABSENT_BUSINESS,
-  TYPE_ABSENT_HAJJ,
-  TYPE_ABSENT_RELAX,
-  TYPE_ABSENT_SICK,
+  TYPE_absence_BIRTH,
+  TYPE_absence_BUSINESS,
+  TYPE_absence_HAJJ,
+  TYPE_absence_RELAX,
+  TYPE_absence_SICK,
 } from '@/constants/types';
-import type { Absent } from '@/models/types';
-import { getAbsentData } from '@/services/absentService';
+import type { absence } from '@/models/types';
+import { getabsenceData } from '@/services/absenceService';
 import { formatDateRange, formatDateTime } from '@/utils/date-format';
 
-const absentTypeLabels: Record<string, string> = {
-  [TYPE_ABSENT_SICK]: TEXT.ABSENT_SICK_TITLE,
-  [TYPE_ABSENT_BUSINESS]: TEXT.ABSENT_BUSINESS_TITLE,
-  [TYPE_ABSENT_BIRTH]: TEXT.ABSENT_BIRTH_TITLE,
-  [TYPE_ABSENT_RELAX]: TEXT.ABSENT_RELAX_TITLE,
-  [TYPE_ABSENT_HAJJ]: 'Hajj leave',
+const absenceTypeLabels: Record<string, string> = {
+  [TYPE_absence_SICK]: TEXT.absence_SICK_TITLE,
+  [TYPE_absence_BUSINESS]: TEXT.absence_BUSINESS_TITLE,
+  [TYPE_absence_BIRTH]: TEXT.absence_BIRTH_TITLE,
+  [TYPE_absence_RELAX]: TEXT.absence_RELAX_TITLE,
+  [TYPE_absence_HAJJ]: 'Hajj leave',
 };
 
-const absentTypeFields = [
-  'absentType',
-  'absent_type',
-  'typeAbsent',
-  'type_absent',
+const absenceTypeFields = [
+  'absenceType',
+  'absence_type',
+  'typeabsence',
+  'type_absence',
   'leaveType',
   'leave_type',
   'type',
 ];
-const absentTypeNameFields = [
-  'absentTypeName',
-  'absent_type_name',
+const absenceTypeNameFields = [
+  'absenceTypeName',
+  'absence_type_name',
   'typeName',
   'type_name',
   'leaveTypeName',
   'leave_type_name',
 ];
 
-function getText(item: Absent, fields: string[]) {
+function getText(item: absence, fields: string[]) {
   for (const field of fields) {
     const value = item[field];
 
@@ -62,18 +62,18 @@ function getText(item: Absent, fields: string[]) {
   return '';
 }
 
-function getAbsentType(item: Absent, routeType: string) {
-  return routeType || getText(item, absentTypeFields);
+function getabsenceType(item: absence, routeType: string) {
+  return routeType || getText(item, absenceTypeFields);
 }
 
-function getAbsentTypeLabel(item: Absent, routeType: string) {
-  const typeName = getText(item, absentTypeNameFields);
-  const type = getAbsentType(item, routeType);
+function getabsenceTypeLabel(item: absence, routeType: string) {
+  const typeName = getText(item, absenceTypeNameFields);
+  const type = getabsenceType(item, routeType);
 
-  return typeName || absentTypeLabels[type] || (type ? `Absent type ${type}` : 'Absent');
+  return typeName || absenceTypeLabels[type] || (type ? `absence type ${type}` : 'absence');
 }
 
-function parseItem(value: string | string[] | undefined): Absent {
+function parseItem(value: string | string[] | undefined): absence {
   const rawValue = Array.isArray(value) ? value[0] : value;
 
   if (!rawValue) {
@@ -81,7 +81,7 @@ function parseItem(value: string | string[] | undefined): Absent {
   }
 
   try {
-    return JSON.parse(decodeURIComponent(rawValue)) as Absent;
+    return JSON.parse(decodeURIComponent(rawValue)) as absence;
   } catch {
     return {};
   }
@@ -143,7 +143,7 @@ function ReadOnlyDateRange({
 
   return (
     <View style={styles.field}>
-      <ThemedText type="defaultSemiBold" style={styles.fieldLabel}>{TEXT.ABSENT_LEAVE_DATE_LABEL}</ThemedText>
+      <ThemedText type="defaultSemiBold" style={styles.fieldLabel}>{TEXT.absence_LEAVE_DATE_LABEL}</ThemedText>
       <ThemedText style={styles.readOnlyText}>
         {formatDateRange(startDate, endDate) ||
           [formatDateOnly(startDate), formatDateOnly(endDate)].filter(Boolean).join(' - ')}
@@ -155,15 +155,15 @@ function ReadOnlyDateRange({
 function getHalfDayLabel(value: string) {
   switch (value) {
     case '1':
-      return TEXT.ABSENT_HALF_DAY_FIRST_MORNING;
+      return TEXT.absence_HALF_DAY_FIRST_MORNING;
     case '2':
-      return TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON;
+      return TEXT.absence_HALF_DAY_FIRST_AFTERNOON;
     case '3':
-      return TEXT.ABSENT_HALF_DAY_LAST_MORNING;
+      return TEXT.absence_HALF_DAY_LAST_MORNING;
     case '4':
-      return TEXT.ABSENT_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING;
+      return TEXT.absence_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING;
     case '0':
-      return TEXT.ABSENT_HALF_DAY_NONE;
+      return TEXT.absence_HALF_DAY_NONE;
     default:
       return value;
   }
@@ -185,7 +185,7 @@ function getDisplayText(value: string) {
   return normalizedValue && normalizedValue !== '0' ? normalizedValue : '';
 }
 
-function getAgentText(item: Absent) {
+function getAgentText(item: absence) {
   const rawValue =
     item.selectedAgents ??
     item.selected_agents ??
@@ -239,7 +239,7 @@ function formatAgentValue(agent: unknown) {
   }
 
   if (agent && typeof agent === 'object') {
-    const agentItem = agent as Absent;
+    const agentItem = agent as absence;
     const thaiName = `${getText(agentItem, ['firstNameTH', 'first_name_th'])} ${getText(agentItem, ['lastNameTH', 'last_name_th'])}`.trim();
 
     return thaiName || getText(agentItem, [
@@ -270,7 +270,7 @@ function UploadedFileLink({
 
   return (
     <View style={styles.field}>
-      <ThemedText type="defaultSemiBold" style={styles.fieldLabel}>{TEXT.ABSENT_MEDICAL_CERTIFICATE_LABEL}</ThemedText>
+      <ThemedText type="defaultSemiBold" style={styles.fieldLabel}>{TEXT.absence_MEDICAL_CERTIFICATE_LABEL}</ThemedText>
       <Pressable accessibilityRole="link" onPress={onPress} style={styles.uploadedFileLink}>
         <MaterialIcons name="attach-file" size={18} color="#12805C" />
         <ThemedText
@@ -286,26 +286,26 @@ function UploadedFileLink({
   );
 }
 
-export default function AbsentDetailScreen() {
+export default function absenceDetailScreen() {
   const params = useLocalSearchParams<{ id?: string; item?: string; type?: string }>();
   const initialItem = useMemo(() => parseItem(params.item), [params.item]);
-  const [item, setItem] = useState<Absent>(initialItem);
+  const [item, setItem] = useState<absence>(initialItem);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const loadedDetailKeyRef = useRef('');
   const loadingDetailKeyRef = useRef('');
   const routeType = Array.isArray(params.type) ? params.type[0] : params.type ?? '';
-  const title = TEXT.ABSENT_HISTORY_TITLE;
-  const backHref = '/absent/history';
+  const title = TEXT.absence_HISTORY_TITLE;
+  const backHref = '/absence/history';
   const routeId = Array.isArray(params.id) ? params.id[0] : params.id ?? '';
-  const requestId = routeId || getText(initialItem, ['id', 'absentId', 'absent_id', 'requestId', 'request_id']);
-  const requestType = getAbsentType(initialItem, routeType);
+  const requestId = routeId || getText(initialItem, ['id', 'absenceId', 'absence_id', 'requestId', 'request_id']);
+  const requestType = getabsenceType(initialItem, routeType);
   const detailKey = requestId && requestType ? `${requestType}:${requestId}` : '';
 
-  const typeLabel = getAbsentTypeLabel(item, routeType);
+  const typeLabel = getabsenceTypeLabel(item, routeType);
   const startDate = getText(item, ['startDate', 'start_date', 'dateStart', 'date_start']);
   const endDate = getText(item, ['endDate', 'end_date', 'dateEnd', 'date_end']);
-  const leaveDay = getText(item, ['numDays', 'num_days', 'absentDays', 'absent_days', 'leaveDay', 'leave_day', 'days', 'day']);
+  const leaveDay = getText(item, ['numDays', 'num_days', 'absenceDays', 'absence_days', 'leaveDay', 'leave_day', 'days', 'day']);
   const approver = getText(item, [
     'approverPositionName',
     'approver_position_name',
@@ -342,7 +342,7 @@ export default function AbsentDetailScreen() {
     setError('');
 
     try {
-      const data = await getAbsentData(requestId, requestType);
+      const data = await getabsenceData(requestId, requestType);
       setItem(data);
       loadedDetailKeyRef.current = detailKey;
     } catch (error) {
@@ -397,14 +397,14 @@ export default function AbsentDetailScreen() {
           <ThemedText type="subtitle">{typeLabel}</ThemedText>
 
           <View style={styles.form}>
-            <ReadOnlyField label={TEXT.ABSENT_APPROVER_LABEL} value={approver} />
-            <ReadOnlyTextArea label={TEXT.ABSENT_REASON_LABEL} value={reason} />
+            <ReadOnlyField label={TEXT.absence_APPROVER_LABEL} value={approver} />
+            <ReadOnlyTextArea label={TEXT.absence_REASON_LABEL} value={reason} />
             <ReadOnlyDateRange startDate={startDate} endDate={endDate} />
-            <ReadOnlyField label={TEXT.ABSENT_LEAVE_DAY_COUNT_LABEL} value={leaveDay ? `${leaveDay} ${TEXT.ABSENT_DAY_UNIT}` : ''} />
-            <ReadOnlyField label={TEXT.ABSENT_HALF_DAY_LABEL} value={halfDay} />
-            <ReadOnlyField label={TEXT.ABSENT_CONTACT_CHANNEL_LABEL} value={contact} />
-            <ReadOnlyTextArea label={TEXT.ABSENT_TRAVEL_DETAIL_LABEL} value={travelDetail} />
-            <ReadOnlyField label={TEXT.ABSENT_DELEGATE_LABEL} value={agents} />
+            <ReadOnlyField label={TEXT.absence_LEAVE_DAY_COUNT_LABEL} value={leaveDay ? `${leaveDay} ${TEXT.absence_DAY_UNIT}` : ''} />
+            <ReadOnlyField label={TEXT.absence_HALF_DAY_LABEL} value={halfDay} />
+            <ReadOnlyField label={TEXT.absence_CONTACT_CHANNEL_LABEL} value={contact} />
+            <ReadOnlyTextArea label={TEXT.absence_TRAVEL_DETAIL_LABEL} value={travelDetail} />
+            <ReadOnlyField label={TEXT.absence_DELEGATE_LABEL} value={agents} />
             <UploadedFileLink fileUrl={fileUploadLink} onPress={handleOpenUploadedFile} />
           </View>
 

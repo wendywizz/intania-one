@@ -35,20 +35,20 @@ const STAFF_NEWS_FEED_URL =
 const METRO_PROXY_ENDPOINTS = {
   routes: {
     staffNewsFeed: '/api/staff-news-feed',
-    absentInit: '/api/absent/init',
-    absentHistory: '/api/absent/history',
+    absenceInit: '/api/absence/init',
+    absenceHistory: '/api/absence/history',
     meetingList: '/api/meeting/list',
     repairComputerPrivilege: '/api/repair-computer/privilege',
     openIdToken: '/api/openid/token',
     openIdUserInfo: '/api/openid/userinfo',
   },
-  absent: {
-    leave: '/personnel/apis/absent/leave/',
-    business: '/personnel/apis/absent/business/',
-    birth: '/personnel/apis/absent/birth/',
-    relax: '/personnel/apis/absent/relax/',
-    hajj: '/personnel/apis/absent/hajj/',
-    history: '/personnel/apis/absent/history',
+  absence: {
+    leave: '/personnel/apis/absence/leave/',
+    business: '/personnel/apis/absence/business/',
+    birth: '/personnel/apis/absence/birth/',
+    relax: '/personnel/apis/absence/relax/',
+    hajj: '/personnel/apis/absence/hajj/',
+    history: '/personnel/apis/absence/history',
   },
   meeting: {
     list: '/meetingv2/api/index.php/meeting/list',
@@ -76,18 +76,18 @@ function parseNewsFeed(xml) {
   }));
 }
 
-function getAbsentRequestUrlSuffix(absentType) {
-  switch (absentType) {
+function getabsenceRequestUrlSuffix(absenceType) {
+  switch (absenceType) {
     case '1':
-      return METRO_PROXY_ENDPOINTS.absent.leave;
+      return METRO_PROXY_ENDPOINTS.absence.leave;
     case '2':
-      return METRO_PROXY_ENDPOINTS.absent.business;
+      return METRO_PROXY_ENDPOINTS.absence.business;
     case '3':
-      return METRO_PROXY_ENDPOINTS.absent.birth;
+      return METRO_PROXY_ENDPOINTS.absence.birth;
     case '4':
-      return METRO_PROXY_ENDPOINTS.absent.relax;
+      return METRO_PROXY_ENDPOINTS.absence.relax;
     case '6':
-      return METRO_PROXY_ENDPOINTS.absent.hajj;
+      return METRO_PROXY_ENDPOINTS.absence.hajj;
     default:
       return '';
   }
@@ -198,12 +198,12 @@ config.server = {
         return;
       }
 
-      if (req.url?.startsWith(METRO_PROXY_ENDPOINTS.routes.absentInit)) {
+      if (req.url?.startsWith(METRO_PROXY_ENDPOINTS.routes.absenceInit)) {
         try {
           const localUrl = new URL(req.url, LOCAL_URL_BASE);
           const staffId = localUrl.searchParams.get('staff_id') ?? '';
-          const absentType = localUrl.searchParams.get('absent_type') ?? '';
-          const suffixUrl = getAbsentRequestUrlSuffix(absentType);
+          const absenceType = localUrl.searchParams.get('absence_type') ?? '';
+          const suffixUrl = getabsenceRequestUrlSuffix(absenceType);
           const phoenixUrl = new URL(`${suffixUrl}init/`, API_BASE_URL);
 
           phoenixUrl.searchParams.set('staff_id', staffId);
@@ -224,13 +224,13 @@ config.server = {
         return;
       }
 
-      if (req.url?.startsWith(METRO_PROXY_ENDPOINTS.routes.absentHistory)) {
+      if (req.url?.startsWith(METRO_PROXY_ENDPOINTS.routes.absenceHistory)) {
         try {
           const localUrl = new URL(req.url, LOCAL_URL_BASE);
           const staffId = localUrl.searchParams.get('staff_id') ?? '';
           const start = localUrl.searchParams.get('start') ?? '0';
           const length = localUrl.searchParams.get('length') ?? '10';
-          const phoenixUrl = new URL(METRO_PROXY_ENDPOINTS.absent.history, API_BASE_URL);
+          const phoenixUrl = new URL(METRO_PROXY_ENDPOINTS.absence.history, API_BASE_URL);
 
           phoenixUrl.searchParams.set('staff_id', staffId);
           phoenixUrl.searchParams.set('start', start);

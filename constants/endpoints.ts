@@ -40,7 +40,7 @@ export const ENDPOINTS = {
   scooba_dev: API_BASE_URL,
   staffNewsFeed: `${API_BASE_URL}/api/news`,
   forgotTimestamp: `${API_BASE_URL}/api/forget-timestamp`,
-  absent: `${API_BASE_URL}/api/absent`,
+  absence: `${API_BASE_URL}/api/absence`,
   repairComputer: `${API_BASE_URL}/api/repair-computer`,  
   person: `${API_BASE_URL}/api/person`,
   meeting: `${API_BASE_URL}/api/meeting`,
@@ -52,20 +52,20 @@ export const ENDPOINTS = {
 export const METRO_PROXY_ENDPOINTS = {
   routes: {
     staffNewsFeed: '/api/staff-news-feed',
-    absentInit: '/api/absent/init',
-    absentHistory: '/api/absent/history',
+    absenceInit: '/api/absence/init',
+    absenceHistory: '/api/absence/history',
     meetingList: '/api/meeting/list',
     repairComputerPrivilege: '/api/repair-computer/privilege',
     openIdToken: '/api/openid/token',
     openIdUserInfo: '/api/openid/userinfo',
   },
-  absent: {
-    leave: '/personnel/apis/absent/leave/',
-    business: '/personnel/apis/absent/business/',
-    birth: '/personnel/apis/absent/birth/',
-    relax: '/personnel/apis/absent/relax/',
-    hajj: '/personnel/apis/absent/hajj/',
-    history: '/personnel/apis/absent/history',
+  absence: {
+    leave: '/personnel/apis/absence/leave/',
+    business: '/personnel/apis/absence/business/',
+    birth: '/personnel/apis/absence/birth/',
+    relax: '/personnel/apis/absence/relax/',
+    hajj: '/personnel/apis/absence/hajj/',
+    history: '/personnel/apis/absence/history',
   },
   meeting: {
     list: '/meetingv2/api/index.php/meeting/list',

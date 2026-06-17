@@ -52,8 +52,8 @@ export function DatePickerField({
       if (isWeekendDate(selectedDate)) {
         if (Platform.OS !== 'ios') {
           Alert.alert(
-            TEXT.ABSENT_INVALID_WEEKEND_DATE_TITLE,
-            TEXT.ABSENT_INVALID_WEEKEND_DATE_MESSAGE,
+            TEXT.absence_INVALID_WEEKEND_DATE_TITLE,
+            TEXT.absence_INVALID_WEEKEND_DATE_MESSAGE,
           );
         }
 

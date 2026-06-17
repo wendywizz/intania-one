@@ -3,8 +3,8 @@ import type {News, Person, RepairComputer} from '../models/types';
 export type RootStackParamList = {
   Home: undefined;
   NewsDetail: {item: News};
-  Absent: undefined;
-  AbsentForm: {type: string; title: string};
+  absence: undefined;
+  absenceForm: {type: string; title: string};
   ForgetTimestamp: undefined;
   RepairComputer: {initialTab?: string} | undefined;
   RepairComputerDetail: {item: RepairComputer};

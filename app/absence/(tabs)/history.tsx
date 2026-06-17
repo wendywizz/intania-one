@@ -16,16 +16,16 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { TEXT } from "@/constants/text";
 import {
-    TYPE_ABSENT_BIRTH,
-    TYPE_ABSENT_BUSINESS,
-    TYPE_ABSENT_HAJJ,
-    TYPE_ABSENT_RELAX,
-    TYPE_ABSENT_SICK,
+    TYPE_absence_BIRTH,
+    TYPE_absence_BUSINESS,
+    TYPE_absence_HAJJ,
+    TYPE_absence_RELAX,
+    TYPE_absence_SICK,
 } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
-import type { Absent } from "@/models/types";
-import { historyData } from "@/services/absentService";
+import type { absence } from "@/models/types";
+import { historyData } from "@/services/absenceService";
 import { formatDateRange } from "@/utils/date-format";
 
 const HISTORY_PAGE_LENGTH = 10;
@@ -40,26 +40,26 @@ function getHasMore(
   }
   return currentCount >= pageSize;
 }
-const absentTypeLabels: Record<string, string> = {
-  [TYPE_ABSENT_SICK]: TEXT.ABSENT_SICK_TITLE,
-  [TYPE_ABSENT_BUSINESS]: TEXT.ABSENT_BUSINESS_TITLE,
-  [TYPE_ABSENT_BIRTH]: TEXT.ABSENT_BIRTH_TITLE,
-  [TYPE_ABSENT_RELAX]: TEXT.ABSENT_RELAX_TITLE,
-  [TYPE_ABSENT_HAJJ]: "Hajj leave",
+const absenceTypeLabels: Record<string, string> = {
+  [TYPE_absence_SICK]: TEXT.absence_SICK_TITLE,
+  [TYPE_absence_BUSINESS]: TEXT.absence_BUSINESS_TITLE,
+  [TYPE_absence_BIRTH]: TEXT.absence_BIRTH_TITLE,
+  [TYPE_absence_RELAX]: TEXT.absence_RELAX_TITLE,
+  [TYPE_absence_HAJJ]: "Hajj leave",
 };
 
-const absentTypeFields = [
-  "absentType",
-  "absent_type",
-  "typeAbsent",
-  "type_absent",
+const absenceTypeFields = [
+  "absenceType",
+  "absence_type",
+  "typeabsence",
+  "type_absence",
   "leaveType",
   "leave_type",
   "type",
 ];
-const absentTypeNameFields = [
-  "absentTypeName",
-  "absent_type_name",
+const absenceTypeNameFields = [
+  "absenceTypeName",
+  "absence_type_name",
   "typeName",
   "type_name",
   "leaveTypeName",
@@ -68,7 +68,7 @@ const absentTypeNameFields = [
 const startDateFields = ["startDate", "start_date", "dateStart", "date_start"];
 const endDateFields = ["endDate", "end_date", "dateEnd", "date_end"];
 
-function getText(item: Absent, fields: string[]) {
+function getText(item: absence, fields: string[]) {
   for (const field of fields) {
     const value = item[field];
 
@@ -84,62 +84,62 @@ function getText(item: Absent, fields: string[]) {
   return "";
 }
 
-function getAbsentId(item: Absent) {
+function getabsenceId(item: absence) {
   return getText(item, [
     "id",
-    "absentId",
-    "absent_id",
+    "absenceId",
+    "absence_id",
     "requestId",
     "request_id",
   ]);
 }
 
-function getAbsentType(item: Absent) {
-  return getText(item, absentTypeFields);
+function getabsenceType(item: absence) {
+  return getText(item, absenceTypeFields);
 }
 
-function getAbsentTypeLabel(item: Absent) {
-  const typeName = getText(item, absentTypeNameFields);
-  const type = getAbsentType(item);
+function getabsenceTypeLabel(item: absence) {
+  const typeName = getText(item, absenceTypeNameFields);
+  const type = getabsenceType(item);
 
   return (
     typeName ||
-    absentTypeLabels[type] ||
-    (type ? `Absent type ${type}` : "Absent")
+    absenceTypeLabels[type] ||
+    (type ? `absence type ${type}` : "absence")
   );
 }
 
-function getAbsentKey(item: Absent, index: number) {
-  return `${getAbsentId(item) || getAbsentType(item) || "absent"}-${index}`;
+function getabsenceKey(item: absence, index: number) {
+  return `${getabsenceId(item) || getabsenceType(item) || "absence"}-${index}`;
 }
 
-function getDateRange(item: Absent) {
+function getDateRange(item: absence) {
   const startDate = getText(item, startDateFields);
   const endDate = getText(item, endDateFields);
   const formattedDateRange = formatDateRange(startDate, endDate);
 
-  return formattedDateRange ? `Absent date: ${formattedDateRange}` : "";
+  return formattedDateRange ? `absence date: ${formattedDateRange}` : "";
 }
 
-function getAbsentTimestamp(item: Absent) {
+function getabsenceTimestamp(item: absence) {
   const timestamp = Date.parse(getText(item, startDateFields));
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
-function sortAbsentHistory(items: Absent[]) {
+function sortabsenceHistory(items: absence[]) {
   return [...items].sort(
     (leftItem, rightItem) =>
-      getAbsentTimestamp(rightItem) - getAbsentTimestamp(leftItem),
+      getabsenceTimestamp(rightItem) - getabsenceTimestamp(leftItem),
   );
 }
 
-type AbsentHistoryListItemProps = {
-  item: Absent;
-  onPress: (item: Absent) => void;
+type absenceHistoryListItemProps = {
+  item: absence;
+  onPress: (item: absence) => void;
 };
 
-function AbsentHistoryListItem({ item, onPress }: AbsentHistoryListItemProps) {
-  const type = getAbsentTypeLabel(item);
+function absenceHistoryListItem({ item, onPress }: absenceHistoryListItemProps) {
+  const type = getabsenceTypeLabel(item);
   const dateRange = getDateRange(item);
 
   return (
@@ -166,7 +166,7 @@ function AbsentHistoryListItem({ item, onPress }: AbsentHistoryListItemProps) {
 export default function HistoryScreen() {
   const { user: authUser } = useAuth();
   const pageSize = HISTORY_PAGE_LENGTH;
-  const [items, setItems] = useState<Absent[]>([]);
+  const [items, setItems] = useState<absence[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -175,7 +175,7 @@ export default function HistoryScreen() {
   const userId = authUser?.staffId || USER_ID;
   const loadingStartRef = useRef<number | null>(null);
   const loadedStartRef = useRef<Set<number>>(new Set());
-  const itemsRef = useRef<Absent[]>([]);
+  const itemsRef = useRef<absence[]>([]);
 
   const loadFirstPage = useCallback(
     async (showRefreshing = false, forceReload = false) => {
@@ -197,7 +197,7 @@ export default function HistoryScreen() {
       try {
         const result = await historyData(userId, { length: pageSize, start: 0 });
         const nextItems = result.data;
-        const sortedItems = sortAbsentHistory(nextItems);
+        const sortedItems = sortabsenceHistory(nextItems);
 
         loadedStartRef.current = new Set([0]);
         setItems(sortedItems);
@@ -239,7 +239,7 @@ export default function HistoryScreen() {
     try {
       const result = await historyData(userId, { length: pageSize, start });
       const nextItems = result.data;
-      const updatedItems = sortAbsentHistory([
+      const updatedItems = sortabsenceHistory([
         ...itemsRef.current,
         ...nextItems,
       ]);
@@ -264,12 +264,12 @@ export default function HistoryScreen() {
     }, [loadFirstPage]),
   );
 
-  const openDetail = useCallback((item: Absent) => {
+  const openDetail = useCallback((item: absence) => {
     navPush({
-      pathname: "/absent/detail",
+      pathname: "/absence/detail",
       params: {
-        id: getAbsentId(item),
-        type: getAbsentType(item),
+        id: getabsenceId(item),
+        type: getabsenceType(item),
         item: encodeURIComponent(JSON.stringify(item)),
       },
     } as Parameters<typeof navPush>[0]);
@@ -316,7 +316,7 @@ export default function HistoryScreen() {
         style={styles.flatList}
         contentContainerStyle={styles.listContent}
         data={items}
-        keyExtractor={getAbsentKey}
+        keyExtractor={getabsenceKey}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -328,7 +328,7 @@ export default function HistoryScreen() {
         }}
         onEndReachedThreshold={0.5}
         renderItem={({ item }) => (
-          <AbsentHistoryListItem item={item} onPress={openDetail} />
+          <absenceHistoryListItem item={item} onPress={openDetail} />
         )}
         ListFooterComponent={
           isLoadingMore ? (
@@ -354,7 +354,7 @@ export default function HistoryScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENT_TITLE} />
+      <NavTopBar title={TEXT.absence_TITLE} />
 
       <View style={styles.content}>
         <ThemedView
@@ -362,7 +362,7 @@ export default function HistoryScreen() {
           lightColor="#FFFFFF"
           darkColor="#1F2B30"
         >
-          <ThemedText type="subtitle">{TEXT.ABSENT_HISTORY_TITLE}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.absence_HISTORY_TITLE}</ThemedText>
           {renderContent()}
         </ThemedView>
       </View>

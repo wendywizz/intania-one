@@ -22,7 +22,7 @@ export type RepairComputerPrivilege = {
   privilege: string;
 };
 
-export type Absent = {
+export type absence = {
   id?: string;
   [key: string]: unknown;
 };

@@ -6,40 +6,40 @@ import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 
-const absentMenus = [
+const absenceMenus = [
   {
-    title: TEXT.ABSENT_SICK_TITLE,
+    title: TEXT.absence_SICK_TITLE,
     description: 'ยื่นคำขอลาป่วย',
-    href: '/absent/sick',
+    href: '/absence/sick',
   },
   {
-    title: TEXT.ABSENT_BUSINESS_TITLE,
+    title: TEXT.absence_BUSINESS_TITLE,
     description: 'ยื่นคำขอไปราชการ',
-    href: '/absent/business',
+    href: '/absence/business',
   },
   {
-    title: TEXT.ABSENT_RELAX_TITLE,
+    title: TEXT.absence_RELAX_TITLE,
     description: 'ยื่นคำขอลาพักผ่อน',
-    href: '/absent/relax',
+    href: '/absence/relax',
   },
   {
-    title: TEXT.ABSENT_BIRTH_TITLE,
+    title: TEXT.absence_BIRTH_TITLE,
     description: 'ยื่นคำขอลาคลอด',
-    href: '/absent/birth',
+    href: '/absence/birth',
   },
 ] as const;
 
-export default function AbsentScreen() {
+export default function absenceScreen() {
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENT_TITLE} backHref="/" />
+      <NavTopBar title={TEXT.absence_TITLE} backHref="/" />
 
       <View style={styles.content}>
-        <ThemedText type="subtitle">{TEXT.ABSENT_TITLE}</ThemedText>
-        <ThemedText style={styles.description}>{TEXT.ABSENT_REQUEST_TYPE_PROMPT}</ThemedText>
+        <ThemedText type="subtitle">{TEXT.absence_TITLE}</ThemedText>
+        <ThemedText style={styles.description}>{TEXT.absence_REQUEST_TYPE_PROMPT}</ThemedText>
 
         <View style={styles.grid}>
-          {absentMenus.map((menu, index) => (
+          {absenceMenus.map((menu, index) => (
             <Link key={`${String(menu.title)}-${index}`} href={menu.href} asChild>
               <Pressable accessibilityRole="button" style={styles.card}>
                 <ThemedText type="defaultSemiBold">{menu.title}</ThemedText>

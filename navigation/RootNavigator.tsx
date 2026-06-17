@@ -4,8 +4,8 @@ import {colors} from '../constants/colors';
 import type {RootStackParamList} from './routes';
 import {HomeScreen} from '../screens/HomeScreen';
 import {NewsDetailScreen} from '../screens/NewsDetailScreen';
-import {AbsentScreen} from '../screens/AbsentScreen';
-import {AbsentFormScreen} from '../screens/AbsentFormScreen';
+import {absenceScreen} from '../screens/absenceScreen';
+import {absenceFormScreen} from '../screens/absenceFormScreen';
 import {ForgetTimestampScreen} from '../screens/ForgetTimestampScreen';
 import {RepairComputerScreen} from '../screens/RepairComputerScreen';
 import {RepairComputerDetailScreen} from '../screens/RepairComputerDetailScreen';
@@ -26,8 +26,8 @@ export function RootNavigator() {
       }}>
       <Stack.Screen name="Home" component={HomeScreen} options={{title: 'Staff Buddy'}} />
       <Stack.Screen name="NewsDetail" component={NewsDetailScreen} options={{title: 'News'}} />
-      <Stack.Screen name="Absent" component={AbsentScreen} options={{title: 'Leave'}} />
-      <Stack.Screen name="AbsentForm" component={AbsentFormScreen} options={{title: 'Leave Request'}} />
+      <Stack.Screen name="absence" component={absenceScreen} options={{title: 'Leave'}} />
+      <Stack.Screen name="absenceForm" component={absenceFormScreen} options={{title: 'Leave Request'}} />
       <Stack.Screen name="ForgetTimestamp" component={ForgetTimestampScreen} options={{title: 'Missed Timestamp'}} />
       <Stack.Screen name="RepairComputer" component={RepairComputerScreen} options={{title: 'Repair Computer'}} />
       <Stack.Screen name="RepairComputerDetail" component={RepairComputerDetailScreen} options={{title: 'Repair Detail'}} />

@@ -4,7 +4,7 @@ import {
 } from "expo-file-system/legacy";
 import { Platform } from "react-native";
 
-import type { Absent } from "../models/types";
+import type { absence } from "../models/types";
 import {
   ensureSuccess,
   fetchWithTimeout,
@@ -19,11 +19,11 @@ import { ENDPOINTS } from "../constants/endpoints";
 
 const DEFAULT_DISPLAY_LENGTH = 10;
 
-function createAbsentUrl(
+function createabsenceUrl(
   path = "",
   query?: Record<string, string | number | undefined | null>,
 ) {
-  const url = new URL(`${ENDPOINTS.absent}${path}`);
+  const url = new URL(`${ENDPOINTS.absence}${path}`);
 
   Object.entries(query ?? {}).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
@@ -88,26 +88,26 @@ async function readUploadFileAsBase64(fileUpload: UploadableFile) {
   return readBlobAsBase64(blob);
 }
 
-export async function initAbsentData(
+export async function initabsenceData(
   staffId: string,
-  absentType: string,
-): Promise<Absent> {
-  const url = createAbsentUrl("/init", { staff_id: staffId, type: absentType });
+  absenceType: string,
+): Promise<absence> {
+  const url = createabsenceUrl("/init", { staff_id: staffId, type: absenceType });
   const jsonData = await requestJson(url, { method: "GET" });
   ensureSuccess(jsonData);
 
-  return jsonData.data as Absent;
+  return jsonData.data as absence;
 }
 
 export async function getData(
   id: string,
-  absentType: string,
-): Promise<Absent> {
-  const url = createAbsentUrl("", { id, type: absentType });
+  absenceType: string,
+): Promise<absence> {
+  const url = createabsenceUrl("", { id, type: absenceType });
   const jsonData = await requestJson(url, { method: "GET" });
   ensureSuccess(jsonData);
 
-  return jsonData.data as Absent;
+  return jsonData.data as absence;
 }
 
 export async function uploadMedFile(
@@ -151,21 +151,21 @@ export async function uploadMedFile(
 
 export async function addData(
   data: Record<string, unknown>,
-  absentType: string,
+  absenceType: string,
   options?: { fileUpload?: UploadableFile },
 ): Promise<MutationResponse> {
   let fileName: string | undefined;
 
   if (options?.fileUpload) {
     fileName = generateMedUploadFileName(data.staff_id, options.fileUpload);
-    const endpoint = ENDPOINTS.absent;
+    const endpoint = ENDPOINTS.absence;
     await uploadMedFile(endpoint, options.fileUpload, {
       file_name: fileName,
-      type: absentType,
+      type: absenceType,
     });
   }
 
-  const url = ENDPOINTS.absent;
+  const url = ENDPOINTS.absence;
   const jsonData = await requestJson(url, {
     method: "POST",
     body: JSON.stringify({
@@ -184,7 +184,7 @@ export async function addData(
 export async function updateData(
   id: string,
   data: Record<string, unknown>,
-  absentType: string,
+  absenceType: string,
   options?: { fileUpload?: UploadableFile },
 ): Promise<MutationResponse> {
   let fileName: string | undefined;
@@ -192,7 +192,7 @@ export async function updateData(
 
   if (options?.fileUpload) {
     fileName = generateMedUploadFileName(data.staff_id, options.fileUpload);
-    const endpoint = ENDPOINTS.absent;
+    const endpoint = ENDPOINTS.absence;
     reUpload = true;
 
     await uploadMedFile(endpoint, options.fileUpload, {
@@ -201,7 +201,7 @@ export async function updateData(
     });
   }
 
-  const url = ENDPOINTS.absent;
+  const url = ENDPOINTS.absence;
   const jsonData = await requestJson(url, {
     method: "PUT",
     body: JSON.stringify({
@@ -220,9 +220,9 @@ export async function updateData(
 
 export async function removeData(
   id: string,
-  absentType: string
+  absenceType: string
 ): Promise<MutationResponse> {
-  const url = ENDPOINTS.absent;
+  const url = ENDPOINTS.absence;
 
   const jsonData = await requestJson(url, {
     method: "DELETE",
@@ -241,23 +241,23 @@ export async function removeData(
 }
 
 export async function waitingData(staffId: string) {
-  const url = createAbsentUrl("/waiting", {
+  const url = createabsenceUrl("/waiting", {
     staff_id: staffId,
   });
   const jsonData = await requestJson(url, { method: "GET" });
   ensureSuccess(jsonData);
 
   return {
-    remainResult: (jsonData.remain as Absent | null | undefined) ?? null,
-    cancelResult: (jsonData.cancel as Absent | null | undefined) ?? null,
+    remainResult: (jsonData.remain as absence | null | undefined) ?? null,
+    cancelResult: (jsonData.cancel as absence | null | undefined) ?? null,
   };
 }
 
 export async function historyData(
   staffId: string,
   { length = DEFAULT_DISPLAY_LENGTH, start = 0 } = {},
-): Promise<ListResponse<Absent>> {
-  const url = createAbsentUrl("/history", {
+): Promise<ListResponse<absence>> {
+  const url = createabsenceUrl("/history", {
     staff_id: staffId,
     start,
     length,
@@ -265,7 +265,7 @@ export async function historyData(
   
   const jsonData = await requestJson(url, { method: "GET" });
   ensureSuccess(jsonData);
-  const data = Array.isArray(jsonData.data) ? (jsonData.data as Absent[]) : [];
+  const data = Array.isArray(jsonData.data) ? (jsonData.data as absence[]) : [];
 
   return {
     data,
@@ -284,7 +284,7 @@ function getCurrentThaiBudgetYear() {
 
 export async function statsData(staffId: string) {
   const budgetYear = getCurrentThaiBudgetYear();
-  const url = createAbsentUrl("/stats", {
+  const url = createabsenceUrl("/stats", {
     staff_id: staffId,
     bgyear: budgetYear,
     year: budgetYear,
@@ -295,12 +295,12 @@ export async function statsData(staffId: string) {
   return jsonData.data;
 }
 
-export const getAbsentData = getData;
-export const addAbsentData = addData;
-export const updateAbsentData = updateData;
-export const waitingAbsentData = waitingData;
+export const getabsenceData = getData;
+export const addabsenceData = addData;
+export const updateabsenceData = updateData;
+export const waitingabsenceData = waitingData;
 
-export function historyAbsentData(
+export function historyabsenceData(
   staffId: string,
   start = 0,
   length = DEFAULT_DISPLAY_LENGTH,

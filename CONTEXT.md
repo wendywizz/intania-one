@@ -8,7 +8,7 @@
 
 # Project Context
 
-This app is about the staff management system for the Faculty of Engineer, Prince of Songkhla University. The app contains many systems such as Absent System, Timestamp System, Inform request for the services etc. 
+This app is about the staff management system for the Faculty of Engineer, Prince of Songkhla University. The app contains many systems such as absence System, Timestamp System, Inform request for the services etc. 
 
 The organization has many services already created from Web Application base. Therefore, All systems in this app are just UI that communicate through API Service that created each of the systems.
 
@@ -18,7 +18,7 @@ But the client does not link with the API Service directly. There is one project
 
 - The app can show news that feeds from University website
 - The app must have an authentication system to identify user to access systems because this is a private application but some feature such as news feed is public
-- The app have staff management system that show as modules such as Absent, Forget Timestamp, Meeting, Repair Computer, Executive Calendar and Person Search systems
+- The app have staff management system that show as modules such as absence, Forget Timestamp, Meeting, Repair Computer, Executive Calendar and Person Search systems
 - The app can connect to exist API Services by modules for CRUD data
 - The app build like as Mobile Application for iOS and Android
 - The app can send push notification
@@ -28,7 +28,7 @@ But the client does not link with the API Service directly. There is one project
 
 - News: The app feeds news from the website “http://www.eng.psu.ac.th”. This function is public everyone can see the news  No authenticate require
 - Authenticate System: Before the user can access all the menus in this app. Users should sign in to use the services. This project uses the OpenID system for Auth. The OpenID system is the service that University provided 
-- Menus or Modules: This app contains systems shown as a menu on the home screen. The menu will show after the user signs in success. The menus contains Absent Menu, Forget Timestamp Menu, Meeting Menu, Repair Computer Menu, Person Search Menu and other system in the future
+- Menus or Modules: This app contains systems shown as a menu on the home screen. The menu will show after the user signs in success. The menus contains absence Menu, Forget Timestamp Menu, Meeting Menu, Repair Computer Menu, Person Search Menu and other system in the future
 - Notification: The users in the organization will contact each other in this app such as sending information to do something. Some requests will tick the notification on the phone to related user. The notification system is based on Firebase Cloud Messaging.
 
 # Project Struction
@@ -42,14 +42,14 @@ The module meaning the application that work with user to send/recieve request a
 
 - Abent Module: 
     # Module Context
-    Send request for absent to Approver that can allow or deny request
+    Send request for absence to Approver that can allow or deny request
     # User Group
     - General User: The user that inform for request
     - Approver: The leader of general user that can approve request    
     # Functional
-    - User can send new absent inform
+    - User can send new absence inform
     - User can follow inform status
-    - User can see the history of absent
+    - User can see the history of absence
     - Approver can allow or deny request
     
 - Forget Timestamp:

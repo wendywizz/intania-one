@@ -47,7 +47,7 @@ const MENU_ITEMS: ReadonlyArray<{
   href: string;
   icon: IconName;
 }> = [
-  { title: TEXT.ABSENT_TITLE, href: '/absent', icon: 'calendar' },
+  { title: TEXT.absence_TITLE, href: '/absence', icon: 'calendar' },
   { title: TEXT.FORGOT_TIMESTAMP_TITLE, href: '/forgot-timestamp', icon: 'clock.fill' },
   { title: TEXT.MEETING_MENU_TITLE, href: '/meeting', icon: 'person.2.fill' },
   { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: '/repair-computer', icon: 'wrench.fill' },

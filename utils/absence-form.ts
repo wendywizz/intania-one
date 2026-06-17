@@ -1,4 +1,4 @@
-import type { Absent } from "@/models/types";
+import type { absence } from "@/models/types";
 
 export function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -44,7 +44,7 @@ export function formatDateTimeParam(date: Date) {
   return `${formatDateParam(date)} ${hours}:${minutes}:${seconds}`;
 }
 
-export function getAbsentTextValue(data: Absent, keys: string[]) {
+export function getabsenceTextValue(data: absence, keys: string[]) {
   for (const key of keys) {
     const value = data[key];
 
