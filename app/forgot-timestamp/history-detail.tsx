@@ -1,31 +1,24 @@
+﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { StatusBar } from "expo-status-bar";
+import { useMemo } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 
-import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { TEXT } from "@/constants/text";
+import { AppFonts } from "@/constants/fonts";
 import type { ForgotTimestampHistory } from "@/services/forgetTimestampService";
 import { formatDateAndTime, formatFullDate } from "@/utils/date-format";
 
+const stampTypeFields = new Set(["stampType", "stamp_type", "type"]);
 const dateFields = new Set([
-  "date",
   "workDate",
   "work_date",
   "stampDate",
   "stamp_date",
   "timestampDate",
   "timestamp_date",
-  "requestDate",
-  "request_date",
-  "createdAt",
-  "created_at",
-  "writeDate",
-  "write_date",
-  "dateAdd",
-  "date_add",
 ]);
 const writeDateFields = new Set([
   "date",
@@ -38,67 +31,42 @@ const writeDateFields = new Set([
   "dateAdd",
   "date_add",
 ]);
-const stampDateFields = new Set([
-  "workDate",
-  "work_date",
-  "stampDate",
-  "stamp_date",
-  "timestampDate",
-  "timestamp_date",
-]);
-const stampTypeFields = new Set(["stampType", "stamp_type", "type"]);
 const timeFields = new Set(["inTime", "in_time", "outTime", "out_time"]);
-const statusFields = new Set(["status"]);
 const approverNameFields = new Set([
   "approverName",
   "approver_name",
   "approverFullName",
   "approver_full_name",
-]);
-const approverPositionNameFields = new Set([
   "approverPositionName",
   "approver_position_name",
-  "approverPositionTitle",
-  "approver_position_title",
-]);
-const LOADING_DELAY_MS = 500;
-const hiddenFields = new Set([
-  "id",
-  "staffId",
-  "staff_id",
-  "deptId",
-  "dept_id",
-  "departmentId",
-  "department_id",
   "approverPosition",
   "approver_position",
-  "datetime",
-  "dateTime",
-  "date_time",
 ]);
+const reasonFields = ["reason", "detail", "description"];
+const historyStatusFields = [
+  "status",
+  "result",
+  "approvalStatus",
+  "approval_status",
+  "isActive",
+  "is_active",
+];
 
-function getText(item: ForgotTimestampHistory, fields: Set<string>) {
+function getText(item: ForgotTimestampHistory, fields: Set<string> | string[]) {
   for (const field of fields) {
     const value = item[field];
-
     if (value !== undefined && value !== null && String(value).trim()) {
       return String(value).trim();
     }
   }
-
   return "";
 }
 
 function parseItem(value: string | string[] | undefined): ForgotTimestampHistory {
   const rawValue = Array.isArray(value) ? value[0] : value;
-
-  if (!rawValue) {
-    return {};
-  }
-
+  if (!rawValue) return {};
   try {
     const parsedValue = JSON.parse(rawValue);
-
     return parsedValue && typeof parsedValue === "object"
       ? (parsedValue as ForgotTimestampHistory)
       : {};
@@ -107,193 +75,137 @@ function parseItem(value: string | string[] | undefined): ForgotTimestampHistory
   }
 }
 
-type DetailRow = {
-  field: string;
-  label: string;
-  displayValue: string;
-  value: unknown;
-};
-
-function getFieldRank(field: string) {
-  if (writeDateFields.has(field)) {
-    return 0;
-  }
-
-  if (stampDateFields.has(field)) {
-    return 1;
-  }
-
-  if (timeFields.has(field)) {
-    return 2;
-  }
-
-  return 3;
-}
-
-function buildDetailRows(item: ForgotTimestampHistory): DetailRow[] {
-  const approverName = getText(item, approverNameFields);
-  const stampTime = getStampTime(item);
-
-  return Object.entries(item)
-    .filter(([field, value]) => shouldShowField(field, value))
-    .map(([field, value], index) => {
-      const nextValue =
-        approverPositionNameFields.has(field) && approverName
-          ? `${String(value).trim()} (${approverName})`
-          : value;
-      const displayValue =
-        stampDateFields.has(field) && stampTime
-          ? formatDateAndTime(String(value), stampTime)
-          : formatFieldValue(field, nextValue);
-
-      return {
-        field,
-        label: formatFieldName(field),
-        displayValue,
-        value: nextValue,
-        index,
-      };
-    })
-    .sort(
-      (leftRow, rightRow) =>
-        getFieldRank(leftRow.field) - getFieldRank(rightRow.field) ||
-        leftRow.index - rightRow.index,
-    );
-}
-
-function formatFieldName(field: string) {
-  if (timeFields.has(field)) {
-    return "Time";
-  }
-
-  if (writeDateFields.has(field)) {
-    return "Write date";
-  }
-
-  if (stampDateFields.has(field)) {
-    return "Stamp Datetime";
-  }
-
-  if (stampTypeFields.has(field)) {
-    return "Timestamp Type";
-  }
-
-  return field
-    .replace(/_/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function formatFieldValue(field: string, value: unknown) {
-  if (statusFields.has(field)) {
-    const status = String(value).trim();
-
-    if (status === "1") {
-      return "Approved";
-    }
-
-    if (status === "0") {
-      return "Waiting for approve";
-    }
-  }
-
-  if (stampTypeFields.has(field)) {
-    const stampType = String(value).trim().toLowerCase();
-
-    if (stampType === "in") {
-      return "Stamp In";
-    }
-
-    if (stampType === "out") {
-      return "Stamp Out";
-    }
-  }
-
-  if (dateFields.has(field)) {
-    return formatFullDate(String(value));
-  }
-
-  return String(value);
-}
-
-function shouldShowField(field: string, value: unknown) {
-  if (
-    hiddenFields.has(field) ||
-    approverNameFields.has(field) ||
-    timeFields.has(field)
-  ) {
-    return false;
-  }
-
-  if (value === undefined || value === null || !String(value).trim()) {
-    return false;
-  }
-  return true;
-}
-
 function getStampTime(item: ForgotTimestampHistory) {
   for (const field of timeFields) {
     const value = item[field];
     const time = String(value ?? "").trim();
-
-    if (time && time !== "00:00:00") {
-      return time;
-    }
+    if (time && time !== "00:00:00") return time;
   }
-
   return "";
+}
+
+function getHistoryItemStatus(item: ForgotTimestampHistory): "approved" | "rejected" | "" {
+  for (const field of historyStatusFields) {
+    const value = String(item[field] ?? "").toLowerCase().trim();
+    if (["approved", "true", "1", "yes", "active"].includes(value)) return "approved";
+    if (["rejected", "false", "0", "no", "denied"].includes(value)) return "rejected";
+  }
+  return "";
+}
+
+function getStampTypeLabel(stampType: string) {
+  if (stampType === "in") return "Timestamp In";
+  if (stampType === "out") return "Timestamp Out";
+  return stampType || "—";
+}
+
+type DetailRowProps = {
+  icon: React.ComponentProps<typeof MaterialIcons>["name"];
+  label: string;
+  value: string;
+};
+
+function DetailRow({ icon, label, value }: DetailRowProps) {
+  return (
+    <View style={styles.detailRow}>
+      <View style={styles.detailIconBox}>
+        <MaterialIcons name={icon} size={18} color="#5D6371" />
+      </View>
+      <View style={styles.detailText}>
+        <ThemedText style={styles.detailLabel}>{label}</ThemedText>
+        <ThemedText style={styles.detailValue}>{value || "—"}</ThemedText>
+      </View>
+    </View>
+  );
 }
 
 export default function ForgotTimestampHistoryDetailScreen() {
   const params = useLocalSearchParams<{ item?: string }>();
-  const [isLoading, setIsLoading] = useState(true);
   const item = useMemo(() => parseItem(params.item), [params.item]);
-  const rows = buildDetailRows(item);
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setIsLoading(false);
-    }, LOADING_DELAY_MS);
+  const stampType = getText(item, stampTypeFields).toLowerCase();
+  const stampTypeLabel = getStampTypeLabel(stampType);
+  const status = getHistoryItemStatus(item);
 
-    return () => clearTimeout(timeout);
-  }, []);
+  const dateValue = getText(item, dateFields);
+  const appealDate = getText(item, writeDateFields);
+  const stampTime = getStampTime(item);
+  const approver = getText(item, approverNameFields);
+  const reason = getText(item, reasonFields);
+
+  const appealDateDisplay = appealDate ? formatFullDate(appealDate) : "—";
+  const datetimeDisplay = dateValue && stampTime
+    ? formatDateAndTime(dateValue, stampTime)
+    : dateValue
+      ? formatFullDate(dateValue)
+      : "—";
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar
-        title={TEXT.SHARED_HISTORY}
-        backHref="/forgot-timestamp/history"
-      />
+      <StatusBar style="light" />
+      <NavTopBar title="Timestamp Detail" backHref="/forgot-timestamp/history" />
 
-      {isLoading ? (
-        <View style={styles.loadingContent}>
-          <LoadingAnimate
-            title={TEXT.SHARED_LOADING_DATA_TITLE}
-            desc={TEXT.SHARED_LOADING_DESCRIPTION}
-          />
-        </View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
-            {rows.length ? (
-              <View style={styles.rows}>
-                {rows.map(({ field, label, displayValue }) => (
-                  <View key={field} style={styles.row}>
-                    <ThemedText style={styles.label}>{label}</ThemedText>
-                    <ThemedText type="defaultSemiBold" style={styles.value}>
-                      {displayValue}
-                    </ThemedText>
-                  </View>
-                ))}
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.statusCard}>
+          {/* Header: stamp type + status badge */}
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderText}>
+              <ThemedText style={styles.headerTypeLabel}>TYPE</ThemedText>
+              <ThemedText style={styles.headerTypeValue}>{stampTypeLabel}</ThemedText>
+            </View>
+            {status === "approved" ? (
+              <View style={styles.approvedBadge}>
+                <MaterialIcons name="check-circle" size={14} color="#1E7E34" />
+                <ThemedText style={styles.approvedBadgeText}>Approved</ThemedText>
               </View>
-            ) : (
-              <ThemedText style={styles.emptyMessage}>
-                {TEXT.SHARED_EMPTY_DATA}
-              </ThemedText>
-            )}
-          </ThemedView>
-        </ScrollView>
-      )}
+            ) : status === "rejected" ? (
+              <View style={styles.rejectedBadge}>
+                <MaterialIcons name="cancel" size={14} color="#991B1B" />
+                <ThemedText style={styles.rejectedBadgeText}>Rejected</ThemedText>
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* Detail grid */}
+          <View style={styles.detailRows}>
+            <DetailRow
+              icon="event"
+              label="Appeal Date"
+              value={appealDateDisplay}
+            />
+            <DetailRow
+              icon="access-time"
+              label="Timestamp Datetime"
+              value={datetimeDisplay}
+            />
+            <DetailRow
+              icon="fingerprint"
+              label="Timestamp Type"
+              value={stampTypeLabel}
+            />
+            <DetailRow
+              icon="person"
+              label="Approver"
+              value={approver}
+            />
+          </View>
+
+          {/* Reason section */}
+          {reason ? (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.reasonSection}>
+                <ThemedText style={styles.reasonSectionLabel}>REASON FOR ADJUSTMENT</ThemedText>
+                <View style={styles.reasonBox}>
+                  <ThemedText style={styles.reasonText}>{reason}</ThemedText>
+                </View>
+              </View>
+            </>
+          ) : null}
+        </View>
+      </ScrollView>
     </ThemedView>
   );
 }
@@ -301,39 +213,142 @@ export default function ForgotTimestampHistoryDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#F8F9FD",
   },
   content: {
     padding: 16,
+    paddingBottom: 40,
   },
-  loadingContent: {
-    flex: 1,
-  },
-  panel: {
-    borderRadius: 8,
+  statusCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E1E2E6",
     padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  rows: {
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: 14,
     gap: 12,
   },
-  row: {
-    gap: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#D7E6EC",
-    paddingBottom: 12,
+  cardHeaderText: {
+    gap: 2,
   },
-  label: {
-    color: "#687076",
+  headerTypeLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    color: "#585E6D",
+    fontFamily: AppFonts.psuBold,
+  },
+  headerTypeValue: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: "600",
+    color: "#191C1F",
+    fontFamily: AppFonts.psuBold,
+  },
+  approvedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#E6F4EA",
+    borderRadius: 9999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  approvedBadgeText: {
     fontSize: 12,
-    lineHeight: 18,
+    fontWeight: "600",
+    color: "#1E7E34",
+    fontFamily: AppFonts.psuBold,
   },
-  value: {
+  rejectedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#FEE2E2",
+    borderRadius: 9999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  rejectedBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#991B1B",
+    fontFamily: AppFonts.psuBold,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#E7E8EC",
+    marginVertical: 14,
+  },
+  detailRows: {
+    gap: 14,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  detailIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#E7E8EC",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    marginTop: 1,
+  },
+  detailText: {
+    flex: 1,
+    gap: 2,
+  },
+  detailLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.4,
+    color: "#585E6D",
+    textTransform: "uppercase",
+    fontFamily: AppFonts.psuBold,
+  },
+  detailValue: {
     fontSize: 14,
     lineHeight: 20,
+    color: "#191C1F",
+    fontFamily: AppFonts.psuRegular,
   },
-  emptyMessage: {
-    color: "#687076",
+  reasonSection: {
+    gap: 10,
+  },
+  reasonSectionLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    color: "#585E6D",
+    fontFamily: AppFonts.psuBold,
+  },
+  reasonBox: {
+    borderLeftWidth: 4,
+    borderLeftColor: "rgba(146,33,36,0.5)",
+    borderRadius: 6,
+    padding: 12,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(223,191,189,0.3)",
+  },
+  reasonText: {
     fontSize: 14,
-    lineHeight: 20,
-    textAlign: "center",
+    lineHeight: 22,
+    color: "#584140",
+    fontFamily: AppFonts.psuRegular,
   },
 });

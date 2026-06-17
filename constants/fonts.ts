@@ -1,7 +1,7 @@
 export const AppFonts = {
-  psuRegular: 'PSUStidti-Regular',
-  psuLight: 'PSUStidti-Light',
-  psuItalic: 'PSUStidti-Italic',
-  psuBold: 'PSUStidti-Bold',
-  psuBoldItalic: 'PSUStidti-BoldItalic',
+  psuRegular: 'LINESeedSansTH_Rg',
+  psuLight: 'LINESeedSansTH_Th',
+  psuItalic: 'LINESeedSansTH_Rg',
+  psuBold: 'LINESeedSansTH_Bd',
+  psuBoldItalic: 'LINESeedSansTH_Bd',
 } as const;

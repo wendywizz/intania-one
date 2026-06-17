@@ -815,6 +815,7 @@ export default function RepairComputerEditJobScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FD',
   },
   content: {
     flex: 1,
@@ -822,8 +823,15 @@ const styles = StyleSheet.create({
   },
   panel: {
     flex: 1,
-    borderRadius: 8,
-    padding: 0,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E1E2E6',
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   form: {
     gap: 16,

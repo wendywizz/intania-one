@@ -1,5 +1,5 @@
-import { TEXT } from "@/constants/text";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+﻿import { TEXT } from "@/constants/text";
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import * as DocumentPicker from "expo-document-picker";
 import { Image } from "expo-image";
 import { openBrowserAsync } from "expo-web-browser";
@@ -224,7 +224,7 @@ function SelectField({
 
   return (
     <View style={styles.field}>
-      <ThemedText type="defaultSemiBold">{label}</ThemedText>
+      <ThemedText style={styles.fieldLabel}>{label}</ThemedText>
       <Pressable
         accessibilityRole="button"
         onPress={onToggle}
@@ -232,6 +232,7 @@ function SelectField({
       >
         <ThemedText
           style={[styles.selectText, !displayValue && styles.placeholder]}
+          numberOfLines={1}
         >
           {displayValue || placeholder}
         </ThemedText>
@@ -248,7 +249,7 @@ function SelectField({
         onRequestClose={onToggle}
       >
         <Pressable style={styles.backdrop} onPress={onToggle}>
-          <Pressable>
+          <Pressable style={styles.modalContent}>
             <ThemedView
               style={styles.selectModal}
               lightColor="#FFFFFF"
@@ -448,7 +449,7 @@ export default function SickScreen() {
       setDeptId(getabsenceTextValue(data, ["deptId", "dept_id", "departmentId", "department_id"]));
       setStep(getabsenceTextValue(data, ["step"]));
       setabsenceStatus(getabsenceTextValue(data, ["absenceStatus", "absence_status", "status"]));
-      setabsenceTime(getabsenceTextValue(data, ["absenceTime", "absence_time", "times", "time"]));      
+      setabsenceTime(getabsenceTextValue(data, ["absenceTime", "absence_time", "times", "time"]));
     } catch (error) {
       if (!isEditMode) {
         setInitialError(
@@ -539,6 +540,7 @@ export default function SickScreen() {
       ]),
     );
   }, [editId, editItem, isEditMode]);
+
   const startDateError =
     startDate && startOfDay(startDate) > maximumStartDate
       ? TEXT.absence_VALIDATION_START_DATE_NOT_FUTURE
@@ -820,297 +822,312 @@ export default function SickScreen() {
       <NavTopBar title={TEXT.absence_SICK_TITLE} backHref={backHref} />
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <ThemedView
-          style={styles.panel}
-          lightColor="#FFFFFF"
-          darkColor="#1F2B30"
-        >
-          <ThemedText type="subtitle">{TEXT.absence_SICK_FORM_TITLE}</ThemedText>
-          {initialabsenceData ? (
-            <ThemedText style={styles.initialStatus}>
-              {TEXT.absence_INITIAL_DATA_LOADED}
+        <View style={styles.pageHeader}>
+          <ThemedText style={styles.pageTitle}>{TEXT.absence_SICK_FORM_TITLE}</ThemedText>
+          <ThemedText style={styles.pageSubtitle}>{TEXT.absence_SICK_DESCRIPTION}</ThemedText>
+        </View>
+
+        <View style={styles.formCard}>
+          <SelectField
+            label={TEXT.absence_APPROVER_LABEL}
+            placeholder={TEXT.absence_APPROVER_PLACEHOLDER}
+            value={approver}
+            options={approverOptions}
+            isOpen={openSelect === "approver"}
+            hasError={Boolean(validationErrors.approver)}
+            errorMessage={validationErrors.approver}
+            onToggle={() =>
+              setOpenSelect(openSelect === "approver" ? null : "approver")
+            }
+            onSelect={(value, option) => {
+              setApprover(value);
+              setApproverStaffId(option?.staffId ?? "");
+              clearValidationError("approver");
+              setOpenSelect(null);
+            }}
+          />
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>
+              {TEXT.absence_REASON_LABEL}
             </ThemedText>
-          ) : null}
-
-          <View style={styles.form}>
-            <SelectField
-              label={TEXT.absence_APPROVER_LABEL}
-              placeholder={TEXT.absence_APPROVER_PLACEHOLDER}
-              value={approver}
-              options={approverOptions}
-              isOpen={openSelect === "approver"}
-              hasError={Boolean(validationErrors.approver)}
-              errorMessage={validationErrors.approver}
-              onToggle={() =>
-                setOpenSelect(openSelect === "approver" ? null : "approver")
-              }
-              onSelect={(value, option) => {
-                setApprover(value);
-                setApproverStaffId(option?.staffId ?? "");
-                clearValidationError("approver");
-                setOpenSelect(null);
+            <TextInput
+              multiline
+              numberOfLines={3}
+              onChangeText={(value) => {
+                setReason(value);
+                if (value.trim()) {
+                  clearValidationError("reason");
+                }
               }}
+              placeholder={TEXT.absence_REASON_PLACEHOLDER}
+              placeholderTextColor="#9CA3AF"
+              style={[
+                styles.textArea,
+                validationErrors.reason ? styles.inputError : undefined,
+              ]}
+              textAlignVertical="top"
+              value={reason}
             />
-
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
-                {TEXT.absence_REASON_LABEL}
+            {validationErrors.reason ? (
+              <ThemedText style={styles.fieldError}>
+                {validationErrors.reason}
               </ThemedText>
-              <TextInput
-                multiline
-                numberOfLines={2}
-                onChangeText={(value) => {
-                  setReason(value);
-                  if (value.trim()) {
-                    clearValidationError("reason");
+            ) : null}
+          </View>
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>
+              {TEXT.absence_LEAVE_DATE_LABEL}
+            </ThemedText>
+            <View style={styles.dateRow}>
+              <DatePickerField
+                label={TEXT.absence_START_DATE_LABEL}
+                value={startDate}
+                maximumDate={maximumStartDate}
+                onChange={(date) => {
+                  setStartDate(date);
+                  if (
+                    endDate &&
+                    (startOfDay(endDate) < startOfDay(date) ||
+                      startOfDay(endDate) > maximumStartDate)
+                  ) {
+                    setEndDate(null);
+                  } else if (endDate) {
+                    clearValidationError("date");
                   }
                 }}
-                placeholder={TEXT.absence_REASON_PLACEHOLDER}
-                placeholderTextColor="#8A969C"
-                style={[
-                  styles.input,
-                  styles.textArea,
-                  validationErrors.reason ? styles.inputError : undefined,
-                ]}
-                textAlignVertical="top"
-                value={reason}
+                hasError={Boolean(displayedDateError)}
               />
-              {validationErrors.reason ? (
-                <ThemedText style={styles.fieldError}>
-                  {validationErrors.reason}
-                </ThemedText>
-              ) : null}
+              <DatePickerField
+                label={TEXT.absence_END_DATE_LABEL}
+                value={endDate}
+                minimumDate={minimumEndDate}
+                maximumDate={maximumStartDate}
+                highlightedStartDate={startDate}
+                hasError={Boolean(displayedDateError)}
+                onChange={(date) => {
+                  setEndDate(date);
+                  if (startDate) {
+                    clearValidationError("date");
+                  }
+                }}
+              />
             </View>
-
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
-                {TEXT.absence_LEAVE_DATE_LABEL}
-              </ThemedText>
-              <View style={styles.dateRow}>
-                <DatePickerField
-                  label={TEXT.absence_START_DATE_LABEL}
-                  value={startDate}
-                  maximumDate={maximumStartDate}
-                  onChange={(date) => {
-                    setStartDate(date);
-                    if (
-                      endDate &&
-                      (startOfDay(endDate) < startOfDay(date) ||
-                        startOfDay(endDate) > maximumStartDate)
-                    ) {
-                      setEndDate(null);
-                    } else if (endDate) {
-                      clearValidationError("date");
-                    }
-                  }}
-                  hasError={Boolean(displayedDateError)}
-                />
-                <DatePickerField
-                  label={TEXT.absence_END_DATE_LABEL}
-                  value={endDate}
-                  minimumDate={minimumEndDate}
-                  maximumDate={maximumStartDate}
-                  highlightedStartDate={startDate}
-                  hasError={Boolean(displayedDateError)}
-                  onChange={(date) => {
-                    setEndDate(date);
-                    if (startDate) {
-                      clearValidationError("date");
-                    }
-                  }}
-                />
-              </View>
+            <ThemedText
+              style={[
+                styles.hint,
+                displayedDateError ? styles.errorText : undefined,
+              ]}
+            >
+              {displayedDateError || TEXT.absence_SELECT_DATE_HINT}
+            </ThemedText>
+            {leaveDayCount !== null ? (
               <ThemedText
-                style={[
-                  styles.hint,
-                  displayedDateError ? styles.errorText : undefined,
-                ]}
+                type="defaultSemiBold"
+                style={styles.leaveDaySummary}
               >
-                {displayedDateError || TEXT.absence_SELECT_DATE_HINT}
+                {TEXT.absence_LEAVE_DAY_COUNT_LABEL}
+                {leaveDayCount.toLocaleString("th-TH")} {TEXT.absence_DAY_UNIT}
               </ThemedText>
-              {leaveDayCount !== null ? (
-                <ThemedText
-                  type="defaultSemiBold"
-                  style={styles.leaveDaySummary}
-                >
-                  {TEXT.absence_LEAVE_DAY_COUNT_LABEL}
-                  {leaveDayCount.toLocaleString("th-TH")} {TEXT.absence_DAY_UNIT}
-                </ThemedText>
-              ) : null}
-            </View>
+            ) : null}
+          </View>
 
-            <SelectField
-              label={TEXT.absence_HALF_DAY_LABEL}
-              placeholder={TEXT.absence_HALF_DAY_PLACEHOLDER}
-              value={halfDay}
-              options={halfDayOptions}
-              isOpen={openSelect === "halfDay"}
-              onToggle={() =>
-                setOpenSelect(openSelect === "halfDay" ? null : "halfDay")
-              }
-              onSelect={(value) => {
-                setHalfDay(value);
-                setOpenSelect(null);
+          <SelectField
+            label={TEXT.absence_HALF_DAY_LABEL}
+            placeholder={TEXT.absence_HALF_DAY_PLACEHOLDER}
+            value={halfDay}
+            options={halfDayOptions}
+            isOpen={openSelect === "halfDay"}
+            onToggle={() =>
+              setOpenSelect(openSelect === "halfDay" ? null : "halfDay")
+            }
+            onSelect={(value) => {
+              setHalfDay(value);
+              setOpenSelect(null);
+            }}
+          />
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>
+              {TEXT.absence_CONTACT_CHANNEL_LABEL}
+            </ThemedText>
+            <TextInput
+              onChangeText={(value) => {
+                setContact(value);
+                if (value.trim()) {
+                  clearValidationError("contact");
+                }
               }}
+              placeholder={TEXT.absence_CONTACT_CHANNEL_PLACEHOLDER}
+              placeholderTextColor="#9CA3AF"
+              style={[
+                styles.input,
+                validationErrors.contact ? styles.inputError : undefined,
+              ]}
+              value={contact}
             />
-
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
-                {TEXT.absence_CONTACT_CHANNEL_LABEL}
+            {validationErrors.contact ? (
+              <ThemedText style={styles.fieldError}>
+                {validationErrors.contact}
               </ThemedText>
-              <TextInput
-                onChangeText={(value) => {
-                  setContact(value);
-                  if (value.trim()) {
-                    clearValidationError("contact");
-                  }
-                }}
-                placeholder={TEXT.absence_CONTACT_CHANNEL_PLACEHOLDER}
-                placeholderTextColor="#8A969C"
-                style={[
-                  styles.input,
-                  validationErrors.contact ? styles.inputError : undefined,
-                ]}
-                value={contact}
-              />
-              {validationErrors.contact ? (
-                <ThemedText style={styles.fieldError}>
-                  {validationErrors.contact}
+            ) : null}
+          </View>
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>
+              {FILE_PICKER_LABEL}
+            </ThemedText>
+            {selectedFile ? (
+              <View style={styles.selectedFileCard}>
+                <MaterialIcons name="attach-file" size={18} color="#B33939" />
+                <ThemedText style={styles.selectedFileName} numberOfLines={1}>
+                  {getUploadFileName(selectedFile)}
                 </ThemedText>
-              ) : null}
-            </View>
-
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
-                {FILE_PICKER_LABEL}
-              </ThemedText>
-              <View style={styles.filePickerRow}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={handlePickFile}
-                  style={styles.filePickerButton}
-                >
-                  <ThemedText
-                    lightColor="#0A6E8A"
-                    darkColor="#0A6E8A"
-                    type="defaultSemiBold"
-                  >
-                    {isEditMode && hasUploadedFile
-                      ? FILE_PICKER_REUPLOAD_ACTION
-                      : FILE_PICKER_ACTION}
-                  </ThemedText>
-                </Pressable>
-                {selectedFile && activeFileUrl ? (
+                <View style={styles.fileActions}>
+                  {activeFileUrl ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={handleViewFile}
+                      style={styles.fileActionBtn}
+                    >
+                      <MaterialIcons name="visibility" size={20} color="#687076" />
+                    </Pressable>
+                  ) : null}
                   <Pressable
-                    accessibilityLabel="View selected file"
-                    accessibilityRole="button"
-                    onPress={handleViewFile}
-                    style={[styles.fileIconButton, styles.viewFileButton]}
-                  >
-                    <MaterialIcons
-                      name="visibility"
-                      size={22}
-                      color="#FFFFFF"
-                    />
-                  </Pressable>
-                ) : null}
-                {selectedFile ? (
-                  <Pressable
-                    accessibilityLabel="Remove selected file"
                     accessibilityRole="button"
                     onPress={() => setSelectedFile(null)}
-                    style={[styles.fileIconButton, styles.removeFileButton]}
+                    style={styles.fileActionBtn}
                   >
-                    <MaterialIcons
-                      name="delete-outline"
-                      size={22}
-                      color="#FFFFFF"
-                    />
-                  </Pressable>
-                ) : null}
-              </View>
-              {uploadedFileUrl ? (
-                <View style={styles.uploadedFileRow}>
-                  <Pressable
-                    accessibilityRole="link"
-                    onPress={handleViewUploadedFile}
-                    style={styles.uploadedFileLink}
-                  >
-                    <MaterialIcons
-                      name="attach-file"
-                      size={18}
-                      color="#12805C"
-                    />
-                    <ThemedText
-                      lightColor="#12805C"
-                      darkColor="#5EC6A3"
-                      type="defaultSemiBold"
-                      style={styles.uploadedFileLinkText}
-                      numberOfLines={1}
-                    >
-                      Uploaded file
-                    </ThemedText>
+                    <MaterialIcons name="close" size={20} color="#B42318" />
                   </Pressable>
                 </View>
-              ) : null}
-            </View>
-
-            <View style={isEditMode ? styles.actionRow : undefined}>
+              </View>
+            ) : (
               <Pressable
                 accessibilityRole="button"
-                disabled={isSubmitting || isRemoving}
-                onPress={handleSubmit}
-                style={[
-                  styles.submitButton,
-                  isEditMode ? styles.actionButton : undefined,
-                  isSubmitting || isRemoving ? styles.disabledButton : undefined,
-                ]}
+                onPress={handlePickFile}
+                style={styles.uploadZone}
               >
-                {isSubmitting ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : null}
+                <MaterialIcons name="cloud-upload" size={30} color="#B33939" />
+                <ThemedText style={styles.uploadZoneText}>
+                  {isEditMode && hasUploadedFile
+                    ? FILE_PICKER_REUPLOAD_ACTION
+                    : FILE_PICKER_ACTION}
+                </ThemedText>
+                <ThemedText style={styles.uploadZoneHint}>PDF, JPG, PNG</ThemedText>
+              </Pressable>
+            )}
+            {uploadedFileUrl && !selectedFile ? (
+              <Pressable
+                accessibilityRole="link"
+                onPress={handleViewUploadedFile}
+                style={styles.uploadedFileLink}
+              >
+                <MaterialIcons name="attach-file" size={16} color="#12805C" />
                 <ThemedText
-                  lightColor="#FFFFFF"
-                  darkColor="#FFFFFF"
+                  lightColor="#12805C"
+                  darkColor="#5EC6A3"
                   type="defaultSemiBold"
+                  style={styles.uploadedFileLinkText}
+                  numberOfLines={1}
                 >
-                  {isSubmitting
-                    ? SUBMITTING_LABEL
-                    : isEditMode
-                      ? TEXT.SHARED_UPDATE
-                      : TEXT.absence_SUBMIT_REQUEST}
+                  Uploaded file
                 </ThemedText>
               </Pressable>
+            ) : null}
+          </View>
 
-              {isEditMode ? (
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting || isRemoving}
-                  onPress={handleRemove}
-                  style={[
-                    styles.removeRequestButton,
-                    isSubmitting || isRemoving ? styles.disabledButton : undefined,
-                  ]}
-                >
-                  {isRemoving ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : null}
-                  <ThemedText
-                    lightColor="#FFFFFF"
-                    darkColor="#FFFFFF"
-                    type="defaultSemiBold"
-                  >
-                    {TEXT.SHARED_DELETE_THAI}
-                  </ThemedText>
-                </Pressable>
-              ) : null}
+          <View style={styles.policyCard}>
+            <View style={styles.policyIconWrap}>
+              <MaterialIcons name="info-outline" size={20} color="#B33939" />
+            </View>
+            <View style={styles.policyBody}>
+              <ThemedText style={styles.policyTitle}>
+                {TEXT.absence_POLICY_NOTE_LABEL}
+              </ThemedText>
+              <ThemedText style={styles.policyText}>
+                {TEXT.absence_POLICY_NOTE_TEXT}
+              </ThemedText>
             </View>
           </View>
-        </ThemedView>
+        </View>
+
+        <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      <View style={styles.bottomBar}>
+        {isEditMode ? (
+          <View style={styles.actionRow}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting || isRemoving}
+              onPress={handleRemove}
+              style={[
+                styles.deleteButton,
+                isSubmitting || isRemoving ? styles.disabledButton : undefined,
+              ]}
+            >
+              {isRemoving ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : null}
+              <ThemedText
+                lightColor="#FFFFFF"
+                darkColor="#FFFFFF"
+                type="defaultSemiBold"
+              >
+                {TEXT.SHARED_DELETE_THAI}
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting || isRemoving}
+              onPress={handleSubmit}
+              style={[
+                styles.submitButton,
+                styles.actionButton,
+                isSubmitting || isRemoving ? styles.disabledButton : undefined,
+              ]}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : null}
+              <ThemedText
+                lightColor="#FFFFFF"
+                darkColor="#FFFFFF"
+                type="defaultSemiBold"
+              >
+                {isSubmitting ? SUBMITTING_LABEL : TEXT.SHARED_UPDATE}
+              </ThemedText>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            disabled={isSubmitting}
+            onPress={handleSubmit}
+            style={[
+              styles.submitButton,
+              isSubmitting ? styles.disabledButton : undefined,
+            ]}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : null}
+            <ThemedText
+              lightColor="#FFFFFF"
+              darkColor="#FFFFFF"
+              type="defaultSemiBold"
+            >
+              {isSubmitting ? SUBMITTING_LABEL : TEXT.absence_SUBMIT_REQUEST}
+            </ThemedText>
+          </Pressable>
+        )}
+      </View>
+
       <Modal
         transparent
         visible={isConfirmVisible}
@@ -1121,7 +1138,7 @@ export default function SickScreen() {
           style={styles.backdrop}
           onPress={() => setIsConfirmVisible(false)}
         >
-          <Pressable>
+          <Pressable style={styles.modalContent}>
             <ThemedView
               style={styles.confirmModal}
               lightColor="#FFFFFF"
@@ -1166,6 +1183,7 @@ export default function SickScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
       <Modal
         transparent
         visible={isRemoveConfirmVisible}
@@ -1176,7 +1194,7 @@ export default function SickScreen() {
           style={styles.backdrop}
           onPress={() => setIsRemoveConfirmVisible(false)}
         >
-          <Pressable>
+          <Pressable style={styles.modalContent}>
             <ThemedView
               style={styles.confirmModal}
               lightColor="#FFFFFF"
@@ -1221,6 +1239,7 @@ export default function SickScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
       <Modal
         transparent
         visible={isImageViewerVisible}
@@ -1267,6 +1286,7 @@ export default function SickScreen() {
           </Pressable>
         </View>
       </Modal>
+
       <AppToast
         message={toastMessage}
         type={toastType === "error" ? "error" : "success"}
@@ -1278,9 +1298,33 @@ export default function SickScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#F8F9FD",
   },
-  content: {
-    padding: 16,
+  scrollContent: {
+    paddingBottom: 24,
+  },
+  pageHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+    gap: 4,
+  },
+  pageTitle: {
+    fontSize: 22,
+    lineHeight: 30,
+    fontWeight: "700",
+    color: "#191C1F",
+  },
+  pageSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#687076",
+  },
+  formCard: {
+    marginHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    overflow: "hidden",
   },
   stateContent: {
     flex: 1,
@@ -1302,103 +1346,116 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     width: "100%",
   },
-  panel: {
-    borderRadius: 8,
-    padding: 0,
-  },
-  initialStatus: {
-    marginTop: 8,
-    color: "#687076",
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  form: {
-    gap: 24,
-    marginTop: 24,
-  },
   field: {
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E8ECF0",
+  },
+  fieldLabel: {
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: "600",
+    letterSpacing: 0.6,
+    color: "#687076",
+    textTransform: "uppercase",
   },
   input: {
-    minHeight: 48,
+    minHeight: 44,
+    backgroundColor: "#F2F3F7",
     borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
-    color: "#11181C",
+    color: "#191C1F",
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
+    lineHeight: 20,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   inputError: {
+    borderWidth: 1,
     borderColor: "#B42318",
   },
   textArea: {
-    minHeight: 72,
+    minHeight: 80,
+    backgroundColor: "#F2F3F7",
+    borderRadius: 8,
+    color: "#191C1F",
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 14,
+    lineHeight: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   dateRow: {
     flexDirection: "row",
-    gap: 14,
+    gap: 12,
   },
   hint: {
-    color: "#687076",
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17,
+    color: "#687076",
   },
   leaveDaySummary: {
+    fontSize: 13,
+    lineHeight: 18,
     color: "#0A6E8A",
   },
   errorText: {
     color: "#B42318",
   },
   fieldError: {
-    color: "#B42318",
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17,
+    color: "#B42318",
   },
   selectButton: {
-    minHeight: 48,
+    minHeight: 44,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    backgroundColor: "#F2F3F7",
     borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
     paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 8,
   },
   selectText: {
     flex: 1,
-    color: "#11181C",
+    color: "#191C1F",
+    fontSize: 14,
+    fontFamily: AppFonts.psuRegular,
   },
   placeholder: {
-    color: "#8A969C",
+    color: "#9CA3AF",
   },
   chevron: {
-    color: "#0A6E8A",
-    fontSize: 16,
-    lineHeight: 20,
-    marginLeft: 8,
+    color: "#687076",
+    fontSize: 18,
+    lineHeight: 22,
   },
   backdrop: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     padding: 24,
+  },
+  modalContent: {
+    width: "100%",
+    alignItems: "center",
   },
   selectModal: {
     width: "100%",
     maxWidth: 420,
     maxHeight: 460,
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 16,
   },
   confirmModal: {
     width: "100%",
     maxWidth: 420,
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 20,
   },
   confirmMessage: {
@@ -1427,7 +1484,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#E4F0F6",
+    backgroundColor: "#F2F3F7",
     paddingHorizontal: 14,
   },
   optionScroll: {
@@ -1439,20 +1496,22 @@ const styles = StyleSheet.create({
   option: {
     minHeight: 48,
     justifyContent: "center",
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
-    backgroundColor: "#FFFFFF",
+    borderColor: "#E8ECF0",
+    backgroundColor: "#F8F9FD",
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   selectedOption: {
-    borderColor: "#0A6E8A",
-    backgroundColor: "#0A6E8A",
+    borderColor: "#B33939",
+    backgroundColor: "#B33939",
   },
   optionText: {
-    color: "#11181C",
+    color: "#191C1F",
+    fontSize: 14,
     lineHeight: 20,
+    fontFamily: AppFonts.psuRegular,
   },
   emptyOption: {
     color: "#687076",
@@ -1460,131 +1519,139 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     textAlign: "center",
   },
-  secondaryButton: {
-    minHeight: 48,
-    minWidth: 132,
+  uploadZone: {
+    borderWidth: 1.5,
+    borderColor: "#D1D5DB",
+    borderStyle: "dashed",
+    borderRadius: 12,
+    minHeight: 100,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
+    gap: 6,
+    paddingVertical: 20,
   },
-  filePickerRow: {
+  uploadZoneText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "600",
+    color: "#B33939",
+  },
+  uploadZoneHint: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#9CA3AF",
+  },
+  selectedFileCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    backgroundColor: "#FFF5F5",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FFD9D9",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  filePickerButton: {
-    minHeight: 46,
+  selectedFileName: {
     flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#191C1F",
+  },
+  fileActions: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  fileActionBtn: {
+    width: 36,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#0A6E8A",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14,
-  },
-  uploadedFileRow: {
-    minHeight: 46,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
   },
   uploadedFileLink: {
-    flex: 1,
-    minHeight: 36,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    marginTop: 4,
   },
   uploadedFileLinkText: {
     fontSize: 13,
     lineHeight: 18,
     textDecorationLine: "underline",
   },
-  fileIconButton: {
-    width: 46,
-    height: 46,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#0A6E8A",
-    backgroundColor: "#FFFFFF",
-  },
-  viewFileButton: {
-    borderColor: "#12805C",
-    backgroundColor: "#12805C",
-  },
-  removeFileButton: {
-    borderColor: "#B42318",
-    backgroundColor: "#B42318",
-  },
-  imageViewerBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.92)",
-  },
-  imageViewerHeader: {
-    minHeight: 64,
+  policyCard: {
     flexDirection: "row",
-    alignItems: "center",
     gap: 12,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-  },
-  imageViewerTitle: {
-    flex: 1,
-    fontSize: 14,
-  },
-  imageViewerCloseButton: {
-    minHeight: 40,
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255, 255, 255, 0.35)",
-    paddingHorizontal: 14,
-  },
-  imageViewerBody: {
-    flex: 1,
+    backgroundColor: "#FFF8F8",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#FFD9D9",
     padding: 16,
   },
-  imageViewerImage: {
+  policyIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#FFE8E8",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  policyBody: {
     flex: 1,
-    width: "100%",
+    gap: 4,
+  },
+  policyTitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "600",
+    color: "#B33939",
+  },
+  policyText: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#584140",
+  },
+  bottomSpacer: {
+    height: 100,
+  },
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#E8ECF0",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 28,
   },
   actionRow: {
     flexDirection: "row",
-    gap: 14,
-    justifyContent: "center",
-    marginTop: 6,
+    gap: 12,
   },
   actionButton: {
     flex: 1,
-    marginTop: 0,
   },
   submitButton: {
-    minHeight: 48,
-    minWidth: 132,
+    minHeight: 52,
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#0A6E8A",
-    marginTop: 6,
+    borderRadius: 12,
+    backgroundColor: "#B33939",
   },
-  removeRequestButton: {
-    minHeight: 48,
-    minWidth: 132,
-    flex: 1,
+  deleteButton: {
+    minHeight: 52,
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: "#B42318",
+    paddingHorizontal: 20,
   },
   removeConfirmButton: {
     minHeight: 48,
@@ -1597,7 +1664,52 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#B42318",
   },
+  secondaryButton: {
+    minHeight: 48,
+    minWidth: 132,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#D1D5DB",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+  },
   disabledButton: {
-    opacity: 0.65,
+    opacity: 0.45,
+  },
+  imageViewerBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+  },
+  imageViewerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 48,
+    paddingBottom: 12,
+    gap: 12,
+  },
+  imageViewerTitle: {
+    flex: 1,
+    fontSize: 16,
+  },
+  imageViewerCloseButton: {
+    minHeight: 40,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+  },
+  imageViewerBody: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  imageViewerImage: {
+    width: "100%",
+    height: "100%",
   },
 });

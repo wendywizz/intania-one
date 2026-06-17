@@ -201,70 +201,72 @@ export default function RepairComputerInformScreen() {
         >
           <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_INFORM}</ThemedText>
 
-          <View style={styles.field}>
-            <ThemedText type="defaultSemiBold">
-              {TEXT.REPAIR_COMPUTER_DETAIL}
-            </ThemedText>
-            <TextInput
-              multiline
-              numberOfLines={2}
-              onChangeText={(value) => {
-                setDetail(value);
-                clearValidationError("detail");
-              }}
-              placeholder={TEXT.REPAIR_COMPUTER_DETAIL}
-              placeholderTextColor="#8A969C"
-              style={[
-                styles.input,
-                styles.textArea,
-                validationErrors.detail ? styles.inputError : undefined,
-              ]}
-              textAlignVertical="top"
-              value={detail}
-            />
-            {validationErrors.detail ? (
-              <ThemedText style={styles.fieldError}>
-                {validationErrors.detail}
+          <View style={styles.formCard}>
+            <View style={styles.field}>
+              <ThemedText type="defaultSemiBold">
+                {TEXT.REPAIR_COMPUTER_DETAIL}
               </ThemedText>
-            ) : null}
-          </View>
+              <TextInput
+                multiline
+                numberOfLines={2}
+                onChangeText={(value) => {
+                  setDetail(value);
+                  clearValidationError("detail");
+                }}
+                placeholder={TEXT.REPAIR_COMPUTER_DETAIL}
+                placeholderTextColor="#8A969C"
+                style={[
+                  styles.input,
+                  styles.textArea,
+                  validationErrors.detail ? styles.inputError : undefined,
+                ]}
+                textAlignVertical="top"
+                value={detail}
+              />
+              {validationErrors.detail ? (
+                <ThemedText style={styles.fieldError}>
+                  {validationErrors.detail}
+                </ThemedText>
+              ) : null}
+            </View>
 
-          <View style={styles.field}>
-            <ThemedText type="defaultSemiBold">
-              {TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
-            </ThemedText>
-            <TextInput
-              onChangeText={setSupplyCode}
-              placeholder={TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
-              placeholderTextColor="#8A969C"
-              style={styles.input}
-              value={supplyCode}
-            />
-          </View>
-
-          <View style={styles.field}>
-            <ThemedText type="defaultSemiBold">
-              {TEXT.REPAIR_COMPUTER_PHONE}
-            </ThemedText>
-            <TextInput
-              keyboardType="phone-pad"
-              onChangeText={(value) => {
-                setPhone(value);
-                clearValidationError("phone");
-              }}
-              placeholder={TEXT.REPAIR_COMPUTER_PHONE}
-              placeholderTextColor="#8A969C"
-              style={[
-                styles.input,
-                validationErrors.phone ? styles.inputError : undefined,
-              ]}
-              value={phone}
-            />
-            {validationErrors.phone ? (
-              <ThemedText style={styles.fieldError}>
-                {validationErrors.phone}
+            <View style={styles.field}>
+              <ThemedText type="defaultSemiBold">
+                {TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
               </ThemedText>
-            ) : null}
+              <TextInput
+                onChangeText={setSupplyCode}
+                placeholder={TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
+                placeholderTextColor="#8A969C"
+                style={styles.input}
+                value={supplyCode}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <ThemedText type="defaultSemiBold">
+                {TEXT.REPAIR_COMPUTER_PHONE}
+              </ThemedText>
+              <TextInput
+                keyboardType="phone-pad"
+                onChangeText={(value) => {
+                  setPhone(value);
+                  clearValidationError("phone");
+                }}
+                placeholder={TEXT.REPAIR_COMPUTER_PHONE}
+                placeholderTextColor="#8A969C"
+                style={[
+                  styles.input,
+                  validationErrors.phone ? styles.inputError : undefined,
+                ]}
+                value={phone}
+              />
+              {validationErrors.phone ? (
+                <ThemedText style={styles.fieldError}>
+                  {validationErrors.phone}
+                </ThemedText>
+              ) : null}
+            </View>
           </View>
 
           <Pressable
@@ -381,10 +383,24 @@ export default function RepairComputerInformScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FD',
   },
   content: {
-    gap: 18,
+    gap: 16,
     padding: 16,
+  },
+  formCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E1E2E6',
+    padding: 16,
+    gap: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   field: {
     gap: 8,

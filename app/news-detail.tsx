@@ -1,10 +1,14 @@
+﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useLocalSearchParams } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import type { News } from '@/models/types';
 import { staffNewsFeed } from '@/services/newsService';
@@ -112,13 +116,14 @@ export default function NewsDetailScreen() {
     };
   }, [initialNews]);
 
-  const paragraphs = splitParagraphs(news.description);
-  const metaItems = [news.category, news.pubDate ? formatDateTime(news.pubDate) : ''].filter(Boolean);
-  const hasNewsContent = Boolean(news.title || paragraphs.length || news.link);
+  const paragraphs = splitParagraphs(news.description ?? '');
+  const date = news.pubDate ? formatDateTime(news.pubDate) : '';
+  const metaItems = [news.category, date].filter(Boolean);
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="News" showHomeButton />
+      <StatusBar style="light" />
+      <NavTopBar title="News Detail" showHomeButton />
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -126,39 +131,32 @@ export default function NewsDetailScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
-          {hasNewsContent ? (
-            <>
-              <ThemedView style={styles.hero} lightColor="#EAF6F2" darkColor="#162A2A">
-                <View style={styles.metaRow}>
-                  {metaItems.map((item) => (
-                    <ThemedText key={item} style={styles.metaChip}>
-                      {item}
-                    </ThemedText>
-                  ))}
-                </View>
-                <ThemedText type="title" style={styles.title}>
-                  {news.title}
+          <View style={styles.card}>
+            {/* Date / category meta row */}
+            <View style={styles.metaRow}>
+              <MaterialIcons name="calendar-today" size={14} color="#585E6D" />
+              <ThemedText style={styles.metaText}>{metaItems.join(' • ')}</ThemedText>
+            </View>
+
+            {/* Title */}
+            {news.title ? (
+              <ThemedText style={styles.title}>{news.title}</ThemedText>
+            ) : null}
+
+            {/* Accent line */}
+            <View style={styles.accentLine} />
+
+            {/* Body paragraphs */}
+            {paragraphs.length > 0 ? (
+              paragraphs.map((paragraph, index) => (
+                <ThemedText key={`${paragraph.slice(0, 20)}-${index}`} style={styles.paragraph}>
+                  {paragraph}
                 </ThemedText>
-              </ThemedView>
-
-              <ThemedView style={styles.article} lightColor="#FFFFFF" darkColor="#151718">
-                {paragraphs.length > 0 ? (
-                  paragraphs.map((paragraph, index) => (
-                    <ThemedText key={`${paragraph.slice(0, 20)}-${index}`} style={styles.paragraph}>
-                      {paragraph}
-                    </ThemedText>
-                  ))
-                ) : (
-                  <ThemedText style={styles.emptyText}>{TEXT.HOME_NO_NEWS_MESSAGE}</ThemedText>
-                )}
-              </ThemedView>
-
-            </>
-          ) : (
-            <ThemedView style={styles.article} lightColor="#FFFFFF" darkColor="#151718">
+              ))
+            ) : (
               <ThemedText style={styles.emptyText}>{TEXT.HOME_NO_NEWS_MESSAGE}</ThemedText>
-            </ThemedView>
-          )}
+            )}
+          </View>
         </ScrollView>
       )}
     </ThemedView>
@@ -168,6 +166,7 @@ export default function NewsDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FD',
   },
   loadingContainer: {
     flex: 1,
@@ -175,52 +174,56 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   content: {
-    gap: 16,
-    padding: 20,
-    paddingBottom: 32,
+    padding: 16,
+    paddingBottom: 40,
   },
-  hero: {
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#B8DCD3',
-    padding: 18,
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E1E2E6',
+    padding: 20,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   metaRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
+    alignItems: 'center',
+    gap: 6,
   },
-  metaChip: {
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#D8EFE8',
-    color: '#0A6E5A',
+  metaText: {
     fontSize: 12,
-    lineHeight: 18,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    lineHeight: 16,
+    color: '#585E6D',
+    fontFamily: AppFonts.psuRegular,
   },
   title: {
-    color: '#102A2E',
-    fontSize: 24,
-    lineHeight: 32,
+    fontSize: 22,
+    lineHeight: 30,
+    fontWeight: '700',
+    color: '#191C1F',
+    fontFamily: AppFonts.psuBold,
   },
-  article: {
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
-    padding: 18,
+  accentLine: {
+    height: 4,
+    width: 48,
+    borderRadius: 9999,
+    backgroundColor: '#B33939',
   },
   paragraph: {
-    color: '#31474F',
-    fontSize: 16,
-    lineHeight: 26,
-    marginBottom: 14,
+    fontSize: 15,
+    lineHeight: 24,
+    color: '#584140',
+    fontFamily: AppFonts.psuRegular,
   },
   emptyText: {
     color: '#687076',
     fontSize: 15,
     lineHeight: 22,
+    fontFamily: AppFonts.psuRegular,
   },
 });

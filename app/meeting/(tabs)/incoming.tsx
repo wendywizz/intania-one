@@ -1,4 +1,6 @@
+﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { TEXT } from "@/constants/text";
+import { StatusBar } from "expo-status-bar";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -13,113 +15,103 @@ import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { AppFonts } from "@/constants/fonts";
 import { TYPE_MEETING_INCOMING } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { Meeting } from "@/models/types";
 import { listMeeting } from "@/services/meetingService";
-import { formatDateAndTime } from "@/utils/date-format";
+import { formatDateAndTime, formatDateOnly } from "@/utils/date-format";
 
-const titleFields = [
-  "title",
-  "topic",
-  "subject",
-  "meetingName",
-  "meetingTitle",
-  "name",
-];
-const dateFields = [
-  "meetingDate",
-  "date",
-  "startDate",
-  "meeting_date",
-  "start_date",
-];
-const timeFields = [
-  "meetingTime",
-  "time",
-  "startTime",
-  "meeting_time",
-  "start_time",
-];
-const placeFields = [
-  "location",
-  "place",
-  "room",
-  "meetingRoom",
-  "meeting_room",
-];
+const titleFields = ["title", "topic", "subject", "meetingName", "meetingTitle", "name"];
+const dateFields = ["meetingDate", "date", "startDate", "meeting_date", "start_date"];
+const timeFields = ["meetingTime", "time", "startTime", "meeting_time", "start_time"];
+const placeFields = ["location", "place", "room", "meetingRoom", "meeting_room"];
 
 function getText(meeting: Meeting, fields: string[]) {
   for (const field of fields) {
     const value = meeting[field];
-
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-
-    if (typeof value === "number") {
-      return String(value);
-    }
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number") return String(value);
   }
-
   return "";
 }
 
-function getMeetingKey(meeting: Meeting, index: number) {
-  const key = getText(meeting, ["id", "meetingId", "meeting_id", "code"]);
-  return `${key || "meeting"}-${index}`;
-}
-
-function getMeetingTimestamp(meeting: Meeting) {
+function getDateSortKey(meeting: Meeting) {
   const date = getText(meeting, dateFields);
   const time = getText(meeting, timeFields);
-  const timestamp = Date.parse([date, time].filter(Boolean).join(" "));
-
-  return Number.isNaN(timestamp) ? 0 : timestamp;
+  const ts = Date.parse([date, time].filter(Boolean).join(" "));
+  return Number.isNaN(ts) ? "" : new Date(ts).toISOString().slice(0, 10);
 }
 
-function sortMeetingsByDateDesc(meetings: Meeting[]) {
-  return [...meetings].sort((leftMeeting, rightMeeting) => {
-    return getMeetingTimestamp(rightMeeting) - getMeetingTimestamp(leftMeeting);
-  });
+type DateHeaderRow = { type: "date-header"; key: string; label: string };
+type MeetingRow = { type: "meeting"; key: string; meeting: Meeting };
+type ListRow = DateHeaderRow | MeetingRow;
+
+function groupByDate(meetings: Meeting[], ascending: boolean): ListRow[] {
+  const order: string[] = [];
+  const groups: Record<string, { label: string; items: Meeting[] }> = {};
+
+  for (const meeting of meetings) {
+    const date = getText(meeting, dateFields);
+    const sortKey = getDateSortKey(meeting) || "9999-12-31";
+    const label = date ? formatDateOnly(date) : "ไม่ระบุวันที่";
+
+    if (!groups[sortKey]) {
+      order.push(sortKey);
+      groups[sortKey] = { label, items: [] };
+    }
+    groups[sortKey].items.push(meeting);
+  }
+
+  order.sort((a, b) => ascending ? a.localeCompare(b) : b.localeCompare(a));
+
+  const rows: ListRow[] = [];
+  for (const key of order) {
+    const { label, items } = groups[key];
+    rows.push({ type: "date-header", key: `header-${key}`, label });
+    items.forEach((meeting, i) => {
+      rows.push({ type: "meeting", key: `item-${key}-${i}`, meeting });
+    });
+  }
+  return rows;
 }
 
-type MeetingListItemProps = {
-  meeting: Meeting;
-};
-
-function MeetingListItem({ meeting }: MeetingListItemProps) {
+function MeetingCard({ meeting }: { meeting: Meeting }) {
   const title = getText(meeting, titleFields) || "Meeting";
   const date = getText(meeting, dateFields);
   const time = getText(meeting, timeFields);
   const place = getText(meeting, placeFields);
-  const detail = getText(meeting, [
-    "detail",
-    "description",
-    "agenda",
-    "remark",
-  ]);
+  const detail = getText(meeting, ["detail", "description", "agenda", "remark"]);
   const schedule = formatDateAndTime(date, time);
 
   return (
-    <ThemedView
-      style={styles.itemCard}
-      lightColor="#FFFFFF"
-      darkColor="#151718"
-    >
-      <ThemedText type="defaultSemiBold" style={styles.itemTitle}>
-        {title}
-      </ThemedText>
-
-      {schedule ? (
-        <ThemedText style={styles.itemMeta}>{schedule}</ThemedText>
-      ) : null}
-      {place ? <ThemedText style={styles.itemMeta}>{place}</ThemedText> : null}
-      {detail ? (
-        <ThemedText style={styles.itemDetail}>{detail}</ThemedText>
-      ) : null}
-    </ThemedView>
+    <View style={styles.itemCard}>
+      <View style={styles.itemRow}>
+        <View style={styles.iconCircle}>
+          <MaterialIcons name="event" size={20} color="#5D6371" />
+        </View>
+        <View style={styles.itemBody}>
+          <ThemedText style={styles.itemTitle} numberOfLines={2}>{title}</ThemedText>
+          {schedule ? (
+            <View style={styles.metaRow}>
+              <MaterialIcons name="access-time" size={13} color="#585E6D" />
+              <ThemedText style={styles.metaText}>{schedule}</ThemedText>
+            </View>
+          ) : null}
+          {place ? (
+            <View style={styles.metaRow}>
+              <MaterialIcons name="location-on" size={13} color="#585E6D" />
+              <ThemedText style={styles.metaText} numberOfLines={1}>{place}</ThemedText>
+            </View>
+          ) : null}
+          {detail ? (
+            <ThemedText style={styles.detailText} numberOfLines={2}>{detail}</ThemedText>
+          ) : null}
+        </View>
+        <MaterialIcons name="chevron-right" size={20} color="#8B716F" style={styles.chevron} />
+      </View>
+    </View>
   );
 }
 
@@ -133,24 +125,15 @@ export default function IncomingMeetingScreen() {
 
   const loadMeetings = useCallback(
     async (showRefreshing = false) => {
-      if (showRefreshing) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
-
+      if (showRefreshing) setIsRefreshing(true);
+      else setIsLoading(true);
       setError("");
-
       try {
         const result = await listMeeting(userId, TYPE_MEETING_INCOMING);
-        setMeetings(sortMeetingsByDateDesc(result));
+        setMeetings(result);
       } catch (error) {
         setMeetings([]);
-        setError(
-          error instanceof Error
-            ? error.message
-            : TEXT.MEETING_UNABLE_TO_LOAD_MEETINGS,
-        );
+        setError(error instanceof Error ? error.message : TEXT.MEETING_UNABLE_TO_LOAD_MEETINGS);
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);
@@ -159,169 +142,191 @@ export default function IncomingMeetingScreen() {
     [userId],
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      loadMeetings();
-    }, [loadMeetings]),
-  );
+  useFocusEffect(useCallback(() => { loadMeetings(); }, [loadMeetings]));
 
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <LoadingAnimate
-          title={TEXT.MEETING_LOADING_MEETINGS}
-          desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
-        />
-      );
-    }
+  // ascending = soonest first
+  const rows = groupByDate(meetings, true);
 
-    if (error) {
-      return (
-        <View style={styles.stateContent}>
-          <ThemedText type="subtitle">
-            {TEXT.SHARED_SOMETHING_WENT_WRONG}
-          </ThemedText>
-          <ThemedText style={[styles.stateMessage, styles.errorText]}>
-            {error}
-          </ThemedText>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => loadMeetings()}
-            style={styles.retryButton}
-          >
-            <ThemedText
-              lightColor="#FFFFFF"
-              darkColor="#FFFFFF"
-              type="defaultSemiBold"
-            >
-              {TEXT.SHARED_RETRY}
-            </ThemedText>
-          </Pressable>
-        </View>
-      );
-    }
-
+  if (isLoading) {
     return (
-      <FlatList
+      <ThemedView style={styles.container}>
+        <StatusBar style="light" />
+        <NavTopBar title={TEXT.MEETING_HEADER_TITLE} backHref="/" />
+        <LoadingAnimate title={TEXT.MEETING_LOADING_MEETINGS} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
+      </ThemedView>
+    );
+  }
+
+  if (error) {
+    return (
+      <ThemedView style={styles.container}>
+        <StatusBar style="light" />
+        <NavTopBar title={TEXT.MEETING_HEADER_TITLE} backHref="/" />
+        <View style={styles.errorWrap}>
+          <View style={styles.errorCard}>
+            <ThemedText style={styles.errorTitle}>{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
+            <ThemedText style={styles.errorMessage}>{error}</ThemedText>
+            <Pressable accessibilityRole="button" onPress={() => loadMeetings()} style={styles.retryButton}>
+              <ThemedText style={styles.retryText}>{TEXT.SHARED_RETRY}</ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  return (
+    <ThemedView style={styles.container}>
+      <StatusBar style="light" />
+      <NavTopBar title={TEXT.MEETING_HEADER_TITLE} backHref="/" />
+      <FlatList<ListRow>
         contentContainerStyle={styles.listContent}
-        data={meetings}
-        keyExtractor={getMeetingKey}
+        data={rows}
+        keyExtractor={(row) => row.key}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={() => loadMeetings(true)}
+            tintColor="#922124"
+            colors={["#922124"]}
           />
         }
-        renderItem={({ item }) => <MeetingListItem meeting={item} />}
+        renderItem={({ item: row }) => {
+          if (row.type === "date-header") {
+            return (
+              <View style={styles.dateHeader}>
+                <ThemedText style={styles.dateHeaderText}>{row.label}</ThemedText>
+              </View>
+            );
+          }
+          return <MeetingCard meeting={row.meeting} />;
+        }}
+        ItemSeparatorComponent={({ leadingItem }: { leadingItem: ListRow }) =>
+          leadingItem.type === "date-header" ? null : <View style={styles.separator} />
+        }
         ListEmptyComponent={
-          <ThemedView
-            style={styles.emptyCard}
-            lightColor="#FFFFFF"
-            darkColor="#151718"
-          >
-            <ThemedText style={styles.emptyMessage}>
+          <View style={styles.emptyWrap}>
+            <MaterialIcons name="event-available" size={40} color="#DADFF0" />
+            <ThemedText style={styles.emptyTitle} type="defaultSemiBold">
               {TEXT.MEETING_NO_INCOMING_MEETINGS}
             </ThemedText>
-          </ThemedView>
+          </View>
         }
       />
-    );
-  };
-
-  return (
-    <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.MEETING_HEADER_TITLE} backHref="/" />
-
-      <View style={styles.content}>
-        <ThemedView
-          style={styles.panel}
-          lightColor="#FFFFFF"
-          darkColor="#1F2B30"
-        >
-          <ThemedText type="subtitle">{TEXT.MEETING_INCOMING}</ThemedText>
-          {renderContent()}
-        </ThemedView>
-      </View>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
+  container: { flex: 1, backgroundColor: "#F8F9FD" },
+  listContent: { padding: 16, paddingBottom: 32 },
+  headerCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E1E2E6",
     padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    gap: 4,
   },
-  panel: {
-    flex: 1,
-    borderRadius: 8,
-    padding: 0,
+  headerTitle: {
+    fontSize: 20,
+    lineHeight: 28,
+    fontFamily: AppFonts.psuBold,
+    color: "#922124",
   },
-  listContent: {
-    gap: 12,
-    paddingTop: 16,
+  headerSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: AppFonts.psuRegular,
+    color: "#585E6D",
+  },
+  dateHeader: {
+    paddingTop: 12,
     paddingBottom: 8,
   },
-  itemCard: {
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
-    padding: 16,
-  },
-  itemTitle: {
+  dateHeaderText: {
     fontSize: 16,
     lineHeight: 22,
+    fontFamily: AppFonts.psuBold,
+    color: "#191C1F",
   },
-  itemMeta: {
-    color: "#687076",
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 6,
-  },
-  itemDetail: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 10,
-  },
-  stateContent: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 24,
-  },
-  stateMessage: {
-    color: "#687076",
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 10,
-    textAlign: "center",
-  },
-  errorText: {
-    color: "#B42318",
-  },
-  retryButton: {
-    minHeight: 48,
-    minWidth: 132,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#0A6E8A",
-    marginTop: 24,
-  },
-  emptyCard: {
-    minHeight: 120,
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+  separator: { height: 10 },
+  itemCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E1E2E6",
     padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  emptyMessage: {
-    color: "#687076",
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: "center",
+  itemRow: { flexDirection: "row", gap: 12, alignItems: "center" },
+  chevron: { flexShrink: 0 },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: "#DADFF0",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
+  itemBody: { flex: 1, gap: 6 },
+  itemTitle: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: AppFonts.psuBold,
+    color: "#191C1F",
+  },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  metaText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: AppFonts.psuRegular,
+    color: "#585E6D",
+  },
+  detailText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: AppFonts.psuRegular,
+    color: "#584140",
+    marginTop: 2,
+  },
+  emptyWrap: { alignItems: "center", paddingTop: 48, gap: 12 },
+  emptyTitle: { color: "#585E6D", fontSize: 15, textAlign: "center" },
+  errorWrap: { flex: 1, padding: 16, justifyContent: "center" },
+  errorCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E1E2E6",
+    padding: 20,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  errorTitle: { fontFamily: AppFonts.psuBold, fontSize: 15, color: "#B33939" },
+  errorMessage: { fontFamily: AppFonts.psuRegular, fontSize: 14, lineHeight: 20, color: "#584140" },
+  retryButton: {
+    alignSelf: "flex-start",
+    marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    backgroundColor: "#B33939",
+  },
+  retryText: { color: "#FFFFFF", fontFamily: AppFonts.psuBold, fontSize: 14 },
 });

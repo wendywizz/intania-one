@@ -1,3 +1,5 @@
+﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     FlatList,
@@ -24,6 +26,8 @@ import {
     type CalendarSource,
 } from "@/services/executiveCalendarService";
 
+const EVENT_COLORS = ["#585E6D", "#DFBFBD", "#922124"] as const;
+
 const todayKey = toDateKey(new Date());
 
 function toDateKey(date: Date) {
@@ -39,22 +43,15 @@ function getMonthKey(dateKey: string) {
 
 function formatSelectedDate(dateKey: string) {
   return new Date(`${dateKey}T00:00:00`).toLocaleDateString("th-TH", {
+    weekday: "long",
     day: "numeric",
     month: "long",
-    year: "numeric",
   });
 }
 
-function getEventTimeLabel(event: CalendarEvent) {
-  if (event.isAllDay || !event.startTime) {
-    return "All day";
-  }
-
-  if (event.endTime && event.endTime !== event.startTime) {
-    return `${event.startTime} - ${event.endTime}`;
-  }
-
-  return event.startTime;
+function getEventColor(isAllDay: boolean, index: number): string {
+  if (isAllDay) return "#922124";
+  return EVENT_COLORS[index % EVENT_COLORS.length];
 }
 
 export default function CalendarScreen() {
@@ -73,7 +70,6 @@ export default function CalendarScreen() {
   const loadSources = useCallback(async () => {
     setLoadingSources(true);
     setErrorMessage("");
-
     try {
       const result = await getExecutiveCalendarSources();
       setSources(result);
@@ -93,7 +89,6 @@ export default function CalendarScreen() {
       eventRequestIdRef.current = requestId;
       setLoadingEvents(true);
       setErrorMessage("");
-
       try {
         const result = await getCalendarEventsOfMonth(source.source, monthKey);
         if (eventRequestIdRef.current === requestId) {
@@ -127,20 +122,15 @@ export default function CalendarScreen() {
 
   const markedDates = useMemo<MarkedDates>(() => {
     const marks = events.reduce<MarkedDates>((acc, event) => {
-      acc[event.date] = {
-        marked: true,
-        dotColor: "#D89A2B",
-      };
+      acc[event.date] = { marked: true, dotColor: "#922124" };
       return acc;
     }, {});
-
     marks[selectedDate] = {
       ...(marks[selectedDate] ?? {}),
       selected: true,
-      selectedColor: "#0A6E8A",
+      selectedColor: "#922124",
       selectedTextColor: "#FFFFFF",
     };
-
     return marks;
   }, [events, selectedDate]);
 
@@ -158,7 +148,6 @@ export default function CalendarScreen() {
       setSourceModalOpen(false);
       return;
     }
-
     eventRequestIdRef.current += 1;
     setEvents([]);
     setErrorMessage("");
@@ -182,31 +171,53 @@ export default function CalendarScreen() {
     }
   };
 
-  const renderEvent = ({ item }: { item: CalendarEvent }) => (
-    <ThemedView
-      style={styles.eventItem}
-      lightColor="#FFFFFF"
-      darkColor="#151718"
-    >
-      <View style={styles.timeBlock}>
-        <ThemedText type="defaultSemiBold" style={styles.timeText}>
-          {getEventTimeLabel(item)}
-        </ThemedText>
+  const renderEvent = ({ item, index }: { item: CalendarEvent; index: number }) => {
+    const color = getEventColor(item.isAllDay, index);
+    const startTime = !item.isAllDay && item.startTime ? item.startTime : null;
+    const endTime =
+      !item.isAllDay && item.endTime && item.endTime !== item.startTime
+        ? item.endTime
+        : null;
+
+    return (
+      <View style={[styles.eventCard, { borderLeftColor: color }]}>
+        <View style={styles.eventRow}>
+          <View style={styles.timeCol}>
+            {item.isAllDay ? (
+              <ThemedText style={styles.allDayLabel}>ALL DAY</ThemedText>
+            ) : (
+              <>
+                {startTime ? (
+                  <ThemedText style={styles.startTime}>{startTime}</ThemedText>
+                ) : null}
+                {endTime ? (
+                  <ThemedText style={styles.endTime}>{endTime}</ThemedText>
+                ) : null}
+              </>
+            )}
+          </View>
+          <View style={styles.eventBody}>
+            <ThemedText style={styles.eventTitle} numberOfLines={2}>
+              {item.title || "—"}
+            </ThemedText>
+            {item.location ? (
+              <View style={styles.locationRow}>
+                <MaterialIcons name="location-on" size={12} color="#584140" />
+                <ThemedText style={styles.locationText} numberOfLines={2}>
+                  {item.location}
+                </ThemedText>
+              </View>
+            ) : null}
+          </View>
+        </View>
       </View>
-      <View style={styles.eventContent}>
-        <ThemedText type="defaultSemiBold" style={styles.eventTitle}>
-          {item.title || "-"}
-        </ThemedText>
-        {item.location ? (
-          <ThemedText style={styles.location}>{item.location}</ThemedText>
-        ) : null}
-      </View>
-    </ThemedView>
-  );
+    );
+  };
 
   if (loadingSources) {
     return (
       <ThemedView style={styles.container}>
+        <StatusBar style="light" />
         <NavTopBar title={TEXT.CALENDAR_TITLE} backHref="/" />
         <LoadingAnimate
           title="Loading calendar"
@@ -217,54 +228,53 @@ export default function CalendarScreen() {
   }
 
   const sourceLoadFailed = !sources.length && Boolean(errorMessage);
-  const eventLoadFailed = Boolean(errorMessage);
   if (sourceLoadFailed) {
     return (
       <ThemedView style={styles.container}>
+        <StatusBar style="light" />
         <NavTopBar title={TEXT.CALENDAR_TITLE} backHref="/" />
-        <View style={styles.centerErrorWrap}>
-          <ThemedView
-            style={styles.messageBox}
-            lightColor="#FFF8F8"
-            darkColor="#2A171A"
-          >
-            <ThemedText type="defaultSemiBold" style={[styles.errorTitle, styles.centerText]}>
+        <View style={styles.centerError}>
+          <View style={styles.errorBox}>
+            <ThemedText style={[styles.errorTitle, { textAlign: "center" }]}>
               {TEXT.SHARED_UNABLE_TO_COMPLETE}
             </ThemedText>
-            <ThemedText style={[styles.errorMessage, styles.centerText]}>
+            <ThemedText style={[styles.errorDetail, { textAlign: "center" }]}>
               {errorMessage}
             </ThemedText>
-            <Pressable style={styles.centerRetryButton} onPress={loadSources}>
-              <ThemedText type="defaultSemiBold" style={styles.retryText}>
-                {TEXT.SHARED_RETRY}
-              </ThemedText>
+            <Pressable style={[styles.retryBtn, { alignSelf: "center" }]} onPress={loadSources}>
+              <ThemedText style={styles.retryBtnText}>{TEXT.SHARED_RETRY}</ThemedText>
             </Pressable>
-          </ThemedView>
+          </View>
         </View>
       </ThemedView>
     );
   }
 
+  const eventLoadFailed = Boolean(errorMessage);
+
   return (
     <ThemedView style={styles.container}>
+      <StatusBar style="light" />
       <NavTopBar title={TEXT.CALENDAR_TITLE} backHref="/" />
-      <View style={styles.fixedCalendarPane}>
-        <View style={styles.sourceField}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setSourceModalOpen(true)}
-            style={styles.selectButton}
-          >
-            <ThemedText
-              style={[styles.selectText, !selectedSource ? styles.placeholder : undefined]}
-              numberOfLines={1}
-            >
-              {selectedSource?.name || "Select calendar"}
-            </ThemedText>
-            <ThemedText style={styles.chevron}>v</ThemedText>
-          </Pressable>
-        </View>
 
+      {/* Fixed calendar panel */}
+      <View style={styles.calendarPane}>
+        {/* Source selector card */}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setSourceModalOpen(true)}
+          style={styles.sourceCard}
+        >
+          <ThemedText
+            style={[styles.sourceText, !selectedSource && styles.sourcePlaceholder]}
+            numberOfLines={1}
+          >
+            {selectedSource?.name || "Select calendar"}
+          </ThemedText>
+          <MaterialIcons name="expand-more" size={24} color="#922124" />
+        </Pressable>
+
+        {/* Source picker modal */}
         <Modal
           transparent
           visible={sourceModalOpen}
@@ -273,25 +283,25 @@ export default function CalendarScreen() {
         >
           <Pressable style={styles.backdrop} onPress={() => setSourceModalOpen(false)}>
             <Pressable>
-              <ThemedView
-                style={styles.selectModal}
-                lightColor="#FFFFFF"
-                darkColor="#151718"
-              >
-                <View style={styles.selectModalHeader}>
-                  <ThemedText type="defaultSemiBold" style={styles.selectModalTitle}>
+              <View style={styles.selectModal}>
+                <View style={styles.modalHeader}>
+                  <ThemedText style={styles.modalTitle} type="defaultSemiBold">
                     Calendar
                   </ThemedText>
                   <Pressable
                     accessibilityRole="button"
                     onPress={() => setSourceModalOpen(false)}
-                    style={styles.closeButton}
+                    style={styles.closeBtn}
                   >
-                    <ThemedText type="defaultSemiBold">{TEXT.SHARED_CLOSE_THAI}</ThemedText>
+                    <ThemedText style={styles.closeBtnText} type="defaultSemiBold">
+                      {TEXT.SHARED_CLOSE_THAI}
+                    </ThemedText>
                   </Pressable>
                 </View>
-
-                <ScrollView style={styles.optionScroll} contentContainerStyle={styles.optionScrollContent}>
+                <ScrollView
+                  style={styles.optionScroll}
+                  contentContainerStyle={styles.optionScrollContent}
+                >
                   {sources.length ? (
                     sources.map((source, index) => {
                       const active = selectedSource?.source === source.source;
@@ -300,12 +310,10 @@ export default function CalendarScreen() {
                           key={`${String(source.source)}-${index}`}
                           accessibilityRole="button"
                           onPress={() => handleSelectSource(source)}
-                          style={[styles.option, active ? styles.selectedOption : undefined]}
+                          style={[styles.option, active && styles.optionActive]}
                         >
                           <ThemedText
-                            lightColor={active ? "#FFFFFF" : undefined}
-                            darkColor={active ? "#FFFFFF" : undefined}
-                            style={styles.optionText}
+                            style={[styles.optionText, active && styles.optionActiveText]}
                           >
                             {source.name}
                           </ThemedText>
@@ -313,21 +321,18 @@ export default function CalendarScreen() {
                       );
                     })
                   ) : (
-                    <ThemedText style={styles.emptyOption}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
+                    <ThemedText style={styles.optionEmpty}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
                   )}
                 </ScrollView>
-              </ThemedView>
+              </View>
             </Pressable>
           </Pressable>
         </Modal>
 
-        {eventLoadFailed ? null : (
+        {/* Calendar + date header */}
+        {!eventLoadFailed && (
           <>
-            <ThemedView
-              style={styles.calendarWrap}
-              lightColor="#FFFFFF"
-              darkColor="#151718"
-            >
+            <View style={styles.calendarCard}>
               <Calendar
                 current={selectedDate}
                 markedDates={markedDates}
@@ -336,28 +341,31 @@ export default function CalendarScreen() {
                 onMonthChange={handleMonthChange}
                 theme={calendarTheme}
               />
-            </ThemedView>
-
-            <View style={styles.selectedDateHeader}>
-              <ThemedText
-                type="defaultSemiBold"
-                style={styles.selectedDateText}
-              >
-                Date: {formatSelectedDate(selectedDate)}
+            </View>
+            <View style={styles.dateHeader}>
+              <ThemedText style={styles.dateHeaderText}>
+                {formatSelectedDate(selectedDate)}
               </ThemedText>
             </View>
           </>
         )}
       </View>
 
+      {/* Scrollable events list */}
       <FlatList
         style={styles.eventList}
         data={selectedEvents}
-        keyExtractor={(item, index) => `${String(item.id || "calendar-event")}-${index}`}
+        keyExtractor={(item, index) => `${String(item.id || "event")}-${index}`}
         renderItem={renderEvent}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.eventListContent}
+        ItemSeparatorComponent={() => <View style={styles.eventSeparator} />}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#922124"
+            colors={["#922124"]}
+          />
         }
         ListHeaderComponent={
           loadingEvents ? (
@@ -369,39 +377,25 @@ export default function CalendarScreen() {
           ) : null
         }
         ListEmptyComponent={
-          loadingEvents ? null : (
-            errorMessage ? (
-              <ThemedView
-                style={styles.messageBox}
-                lightColor="#FFF8F8"
-                darkColor="#2A171A"
-              >
-                <ThemedText type="defaultSemiBold" style={styles.errorTitle}>
-                  {TEXT.SHARED_UNABLE_TO_COMPLETE}
-                </ThemedText>
-                <ThemedText style={styles.errorMessage}>
-                  {errorMessage}
-                </ThemedText>
-                <Pressable style={styles.retryButton} onPress={handleRefresh}>
-                  <ThemedText type="defaultSemiBold" style={styles.retryText}>
-                    {TEXT.SHARED_RETRY}
-                  </ThemedText>
-                </Pressable>
-              </ThemedView>
-            ) : (
-              <ThemedView
-                style={styles.emptyState}
-                lightColor="#F6FAFC"
-                darkColor="#151718"
-              >
-                <ThemedText type="defaultSemiBold" style={styles.emptyTitle}>
-                  {TEXT.SHARED_EMPTY_DATA}
-                </ThemedText>
-                <ThemedText style={styles.emptyMessage}>
-                  No schedule for this date
-                </ThemedText>
-              </ThemedView>
-            )
+          loadingEvents ? null : errorMessage ? (
+            <View style={styles.errorBox}>
+              <ThemedText style={styles.errorTitle}>
+                {TEXT.SHARED_UNABLE_TO_COMPLETE}
+              </ThemedText>
+              <ThemedText style={styles.errorDetail}>{errorMessage}</ThemedText>
+              <Pressable style={styles.retryBtn} onPress={handleRefresh}>
+                <ThemedText style={styles.retryBtnText}>{TEXT.SHARED_RETRY}</ThemedText>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.emptyWrap}>
+              <ThemedText style={styles.emptyTitle} type="defaultSemiBold">
+                {TEXT.SHARED_EMPTY_DATA}
+              </ThemedText>
+              <ThemedText style={styles.emptyMessage}>
+                No schedule for this date
+              </ThemedText>
+            </View>
           )
         }
       />
@@ -412,111 +406,260 @@ export default function CalendarScreen() {
 const calendarTheme = {
   backgroundColor: "#FFFFFF",
   calendarBackground: "#FFFFFF",
-  textSectionTitleColor: "#687076",
-  selectedDayBackgroundColor: "#0A6E8A",
+  textSectionTitleColor: "#8B716F",
+  selectedDayBackgroundColor: "#922124",
   selectedDayTextColor: "#FFFFFF",
-  todayTextColor: "#D89A2B",
-  dayTextColor: "#11181C",
-  textDisabledColor: "#B8C7CE",
-  dotColor: "#D89A2B",
+  todayTextColor: "#B33939",
+  dayTextColor: "#191C1F",
+  textDisabledColor: "rgba(88, 65, 64, 0.3)",
+  dotColor: "#922124",
   selectedDotColor: "#FFFFFF",
-  arrowColor: "#0A6E8A",
-  monthTextColor: "#11181C",
+  arrowColor: "#8B716F",
+  monthTextColor: "#191C1F",
   textDayFontFamily: AppFonts.psuRegular,
   textMonthFontFamily: AppFonts.psuBold,
   textDayHeaderFontFamily: AppFonts.psuBold,
+  textDayFontSize: 12,
+  textMonthFontSize: 18,
+  textDayHeaderFontSize: 12,
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#F8F9FD",
   },
-  fixedCalendarPane: {
-    backgroundColor: "#FFFFFF",
-    paddingBottom: 8,
-  },
-  eventList: {
-    flex: 1,
-  },
-  content: {
-    paddingBottom: 24,
-  },
-  centerErrorWrap: {
-    flex: 1,
-    justifyContent: "center",
-    paddingBottom: 56,
-  },
-  centerText: {
-    textAlign: "center",
-  },
-  centerRetryButton: {
-    alignSelf: "center",
-    marginTop: 10,
-    borderRadius: 8,
-    backgroundColor: "#0A6E8A",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  sourceField: {
+
+  // ─── Calendar pane ───────────────────────────────────────────────
+  calendarPane: {
+    backgroundColor: "#F8F9FD",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 16,
+    gap: 12,
   },
-  selectButton: {
-    minHeight: 48,
+  sourceCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  selectText: {
+  sourceText: {
     flex: 1,
-    color: "#11181C",
+    fontSize: 16,
+    lineHeight: 22,
+    color: "#191C1F",
+    fontFamily: AppFonts.psuBold,
   },
-  placeholder: {
+  sourcePlaceholder: {
     color: "#8A969C",
   },
-  chevron: {
-    color: "#0A6E8A",
-    fontSize: 16,
-    lineHeight: 20,
-    marginLeft: 8,
+  calendarCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
+  dateHeader: {
+    paddingBottom: 4,
+  },
+  dateHeaderText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#584140",
+    fontFamily: AppFonts.psuRegular,
+  },
+
+  // ─── Events list ─────────────────────────────────────────────────
+  eventList: {
+    flex: 1,
+  },
+  eventListContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 32,
+  },
+  eventSeparator: {
+    height: 12,
+  },
+  eventCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  eventRow: {
+    flexDirection: "row",
+    padding: 16,
+    gap: 12,
+  },
+  timeCol: {
+    width: 55,
+    alignItems: "center",
+    justifyContent: "flex-start",
+  },
+  allDayLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: AppFonts.psuBold,
+    color: "#922124",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  startTime: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: AppFonts.psuBold,
+    color: "#585E6D",
+  },
+  endTime: {
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: AppFonts.psuRegular,
+    color: "rgba(88, 64, 64, 0.6)",
+  },
+  eventBody: {
+    flex: 1,
+    gap: 4,
+  },
+  eventTitle: {
+    fontSize: 16,
+    lineHeight: 24,
+    fontFamily: AppFonts.psuBold,
+    color: "#191C1F",
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 4,
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#584140",
+    fontFamily: AppFonts.psuRegular,
+  },
+
+  // ─── Empty / error states ────────────────────────────────────────
+  emptyWrap: {
+    paddingTop: 32,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  emptyTitle: {
+    textAlign: "center",
+    color: "#584140",
+  },
+  emptyMessage: {
+    marginTop: 4,
+    color: "#8B716F",
+    textAlign: "center",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  errorBox: {
+    marginVertical: 16,
+    marginHorizontal: 0,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#F0C9CE",
+    backgroundColor: "#FFF8F8",
+    padding: 16,
+    gap: 6,
+  },
+  errorTitle: {
+    color: "#C44D58",
+    fontFamily: AppFonts.psuBold,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  errorDetail: {
+    color: "#584140",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  retryBtn: {
+    alignSelf: "flex-start",
+    marginTop: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: "#922124",
+  },
+  retryBtnText: {
+    color: "#FFFFFF",
+    fontFamily: AppFonts.psuBold,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+
+  // ─── Center error (source load fail) ─────────────────────────────
+  centerError: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 56,
+  },
+
+  // ─── Modal ───────────────────────────────────────────────────────
   backdrop: {
     flex: 1,
-    alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
-    padding: 24,
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    padding: 40,
   },
   selectModal: {
     width: "100%",
-    maxWidth: 420,
-    maxHeight: 460,
-    borderRadius: 8,
+    maxHeight: 520,
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
     padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  selectModalHeader: {
+  modalHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
     marginBottom: 12,
   },
-  selectModalTitle: {
+  modalTitle: {
     flex: 1,
     fontSize: 16,
+    color: "#191C1F",
   },
-  closeButton: {
-    minHeight: 40,
+  closeBtn: {
+    height: 36,
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#E4F0F6",
-    paddingHorizontal: 14,
+    backgroundColor: "#F2F3F7",
+    paddingHorizontal: 12,
+  },
+  closeBtnText: {
+    color: "#584140",
   },
   optionScroll: {
     maxHeight: 360,
@@ -529,108 +672,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
-    backgroundColor: "#FFFFFF",
+    borderColor: "#EDEEF2",
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  selectedOption: {
-    borderColor: "#0A6E8A",
-    backgroundColor: "#0A6E8A",
+  optionActive: {
+    borderColor: "#922124",
+    backgroundColor: "#922124",
   },
   optionText: {
-    color: "#11181C",
+    color: "#191C1F",
     lineHeight: 20,
   },
-  emptyOption: {
-    color: "#687076",
-    lineHeight: 20,
-    paddingVertical: 16,
-    textAlign: "center",
-  },
-  messageBox: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#F0C9CE",
-    padding: 14,
-  },
-  errorTitle: {
-    color: "#C44D58",
-  },
-  errorMessage: {
-    marginTop: 4,
-    color: "#687076",
-  },
-  retryButton: {
-    alignSelf: "flex-start",
-    marginTop: 10,
-    borderRadius: 8,
-    backgroundColor: "#0A6E8A",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  retryText: {
+  optionActiveText: {
     color: "#FFFFFF",
   },
-  calendarWrap: {
-    marginHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
-    overflow: "hidden",
-  },
-  selectedDateHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 18,
-    paddingBottom: 8,
-  },
-  selectedDateText: {
-    marginTop: 2,
-    color: "#0A6E8A",
-  },
-  eventItem: {
-    flexDirection: "row",
-    marginHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#D7E6EC",
-    paddingVertical: 14,
-  },
-  timeBlock: {
-    width: 92,
-    paddingRight: 12,
-  },
-  timeText: {
-    color: "#0A6E8A",
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  eventContent: {
-    flex: 1,
-  },
-  eventTitle: {
-    fontSize: 15,
+  optionEmpty: {
+    color: "#584140",
     lineHeight: 20,
-  },
-  location: {
-    marginTop: 4,
-    color: "#687076",
-  },
-  emptyState: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
-    padding: 18,
-  },
-  emptyTitle: {
-    textAlign: "center",
-  },
-  emptyMessage: {
-    marginTop: 4,
-    color: "#687076",
+    paddingVertical: 16,
     textAlign: "center",
   },
 });

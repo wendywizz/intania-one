@@ -1,4 +1,6 @@
+﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useFocusEffect } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
 import {
   FlatList,
@@ -12,6 +14,7 @@ import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import type { News } from '@/models/types';
 import { staffNewsFeed } from '@/services/newsService';
@@ -22,26 +25,60 @@ function getNewsKey(item: News, index: number) {
   return `${String(item.guid || item.link || item.title)}-${index}`;
 }
 
+function getExcerpt(html: string, maxLength = 140): string {
+  const text = html
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength).trim()}…`;
+}
+
 type NewsListItemProps = {
   item: News;
   onPress: (item: News) => void;
 };
 
 function NewsListItem({ item, onPress }: NewsListItemProps) {
-  const meta = [item.category, item.pubDate ? formatDateTime(item.pubDate) : '']
-    .filter(Boolean)
-    .join(' · ');
+  const date = item.pubDate ? formatDateTime(item.pubDate) : '';
+  const excerpt = item.description ? getExcerpt(item.description) : '';
 
   return (
-    <Pressable accessibilityRole="button" onPress={() => onPress(item)}>
-      <ThemedView style={styles.newsCard} lightColor="#FFFFFF" darkColor="#1F2B30">
-        <ThemedText type="defaultSemiBold" numberOfLines={2} style={styles.newsTitle}>
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => onPress(item)}
+      style={({ pressed }) => (pressed ? styles.cardPressed : undefined)}
+    >
+      <View style={styles.newsCard}>
+        <View style={styles.cardMeta}>
+          {item.category ? (
+            <ThemedText style={styles.categoryTag}>
+              {item.category.toUpperCase()}
+            </ThemedText>
+          ) : null}
+          {date ? (
+            <ThemedText style={styles.dateText}>{date}</ThemedText>
+          ) : null}
+        </View>
+        <ThemedText style={styles.newsTitle} numberOfLines={2}>
           {item.title}
         </ThemedText>
-        {meta ? (
-          <ThemedText style={styles.newsMeta}>{meta}</ThemedText>
+        {excerpt ? (
+          <ThemedText style={styles.newsExcerpt} numberOfLines={3}>
+            {excerpt}
+          </ThemedText>
         ) : null}
-      </ThemedView>
+        <View style={styles.readMoreRow}>
+          <ThemedText style={styles.readMoreText}>Read more</ThemedText>
+          <MaterialIcons name="arrow-forward" size={14} color="#922124" />
+        </View>
+      </View>
     </Pressable>
   );
 }
@@ -91,19 +128,30 @@ export default function NewsScreen() {
     } as Parameters<typeof navPush>[0]);
   }, []);
 
+  const listHeader = (
+    <View style={styles.listHeader}>
+      <ThemedText style={styles.listHeading}>Latest Updates</ThemedText>
+      <ThemedText style={styles.listSubheading}>
+        Stay informed about the latest happenings within HR Connect.
+      </ThemedText>
+    </View>
+  );
+
   const renderContent = () => {
     if (isLoading) {
       return (
-        <LoadingAnimate
-          title={TEXT.HOME_LOADING_NEWS_TITLE}
-          desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
-        />
+        <View style={styles.stateContainer}>
+          <LoadingAnimate
+            title={TEXT.HOME_LOADING_NEWS_TITLE}
+            desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
+          />
+        </View>
       );
     }
 
     if (error) {
       return (
-        <View style={styles.stateContent}>
+        <View style={styles.stateContainer}>
           <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable
@@ -121,6 +169,7 @@ export default function NewsScreen() {
 
     return (
       <FlatList
+        style={styles.flatList}
         contentContainerStyle={styles.listContent}
         data={newsItems}
         keyExtractor={getNewsKey}
@@ -133,10 +182,11 @@ export default function NewsScreen() {
         renderItem={({ item }) => (
           <NewsListItem item={item} onPress={openNews} />
         )}
+        ListHeaderComponent={listHeader}
         ListEmptyComponent={
-          <ThemedView style={styles.emptyCard} lightColor="#FFFFFF" darkColor="#1F2B30">
+          <View style={styles.emptyCard}>
             <ThemedText style={styles.emptyMessage}>{TEXT.HOME_NO_NEWS_MESSAGE}</ThemedText>
-          </ThemedView>
+          </View>
         }
       />
     );
@@ -144,6 +194,7 @@ export default function NewsScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <StatusBar style="light" />
       <NavTopBar title={TEXT.HOME_NEWS_SECTION_TITLE} showHomeButton />
       <View style={styles.content}>
         {renderContent()}
@@ -155,31 +206,94 @@ export default function NewsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FD',
   },
   content: {
     flex: 1,
   },
+  flatList: {
+    flex: 1,
+  },
+  listHeader: {
+    gap: 6,
+    paddingBottom: 8,
+  },
+  listHeading: {
+    fontSize: 20,
+    lineHeight: 28,
+    fontWeight: '700',
+    color: '#191C1F',
+    fontFamily: AppFonts.psuBold,
+  },
+  listSubheading: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#584140',
+    fontFamily: AppFonts.psuRegular,
+  },
   listContent: {
-    gap: 10,
     padding: 16,
+    gap: 16,
   },
   newsCard: {
-    borderRadius: 8,
-    padding: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E1E2E6',
+    padding: 16,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardPressed: {
+    opacity: 0.75,
+  },
+  cardMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  categoryTag: {
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0.6,
+    color: '#922124',
+    fontFamily: AppFonts.psuBold,
+  },
+  dateText: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#585E6D',
+    fontFamily: AppFonts.psuRegular,
   },
   newsTitle: {
-    fontSize: 15,
+    fontSize: 16,
     lineHeight: 22,
+    fontWeight: '600',
+    color: '#191C1F',
+    fontFamily: AppFonts.psuBold,
   },
-  newsMeta: {
-    marginTop: 4,
-    color: '#687076',
+  newsExcerpt: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#584140',
+    fontFamily: AppFonts.psuRegular,
+  },
+  readMoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  readMoreText: {
     fontSize: 12,
-    lineHeight: 18,
+    fontWeight: '500',
+    color: '#922124',
+    fontFamily: AppFonts.psuBold,
   },
-  stateContent: {
+  stateContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -201,17 +315,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#0A6E8A',
+    backgroundColor: '#B33939',
     marginTop: 24,
   },
   emptyCard: {
-    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     padding: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 120,
+    borderWidth: 1,
+    borderColor: '#E1E2E6',
   },
   emptyMessage: {
     color: '#687076',

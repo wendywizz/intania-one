@@ -1,4 +1,6 @@
+﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { router, useFocusEffect } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useCallback, useState } from "react";
 import {
   FlatList,
@@ -12,7 +14,7 @@ import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
@@ -23,19 +25,10 @@ import {
 import { formatFullDate } from "@/utils/date-format";
 
 const APPEAL_DOCUMENT_MESSAGE =
-  "Please go to website to appeal with document";
-const hiddenFields = new Set([
-  "id",
-  "isEdit",
-  "is_edit",
-  "staffId",
-  "staff_id",
-  "statusDetail",
-  "status_detail",
-]);
+  "Please go to the HR portal to file an appeal with supporting documents.";
+
 const stampTypeFields = new Set(["stampType", "stamp_type"]);
 const statusFields = ["status", "isActive", "is_active"];
-const hiddenStatusFields = new Set(statusFields);
 const dateFields = new Set([
   "date",
   "workDate",
@@ -49,12 +42,10 @@ const dateFields = new Set([
 function getStampType(item: ForgotTimestamp) {
   for (const field of stampTypeFields) {
     const value = item[field];
-
     if (value !== undefined && value !== null && String(value).trim()) {
       return String(value).trim().toLowerCase();
     }
   }
-
   return "";
 }
 
@@ -64,25 +55,21 @@ function getCurrentYear() {
 
 function getItemId(item: ForgotTimestamp, index: number) {
   const id = item.id ?? item.timestampId ?? item.timestamp_id ?? item.date;
-
   return `${String(id ?? "timestamp")}-${index}`;
 }
 
 function getItemDateValue(item: ForgotTimestamp) {
   for (const field of dateFields) {
     const value = item[field];
-
     if (value !== undefined && value !== null && String(value).trim()) {
       return String(value);
     }
   }
-
   return "";
 }
 
 function getItemTimestamp(item: ForgotTimestamp) {
   const timestamp = Date.parse(getItemDateValue(item));
-
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
@@ -95,128 +82,55 @@ function sortItemsByDateDesc(items: ForgotTimestamp[]) {
 
 function getItemTitle(item: ForgotTimestamp) {
   const stampType = getStampType(item);
-
-  if (stampType === "in") {
-    return "Forgot stamp in";
-  }
-
-  if (stampType === "out") {
-    return "Forgot stamp out";
-  }
-
+  if (stampType === "in") return "Forgot stamp in";
+  if (stampType === "out") return "Forgot stamp out";
   const title =
     item.date ??
     item.workDate ??
     item.work_date ??
     item.timestampDate ??
     item.timestamp_date;
-
   return title ? formatFullDate(String(title)) : TEXT.FORGOT_TIMESTAMP_TITLE;
-}
-
-function formatFieldName(field: string) {
-  if (dateFields.has(field)) {
-    return "Stamp Date";
-  }
-
-  return field
-    .replace(/_/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function formatFieldValue(field: string, value: unknown) {
-  if (stampTypeFields.has(field)) {
-    const stampType = String(value).trim().toLowerCase();
-
-    if (stampType === "in") {
-      return "Stamp In";
-    }
-
-    if (stampType === "out") {
-      return "Stamp Out";
-    }
-  }
-
-  if (dateFields.has(field)) {
-    return formatFullDate(String(value));
-  }
-
-  return String(value);
-}
-
-function isHiddenField(field: string) {
-  return (
-    hiddenFields.has(field) ||
-    stampTypeFields.has(field) ||
-    hiddenStatusFields.has(field) ||
-    field.replace(/_/g, "").toLowerCase() === "statusdetail"
-  );
 }
 
 function getItemStatus(item: ForgotTimestamp) {
   for (const field of statusFields) {
     const value = item[field];
-
     if (value !== undefined && value !== null && String(value).trim()) {
       return String(value).trim().toLowerCase();
     }
   }
-
   return "";
 }
 
 function isStatusTrue(item: ForgotTimestamp) {
   const status = getItemStatus(item);
-
   return status === "true" || status === "1" || status === "yes";
 }
 
 function isStatusFalse(item: ForgotTimestamp) {
   const status = getItemStatus(item);
-
   return status === "false" || status === "0" || status === "no";
 }
 
 function isEditableItem(item: ForgotTimestamp) {
   const value = item.isEdit ?? item.is_edit;
-
-  if (typeof value === "boolean") {
-    return value;
-  }
-
+  if (typeof value === "boolean") return value;
   return ["true", "1", "yes"].includes(String(value ?? "").trim().toLowerCase());
 }
 
-function hasRequestId(item: ForgotTimestamp) {
-  return Boolean(String(item.id ?? "").trim());
-}
-
-function getDisplayEntries(item: ForgotTimestamp) {
-  return Object.entries(item)
-    .filter(([field, value]) => {
-      if (isHiddenField(field)) {
-        return false;
-      }
-
-      return value !== undefined && value !== null && String(value).trim();
-    })
-    .slice(0, 6);
-}
-
 function ForgotTimestampItem({ item }: { item: ForgotTimestamp }) {
-  const entries = getDisplayEntries(item);
   const canOpenDetail = isStatusTrue(item);
   const showAppealDocumentMessage = isStatusFalse(item);
   const isUnavailable = isStatusFalse(item);
-  const showPendingApprovalMessage = hasRequestId(item);
-  const handlePress = () => {
-    if (!canOpenDetail) {
-      return;
-    }
+  const dateValue = getItemDateValue(item);
+  const dateLabel = dateValue ? formatFullDate(dateValue) : "";
+  const stampType = getStampType(item);
 
+  const handlePress = () => {
+    if (!canOpenDetail) return;
     router.push({
-      pathname: "/forgot-timestamp-detail",
+      pathname: "/forgot-timestamp/detail",
       params: {
         item: JSON.stringify(item),
         isEdit: isEditableItem(item) ? "true" : "false",
@@ -224,50 +138,40 @@ function ForgotTimestampItem({ item }: { item: ForgotTimestamp }) {
     } as Parameters<typeof router.push>[0]);
   };
 
+  const iconName =
+    stampType === "in" ? "login" : stampType === "out" ? "logout" : "fingerprint";
+
   return (
     <Pressable
       accessibilityRole="button"
       disabled={!canOpenDetail}
       onPress={handlePress}
-      style={({ pressed }) => [pressed ? styles.itemPressed : undefined]}
+      style={({ pressed }) => (pressed && canOpenDetail ? styles.itemPressed : undefined)}
     >
-      <ThemedView
-        style={[styles.itemCard, isUnavailable ? styles.unavailableItemCard : undefined]}
-        lightColor={isUnavailable ? "#F1F4F6" : "#FFFFFF"}
-        darkColor="#151718"
-      >
-        <View style={styles.itemHeader}>
-          <ThemedText type="defaultSemiBold" style={styles.itemTitle}>
-            {getItemTitle(item)}
-          </ThemedText>
+      <View style={[styles.itemCard, isUnavailable && styles.itemCardUnavailable]}>
+        <View style={styles.itemRow}>
+          <View style={styles.iconCircle}>
+            <MaterialIcons name={iconName} size={18} color="#5D6371" />
+          </View>
+          <View style={styles.itemInfo}>
+            <ThemedText style={styles.itemTitle}>{getItemTitle(item)}</ThemedText>
+            {dateLabel ? (
+              <ThemedText style={styles.itemDate}>{dateLabel}</ThemedText>
+            ) : null}
+          </View>
           {canOpenDetail ? (
-            <IconSymbol name="chevron.right" size={22} color="#0A6E8A" />
+            <View style={styles.itemRight}>
+              <View style={styles.actionBadge}>
+                <ThemedText style={styles.actionBadgeText}>ACTION REQUIRED</ThemedText>
+              </View>
+              <MaterialIcons name="chevron-right" size={16} color="#8B716F" />
+            </View>
           ) : null}
         </View>
-
-        <View style={styles.itemRows}>
-          {entries.map(([field, value]) => (
-            <View key={field} style={styles.itemRow}>
-              <ThemedText style={styles.itemLabel}>{formatFieldName(field)}</ThemedText>
-              <ThemedText type="defaultSemiBold" style={styles.itemValue}>
-                {formatFieldValue(field, value)}
-              </ThemedText>
-            </View>
-          ))}
-        </View>
-
-        {showPendingApprovalMessage ? (
-          <ThemedText style={styles.pendingApprovalMessage}>
-            Your request is due for approving
-          </ThemedText>
-        ) : null}
-
         {showAppealDocumentMessage ? (
-          <ThemedText style={styles.appealDocumentMessage}>
-            {APPEAL_DOCUMENT_MESSAGE}
-          </ThemedText>
+          <ThemedText style={styles.appealMessage}>{APPEAL_DOCUMENT_MESSAGE}</ThemedText>
         ) : null}
-      </ThemedView>
+      </View>
     </Pressable>
   );
 }
@@ -288,17 +192,15 @@ export default function ForgotTimestampScreen() {
       } else {
         setIsLoading(true);
       }
-
       setError("");
-
       try {
         const result = await getForgotTimestampData(staffId, currentYear);
         setItems(sortItemsByDateDesc(result.data));
-      } catch (error) {
+      } catch (loadError) {
         setItems([]);
         setError(
-          error instanceof Error
-            ? error.message
+          loadError instanceof Error
+            ? loadError.message
             : TEXT.SHARED_SOMETHING_WENT_WRONG,
         );
       } finally {
@@ -315,19 +217,46 @@ export default function ForgotTimestampScreen() {
     }, [loadItems]),
   );
 
+  const pendingCount = items.filter(isStatusTrue).length;
+
+  const listHeader = (
+    <View style={styles.listHeader}>
+      <View style={styles.welcomeSection}>
+        <ThemedText style={styles.welcomeHeading}>Miss Timestamp</ThemedText>
+        <ThemedText style={styles.welcomeSubtitle}>
+          You have {pendingCount} pending{" "}
+          {pendingCount === 1 ? "request" : "requests"} requiring attention.
+        </ThemedText>
+        <ThemedText style={styles.cycleText}>
+          Company Cycle: {currentYear - 1} – {currentYear}
+        </ThemedText>
+      </View>
+
+      <View style={styles.noteBox}>
+        <MaterialIcons name="schedule" size={20} color="#922124" style={styles.noteIcon} />
+        <ThemedText style={styles.noteText}>
+          Requests submitted before Friday 5:00 PM will be processed in the
+          current payroll cycle.
+        </ThemedText>
+      </View>
+    </View>
+  );
+
   const renderContent = () => {
     if (isLoading) {
       return (
-        <LoadingAnimate
-          title={TEXT.SHARED_LOADING_DATA_TITLE}
-          desc={TEXT.SHARED_LOADING_DESCRIPTION}
-        />
+        <View style={styles.stateContainer}>
+          <LoadingAnimate
+            title={TEXT.SHARED_LOADING_DATA_TITLE}
+            desc={TEXT.SHARED_LOADING_DESCRIPTION}
+          />
+        </View>
       );
     }
 
     if (error) {
       return (
-        <View style={styles.stateContent}>
+        <View style={styles.stateContainer}>
           <ThemedText type="subtitle">{TEXT.SHARED_ERROR_TITLE_THAI}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>
             {error}
@@ -337,11 +266,7 @@ export default function ForgotTimestampScreen() {
             onPress={() => loadItems()}
             style={styles.retryButton}
           >
-            <ThemedText
-              lightColor="#FFFFFF"
-              darkColor="#FFFFFF"
-              type="defaultSemiBold"
-            >
+            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
               {TEXT.SHARED_RETRY_THAI}
             </ThemedText>
           </Pressable>
@@ -351,9 +276,10 @@ export default function ForgotTimestampScreen() {
 
     return (
       <FlatList
+        style={styles.flatList}
+        contentContainerStyle={styles.listContent}
         data={items}
         keyExtractor={getItemId}
-        contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -361,16 +287,13 @@ export default function ForgotTimestampScreen() {
           />
         }
         renderItem={({ item }) => <ForgotTimestampItem item={item} />}
+        ListHeaderComponent={listHeader}
         ListEmptyComponent={
-          <ThemedView
-            style={styles.emptyCard}
-            lightColor="#FFFFFF"
-            darkColor="#151718"
-          >
+          <View style={styles.emptyCard}>
             <ThemedText style={styles.emptyMessage}>
               {TEXT.SHARED_EMPTY_DATA}
             </ThemedText>
-          </ThemedView>
+          </View>
         }
       />
     );
@@ -378,16 +301,9 @@ export default function ForgotTimestampScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <StatusBar style="light" />
       <NavTopBar title={TEXT.FORGOT_TIMESTAMP_TITLE} backHref="/" />
-      <View style={styles.content}>
-        <ThemedView
-          style={styles.panel}
-          lightColor="#FFFFFF"
-          darkColor="#1F2B30"
-        >
-          {renderContent()}
-        </ThemedView>
-      </View>
+      <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
 }
@@ -395,78 +311,140 @@ export default function ForgotTimestampScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#F8F9FD",
   },
   content: {
     flex: 1,
-    padding: 16,
   },
-  panel: {
+  flatList: {
     flex: 1,
-    borderRadius: 8,
-    padding: 0,
   },
   listContent: {
+    padding: 16,
     gap: 12,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 16,
+  },
+  listHeader: {
+    gap: 12,
+    paddingBottom: 4,
+  },
+  welcomeSection: {
+    gap: 4,
+  },
+  welcomeHeading: {
+    fontSize: 20,
+    lineHeight: 28,
+    fontWeight: "700",
+    color: "#922124",
+    fontFamily: AppFonts.psuBold,
+  },
+  welcomeSubtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#584140",
+    fontFamily: AppFonts.psuRegular,
+  },
+  cycleText: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: "#585E6D",
+    fontFamily: AppFonts.psuRegular,
+  },
+  noteBox: {
+    flexDirection: "row",
+    gap: 10,
+    backgroundColor: "#F2F3F7",
+    borderLeftWidth: 4,
+    borderLeftColor: "#922124",
+    borderRadius: 12,
+    padding: 14,
+  },
+  noteIcon: {
+    marginTop: 1,
+  },
+  noteText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#584140",
+    fontFamily: AppFonts.psuRegular,
   },
   itemCard: {
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(223,191,189,0.3)",
     padding: 16,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  unavailableItemCard: {
-    backgroundColor: "#F1F4F6",
-    borderColor: "#CCD6DB",
+  itemCardUnavailable: {
+    backgroundColor: "#F8F9FD",
+    borderColor: "rgba(223,191,189,0.2)",
   },
   itemPressed: {
     opacity: 0.72,
   },
-  appealDocumentMessage: {
-    color: "#B42318",
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 12,
-  },
-  pendingApprovalMessage: {
-    color: "#067647",
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 12,
-  },
-  itemHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-  },
-  itemTitle: {
-    flex: 1,
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  itemRows: {
-    gap: 8,
-    marginTop: 12,
-  },
   itemRow: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
-  itemLabel: {
-    width: 112,
-    color: "#687076",
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: "#DADFF0",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  itemInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  itemTitle: {
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: "600",
+    color: "#191C1F",
+    fontFamily: AppFonts.psuBold,
+  },
+  itemDate: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: "#585E6D",
+    fontFamily: AppFonts.psuRegular,
+  },
+  itemRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexShrink: 0,
+  },
+  actionBadge: {
+    backgroundColor: "#B33939",
+    borderRadius: 9999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  actionBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    fontFamily: AppFonts.psuBold,
+  },
+  appealMessage: {
     fontSize: 12,
     lineHeight: 18,
+    color: "#B33939",
+    fontFamily: AppFonts.psuRegular,
   },
-  itemValue: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "right",
-  },
-  stateContent: {
+  stateContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -487,16 +465,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: "#B33939",
     marginTop: 24,
   },
   emptyCard: {
-    minHeight: 120,
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
     padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 120,
+    borderWidth: 1,
+    borderColor: "rgba(223,191,189,0.2)",
   },
   emptyMessage: {
     color: "#687076",

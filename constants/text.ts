@@ -21,6 +21,7 @@ export const TEXT = {
   SHARED_LOADING_HISTORY: 'Loading history',
   SHARED_MODAL: 'Modal',
   SHARED_NO_HISTORY: 'No history',
+  SHARED_OK: 'OK',
   SHARED_PLEASE_WAIT_A_MOMENT: 'Please wait a moment',
   SHARED_REQUIRED_INFORMATION: 'ข้อมูลที่จำเป็น',
   SHARED_RETRY: 'Retry',
@@ -34,12 +35,22 @@ export const TEXT = {
   SHARED_UPDATING: 'Updating...',
 
   // Home
+  HOME_APP_NAME: 'Intania',
+  HOME_CONFIRM_LOGOUT_TITLE: 'Confirm logout',
+  HOME_CONFIRM_LOGOUT_MESSAGE: 'Do you want to sign out from this account?',
+  HOME_GREETING_MORNING: 'Good morning',
+  HOME_GREETING_AFTERNOON: 'Good afternoon',
+  HOME_GREETING_EVENING: 'Good evening',
   HOME_LOADING_NEWS_TITLE: 'กำลังโหลดข่าวสาร',
+  HOME_LOGOUT: 'Logout',
   HOME_MENU_SECTION_DESCRIPTION: 'เลือกเมนูที่ต้องการใช้งาน',
   HOME_MENU_SECTION_TITLE: 'เมนู',
   HOME_NEWS_SECTION_TITLE: 'ข่าวสาร',
   HOME_NO_NEWS_MESSAGE: 'ไม่พบข่าวสาร',
+  HOME_SEE_ALL_THAI: 'ดูทั้งหมด',
+  HOME_SIGNING_OUT_TITLE: 'Signing out',
   HOME_TITLE: 'หน้าหลัก',
+  HOME_WELCOME_DESCRIPTION: 'ระบบสำหรับบุคลากรมหาวิทยาลัยสงขลานครินทร์',
 
   // Auth
   AUTH_LOGIN: 'Login',
@@ -117,19 +128,70 @@ export const TEXT = {
   absence_VALIDATION_START_DATE_NOT_PAST: 'วันที่เริ่มต้นต้องเป็นวันนี้หรือวันถัดไป',
   absence_WAITING_TITLE: 'รออนุมัติ',
 
+  // absence - type labels
+  absence_HAJJ_TITLE: 'Hajj leave',
+
+  // absence - tab labels
+  absence_TAB_APPEAL: 'ยื่นลา',
+  absence_TAB_WAITING: 'รออนุมัติ',
+  absence_TAB_STATS: 'สถิติกาลา',
+  absence_TAB_HISTORY: 'ประวัติการลา',
+
+  // absence - Choose Absence (index tab)
+  absence_CHOOSE_TITLE: 'เลือกประเภทการลา',
+  absence_CHOOSE_SUBTITLE: 'เพื่อยื่นคำขอการลา กรุณาเลือกประเภทการลาที่ต้องการ',
+  absence_SICK_DESCRIPTION: 'ยื่นคำขอลาป่วย',
+  absence_BUSINESS_DESCRIPTION: 'ยื่นคำขอลากิจส่วนตัว',
+  absence_RELAX_DESCRIPTION: 'ยื่นคำขอลาพักผ่อน',
+  absence_BIRTH_DESCRIPTION: 'ยื่นคำขอลาคลอด',
+  absence_POLICY_NOTE_LABEL: 'นโยบายการลา',
+  absence_POLICY_NOTE_TEXT: 'การยื่นลาป่วยและลากิจส่วนตัวต้องรวมกันไม่เกิน 18 ครั้งและไม่เกิน 45 วันต่อปีงบประมาณ ลาพักผ่อนต้องรวมกันไม่เกิน 30 วันต่อปีงบประมาณ',
+
+  // absence - Pending tab
+  absence_PENDING_TITLE: 'รออนุมัติ',
+  absence_PENDING_SUBTITLE: 'ติดตามสถานะของคำขอการลาที่ส่งแล้ว',
+  absence_PENDING_BADGE: 'รออนุมัติ',
+  absence_PENDING_STEP_DEPT_HEAD: 'กำลังรอการอนุมัติจากหัวหน้าแผนก',
+  absence_PENDING_STEP_HR: 'กำลังรอการอนุมัติจากฝ่ายทรัพยากรบุคคล',
+
+  // absence - Stats tab
+  absence_STATS_LOADING_TITLE: 'Loading Statistics',
+  absence_STATS_TITLE: 'สถิติการลา',
+  absence_STATS_SUBTITLE: 'แสดงสถิติการลาของคุณในรอบปีงบประมาณปัจจุบัน',
+  absence_STATS_NO_DATA: 'No data available',
+  absence_STATS_WORK_AGE_LABEL: 'อายุงาน',
+  absence_STATS_WORK_AGE_UNIT: 'ปี',
+  absence_STATS_CYCLE_DATE_LABEL: 'รอบปีงบประมาณ',
+  absence_STATS_ALL_ABSENCES: 'การลาทั้งหมด',
+  absence_STATS_USAGE_OVERVIEW: 'แสดงจำนวนวันและครั้งที่คุณลาป่วยและลากิจส่วนตัวในรอบปีงบประมาณปัจจุบัน',
+  absence_STATS_OCCURRENCES: 'จำนวนครั้งที่ลา',
+  absence_STATS_TOTAL_DAYS_LABEL: 'จำนวนวันที่ลา',
+  absence_STATS_VACATION_ANNUAL: 'แสดงจำนวนวันลาพักผ่อนที่คุณใช้ไปและเหลืออยู่ในรอบปีงบประมาณปัจจุบัน',
+  absence_STATS_USED_THIS_YEAR: 'จำนวนวันลาที่ใช้ / จำนวนวันลาที่เหลือ',
+  absence_STATS_DAYS_FROM_PREV_YEAR: 'จำนวนวันลาพักผ่อนที่ยกมาจากปีที่แล้ว',
+  absence_STATS_TOTAL_DAYS_THIS_YEAR: 'จำนวนวันลาพักผ่อนทั้งหมด',
+  absence_STATS_MAX_ACCUMULATION: 'จำนวนวันลาพักผ่อนสูงสุดที่สามารถสะสมได้',
+  absence_STATS_LATE_TITLE: 'มาสาย',
+  absence_STATS_UNIT_TIMES: 'ครั้ง',
+  absence_STATS_UNIT_DAYS: 'วัน',
+
+  // absence - History tab
+  absence_HISTORY_SUBTITLE: 'แสดงประวัติการลาทั้งหมดของคุณ',
+  absence_HISTORY_DATE_PREFIX: 'วันที่ลา: ',
+
   // Meeting
-  MEETING_HEADER_TITLE: 'Meeting',
-  MEETING_INCOMING: 'Incoming Meeting',
+  MEETING_HEADER_TITLE: 'การประชุม',
+  MEETING_INCOMING: 'ประชุมเร็วๆ นี้',
   MEETING_LOADING_MEETINGS: 'Loading meetings',
-  MEETING_MENU_TITLE: 'ประชุม',
-  MEETING_NO_HISTORY: 'No meeting history',
-  MEETING_NO_INCOMING_MEETINGS: 'No incoming meetings',
-  MEETING_NO_MEETINGS_TODAY: 'No meetings today',
-  MEETING_TODAY: 'Today Meeting',
-  MEETING_UNABLE_TO_LOAD_MEETINGS: 'Unable to load meetings',
+  MEETING_MENU_TITLE: 'การประชุม',
+  MEETING_NO_HISTORY: 'ไม่มีประวัติการประชุม',
+  MEETING_NO_INCOMING_MEETINGS: 'ไม่มีการประชุมเร็วๆ นี้',
+  MEETING_NO_MEETINGS_TODAY: 'ไม่มีการประชุมวันนี้',
+  MEETING_TODAY: 'ประชุมวันนี้',
+  MEETING_UNABLE_TO_LOAD_MEETINGS: 'ไม่สามารถโหลดข้อมูลการประชุมได้',
 
   // Repair Computer
-  REPAIR_COMPUTER_APPROVEMENT: 'Approvement',
+  REPAIR_COMPUTER_APPROVEMENT: 'อนุมัติครุภัณฑ์คอมพิวเตอร์',
   REPAIR_COMPUTER_APPROVEMENT_DESCRIPTION: 'Approve repair computer job outcomes.',
   REPAIR_COMPUTER_ASSIGN_CONFIRM: 'Assign Confirm',
   REPAIR_COMPUTER_BACK_TO_CURRENT_JOB: 'Back to Current Job',

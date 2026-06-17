@@ -1,164 +1,140 @@
-import { useFocusEffect } from "expo-router";
-import { navPush } from "@/utils/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useFocusEffect } from 'expo-router';
+import { navPush } from '@/utils/navigation';
+import { useCallback, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    RefreshControl,
-    StyleSheet,
-    View,
-} from "react-native";
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from 'react-native';
 
-import { LoadingAnimate } from "@/components/loading-animate";
-import { NavTopBar } from "@/components/nav-top-bar";
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { TEXT } from "@/constants/text";
+import { LoadingAnimate } from '@/components/loading-animate';
+import { NavTopBar } from '@/components/nav-top-bar';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { TEXT } from '@/constants/text';
 import {
-    TYPE_absence_BIRTH,
-    TYPE_absence_BUSINESS,
-    TYPE_absence_HAJJ,
-    TYPE_absence_RELAX,
-    TYPE_absence_SICK,
-} from "@/constants/types";
-import { USER_ID } from "@/constants/user";
-import { useAuth } from "@/context/AuthContext";
-import type { absence } from "@/models/types";
-import { historyData } from "@/services/absenceService";
-import { formatDateRange } from "@/utils/date-format";
+  TYPE_absence_BIRTH,
+  TYPE_absence_BUSINESS,
+  TYPE_absence_HAJJ,
+  TYPE_absence_HELPMATE,
+  TYPE_absence_RELAX,
+  TYPE_absence_SICK,
+} from '@/constants/types';
+import { USER_ID } from '@/constants/user';
+import { useAuth } from '@/context/AuthContext';
+import type { absence } from '@/models/types';
+import { historyData } from '@/services/absenceService';
+import { formatDateRange } from '@/utils/date-format';
 
 const HISTORY_PAGE_LENGTH = 10;
 
-function getHasMore(
-  currentCount: number,
-  pageSize: number,
-  totalCount?: number,
-) {
-  if (typeof totalCount === "number") {
+function getHasMore(currentCount: number, pageSize: number, totalCount?: number) {
+  if (typeof totalCount === 'number') {
     return currentCount < totalCount;
   }
   return currentCount >= pageSize;
 }
+
 const absenceTypeLabels: Record<string, string> = {
   [TYPE_absence_SICK]: TEXT.absence_SICK_TITLE,
   [TYPE_absence_BUSINESS]: TEXT.absence_BUSINESS_TITLE,
   [TYPE_absence_BIRTH]: TEXT.absence_BIRTH_TITLE,
+  [TYPE_absence_HELPMATE]: TEXT.absence_BIRTH_TITLE,
   [TYPE_absence_RELAX]: TEXT.absence_RELAX_TITLE,
-  [TYPE_absence_HAJJ]: "Hajj leave",
+  [TYPE_absence_HAJJ]: TEXT.absence_HAJJ_TITLE,
 };
 
-const absenceTypeFields = [
-  "absenceType",
-  "absence_type",
-  "typeabsence",
-  "type_absence",
-  "leaveType",
-  "leave_type",
-  "type",
-];
-const absenceTypeNameFields = [
-  "absenceTypeName",
-  "absence_type_name",
-  "typeName",
-  "type_name",
-  "leaveTypeName",
-  "leave_type_name",
-];
-const startDateFields = ["startDate", "start_date", "dateStart", "date_start"];
-const endDateFields = ["endDate", "end_date", "dateEnd", "date_end"];
+const absenceTypeFields = ['absentType', 'absenceType', 'absence_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type'];
+const absenceTypeNameFields = ['absentTypeName', 'absenceTypeName', 'absence_type_name', 'typeName', 'type_name', 'leaveTypeName', 'leave_type_name'];
+const startDateFields = ['startDate', 'start_date', 'dateStart', 'date_start'];
+const endDateFields = ['endDate', 'end_date', 'dateEnd', 'date_end'];
 
 function getText(item: absence, fields: string[]) {
   for (const field of fields) {
     const value = item[field];
-
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-
-    if (typeof value === "number") {
-      return String(value);
-    }
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'number') return String(value);
   }
-
-  return "";
+  return '';
 }
 
-function getabsenceId(item: absence) {
-  return getText(item, [
-    "id",
-    "absenceId",
-    "absence_id",
-    "requestId",
-    "request_id",
-  ]);
+function getAbsenceId(item: absence) {
+  return getText(item, ['id', 'absenceId', 'absence_id', 'requestId', 'request_id']);
 }
 
-function getabsenceType(item: absence) {
+function getAbsenceType(item: absence) {
   return getText(item, absenceTypeFields);
 }
 
-function getabsenceTypeLabel(item: absence) {
+function getAbsenceTypeLabel(item: absence) {
   const typeName = getText(item, absenceTypeNameFields);
-  const type = getabsenceType(item);
-
-  return (
-    typeName ||
-    absenceTypeLabels[type] ||
-    (type ? `absence type ${type}` : "absence")
-  );
+  const type = getAbsenceType(item);
+  return typeName || absenceTypeLabels[type] || (type ? `Absence type ${type}` : 'Absence');
 }
 
-function getabsenceKey(item: absence, index: number) {
-  return `${getabsenceId(item) || getabsenceType(item) || "absence"}-${index}`;
+function getAbsenceKey(item: absence, index: number) {
+  return `${getAbsenceId(item) || getAbsenceType(item) || 'absence'}-${index}`;
 }
 
 function getDateRange(item: absence) {
   const startDate = getText(item, startDateFields);
   const endDate = getText(item, endDateFields);
-  const formattedDateRange = formatDateRange(startDate, endDate);
-
-  return formattedDateRange ? `absence date: ${formattedDateRange}` : "";
+  const formatted = formatDateRange(startDate, endDate);
+  return formatted ? `${TEXT.absence_HISTORY_DATE_PREFIX}${formatted}` : '';
 }
 
-function getabsenceTimestamp(item: absence) {
-  const timestamp = Date.parse(getText(item, startDateFields));
-  return Number.isNaN(timestamp) ? 0 : timestamp;
+function getAbsenceTimestamp(item: absence) {
+  const ts = Date.parse(getText(item, startDateFields));
+  return Number.isNaN(ts) ? 0 : ts;
 }
 
-function sortabsenceHistory(items: absence[]) {
-  return [...items].sort(
-    (leftItem, rightItem) =>
-      getabsenceTimestamp(rightItem) - getabsenceTimestamp(leftItem),
-  );
+function sortAbsenceHistory(items: absence[]) {
+  return [...items].sort((a, b) => getAbsenceTimestamp(b) - getAbsenceTimestamp(a));
 }
 
-type absenceHistoryListItemProps = {
+type IconName = 'cross.fill' | 'briefcase.fill' | 'sun.max.fill' | 'figure.child' | 'doc.text.fill';
+
+type IconStyle = { iconBg: string; iconColor: string; icon: IconName };
+
+const TYPE_ICON_STYLES: Record<string, IconStyle> = {
+  [TYPE_absence_SICK]: { iconBg: '#FFDAD7', iconColor: '#410005', icon: 'cross.fill' },
+  [TYPE_absence_BUSINESS]: { iconBg: '#DDE2F3', iconColor: '#161C28', icon: 'briefcase.fill' },
+  [TYPE_absence_RELAX]: { iconBg: '#DAE3F4', iconColor: '#131C28', icon: 'sun.max.fill' },
+  [TYPE_absence_BIRTH]: { iconBg: '#FFDAD7', iconColor: '#410005', icon: 'figure.child' },
+  [TYPE_absence_HELPMATE]: { iconBg: '#FFDAD7', iconColor: '#410005', icon: 'figure.child' },
+};
+
+const DEFAULT_ICON_STYLE: IconStyle = { iconBg: '#F2F3F7', iconColor: '#444D5B', icon: 'doc.text.fill' };
+
+function getIconStyle(type: string): IconStyle {
+  return TYPE_ICON_STYLES[type] ?? DEFAULT_ICON_STYLE;
+}
+
+type HistoryListItemProps = {
   item: absence;
   onPress: (item: absence) => void;
 };
 
-function absenceHistoryListItem({ item, onPress }: absenceHistoryListItemProps) {
-  const type = getabsenceTypeLabel(item);
+function HistoryListItem({ item, onPress }: HistoryListItemProps) {
+  const type = getAbsenceType(item);
+  const typeLabel = getAbsenceTypeLabel(item);
   const dateRange = getDateRange(item);
+  const { iconBg, iconColor, icon } = getIconStyle(type);
 
   return (
-    <Pressable accessibilityRole="button" onPress={() => onPress(item)}>
-      <ThemedView
-        style={styles.itemCard}
-        lightColor="#FFFFFF"
-        darkColor="#151718"
-      >
-        <View style={styles.itemHeader}>
-          <ThemedText type="defaultSemiBold" style={styles.itemTitle}>
-            {type}
-          </ThemedText>
-        </View>
-
-        {dateRange ? (
-          <ThemedText style={styles.itemMeta}>{dateRange}</ThemedText>
-        ) : null}
-      </ThemedView>
+    <Pressable accessibilityRole="button" onPress={() => onPress(item)} style={styles.itemCard}>
+      <View style={[styles.itemIconCircle, { backgroundColor: iconBg }]}>
+        <IconSymbol name={icon} size={22} color={iconColor} />
+      </View>
+      <View style={styles.itemBody}>
+        <ThemedText style={styles.itemTitle}>{typeLabel}</ThemedText>
+        {dateRange ? <ThemedText style={styles.itemDate}>{dateRange}</ThemedText> : null}
+      </View>
+      <IconSymbol name="chevron.right" size={16} color="#585E6D" style={{ opacity: 0.4 }} />
     </Pressable>
   );
 }
@@ -171,7 +147,7 @@ export default function HistoryScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const userId = authUser?.staffId || USER_ID;
   const loadingStartRef = useRef<number | null>(null);
   const loadedStartRef = useRef<Set<number>>(new Set());
@@ -179,37 +155,24 @@ export default function HistoryScreen() {
 
   const loadFirstPage = useCallback(
     async (showRefreshing = false, forceReload = false) => {
-      if (
-        loadingStartRef.current === 0 ||
-        (!forceReload && loadedStartRef.current.has(0))
-      ) {
+      if (loadingStartRef.current === 0 || (!forceReload && loadedStartRef.current.has(0))) {
         return;
       }
-
       loadingStartRef.current = 0;
-      if (showRefreshing) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
-
-      setError("");
+      if (showRefreshing) setIsRefreshing(true);
+      else setIsLoading(true);
+      setError('');
       try {
         const result = await historyData(userId, { length: pageSize, start: 0 });
         const nextItems = result.data;
-        const sortedItems = sortabsenceHistory(nextItems);
-
+        const sorted = sortAbsenceHistory(nextItems);
         loadedStartRef.current = new Set([0]);
-        setItems(sortedItems);
-        itemsRef.current = sortedItems;
+        setItems(sorted);
+        itemsRef.current = sorted;
         setHasMore(getHasMore(nextItems.length, pageSize, result.totalCount));
-      } catch (error) {
+      } catch (err) {
         setItems([]);
-        setError(
-          error instanceof Error
-            ? error.message
-            : TEXT.SHARED_UNABLE_TO_LOAD_HISTORY,
-        );
+        setError(err instanceof Error ? err.message : TEXT.SHARED_UNABLE_TO_LOAD_HISTORY);
         setHasMore(false);
       } finally {
         loadingStartRef.current = null;
@@ -221,35 +184,19 @@ export default function HistoryScreen() {
   );
 
   const loadMoreItems = useCallback(async () => {
-    if (isLoading || isRefreshing || isLoadingMore || !hasMore) {
-      return;
-    }
-
+    if (isLoading || isRefreshing || isLoadingMore || !hasMore) return;
     const start = itemsRef.current.length;
-
-    if (
-      loadingStartRef.current === start ||
-      loadedStartRef.current.has(start)
-    ) {
-      return;
-    }
-
+    if (loadingStartRef.current === start || loadedStartRef.current.has(start)) return;
     loadingStartRef.current = start;
     setIsLoadingMore(true);
     try {
       const result = await historyData(userId, { length: pageSize, start });
       const nextItems = result.data;
-      const updatedItems = sortabsenceHistory([
-        ...itemsRef.current,
-        ...nextItems,
-      ]);
-
+      const updated = sortAbsenceHistory([...itemsRef.current, ...nextItems]);
       loadedStartRef.current.add(start);
-      setItems(updatedItems);
-      itemsRef.current = updatedItems;
-      setHasMore(
-        getHasMore(start + nextItems.length, pageSize, result.totalCount),
-      );
+      setItems(updated);
+      itemsRef.current = updated;
+      setHasMore(getHasMore(start + nextItems.length, pageSize, result.totalCount));
     } catch {
       setHasMore(false);
     } finally {
@@ -258,18 +205,14 @@ export default function HistoryScreen() {
     }
   }, [hasMore, isLoading, isLoadingMore, isRefreshing, userId, pageSize]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadFirstPage(false, true);
-    }, [loadFirstPage]),
-  );
+  useFocusEffect(useCallback(() => { loadFirstPage(false, true); }, [loadFirstPage]));
 
   const openDetail = useCallback((item: absence) => {
     navPush({
-      pathname: "/absence/detail",
+      pathname: '/absence/detail',
       params: {
-        id: getabsenceId(item),
-        type: getabsenceType(item),
+        id: getAbsenceId(item),
+        type: getAbsenceType(item),
         item: encodeURIComponent(JSON.stringify(item)),
       },
     } as Parameters<typeof navPush>[0]);
@@ -277,33 +220,20 @@ export default function HistoryScreen() {
 
   const renderContent = () => {
     if (isLoading) {
-      return (
-        <LoadingAnimate
-          title={TEXT.SHARED_LOADING_HISTORY}
-          desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
-        />
-      );
+      return <LoadingAnimate title={TEXT.SHARED_LOADING_HISTORY} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
     }
 
     if (error) {
       return (
-        <View style={styles.stateContent}>
-          <ThemedText type="subtitle">
-            {TEXT.SHARED_SOMETHING_WENT_WRONG}
-          </ThemedText>
-          <ThemedText style={[styles.stateMessage, styles.errorText]}>
-            {error}
-          </ThemedText>
+        <View style={styles.stateBox}>
+          <ThemedText style={styles.stateTitle}>{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
+          <ThemedText style={styles.errorText}>{error}</ThemedText>
           <Pressable
             accessibilityRole="button"
             onPress={() => loadFirstPage(false, true)}
             style={styles.retryButton}
           >
-            <ThemedText
-              lightColor="#FFFFFF"
-              darkColor="#FFFFFF"
-              type="defaultSemiBold"
-            >
+            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
               {TEXT.SHARED_RETRY}
             </ThemedText>
           </Pressable>
@@ -316,37 +246,24 @@ export default function HistoryScreen() {
         style={styles.flatList}
         contentContainerStyle={styles.listContent}
         data={items}
-        keyExtractor={getabsenceKey}
+        keyExtractor={getAbsenceKey}
         refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={() => loadFirstPage(true, true)}
-          />
+          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadFirstPage(true, true)} />
         }
-        onEndReached={() => {
-          loadMoreItems();
-        }}
+        onEndReached={loadMoreItems}
         onEndReachedThreshold={0.5}
-        renderItem={({ item }) => (
-          <absenceHistoryListItem item={item} onPress={openDetail} />
-        )}
+        renderItem={({ item }) => <HistoryListItem item={item} onPress={openDetail} />}
         ListFooterComponent={
           isLoadingMore ? (
             <View style={styles.footerLoader}>
-              <ActivityIndicator color="#0A6E8A" size="small" />
+              <ActivityIndicator color="#922124" size="small" />
             </View>
           ) : null
         }
         ListEmptyComponent={
-          <ThemedView
-            style={styles.emptyCard}
-            lightColor="#FFFFFF"
-            darkColor="#151718"
-          >
-            <ThemedText style={styles.emptyMessage}>
-              {TEXT.SHARED_NO_HISTORY}
-            </ThemedText>
-          </ThemedView>
+          <View style={styles.emptyBox}>
+            <ThemedText style={styles.emptyText}>{TEXT.SHARED_NO_HISTORY}</ThemedText>
+          </View>
         }
       />
     );
@@ -355,17 +272,11 @@ export default function HistoryScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar title={TEXT.absence_TITLE} />
-
-      <View style={styles.content}>
-        <ThemedView
-          style={styles.panel}
-          lightColor="#FFFFFF"
-          darkColor="#1F2B30"
-        >
-          <ThemedText type="subtitle">{TEXT.absence_HISTORY_TITLE}</ThemedText>
-          {renderContent()}
-        </ThemedView>
+      <View style={styles.pageTitleSection}>
+        <ThemedText style={styles.pageTitle}>{TEXT.absence_HISTORY_TITLE}</ThemedText>
+        <ThemedText style={styles.pageSubtitle}>{TEXT.absence_HISTORY_SUBTITLE}</ThemedText>
       </View>
+      <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
 }
@@ -373,94 +284,111 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FD',
+  },
+  pageTitleSection: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
+    gap: 4,
+  },
+  pageTitle: {
+    fontSize: 20,
+    lineHeight: 28,
+    fontWeight: '600',
+    color: '#191C1F',
+  },
+  pageSubtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#584140',
   },
   content: {
     flex: 1,
-    padding: 16,
-  },
-  panel: {
-    flex: 1,
-    borderRadius: 8,
-    padding: 0,
   },
   flatList: {
     flex: 1,
   },
   listContent: {
     gap: 12,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 16,
+    padding: 16,
+    paddingTop: 8,
+    paddingBottom: 96,
   },
   itemCard: {
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#F2F3F7',
+    borderRadius: 12,
     padding: 16,
   },
-  itemHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
+  itemIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  itemBody: {
+    flex: 1,
+    gap: 2,
   },
   itemTitle: {
-    flex: 1,
     fontSize: 16,
-    lineHeight: 22,
+    lineHeight: 24,
+    fontWeight: '600',
+    color: '#191C1F',
   },
-  statusText: {
-    color: "#0A6E8A",
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  itemMeta: {
-    color: "#687076",
+  itemDate: {
     fontSize: 13,
-    lineHeight: 19,
-    marginTop: 6,
+    lineHeight: 18,
+    color: '#584140',
   },
-  stateContent: {
+  stateBox: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    gap: 12,
   },
-  stateMessage: {
-    color: "#687076",
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 10,
-    textAlign: "center",
+  stateTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#191C1F',
+    textAlign: 'center',
   },
   errorText: {
-    color: "#B42318",
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#B42318',
+    textAlign: 'center',
   },
   retryButton: {
     minHeight: 48,
     minWidth: 132,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
-    marginTop: 24,
+    backgroundColor: '#B33939',
+    marginTop: 8,
+    paddingHorizontal: 24,
   },
-  emptyCard: {
-    minHeight: 120,
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
-    padding: 16,
+  emptyBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
   },
-  emptyMessage: {
-    color: "#687076",
+  emptyText: {
     fontSize: 14,
     lineHeight: 20,
-    textAlign: "center",
+    color: '#585E6D',
+    textAlign: 'center',
   },
   footerLoader: {
     paddingVertical: 16,
-    alignItems: "center",
+    alignItems: 'center',
   },
 });

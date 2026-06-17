@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
@@ -26,27 +27,23 @@ import { formatNewsDate } from '@/utils/date-format';
 import { navPush } from '@/utils/navigation';
 import { ENDPOINTS } from '@/constants/endpoints';
 
-// Design tokens (DESIGN.md)
 const D = {
   primary: '#922124',
-  primaryContainer: '#b33939',
+  primaryContainer: '#B33939',
   onPrimary: '#ffffff',
-  background: '#f8f9fd',
+  background: '#F8F9FD',
   surface: '#ffffff',
-  onSurface: '#191c1f',
-  onSurfaceVariant: '#687076',
-  outlineVariant: '#dfbfbd',
+  onSurface: '#191C1F',
+  onSurfaceVariant: '#584140',
+  outlineVariant: '#EDEEF2',
+  menuCard: '#F2F3F7',
   pad: 16,
   gap: 12,
 } as const;
 
 type IconName = Parameters<typeof IconSymbol>[0]['name'];
 
-const MENU_ITEMS: ReadonlyArray<{
-  title: string;
-  href: string;
-  icon: IconName;
-}> = [
+const MENU_ITEMS: ReadonlyArray<{ title: string; href: string; icon: IconName }> = [
   { title: TEXT.absence_TITLE, href: '/absence', icon: 'calendar' },
   { title: TEXT.FORGOT_TIMESTAMP_TITLE, href: '/forgot-timestamp', icon: 'clock.fill' },
   { title: TEXT.MEETING_MENU_TITLE, href: '/meeting', icon: 'person.2.fill' },
@@ -63,7 +60,7 @@ const MONTH_NAMES = [
 
 function getGreeting() {
   const h = new Date().getHours();
-  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  return h < 12 ? TEXT.HOME_GREETING_MORNING : h < 17 ? TEXT.HOME_GREETING_AFTERNOON : TEXT.HOME_GREETING_EVENING;
 }
 
 function getDateString() {
@@ -87,6 +84,10 @@ function getNewsKey(item: News, index: number) {
   return `${String(item.guid || item.link || item.title)}-${index}`;
 }
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').replace(/\s+/g, ' ').trim();
+}
+
 function wait(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
@@ -107,7 +108,6 @@ export default function HomeScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [newsItems, setNewsItems] = useState<News[]>([]);
   const [isNewsLoading, setIsNewsLoading] = useState(false);
-  const [newsIndex, setNewsIndex] = useState(0);
   const [avatarFailed, setAvatarFailed] = useState(false);
 
   const processedCallbackRef = useRef('');
@@ -151,7 +151,6 @@ export default function HomeScreen() {
       });
 
       setIsNewsLoading(true);
-      setNewsIndex(0);
       void staffNewsFeed().then((items) => {
         if (!isActive) return;
         setNewsItems(items);
@@ -188,7 +187,7 @@ export default function HomeScreen() {
     } as Parameters<typeof navPush>[0]);
   }, []);
 
-  // ─── Auth loading ────────────────────────────────────────────────────────────
+  // ─── Auth loading ───────────────────────────────────────────────────────────
 
   if (isAuthLoading) {
     return (
@@ -198,7 +197,7 @@ export default function HomeScreen() {
     );
   }
 
-  // ─── Unauthenticated (welcome) ───────────────────────────────────────────────
+  // ─── Unauthenticated ────────────────────────────────────────────────────────
 
   if (!authUser) {
     return (
@@ -206,7 +205,7 @@ export default function HomeScreen() {
         <View style={styles.welcomeContent}>
           <View style={styles.welcomeTextGroup}>
             <ThemedText type="title" style={styles.welcomeTitle}>{TEXT.HOME_TITLE}</ThemedText>
-            <ThemedText style={styles.welcomeDesc}>ระบบสำหรับบุคลากรมหาวิทยาลัยสงขลานครินทร์</ThemedText>
+            <ThemedText style={styles.welcomeDesc}>{TEXT.HOME_WELCOME_DESCRIPTION}</ThemedText>
           </View>
           <Pressable accessibilityRole="button" onPress={handleLogin} style={styles.welcomeLoginButton}>
             <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold" style={styles.welcomeLoginText}>
@@ -230,7 +229,7 @@ export default function HomeScreen() {
                     accessibilityRole="button"
                     onPress={() => setAuthCallbackErrorMessage('')}
                     style={styles.btnPrimary}>
-                    <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">OK</ThemedText>
+                    <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">{TEXT.SHARED_OK}</ThemedText>
                   </Pressable>
                 </View>
               </ThemedView>
@@ -241,50 +240,54 @@ export default function HomeScreen() {
     );
   }
 
-  // ─── Authenticated ───────────────────────────────────────────────────────────
+  // ─── Authenticated ──────────────────────────────────────────────────────────
 
-  const displayedNews = newsItems.slice(0, 3);
+  const displayedNews = newsItems.slice(0, 5);
   const menuCardWidth = Math.floor((screenWidth - D.pad * 2 - D.gap * 2) / 3);
+  const newsCardWidth = Math.floor(screenWidth * 0.72);
   const authPhotoUrl = authUser?.staffId
     ? `${ENDPOINTS.photoBase}${encodeURIComponent(String(authUser.staffId))}.jpg`
     : null;
 
   return (
     <View style={[styles.container, { backgroundColor: D.background }]}>
+      <StatusBar style="light" />
 
       {/* ── Header ────────────────────────────────────────────────────────── */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="View profile"
           onPress={() => navPush('/my-profile' as Parameters<typeof navPush>[0])}
           style={styles.avatarBtn}>
-          {authPhotoUrl && !avatarFailed ? (
-            <Image
-              source={{ uri: authPhotoUrl }}
-              style={styles.avatar}
-              contentFit="cover"
-              onError={() => setAvatarFailed(true)}
-            />
-          ) : (
-            <View style={[styles.avatar, { backgroundColor: D.primaryContainer }]}>
-              <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={styles.avatarText}>
-                {getInitials(authUser)}
-              </ThemedText>
-            </View>
-          )}
+          <View style={styles.avatarInner}>
+            {authPhotoUrl && !avatarFailed ? (
+              <Image
+                source={{ uri: authPhotoUrl }}
+                style={styles.avatar}
+                contentFit="cover"
+                onError={() => setAvatarFailed(true)}
+              />
+            ) : (
+              <View style={[styles.avatar, styles.avatarFallback]}>
+                <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={styles.avatarText}>
+                  {getInitials(authUser)}
+                </ThemedText>
+              </View>
+            )}
+          </View>
         </Pressable>
 
-        <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} style={styles.headerTitle}>
-          Intania
+        <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={styles.headerTitle}>
+          {TEXT.HOME_APP_NAME}
         </ThemedText>
 
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Notifications"
-          onPress={() => navPush('/notification-history')}
+          onPress={() => navPush('/notification')}
           style={styles.bellBtn}>
-          <IconSymbol name="bell.fill" size={22} color={D.onSurface} />
+          <IconSymbol name="bell.fill" size={22} color={D.onPrimary} />
           {unreadCount > 0 ? <View style={styles.bellBadge} /> : null}
         </Pressable>
       </View>
@@ -294,103 +297,93 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}>
 
-        {/* Greeting card */}
+        {/* Greeting — full-bleed red, visually extends the header */}
         <View style={styles.greetingCard}>
           <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={styles.greetingTitle}>
             {getGreeting()}, {getFirstName(authUser)}
           </ThemedText>
-          <ThemedText lightColor="rgba(255,255,255,0.72)" darkColor="rgba(255,255,255,0.72)" style={styles.greetingDate}>
+          <ThemedText lightColor="rgba(255,255,255,0.6)" darkColor="rgba(255,255,255,0.6)" style={styles.greetingDate}>
             {getDateString()}
           </ThemedText>
         </View>
 
-        {/* News section header */}
-        <View style={styles.sectionRow}>
-          <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} style={styles.sectionTitle}>
-            {TEXT.HOME_NEWS_SECTION_TITLE}
-          </ThemedText>
-          <Pressable accessibilityRole="button" onPress={() => navPush('/news')}>
-            <ThemedText lightColor={D.primary} darkColor={D.primary} style={styles.seeAll}>
-              ดูทั้งหมด
-            </ThemedText>
-          </Pressable>
-        </View>
+        {/* Padded sections below the greeting */}
+        <View style={styles.innerContent}>
 
-        {/* News carousel */}
-        <View style={{ marginHorizontal: -D.pad }}>
-          {isNewsLoading ? (
-            <View style={[styles.newsPage, { width: screenWidth }]}>
-              <View style={styles.newsCard}>
+          {/* News section */}
+          <View style={styles.sectionRow}>
+            <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} style={styles.sectionTitle}>
+              {TEXT.HOME_NEWS_SECTION_TITLE}
+            </ThemedText>
+            <Pressable accessibilityRole="button" onPress={() => navPush('/news')}>
+              <ThemedText lightColor={D.primary} darkColor={D.primary} style={styles.seeAll}>
+                {TEXT.HOME_SEE_ALL_THAI}
+              </ThemedText>
+            </Pressable>
+          </View>
+
+          {/* News cards — horizontal scroll, break out of inner padding */}
+          <View style={styles.newsScrollOuter}>
+            {isNewsLoading ? (
+              <View style={[styles.newsCard, { width: newsCardWidth, alignItems: 'center', justifyContent: 'center' }]}>
                 <ActivityIndicator color={D.primaryContainer} />
               </View>
-            </View>
-          ) : displayedNews.length === 0 ? (
-            <View style={[styles.newsPage, { width: screenWidth }]}>
-              <View style={styles.newsCard}>
+            ) : displayedNews.length === 0 ? (
+              <View style={[styles.newsCard, { width: newsCardWidth, alignItems: 'center', justifyContent: 'center' }]}>
                 <ThemedText lightColor={D.onSurfaceVariant} darkColor={D.onSurfaceVariant} style={styles.newsEmpty}>
                   {TEXT.HOME_NO_NEWS_MESSAGE}
                 </ThemedText>
               </View>
-            </View>
-          ) : (
-            <ScrollView
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={(e) => {
-                const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
-                setNewsIndex(Math.max(0, Math.min(idx, displayedNews.length - 1)));
-              }}>
-              {displayedNews.map((item, i) => (
-                <Pressable
-                  key={getNewsKey(item, i)}
-                  accessibilityRole="button"
-                  style={[styles.newsPage, { width: screenWidth }]}
-                  onPress={() => openNews(item)}>
-                  <View style={styles.newsCard}>
-                    <ThemedText lightColor={D.primary} darkColor={D.primary} numberOfLines={2} style={styles.newsTitle}>
-                      {item.title}
-                    </ThemedText>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.newsScrollContent}>
+                {displayedNews.map((item, i) => (
+                  <Pressable
+                    key={getNewsKey(item, i)}
+                    accessibilityRole="button"
+                    style={[styles.newsCard, { width: newsCardWidth }]}
+                    onPress={() => openNews(item)}>
                     {item.pubDate ? (
                       <ThemedText lightColor={D.onSurfaceVariant} darkColor={D.onSurfaceVariant} style={styles.newsDate}>
                         {formatNewsDate(item.pubDate)}
                       </ThemedText>
                     ) : null}
-                  </View>
-                </Pressable>
-              ))}
-            </ScrollView>
-          )}
-        </View>
+                    <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} numberOfLines={2} style={styles.newsTitle}>
+                      {item.title}
+                    </ThemedText>
+                    {item.description ? (
+                      <ThemedText lightColor={D.onSurfaceVariant} darkColor={D.onSurfaceVariant} numberOfLines={2} style={styles.newsDesc}>
+                        {stripHtml(item.description)}
+                      </ThemedText>
+                    ) : null}
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+          </View>
 
-        {displayedNews.length > 1 ? (
-          <View style={styles.dotsRow}>
-            {displayedNews.map((_, i) => (
-              <View key={i} style={[styles.dot, i === newsIndex ? styles.dotActive : null]} />
+          {/* Menu section */}
+          <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} style={styles.sectionTitle}>
+            {TEXT.HOME_MENU_SECTION_TITLE}
+          </ThemedText>
+
+          <View style={styles.menuGrid}>
+            {MENU_ITEMS.map((item) => (
+              <Pressable
+                key={item.href}
+                accessibilityRole="button"
+                style={[styles.menuCard, { width: menuCardWidth }]}
+                onPress={() => navPush(item.href as Parameters<typeof navPush>[0])}>
+                <IconSymbol name={item.icon} size={28} color={D.primary} />
+                <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} numberOfLines={2} style={styles.menuLabel}>
+                  {item.title}
+                </ThemedText>
+              </Pressable>
             ))}
           </View>
-        ) : null}
 
-        {/* Menu section */}
-        <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} style={styles.sectionTitle}>
-          {TEXT.HOME_MENU_SECTION_TITLE}
-        </ThemedText>
-
-        <View style={styles.menuGrid}>
-          {MENU_ITEMS.map((item) => (
-            <Pressable
-              key={item.href}
-              accessibilityRole="button"
-              style={[styles.menuCard, { width: menuCardWidth }]}
-              onPress={() => navPush(item.href as Parameters<typeof navPush>[0])}>
-              <View style={styles.menuIconWrap}>
-                <IconSymbol name={item.icon} size={28} color={D.primary} />
-              </View>
-              <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} numberOfLines={2} style={styles.menuLabel}>
-                {item.title}
-              </ThemedText>
-            </Pressable>
-          ))}
         </View>
       </ScrollView>
 
@@ -403,17 +396,17 @@ export default function HomeScreen() {
         <Pressable style={styles.backdrop} onPress={() => setIsLogoutConfirmOpen(false)}>
           <Pressable accessibilityRole="none" onPress={(e) => e.stopPropagation()}>
             <ThemedView style={styles.modal} lightColor="#FFFFFF" darkColor="#151718">
-              <ThemedText type="subtitle">Confirm logout</ThemedText>
-              <ThemedText style={styles.modalMessage}>Do you want to sign out from this account?</ThemedText>
+              <ThemedText type="subtitle">{TEXT.HOME_CONFIRM_LOGOUT_TITLE}</ThemedText>
+              <ThemedText style={styles.modalMessage}>{TEXT.HOME_CONFIRM_LOGOUT_MESSAGE}</ThemedText>
               <View style={styles.modalActions}>
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => setIsLogoutConfirmOpen(false)}
                   style={styles.btnSecondary}>
-                  <ThemedText type="defaultSemiBold" style={styles.btnSecondaryText}>Cancel</ThemedText>
+                  <ThemedText type="defaultSemiBold" style={styles.btnSecondaryText}>{TEXT.CANCEL}</ThemedText>
                 </Pressable>
                 <Pressable accessibilityRole="button" onPress={handleConfirmLogout} style={styles.btnDanger}>
-                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">Logout</ThemedText>
+                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">{TEXT.HOME_LOGOUT}</ThemedText>
                 </Pressable>
               </View>
             </ThemedView>
@@ -424,7 +417,7 @@ export default function HomeScreen() {
       <Modal transparent visible={isSigningOut} animationType="fade">
         <View style={styles.backdrop}>
           <ThemedView style={styles.signingOutModal} lightColor="#FFFFFF" darkColor="#151718">
-            <LoadingAnimate fill={false} title="Signing out" desc="Please wait a moment" />
+            <LoadingAnimate fill={false} title={TEXT.HOME_SIGNING_OUT_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
           </ThemedView>
         </View>
       </Modal>
@@ -435,31 +428,40 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  // Header
+  // Header — red background with white content
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: D.pad,
     paddingBottom: 12,
-    backgroundColor: D.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: D.outlineVariant,
+    backgroundColor: D.primaryContainer,
   },
   avatarBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: '#FFDAD7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInner: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     overflow: 'hidden',
   },
   avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+  },
+  avatarFallback: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     lineHeight: 18,
   },
@@ -485,35 +487,43 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#D92D20',
+    backgroundColor: '#BA1A1A',
     borderWidth: 1.5,
-    borderColor: D.surface,
+    borderColor: D.primaryContainer,
   },
 
-  // Scroll content
+  // Scroll — no outer padding so greeting is full-bleed
   scrollContent: {
-    padding: D.pad,
+    flexGrow: 1,
+  },
+
+  // Greeting — same red as header, no border-radius, full-width
+  greetingCard: {
+    backgroundColor: D.primaryContainer,
+    paddingHorizontal: D.pad,
+    paddingTop: 4,
+    paddingBottom: 20,
+    gap: 4,
+  },
+  greetingTitle: {
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 24,
+  },
+  greetingDate: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+
+  // Inner padded content below greeting
+  innerContent: {
+    paddingHorizontal: D.pad,
+    paddingTop: 20,
+    paddingBottom: 8,
     gap: 18,
   },
 
-  // Greeting card
-  greetingCard: {
-    backgroundColor: D.primaryContainer,
-    borderRadius: 16,
-    padding: 20,
-    gap: 6,
-  },
-  greetingTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 28,
-  },
-  greetingDate: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-
-  // Section labels
+  // Section header row
   sectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -530,76 +540,59 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // News carousel
-  newsPage: {
+  // News — break out of innerContent horizontal padding
+  newsScrollOuter: {
+    marginHorizontal: -D.pad,
+  },
+  newsScrollContent: {
     paddingHorizontal: D.pad,
+    gap: 12,
   },
   newsCard: {
     backgroundColor: D.surface,
     borderRadius: 12,
-    padding: 14,
-    gap: 6,
-    minHeight: 110,
-    justifyContent: 'center',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  newsTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 22,
+    padding: 16,
+    height: 138,
+    gap: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: D.outlineVariant,
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+    elevation: 1,
+    justifyContent: 'flex-start',
   },
   newsDate: {
     fontSize: 12,
     lineHeight: 17,
-    marginTop: 4,
+  },
+  newsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  newsDesc: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
   },
   newsEmpty: {
     fontSize: 14,
     textAlign: 'center',
   },
-  dotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: -6,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: D.outlineVariant,
-  },
-  dotActive: {
-    width: 18,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: D.primary,
-  },
 
-  // Menu grid
+  // Menu grid — grey cards, no shadow
   menuGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: D.gap,
   },
   menuCard: {
-    backgroundColor: D.surface,
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: D.menuCard,
+    borderRadius: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
     minHeight: 90,
-    justifyContent: 'center',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
-    elevation: 1,
-  },
-  menuIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
     justifyContent: 'center',
   },
   menuLabel: {
@@ -673,7 +666,7 @@ const styles = StyleSheet.create({
     borderColor: D.outlineVariant,
   },
 
-  // Welcome screen
+  // Welcome (unauthenticated)
   welcomeContent: {
     flex: 1,
     alignItems: 'center',

@@ -1,8 +1,10 @@
-import DateTimePicker, {
+﻿import DateTimePicker, {
   DateTimePickerAndroid,
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { router, useLocalSearchParams } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Modal,
@@ -550,8 +552,28 @@ export default function ForgotTimestampDetailScreen() {
       );
     }
 
+    const contextTitle =
+      type === "in" ? "Forgot to clock in?" : type === "out" ? "Forgot to clock out?" : "Forgot timestamp";
+    const contextDesc =
+      type === "in"
+        ? "Select the correct time you actually clocked in on this date."
+        : type === "out"
+          ? "Select the correct time you actually clocked out on this date."
+          : "Complete the form below to submit your forgot timestamp request.";
+
     return (
       <View>
+        {/* Context header card */}
+        <View style={styles.contextCard}>
+          <View style={styles.contextIconCircle}>
+            <MaterialIcons name="access-time" size={22} color="#B33939" />
+          </View>
+          <View style={styles.contextText}>
+            <ThemedText style={styles.contextTitle}>{contextTitle}</ThemedText>
+            <ThemedText style={styles.contextDesc}>{contextDesc}</ThemedText>
+          </View>
+        </View>
+
         {error ? (
           <View style={styles.errorContent}>
             <ThemedText style={[styles.errorText, styles.errorMessage]}>
@@ -573,6 +595,7 @@ export default function ForgotTimestampDetailScreen() {
           </View>
         ) : null}
 
+        <View style={styles.formCard}>
         <View style={styles.form}>
           {forgetTypeLabel ? (
             <ThemedText type="defaultSemiBold" style={styles.forgetTypeLabel}>
@@ -581,7 +604,7 @@ export default function ForgotTimestampDetailScreen() {
           ) : null}
 
           <View style={styles.field}>
-            <ThemedText type="defaultSemiBold">Approver List</ThemedText>
+            <ThemedText style={styles.fieldLabel}>APPROVER</ThemedText>
             <Pressable
               accessibilityRole="button"
               onPress={() => setIsApproverOpen(true)}
@@ -608,7 +631,7 @@ export default function ForgotTimestampDetailScreen() {
           </View>
 
           <View style={styles.field}>
-            <ThemedText type="defaultSemiBold">Request User</ThemedText>
+            <ThemedText style={styles.fieldLabel}>EMPLOYEE NAME</ThemedText>
             <ThemedText style={styles.requestUserText}>
               {requestUserLabel || "-"}
             </ThemedText>
@@ -616,7 +639,7 @@ export default function ForgotTimestampDetailScreen() {
 
           <View style={styles.dateTimeRow}>
             <View style={[styles.field, styles.dateField]}>
-              <ThemedText type="defaultSemiBold">Date</ThemedText>
+              <ThemedText style={styles.fieldLabel}>ORIGINAL DATE</ThemedText>
               {displayTimestamp ? (
                 <TextInput
                   editable={false}
@@ -626,7 +649,7 @@ export default function ForgotTimestampDetailScreen() {
               ) : null}
             </View>
             <View style={[styles.field, styles.timeField]}>
-              <ThemedText type="defaultSemiBold">Time</ThemedText>
+              <ThemedText style={styles.fieldLabel}>CORRECTED TIME</ThemedText>
               {Platform.OS === "web" ? (
                 <View style={styles.webTimePicker}>
                   <ModalSelectField
@@ -704,8 +727,16 @@ export default function ForgotTimestampDetailScreen() {
             </View>
           </View>
 
+          <View style={styles.guidanceNote}>
+            <MaterialIcons name="info-outline" size={14} color="rgba(146,33,36,0.7)" />
+            <ThemedText style={styles.guidanceNoteText}>
+              Requests must be submitted by Friday 5:00 PM for current payroll
+              processing.
+            </ThemedText>
+          </View>
+
           <View style={styles.field}>
-            <ThemedText type="defaultSemiBold">Reason</ThemedText>
+            <ThemedText style={styles.fieldLabel}>REASON FOR ADJUSTMENT</ThemedText>
             <TextInput
               multiline
               numberOfLines={2}
@@ -733,12 +764,14 @@ export default function ForgotTimestampDetailScreen() {
             ) : null}
           </View>
         </View>
+        </View>
       </View>
     );
   };
 
   return (
     <ThemedView style={styles.container}>
+      <StatusBar style="light" />
       <NavTopBar
         title={TEXT.FORGOT_TIMESTAMP_TITLE}
         backHref="/forgot-timestamp/index"
@@ -983,11 +1016,81 @@ export default function ForgotTimestampDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#F8F9FD",
   },
   content: {
     flexGrow: 1,
     padding: 16,
     paddingBottom: 96,
+    gap: 0,
+  },
+  contextCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(223,191,189,0.3)",
+    padding: 14,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  contextIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(179,57,57,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  contextText: {
+    flex: 1,
+    gap: 3,
+    paddingTop: 2,
+  },
+  contextTitle: {
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: "600",
+    color: "#922124",
+    fontFamily: AppFonts.psuBold,
+  },
+  contextDesc: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#584140",
+    fontFamily: AppFonts.psuRegular,
+  },
+  fieldLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    color: "#585E6D",
+    fontFamily: AppFonts.psuBold,
+  },
+  guidanceNote: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: "rgba(231,232,236,0.4)",
+    borderLeftWidth: 4,
+    borderLeftColor: "rgba(146,33,36,0.4)",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  guidanceNoteText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#585E6D",
+    fontFamily: AppFonts.psuRegular,
   },
   title: {
     fontSize: 16,
@@ -997,9 +1100,21 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 16,
   },
+  formCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E1E2E6',
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
   form: {
     gap: 25,
-    marginTop: 24,
+    marginTop: 8,
   },
   forgetTypeLabel: {
     fontSize: 16,
@@ -1119,7 +1234,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: "#B33939",
     marginTop: 12,
     paddingHorizontal: 16,
   },
@@ -1152,8 +1267,8 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    borderRadius: 12,
+    backgroundColor: "#B33939",
   },
   row: {
     flexDirection: "row",

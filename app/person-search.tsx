@@ -1,3 +1,5 @@
+﻿import AsyncStorage from '@react-native-async-storage/async-storage';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { TEXT } from '@/constants/text';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -5,6 +7,7 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -18,6 +21,8 @@ import type { Person } from '@/models/types';
 import { getPersonnelSuggestions } from '@/services/personService';
 
 const SEARCH_DEBOUNCE_MS = 350;
+const RECENT_KEYWORDS_KEY = '@person_search_recent_keywords';
+const MAX_RECENT_KEYWORDS = 5;
 
 function getPersonLabel(person: Person): string {
   const r = person as Record<string, unknown>;
@@ -169,37 +174,58 @@ export default function PersonSearchScreen() {
   const [results, setResults] = useState<Person[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recentKeywords, setRecentKeywords] = useState<string[]>([]);
   const requestIdRef = useRef(0);
 
-  const runSearch = useCallback((trimmed: string) => {
-    const id = ++requestIdRef.current;
-    setIsLoading(true);
-    setError(null);
-
-    getPersonnelSuggestions(trimmed)
-      .then((data) => {
-        if (id !== requestIdRef.current) {
-          return;
+  useEffect(() => {
+    AsyncStorage.getItem(RECENT_KEYWORDS_KEY).then((stored) => {
+      if (!stored) return;
+      try {
+        const parsed = JSON.parse(stored) as string[];
+        if (Array.isArray(parsed)) {
+          setRecentKeywords(parsed.slice(0, MAX_RECENT_KEYWORDS));
         }
-        setResults(data);
-      })
-      .catch((searchError) => {
-        if (id !== requestIdRef.current) {
-          return;
-        }
-        if (process.env.NODE_ENV !== 'production') {
-          console.warn('[person-search] search failed', searchError);
-        }
-        setResults([]);
-        setError(TEXT.SHARED_SOMETHING_WENT_WRONG);
-      })
-      .finally(() => {
-        if (id !== requestIdRef.current) {
-          return;
-        }
-        setIsLoading(false);
-      });
+      } catch {}
+    });
   }, []);
+
+  const saveKeyword = useCallback((term: string) => {
+    const trimmed = term.trim();
+    if (trimmed.length < 2) return;
+    setRecentKeywords((prev) => {
+      const next = [trimmed, ...prev.filter((k) => k !== trimmed)].slice(0, MAX_RECENT_KEYWORDS);
+      AsyncStorage.setItem(RECENT_KEYWORDS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const runSearch = useCallback(
+    (trimmed: string) => {
+      const id = ++requestIdRef.current;
+      setIsLoading(true);
+      setError(null);
+
+      getPersonnelSuggestions(trimmed)
+        .then((data) => {
+          if (id !== requestIdRef.current) return;
+          setResults(data);
+          saveKeyword(trimmed);
+        })
+        .catch((searchError) => {
+          if (id !== requestIdRef.current) return;
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn('[person-search] search failed', searchError);
+          }
+          setResults([]);
+          setError(TEXT.SHARED_SOMETHING_WENT_WRONG);
+        })
+        .finally(() => {
+          if (id !== requestIdRef.current) return;
+          setIsLoading(false);
+        });
+    },
+    [saveKeyword],
+  );
 
   useEffect(() => {
     const trimmed = keyword.trim();
@@ -223,10 +249,12 @@ export default function PersonSearchScreen() {
 
   const handleRetry = () => {
     const trimmed = keyword.trim();
-    if (trimmed.length < 2) {
-      return;
-    }
+    if (trimmed.length < 2) return;
     runSearch(trimmed);
+  };
+
+  const handleBadgePress = (term: string) => {
+    setKeyword(term);
   };
 
   const trimmedLength = keyword.trim().length;
@@ -238,6 +266,9 @@ export default function PersonSearchScreen() {
 
       <View style={styles.searchRow}>
         <View style={styles.inputWrap}>
+          <View pointerEvents="none" style={styles.searchIconWrap}>
+            <MaterialIcons name="search" size={22} color="#8A969C" />
+          </View>
           <TextInput
             accessibilityLabel={TEXT.SHARED_SEARCH_NAME_PLACEHOLDER}
             autoCapitalize="none"
@@ -248,39 +279,65 @@ export default function PersonSearchScreen() {
             placeholderTextColor="#8A969C"
             returnKeyType="search"
             style={styles.input}
-            value={keyword}            
+            value={keyword}
           />
           <View pointerEvents="none" style={styles.spinnerWrap}>
-            {isLoading ? <ActivityIndicator color="#0A6E8A" size="small" /> : null}
+            {isLoading ? <ActivityIndicator color="#B33939" size="small" /> : null}
           </View>
         </View>
       </View>
+
+      {recentKeywords.length > 0 ? (
+        <ScrollView
+          horizontal
+          keyboardShouldPersistTaps="handled"
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.keywordsContent}
+          style={styles.keywordsRow}
+        >
+          {recentKeywords.map((term) => (
+            <Pressable
+              key={term}
+              accessibilityRole="button"
+              onPress={() => handleBadgePress(term)}
+              style={({ pressed }) => [styles.keywordBadge, pressed && styles.keywordBadgePressed]}
+            >
+              <ThemedText style={styles.keywordBadgeText} numberOfLines={1}>
+                {term}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
 
       {error ? (
         <View style={styles.errorBlock}>
           <ThemedText style={styles.errorText}>{error}</ThemedText>
           <Pressable accessibilityRole="button" onPress={handleRetry} style={styles.retryButton}>
-            <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold">
+            <ThemedText lightColor="#B33939" darkColor="#B33939" type="defaultSemiBold">
               {TEXT.SHARED_RETRY}
             </ThemedText>
           </Pressable>
         </View>
       ) : null}
 
-      <FlatList
-        contentContainerStyle={styles.listContent}
-        data={results}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-        keyExtractor={getPersonSearchKey}
-        ListEmptyComponent={
-          showEmptyHint ? (
-            <ThemedText style={styles.emptyText}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
-          ) : null
-        }
-        renderItem={({ item }) => <PersonSearchListItem item={item} />}
-      />
+      <View style={[styles.resultsArea, (results.length > 0 || showEmptyHint) && styles.resultsCard]}>
+        <FlatList
+          style={styles.flatList}
+          contentContainerStyle={styles.listContent}
+          data={results}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          keyExtractor={getPersonSearchKey}
+          ListEmptyComponent={
+            showEmptyHint ? (
+              <ThemedText style={styles.emptyText}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
+            ) : null
+          }
+          renderItem={({ item }) => <PersonSearchListItem item={item} />}
+        />
+      </View>
     </ThemedView>
   );
 }
@@ -288,9 +345,10 @@ export default function PersonSearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FD',
   },
   searchRow: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
   },
@@ -298,16 +356,26 @@ const styles = StyleSheet.create({
     position: 'relative',
     justifyContent: 'center',
   },
+  searchIconWrap: {
+    position: 'absolute',
+    left: 12,
+    top: 0,
+    bottom: 0,
+    width: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
   input: {
     minHeight: 46,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#BFD2DA',
+    borderRadius: 10,
     backgroundColor: '#FFFFFF',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E8ECF0',
     color: '#11181C',
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
-    paddingHorizontal: 14,
+    paddingLeft: 44,
     paddingRight: 42,
     paddingVertical: 10,
   },
@@ -320,19 +388,65 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  keywordsRow: {
+    paddingBottom: 8,
+  },
+  keywordsContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  keywordBadge: {
+    height: 32,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E8ECF0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  keywordBadgePressed: {
+    backgroundColor: '#F2F3F7',
+  },
+  keywordBadgeText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#444D5B',
+    fontFamily: AppFonts.psuRegular,
+  },
+  resultsArea: {
+    flex: 2,
+    marginHorizontal: 16,
+    marginTop: 8,
+  },
+  resultsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  flatList: {
+    flex: 1,
+  },
   listContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-    flexGrow: 1,
+    paddingBottom: 8,
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#D7E6EC',
+    marginHorizontal: 16,
+    backgroundColor: '#E1E2E6',
   },
   listItemRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
+    alignItems: 'flex-start',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     gap: 12,
   },
   avatarWrap: {
@@ -340,20 +454,23 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: '#E8EEF1',
+    backgroundColor: '#F2F3F7',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
+    borderColor: '#E8ECF0',
+    marginTop: 1,
   },
   avatar: {
     width: 48,
     height: 48,
   },
   avatarPlaceholder: {
-    backgroundColor: '#D7E6EC',
+    backgroundColor: '#E8ECF0',
   },
   listItemText: {
     flex: 1,
     minWidth: 0,
+    justifyContent: 'flex-start',
+    alignSelf: 'flex-start',
   },
   subtitle: {
     marginTop: 4,
@@ -368,12 +485,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   errorBlock: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingBottom: 8,
     gap: 8,
   },
   errorText: {
-    color: '#C44D58',
+    color: '#B33939',
     fontSize: 14,
   },
   retryButton: {

@@ -259,13 +259,13 @@ function SelectField({
 
   return (
     <View style={styles.field}>
-      <ThemedText type="defaultSemiBold">{label}</ThemedText>
+      <ThemedText style={styles.fieldLabel}>{label}</ThemedText>
       <Pressable
         accessibilityRole="button"
         onPress={handleToggle}
         style={[styles.selectButton, hasError ? styles.inputError : undefined]}
       >
-        <ThemedText style={[styles.selectText, !displayValue && styles.placeholder]}>
+        <ThemedText style={[styles.selectText, !displayValue && styles.placeholder]} numberOfLines={1}>
           {displayValue || placeholder}
         </ThemedText>
         <ThemedText style={styles.chevron}>⌄</ThemedText>
@@ -312,7 +312,7 @@ function SelectField({
                 <TextInput
                   onChangeText={setSearchText}
                   placeholder={TEXT.SHARED_SEARCH_NAME_PLACEHOLDER}
-                  placeholderTextColor="#8A969C"
+                  placeholderTextColor="#9CA3AF"
                   style={styles.searchInput}
                   value={searchText}
                 />
@@ -543,6 +543,7 @@ export default function BusinessScreen() {
         .filter(Boolean),
     [initialabsenceData, selectedAgents],
   );
+
   useEffect(() => {
     if (!isEditMode || !editId) {
       return;
@@ -850,244 +851,258 @@ export default function BusinessScreen() {
       <NavTopBar title={TEXT.absence_BUSINESS_TITLE} backHref={backHref} />
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <ThemedView
-          style={styles.panel}
-          lightColor="#FFFFFF"
-          darkColor="#1F2B30"
-        >
-          <ThemedText type="subtitle">
-            {TEXT.absence_BUSINESS_FORM_TITLE}
-          </ThemedText>
-          {initialabsenceData ? (
-            <ThemedText style={styles.initialStatus}>
-              {TEXT.absence_INITIAL_DATA_LOADED}
+        <View style={styles.pageHeader}>
+          <ThemedText style={styles.pageTitle}>{TEXT.absence_BUSINESS_FORM_TITLE}</ThemedText>
+          <ThemedText style={styles.pageSubtitle}>{TEXT.absence_BUSINESS_DESCRIPTION}</ThemedText>
+        </View>
+
+        <View style={styles.formCard}>
+          <SelectField
+            label={TEXT.absence_APPROVER_LABEL}
+            placeholder={TEXT.absence_APPROVER_PLACEHOLDER}
+            value={approver}
+            options={approverOptions}
+            isOpen={openSelect === "approver"}
+            hasError={Boolean(validationErrors.approver)}
+            errorMessage={validationErrors.approver}
+            onToggle={() =>
+              setOpenSelect(openSelect === "approver" ? null : "approver")
+            }
+            onSelect={(value, option) => {
+              setApprover(value);
+              setApproverStaffId(option?.staffId ?? "");
+              clearValidationError("approver");
+              setOpenSelect(null);
+            }}
+          />
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>
+              {TEXT.absence_REASON_LABEL}
             </ThemedText>
-          ) : null}
-
-          <View style={styles.form}>
-            <SelectField
-              label={TEXT.absence_APPROVER_LABEL}
-              placeholder={TEXT.absence_APPROVER_PLACEHOLDER}
-              value={approver}
-              options={approverOptions}
-              isOpen={openSelect === "approver"}
-              hasError={Boolean(validationErrors.approver)}
-              errorMessage={validationErrors.approver}
-              onToggle={() =>
-                setOpenSelect(openSelect === "approver" ? null : "approver")
-              }
-              onSelect={(value, option) => {
-                setApprover(value);
-                setApproverStaffId(option?.staffId ?? "");
-                clearValidationError("approver");
-                setOpenSelect(null);
+            <TextInput
+              multiline
+              numberOfLines={3}
+              onChangeText={(value) => {
+                setReason(value);
+                if (value.trim()) {
+                  clearValidationError("reason");
+                }
               }}
+              placeholder={TEXT.absence_REASON_PLACEHOLDER}
+              placeholderTextColor="#9CA3AF"
+              style={[
+                styles.textArea,
+                validationErrors.reason ? styles.inputError : undefined,
+              ]}
+              textAlignVertical="top"
+              value={reason}
             />
-
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
-                {TEXT.absence_REASON_LABEL}
+            {validationErrors.reason ? (
+              <ThemedText style={styles.fieldError}>
+                {validationErrors.reason}
               </ThemedText>
-              <TextInput
-                multiline
-                numberOfLines={2}
-                onChangeText={(value) => {
-                  setReason(value);
-                  if (value.trim()) {
-                    clearValidationError("reason");
-                  }
-                }}
-                placeholder={TEXT.absence_REASON_PLACEHOLDER}
-                placeholderTextColor="#8A969C"
-                style={[
-                  styles.input,
-                  styles.textArea,
-                  validationErrors.reason ? styles.inputError : undefined,
-                ]}
-                textAlignVertical="top"
-                value={reason}
-              />
-              {validationErrors.reason ? (
-                <ThemedText style={styles.fieldError}>
-                  {validationErrors.reason}
-                </ThemedText>
-              ) : null}
-            </View>
-
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
-                {TEXT.absence_LEAVE_DATE_LABEL}
-              </ThemedText>
-              <View style={styles.dateRow}>
-                <DatePickerField
-                  label={TEXT.absence_START_DATE_LABEL}
-                  value={startDate}
-                  minimumDate={minimumStartDate}
-                  onChange={(date) => {
-                    setStartDate(date);
-                    if (endDate && startOfDay(endDate) < startOfDay(date)) {
-                      setEndDate(null);
-                    } else if (endDate) {
-                      clearValidationError("date");
-                    }
-                  }}
-                  hasError={Boolean(displayedDateError)}
-                />
-                <DatePickerField
-                  label={TEXT.absence_END_DATE_LABEL}
-                  value={endDate}
-                  minimumDate={minimumEndDate}
-                  highlightedStartDate={startDate}
-                  hasError={Boolean(displayedDateError)}
-                  onChange={(date) => {
-                    setEndDate(date);
-                    if (startDate) {
-                      clearValidationError("date");
-                    }
-                  }}
-                />
-              </View>
-              <ThemedText
-                style={[
-                  styles.hint,
-                  displayedDateError ? styles.errorText : undefined,
-                ]}
-              >
-                {displayedDateError || TEXT.absence_SELECT_DATE_HINT}
-              </ThemedText>
-              {leaveDayCount !== null ? (
-                <ThemedText
-                  type="defaultSemiBold"
-                  style={styles.leaveDaySummary}
-                >
-                  {TEXT.absence_LEAVE_DAY_COUNT_LABEL}
-                  {leaveDayCount.toLocaleString("th-TH")} {TEXT.absence_DAY_UNIT}
-                </ThemedText>
-              ) : null}
-            </View>
-
-            <SelectField
-              label={TEXT.absence_HALF_DAY_LABEL}
-              placeholder={TEXT.absence_HALF_DAY_PLACEHOLDER}
-              value={halfDay}
-              options={halfDayOptions}
-              isOpen={openSelect === "halfDay"}
-              onToggle={() =>
-                setOpenSelect(openSelect === "halfDay" ? null : "halfDay")
-              }
-              onSelect={(value) => {
-                setHalfDay(value);
-                setOpenSelect(null);
-              }}
-            />
-
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
-                {TEXT.absence_CONTACT_CHANNEL_LABEL}
-              </ThemedText>
-              <TextInput
-                onChangeText={(value) => {
-                  setContact(value);
-                  if (value.trim()) {
-                    clearValidationError("contact");
-                  }
-                }}
-                placeholder={TEXT.absence_CONTACT_CHANNEL_PLACEHOLDER}
-                placeholderTextColor="#8A969C"
-                style={[
-                  styles.input,
-                  validationErrors.contact ? styles.inputError : undefined,
-                ]}
-                value={contact}
-              />
-              {validationErrors.contact ? (
-                <ThemedText style={styles.fieldError}>
-                  {validationErrors.contact}
-                </ThemedText>
-              ) : null}
-            </View>
-
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
-                {TEXT.absence_TRAVEL_DETAIL_LABEL}
-              </ThemedText>
-              <TextInput
-                multiline
-                numberOfLines={2}
-                onChangeText={setTravelDetail}
-                placeholder={TEXT.absence_TRAVEL_DETAIL_PLACEHOLDER}
-                placeholderTextColor="#8A969C"
-                style={[styles.input, styles.textArea]}
-                textAlignVertical="top"
-                value={travelDetail}
-              />
-            </View>
-
-            <AgentSelectField
-              options={availableAgentOptions}
-              selectedAgents={selectedAgents}
-              isOpen={openSelect === "agent"}
-              hasError={Boolean(validationErrors.agent)}
-              errorMessage={validationErrors.agent}
-              onToggle={() =>
-                setOpenSelect(openSelect === "agent" ? null : "agent")
-              }
-              onSelect={handleSelectAgent}
-              onRemove={handleRemoveAgent}
-            />
-
-            <View style={isEditMode ? styles.actionRow : undefined}>
-              <Pressable
-                accessibilityRole="button"
-                disabled={isSubmitting || isRemoving}
-                onPress={handleSubmit}
-                style={[
-                  styles.submitButton,
-                  isEditMode ? styles.actionButton : undefined,
-                  isSubmitting || isRemoving ? styles.disabledButton : undefined,
-                ]}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : null}
-                <ThemedText
-                  lightColor="#FFFFFF"
-                  darkColor="#FFFFFF"
-                  type="defaultSemiBold"
-                >
-                  {isEditMode ? TEXT.SHARED_UPDATE : TEXT.absence_SUBMIT_REQUEST}
-                </ThemedText>
-              </Pressable>
-
-              {isEditMode ? (
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting || isRemoving}
-                  onPress={handleRemove}
-                  style={[
-                    styles.removeRequestButton,
-                    isSubmitting || isRemoving ? styles.disabledButton : undefined,
-                  ]}
-                >
-                  {isRemoving ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : null}
-                  <ThemedText
-                    lightColor="#FFFFFF"
-                    darkColor="#FFFFFF"
-                    type="defaultSemiBold"
-                  >
-                    {TEXT.SHARED_DELETE_THAI}
-                  </ThemedText>
-                </Pressable>
-              ) : null}
-            </View>
+            ) : null}
           </View>
-        </ThemedView>
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>
+              {TEXT.absence_LEAVE_DATE_LABEL}
+            </ThemedText>
+            <View style={styles.dateRow}>
+              <DatePickerField
+                label={TEXT.absence_START_DATE_LABEL}
+                value={startDate}
+                minimumDate={minimumStartDate}
+                onChange={(date) => {
+                  setStartDate(date);
+                  if (endDate && startOfDay(endDate) < startOfDay(date)) {
+                    setEndDate(null);
+                  } else if (endDate) {
+                    clearValidationError("date");
+                  }
+                }}
+                hasError={Boolean(displayedDateError)}
+              />
+              <DatePickerField
+                label={TEXT.absence_END_DATE_LABEL}
+                value={endDate}
+                minimumDate={minimumEndDate}
+                highlightedStartDate={startDate}
+                hasError={Boolean(displayedDateError)}
+                onChange={(date) => {
+                  setEndDate(date);
+                  if (startDate) {
+                    clearValidationError("date");
+                  }
+                }}
+              />
+            </View>
+            <ThemedText
+              style={[
+                styles.hint,
+                displayedDateError ? styles.errorText : undefined,
+              ]}
+            >
+              {displayedDateError || TEXT.absence_SELECT_DATE_HINT}
+            </ThemedText>
+            {leaveDayCount !== null ? (
+              <ThemedText
+                type="defaultSemiBold"
+                style={styles.leaveDaySummary}
+              >
+                {TEXT.absence_LEAVE_DAY_COUNT_LABEL}
+                {leaveDayCount.toLocaleString("th-TH")} {TEXT.absence_DAY_UNIT}
+              </ThemedText>
+            ) : null}
+          </View>
+
+          <SelectField
+            label={TEXT.absence_HALF_DAY_LABEL}
+            placeholder={TEXT.absence_HALF_DAY_PLACEHOLDER}
+            value={halfDay}
+            options={halfDayOptions}
+            isOpen={openSelect === "halfDay"}
+            onToggle={() =>
+              setOpenSelect(openSelect === "halfDay" ? null : "halfDay")
+            }
+            onSelect={(value) => {
+              setHalfDay(value);
+              setOpenSelect(null);
+            }}
+          />
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>
+              {TEXT.absence_CONTACT_CHANNEL_LABEL}
+            </ThemedText>
+            <TextInput
+              onChangeText={(value) => {
+                setContact(value);
+                if (value.trim()) {
+                  clearValidationError("contact");
+                }
+              }}
+              placeholder={TEXT.absence_CONTACT_CHANNEL_PLACEHOLDER}
+              placeholderTextColor="#9CA3AF"
+              style={[
+                styles.input,
+                validationErrors.contact ? styles.inputError : undefined,
+              ]}
+              value={contact}
+            />
+            {validationErrors.contact ? (
+              <ThemedText style={styles.fieldError}>
+                {validationErrors.contact}
+              </ThemedText>
+            ) : null}
+          </View>
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>
+              {TEXT.absence_TRAVEL_DETAIL_LABEL}
+            </ThemedText>
+            <TextInput
+              multiline
+              numberOfLines={2}
+              onChangeText={setTravelDetail}
+              placeholder={TEXT.absence_TRAVEL_DETAIL_PLACEHOLDER}
+              placeholderTextColor="#9CA3AF"
+              style={[styles.textArea]}
+              textAlignVertical="top"
+              value={travelDetail}
+            />
+          </View>
+
+          <AgentSelectField
+            options={availableAgentOptions}
+            selectedAgents={selectedAgents}
+            isOpen={openSelect === "agent"}
+            hasError={Boolean(validationErrors.agent)}
+            errorMessage={validationErrors.agent}
+            onToggle={() =>
+              setOpenSelect(openSelect === "agent" ? null : "agent")
+            }
+            onSelect={handleSelectAgent}
+            onRemove={handleRemoveAgent}
+          />
+        </View>
+
+        <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      <View style={styles.bottomBar}>
+        {isEditMode ? (
+          <View style={styles.actionRow}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting || isRemoving}
+              onPress={handleRemove}
+              style={[
+                styles.deleteButton,
+                isSubmitting || isRemoving ? styles.disabledButton : undefined,
+              ]}
+            >
+              {isRemoving ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : null}
+              <ThemedText
+                lightColor="#FFFFFF"
+                darkColor="#FFFFFF"
+                type="defaultSemiBold"
+              >
+                {TEXT.SHARED_DELETE_THAI}
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting || isRemoving}
+              onPress={handleSubmit}
+              style={[
+                styles.submitButton,
+                styles.actionButton,
+                isSubmitting || isRemoving ? styles.disabledButton : undefined,
+              ]}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : null}
+              <ThemedText
+                lightColor="#FFFFFF"
+                darkColor="#FFFFFF"
+                type="defaultSemiBold"
+              >
+                {isEditMode ? TEXT.SHARED_UPDATE : TEXT.absence_SUBMIT_REQUEST}
+              </ThemedText>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            disabled={isSubmitting || isRemoving}
+            onPress={handleSubmit}
+            style={[
+              styles.submitButton,
+              isSubmitting || isRemoving ? styles.disabledButton : undefined,
+            ]}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : null}
+            <ThemedText
+              lightColor="#FFFFFF"
+              darkColor="#FFFFFF"
+              type="defaultSemiBold"
+            >
+              {TEXT.absence_SUBMIT_REQUEST}
+            </ThemedText>
+          </Pressable>
+        )}
+      </View>
+
       <Modal
         transparent
         visible={isConfirmVisible}
@@ -1098,7 +1113,7 @@ export default function BusinessScreen() {
           style={styles.backdrop}
           onPress={() => setIsConfirmVisible(false)}
         >
-          <Pressable>
+          <Pressable style={styles.modalContent}>
             <ThemedView
               style={styles.confirmModal}
               lightColor="#FFFFFF"
@@ -1145,6 +1160,7 @@ export default function BusinessScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
       <Modal
         transparent
         visible={isRemoveConfirmVisible}
@@ -1155,7 +1171,7 @@ export default function BusinessScreen() {
           style={styles.backdrop}
           onPress={() => setIsRemoveConfirmVisible(false)}
         >
-          <Pressable>
+          <Pressable style={styles.modalContent}>
             <ThemedView
               style={styles.confirmModal}
               lightColor="#FFFFFF"
@@ -1202,6 +1218,7 @@ export default function BusinessScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
       <AppToast
         message={toastMessage}
         type={toastType === "error" ? "error" : "success"}
@@ -1213,9 +1230,33 @@ export default function BusinessScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#F8F9FD",
   },
-  content: {
-    padding: 16,
+  scrollContent: {
+    paddingBottom: 24,
+  },
+  pageHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+    gap: 4,
+  },
+  pageTitle: {
+    fontSize: 22,
+    lineHeight: 30,
+    fontWeight: "700",
+    color: "#191C1F",
+  },
+  pageSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#687076",
+  },
+  formCard: {
+    marginHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    overflow: "hidden",
   },
   stateContent: {
     flex: 1,
@@ -1237,90 +1278,99 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     width: "100%",
   },
-  panel: {
-    borderRadius: 8,
-    padding: 0,
-  },
-  initialStatus: {
-    marginTop: 8,
-    color: "#687076",
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  form: {
-    gap: 24,
-    marginTop: 24,
-  },
   field: {
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E8ECF0",
+  },
+  fieldLabel: {
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: "600",
+    letterSpacing: 0.6,
+    color: "#687076",
+    textTransform: "uppercase",
   },
   input: {
-    minHeight: 48,
+    minHeight: 44,
+    backgroundColor: "#F2F3F7",
     borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
-    color: "#11181C",
+    color: "#191C1F",
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
+    lineHeight: 20,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   inputError: {
+    borderWidth: 1,
     borderColor: "#B42318",
   },
   textArea: {
-    minHeight: 72,
+    minHeight: 80,
+    backgroundColor: "#F2F3F7",
+    borderRadius: 8,
+    color: "#191C1F",
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 14,
+    lineHeight: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   dateRow: {
     flexDirection: "row",
-    gap: 14,
+    gap: 12,
   },
   hint: {
-    color: "#687076",
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17,
+    color: "#687076",
   },
   leaveDaySummary: {
+    fontSize: 13,
+    lineHeight: 18,
     color: "#0A6E8A",
   },
   errorText: {
     color: "#B42318",
   },
   fieldError: {
-    color: "#B42318",
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17,
+    color: "#B42318",
   },
   selectButton: {
-    minHeight: 48,
+    minHeight: 44,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    backgroundColor: "#F2F3F7",
     borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
     paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 8,
   },
   selectText: {
     flex: 1,
-    color: "#11181C",
+    color: "#191C1F",
+    fontSize: 14,
+    fontFamily: AppFonts.psuRegular,
   },
   placeholder: {
-    color: "#8A969C",
+    color: "#9CA3AF",
   },
   chevron: {
-    color: "#0A6E8A",
-    fontSize: 16,
-    lineHeight: 20,
-    marginLeft: 8,
+    color: "#687076",
+    fontSize: 18,
+    lineHeight: 22,
   },
   backdrop: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     padding: 24,
   },
   modalContent: {
@@ -1331,13 +1381,18 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 420,
     maxHeight: 460,
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 16,
+  },
+  wideSelectModal: {
+    width: "95%",
+    height: 520,
+    maxHeight: "85%",
   },
   confirmModal: {
     width: "100%",
     maxWidth: 420,
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 20,
   },
   confirmMessage: {
@@ -1350,11 +1405,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     marginTop: 20,
-  },
-  wideSelectModal: {
-    width: "95%",
-    height: 520,
-    maxHeight: "85%",
   },
   selectModalHeader: {
     flexDirection: "row",
@@ -1371,16 +1421,16 @@ const styles = StyleSheet.create({
     minHeight: 40,
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#E4F0F6",
+    backgroundColor: "#F2F3F7",
     paddingHorizontal: 14,
   },
   searchInput: {
     minHeight: 44,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
-    color: "#11181C",
+    borderColor: "#E8ECF0",
+    backgroundColor: "#F8F9FD",
+    color: "#191C1F",
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     marginBottom: 12,
@@ -1400,10 +1450,10 @@ const styles = StyleSheet.create({
   option: {
     minHeight: 48,
     justifyContent: "center",
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
-    backgroundColor: "#FFFFFF",
+    borderColor: "#E8ECF0",
+    backgroundColor: "#F8F9FD",
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
@@ -1414,13 +1464,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   selectedOption: {
-    borderColor: "#0A6E8A",
-    backgroundColor: "#0A6E8A",
+    borderColor: "#B33939",
+    backgroundColor: "#B33939",
   },
   optionText: {
     flex: 1,
-    color: "#11181C",
+    color: "#191C1F",
+    fontSize: 14,
     lineHeight: 20,
+    fontFamily: AppFonts.psuRegular,
   },
   optionActionText: {
     fontSize: 13,
@@ -1432,50 +1484,46 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     textAlign: "center",
   },
-  secondaryButton: {
-    minHeight: 48,
-    minWidth: 132,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
+  bottomSpacer: {
+    height: 100,
   },
-  disabledButton: {
-    opacity: 0.45,
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#E8ECF0",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 28,
   },
   actionRow: {
     flexDirection: "row",
-    gap: 14,
-    justifyContent: "center",
-    marginTop: 6,
+    gap: 12,
   },
   actionButton: {
     flex: 1,
-    marginTop: 0,
   },
   submitButton: {
-    minHeight: 48,
-    minWidth: 132,
+    minHeight: 52,
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#0A6E8A",
-    marginTop: 6,
+    borderRadius: 12,
+    backgroundColor: "#B33939",
   },
-  removeRequestButton: {
-    minHeight: 48,
-    minWidth: 132,
-    flex: 1,
+  deleteButton: {
+    minHeight: 52,
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: "#B42318",
+    paddingHorizontal: 20,
   },
   removeConfirmButton: {
     minHeight: 48,
@@ -1487,5 +1535,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     backgroundColor: "#B42318",
+  },
+  secondaryButton: {
+    minHeight: 48,
+    minWidth: 132,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#D1D5DB",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+  },
+  disabledButton: {
+    opacity: 0.45,
   },
 });

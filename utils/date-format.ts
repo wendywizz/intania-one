@@ -1,9 +1,8 @@
 import moment from 'moment';
+import 'moment/locale/th';
 
-const DATE_TIME_FORMAT = 'DD MMMM YYYY - H:mm';
-const NEWS_DATE_FORMAT = 'DD MM YYYY HH:mm';
-const FULL_DATE_FORMAT = 'DD MMMM YYYY';
-const DATE_FORMAT = 'D MMMM YYYY';
+moment.locale('th');
+
 const PARSE_FORMATS = [
   moment.ISO_8601,
   'YYYY-MM-DD HH:mm:ss',
@@ -28,73 +27,68 @@ export function parseDateTime(value: string) {
   return parsedDate.isValid() ? parsedDate : null;
 }
 
+function beYear(m: moment.Moment) {
+  return m.year() + 543;
+}
+
+function dateStr(m: moment.Moment) {
+  return `${m.format('DD MMMM')} ${beYear(m)}`;
+}
+
+function dateTimeStr(m: moment.Moment) {
+  return `${m.format('DD MMMM')} ${beYear(m)} - ${m.format('H:mm')}`;
+}
+
 export function formatDateTime(value: string) {
-  const parsedDate = parseDateTime(value);
-
-  if (!parsedDate) {
-    return value;
-  }
-
-  return parsedDate.format(DATE_TIME_FORMAT);
+  const m = parseDateTime(value);
+  if (!m) return value;
+  return dateTimeStr(m);
 }
 
 export function formatNewsDate(value: string) {
-  const parsedDate = parseDateTime(value);
-  if (!parsedDate) return value;
-  return parsedDate.format(NEWS_DATE_FORMAT);
+  const m = parseDateTime(value);
+  if (!m) return value;
+  return dateStr(m);
 }
 
 export function formatDateOnly(value: string) {
-  const parsedDate = parseDateTime(value);
-
-  if (!parsedDate) {
-    return value.split(/[T ]/)[0] || value;
-  }
-
-  return parsedDate.format(DATE_FORMAT);
+  const m = parseDateTime(value);
+  if (!m) return value.split(/[T ]/)[0] || value;
+  return dateStr(m);
 }
 
 export function formatFullDate(value: string) {
-  const parsedDate = parseDateTime(value);
-
-  if (!parsedDate) {
-    return value.split(/[T ]/)[0] || value;
-  }
-
-  return parsedDate.format(FULL_DATE_FORMAT);
+  const m = parseDateTime(value);
+  if (!m) return value.split(/[T ]/)[0] || value;
+  return dateStr(m);
 }
 
 export function formatDateRange(startDate: string, endDate: string) {
-  if (!startDate && !endDate) {
-    return '';
+  if (!startDate && !endDate) return '';
+  if (!startDate || !endDate) return formatDateOnly(startDate || endDate);
+
+  const s = parseDateTime(startDate);
+  const e = parseDateTime(endDate);
+
+  if (!s || !e) {
+    const fs = formatDateOnly(startDate);
+    const fe = formatDateOnly(endDate);
+    return fs === fe ? fs : `${fs} - ${fe}`;
   }
 
-  if (!startDate || !endDate) {
-    return formatDateOnly(startDate || endDate);
+  if (s.isSame(e, 'day')) {
+    return dateStr(s);
   }
 
-  const parsedStartDate = parseDateTime(startDate);
-  const parsedEndDate = parseDateTime(endDate);
-
-  if (!parsedStartDate || !parsedEndDate) {
-    const formattedStartDate = formatDateOnly(startDate);
-    const formattedEndDate = formatDateOnly(endDate);
-    return formattedStartDate === formattedEndDate ? formattedStartDate : `${formattedStartDate} - ${formattedEndDate}`;
+  if (s.isSame(e, 'month')) {
+    return `${s.format('DD')} - ${e.format('DD')} ${e.format('MMMM')} ${beYear(e)}`;
   }
 
-  if (parsedStartDate.isSame(parsedEndDate, 'day')) {
-    return parsedStartDate.format(DATE_FORMAT);
+  if (s.isSame(e, 'year')) {
+    return `${s.format('DD MMMM')} - ${e.format('DD MMMM')} ${beYear(e)}`;
   }
 
-  if (parsedStartDate.isSame(parsedEndDate, 'month')) {
-    return `${parsedStartDate.format('D')} - ${parsedEndDate.format(DATE_FORMAT)}`;
-  }
-
-  if (parsedStartDate.isSame(parsedEndDate, 'year')) {
-    return `${parsedStartDate.format('D MMMM')} - ${parsedEndDate.format(DATE_FORMAT)}`;
-  }
-
-  return `${parsedStartDate.format(DATE_FORMAT)} - ${parsedEndDate.format(DATE_FORMAT)}`;
+  return `${dateStr(s)} - ${dateStr(e)}`;
 }
 
 export function formatDateAndTime(dateValue: string, timeValue: string) {

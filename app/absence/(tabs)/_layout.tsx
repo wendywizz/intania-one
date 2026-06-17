@@ -1,48 +1,53 @@
-import { TEXT } from '@/constants/text';
 import { Tabs } from 'expo-router';
 import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { TEXT } from '@/constants/text';
+
+const BRAND_RED = '#B33939';
+const INACTIVE_COLOR = '#585E6D';
+const TAB_BAR_BG = '#F8F9FD';
 
 export default function absenceTabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarActiveTintColor: BRAND_RED,
+        tabBarInactiveTintColor: INACTIVE_COLOR,
+        tabBarStyle: {
+          backgroundColor: TAB_BAR_BG,
+          borderTopColor: 'rgba(223, 191, 189, 0.6)',
+        },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: TEXT.absence_TITLE,
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle.badge.minus" color={color} />,
+          title: TEXT.absence_TAB_APPEAL,
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="person.crop.circle.badge.minus" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="waiting"
+        name="pending"
         options={{
-          title: TEXT.absence_WAITING_TITLE,
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="history"
-        options={{
-          title: TEXT.absence_HISTORY_TAB_TITLE,
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
+          title: TEXT.absence_TAB_WAITING,
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="clock.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="stats"
         options={{
-          title: 'Stats',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
+          title: TEXT.absence_TAB_STATS,
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="chart.bar.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: TEXT.absence_TAB_HISTORY,
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="calendar" color={color} />,
         }}
       />
     </Tabs>

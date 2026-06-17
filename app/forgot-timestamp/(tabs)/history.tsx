@@ -1,4 +1,6 @@
+﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useFocusEffect } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { navPush } from "@/utils/navigation";
 import { useCallback, useState } from "react";
 import {
@@ -13,7 +15,7 @@ import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
@@ -47,6 +49,14 @@ const writeDateFields = [
   "date_add",
 ];
 const stampTypeFields = new Set(["stampType", "stamp_type", "type"]);
+const historyStatusFields = [
+  "status",
+  "result",
+  "approvalStatus",
+  "approval_status",
+  "isActive",
+  "is_active",
+];
 
 function getCurrentYear() {
   return new Date().getFullYear();
@@ -55,23 +65,15 @@ function getCurrentYear() {
 function getText(item: ForgotTimestampHistory, fields: string[]) {
   for (const field of fields) {
     const value = item[field];
-
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-
-    if (typeof value === "number") {
-      return String(value);
-    }
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number") return String(value);
   }
-
   return "";
 }
 
 function getHistoryKey(item: ForgotTimestampHistory, index: number) {
   const id = getText(item, ["id", "forgetId", "forget_id", "timestampId", "timestamp_id"]);
   const date = getText(item, Array.from(dateFields));
-
   return `${id || date || "forgot-timestamp-history"}-${index}`;
 }
 
@@ -85,7 +87,6 @@ function getWriteDate(item: ForgotTimestampHistory) {
 
 function getHistoryTimestamp(item: ForgotTimestampHistory) {
   const timestamp = Date.parse(getHistoryDate(item));
-
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
@@ -98,36 +99,36 @@ function sortHistoryItems(items: ForgotTimestampHistory[]) {
 
 function getHistoryTitle(item: ForgotTimestampHistory) {
   const stampType = getText(item, Array.from(stampTypeFields)).toLowerCase();
-
-  if (stampType === "in") {
-    return "Forgot stamp in";
-  }
-
-  if (stampType === "out") {
-    return "Forgot stamp out";
-  }
-
+  if (stampType === "in") return "Forgot stamp in";
+  if (stampType === "out") return "Forgot stamp out";
   const date = getHistoryDate(item);
   return date ? formatFullDate(date) : TEXT.SHARED_HISTORY;
 }
 
 function getWriteDateLabel(item: ForgotTimestampHistory) {
   const writeDate = getWriteDate(item);
-
   return writeDate ? formatFullDate(writeDate) : "-";
 }
 
-function ForgotTimestampHistoryItem({
-  item,
-}: {
-  item: ForgotTimestampHistory;
-}) {
+function getHistoryItemStatus(item: ForgotTimestampHistory): "approved" | "rejected" | "" {
+  for (const field of historyStatusFields) {
+    const value = String(item[field] ?? "").toLowerCase().trim();
+    if (["approved", "true", "1", "yes", "active"].includes(value)) return "approved";
+    if (["rejected", "false", "0", "no", "denied"].includes(value)) return "rejected";
+  }
+  return "";
+}
+
+function ForgotTimestampHistoryItem({ item }: { item: ForgotTimestampHistory }) {
+  const status = getHistoryItemStatus(item);
+  const stampType = getText(item, Array.from(stampTypeFields)).toLowerCase();
+  const iconName =
+    stampType === "in" ? "login" : stampType === "out" ? "logout" : "fingerprint";
+
   const openDetail = () => {
     navPush({
       pathname: "/forgot-timestamp/history-detail",
-      params: {
-        item: JSON.stringify(item),
-      },
+      params: { item: JSON.stringify(item) },
     } as Parameters<typeof navPush>[0]);
   };
 
@@ -135,21 +136,29 @@ function ForgotTimestampHistoryItem({
     <Pressable
       accessibilityRole="button"
       onPress={openDetail}
-      style={({ pressed }) => [pressed ? styles.itemPressed : undefined]}
+      style={({ pressed }) => (pressed ? styles.itemPressed : undefined)}
     >
-      <ThemedView style={styles.itemCard} lightColor="#FFFFFF" darkColor="#151718">
-        <View style={styles.itemHeader}>
-          <View style={styles.itemText}>
-            <ThemedText type="defaultSemiBold" style={styles.itemTitle}>
-              {getHistoryTitle(item)}
-            </ThemedText>
-            <ThemedText style={styles.itemMeta}>
-              Write date: {getWriteDateLabel(item)}
-            </ThemedText>
-          </View>
-          <IconSymbol name="chevron.right" size={22} color="#0A6E8A" />
+      <View style={styles.itemCard}>
+        <View style={styles.iconCircle}>
+          <MaterialIcons name={iconName} size={18} color="#5D6371" />
         </View>
-      </ThemedView>
+        <View style={styles.itemInfo}>
+          <ThemedText style={styles.itemTitle}>{getHistoryTitle(item)}</ThemedText>
+          <ThemedText style={styles.itemMeta}>{getWriteDateLabel(item)}</ThemedText>
+        </View>
+        <View style={styles.itemRight}>
+          {status === "approved" ? (
+            <View style={styles.approvedBadge}>
+              <ThemedText style={styles.approvedBadgeText}>Approved</ThemedText>
+            </View>
+          ) : status === "rejected" ? (
+            <View style={styles.rejectedBadge}>
+              <ThemedText style={styles.rejectedBadgeText}>Rejected</ThemedText>
+            </View>
+          ) : null}
+          <MaterialIcons name="chevron-right" size={16} color="#8B716F" />
+        </View>
+      </View>
     </Pressable>
   );
 }
@@ -170,17 +179,15 @@ export default function ForgotTimestampHistoryScreen() {
       } else {
         setIsLoading(true);
       }
-
       setError("");
-
       try {
         const result = await getForgotTimestampHistoryData(staffId, currentYear);
         setItems(sortHistoryItems(result.data));
-      } catch (error) {
+      } catch (loadError) {
         setItems([]);
         setError(
-          error instanceof Error
-            ? error.message
+          loadError instanceof Error
+            ? loadError.message
             : TEXT.SHARED_UNABLE_TO_LOAD_HISTORY,
         );
       } finally {
@@ -197,33 +204,62 @@ export default function ForgotTimestampHistoryScreen() {
     }, [loadItems]),
   );
 
+  const approvedCount = items.filter((i) => getHistoryItemStatus(i) === "approved").length;
+  const rejectedCount = items.filter((i) => getHistoryItemStatus(i) === "rejected").length;
+
+  const listHeader = (
+    <View style={styles.listHeader}>
+      <View style={styles.statsCard}>
+        <ThemedText style={styles.statsHeading}>History</ThemedText>
+        <ThemedText style={styles.statsSubtitle}>
+          Review your resolved timestamp requests below.
+        </ThemedText>
+
+        <ThemedText style={styles.cycleLabel}>COMPANY CYCLE</ThemedText>
+        <ThemedText style={styles.cycleValue}>
+          {currentYear - 1} – {currentYear}
+        </ThemedText>
+
+        <View style={styles.statsDivider} />
+
+        <View style={styles.statsRow}>
+          <View style={styles.statCell}>
+            <ThemedText style={styles.statLabel}>TOTAL APPROVED</ThemedText>
+            <ThemedText style={styles.statCountApproved}>{approvedCount}</ThemedText>
+          </View>
+          <View style={styles.statsVerticalDivider} />
+          <View style={styles.statCell}>
+            <ThemedText style={styles.statLabel}>TOTAL REJECTED</ThemedText>
+            <ThemedText style={styles.statCountRejected}>{rejectedCount}</ThemedText>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+
   const renderContent = () => {
     if (isLoading) {
       return (
-        <LoadingAnimate
-          title={TEXT.SHARED_LOADING_HISTORY}
-          desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
-        />
+        <View style={styles.stateContainer}>
+          <LoadingAnimate
+            title={TEXT.SHARED_LOADING_HISTORY}
+            desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
+          />
+        </View>
       );
     }
 
     if (error) {
       return (
-        <View style={styles.stateContent}>
+        <View style={styles.stateContainer}>
           <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
-          <ThemedText style={[styles.stateMessage, styles.errorText]}>
-            {error}
-          </ThemedText>
+          <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable
             accessibilityRole="button"
             onPress={() => loadItems()}
             style={styles.retryButton}
           >
-            <ThemedText
-              lightColor="#FFFFFF"
-              darkColor="#FFFFFF"
-              type="defaultSemiBold"
-            >
+            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
               {TEXT.SHARED_RETRY}
             </ThemedText>
           </Pressable>
@@ -233,9 +269,10 @@ export default function ForgotTimestampHistoryScreen() {
 
     return (
       <FlatList
+        style={styles.flatList}
+        contentContainerStyle={styles.listContent}
         data={items}
         keyExtractor={getHistoryKey}
-        contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -243,16 +280,20 @@ export default function ForgotTimestampHistoryScreen() {
           />
         }
         renderItem={({ item }) => <ForgotTimestampHistoryItem item={item} />}
+        ListHeaderComponent={listHeader}
         ListEmptyComponent={
-          <ThemedView
-            style={styles.emptyCard}
-            lightColor="#FFFFFF"
-            darkColor="#151718"
-          >
-            <ThemedText style={styles.emptyMessage}>
-              {TEXT.SHARED_NO_HISTORY}
-            </ThemedText>
-          </ThemedView>
+          <View style={styles.emptyCard}>
+            <ThemedText style={styles.emptyMessage}>{TEXT.SHARED_NO_HISTORY}</ThemedText>
+          </View>
+        }
+        ListFooterComponent={
+          items.length > 0 ? (
+            <View style={styles.listFooter}>
+              <View style={styles.footerLine} />
+              <ThemedText style={styles.footerText}>End of History</ThemedText>
+              <View style={styles.footerLine} />
+            </View>
+          ) : null
         }
       />
     );
@@ -260,16 +301,9 @@ export default function ForgotTimestampHistoryScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <StatusBar style="light" />
       <NavTopBar title={TEXT.FORGOT_TIMESTAMP_TITLE} backHref="/" />
-      <View style={styles.content}>
-        <ThemedView
-          style={styles.panel}
-          lightColor="#FFFFFF"
-          darkColor="#1F2B30"
-        >
-          {renderContent()}
-        </ThemedView>
-      </View>
+      <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
 }
@@ -277,50 +311,195 @@ export default function ForgotTimestampHistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#F8F9FD",
   },
   content: {
     flex: 1,
-    padding: 16,
   },
-  panel: {
+  flatList: {
     flex: 1,
-    borderRadius: 8,
-    padding: 0,
   },
   listContent: {
+    padding: 16,
     gap: 12,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 16,
+  },
+  listHeader: {
+    paddingBottom: 4,
+  },
+  statsCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E1E2E6",
+    padding: 16,
+    gap: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statsHeading: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: "700",
+    color: "#922124",
+    fontFamily: AppFonts.psuBold,
+    marginBottom: 2,
+  },
+  statsSubtitle: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#584140",
+    fontFamily: AppFonts.psuRegular,
+    marginBottom: 10,
+  },
+  cycleLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    color: "#585E6D",
+    fontFamily: AppFonts.psuBold,
+  },
+  cycleValue: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "600",
+    color: "#191C1F",
+    fontFamily: AppFonts.psuBold,
+    marginBottom: 4,
+  },
+  statsDivider: {
+    height: 1,
+    backgroundColor: "#E1E2E6",
+    marginVertical: 12,
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  statCell: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  statsVerticalDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: "#E1E2E6",
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    color: "#585E6D",
+    fontFamily: AppFonts.psuBold,
+  },
+  statCountApproved: {
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: "700",
+    color: "#922124",
+    fontFamily: AppFonts.psuBold,
+  },
+  statCountRejected: {
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: "700",
+    color: "#585E6D",
+    fontFamily: AppFonts.psuBold,
   },
   itemCard: {
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(223,191,189,0.3)",
     padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   itemPressed: {
     opacity: 0.72,
   },
-  itemHeader: {
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: "#DADFF0",
     alignItems: "center",
-    flexDirection: "row",
-    gap: 12,
+    justifyContent: "center",
+    flexShrink: 0,
   },
-  itemText: {
+  itemInfo: {
     flex: 1,
-    gap: 4,
+    gap: 2,
   },
   itemTitle: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: "600",
+    color: "#191C1F",
+    fontFamily: AppFonts.psuBold,
   },
   itemMeta: {
-    color: "#687076",
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 16,
+    color: "#585E6D",
+    fontFamily: AppFonts.psuRegular,
   },
-  stateContent: {
+  itemRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexShrink: 0,
+  },
+  approvedBadge: {
+    backgroundColor: "#DCFCE7",
+    borderRadius: 9999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  approvedBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#166534",
+    fontFamily: AppFonts.psuBold,
+  },
+  rejectedBadge: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: 9999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  rejectedBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#991B1B",
+    fontFamily: AppFonts.psuBold,
+  },
+  listFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 16,
+  },
+  footerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#E1E2E6",
+  },
+  footerText: {
+    fontSize: 12,
+    color: "#585E6D",
+    fontFamily: AppFonts.psuRegular,
+  },
+  stateContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -341,16 +520,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: "#B33939",
     marginTop: 24,
   },
   emptyCard: {
-    minHeight: 120,
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
     padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 120,
+    borderWidth: 1,
+    borderColor: "rgba(223,191,189,0.2)",
   },
   emptyMessage: {
     color: "#687076",

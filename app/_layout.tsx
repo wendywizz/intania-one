@@ -9,7 +9,6 @@ import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
 
-import { AppFonts } from '@/constants/fonts';
 import { AuthProvider } from '@/context/AuthContext';
 import { registerForegroundNotificationHandler } from '@/services/notificationService';
 
@@ -21,11 +20,10 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const [loaded] = useFonts({
-    [AppFonts.psuRegular]: require('@/assets/fonts/psu-stidti/psu-stidti-regular.ttf'),
-    [AppFonts.psuLight]: require('@/assets/fonts/psu-stidti/psu-stidti-light.ttf'),
-    [AppFonts.psuItalic]: require('@/assets/fonts/psu-stidti/psu-stidti-italic.ttf'),
-    [AppFonts.psuBold]: require('@/assets/fonts/psu-stidti/psu-stidti-bold.ttf'),
-    [AppFonts.psuBoldItalic]: require('@/assets/fonts/psu-stidti/psu-stidti-bolditalic.ttf'),
+    LINESeedSansTH_Th: require('../assets/fonts/LINE_Seed_Sans_TH/TTF/LINESeedSansTH_A_Th.ttf'),
+    LINESeedSansTH_Rg: require('../assets/fonts/LINE_Seed_Sans_TH/TTF/LINESeedSansTH_A_Rg.ttf'),
+    LINESeedSansTH_Bd: require('../assets/fonts/LINE_Seed_Sans_TH/TTF/LINESeedSansTH_A_Bd.ttf'),
+    LINESeedSansTH_XBd: require('../assets/fonts/LINE_Seed_Sans_TH/TTF/LINESeedSansTH_A_XBd.ttf'),
   });
 
   useEffect(() => {
@@ -55,9 +53,10 @@ export default function RootLayout() {
               <Stack.Screen name="calendar" options={{ headerShown: false }} />
               <Stack.Screen name="news" options={{ headerShown: false }} />
               <Stack.Screen name="news-detail" options={{ headerShown: false }} />
-              <Stack.Screen name="notification-history" options={{ headerShown: false }} />
+              <Stack.Screen name="notification" options={{ headerShown: false }} />
               <Stack.Screen name="forgot-timestamp" options={{ headerShown: false }} />
-              <Stack.Screen name="forgot-timestamp-detail" options={{ headerShown: false }} />
+              <Stack.Screen name="forgot-timestamp/detail" options={{ headerShown: false }} />
+              <Stack.Screen name="forgot-timestamp/history-detail" options={{ headerShown: false }} />
               <Stack.Screen name="clear-auth" options={{ headerShown: false }} />
               <Stack.Screen name="login-callback" options={{ headerShown: false }} />
               <Stack.Screen name="openid-webview" options={{ headerShown: false }} />

@@ -1,54 +1,97 @@
 import { Link } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { TEXT } from '@/constants/text';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { TEXT } from '@/constants/text';
 
-const absenceMenus = [
+type IconName = 'cross.fill' | 'briefcase.fill' | 'sun.max.fill' | 'figure.child';
+
+type AbsenceMenuItem = {
+  title: string;
+  description: string;
+  href: '/absence/sick' | '/absence/business' | '/absence/relax' | '/absence/birth';
+  iconBg: string;
+  iconColor: string;
+  icon: IconName;
+};
+
+const absenceMenus: AbsenceMenuItem[] = [
   {
     title: TEXT.absence_SICK_TITLE,
-    description: 'ยื่นคำขอลาป่วย',
+    description: TEXT.absence_SICK_DESCRIPTION,
     href: '/absence/sick',
+    iconBg: '#FFDAD7',
+    iconColor: '#410005',
+    icon: 'cross.fill',
   },
   {
     title: TEXT.absence_BUSINESS_TITLE,
-    description: 'ยื่นคำขอไปราชการ',
+    description: TEXT.absence_BUSINESS_DESCRIPTION,
     href: '/absence/business',
+    iconBg: '#DDE2F3',
+    iconColor: '#161C28',
+    icon: 'briefcase.fill',
   },
   {
     title: TEXT.absence_RELAX_TITLE,
-    description: 'ยื่นคำขอลาพักผ่อน',
+    description: TEXT.absence_RELAX_DESCRIPTION,
     href: '/absence/relax',
+    iconBg: '#DAE3F4',
+    iconColor: '#131C28',
+    icon: 'sun.max.fill',
   },
   {
     title: TEXT.absence_BIRTH_TITLE,
-    description: 'ยื่นคำขอลาคลอด',
+    description: TEXT.absence_BIRTH_DESCRIPTION,
     href: '/absence/birth',
+    iconBg: '#FFDAD7',
+    iconColor: '#410005',
+    icon: 'figure.child',
   },
-] as const;
+];
 
-export default function absenceScreen() {
+export default function ChooseAbsenceScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar title={TEXT.absence_TITLE} backHref="/" />
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerSection}>
+          <ThemedText style={styles.heading}>{TEXT.absence_CHOOSE_TITLE}</ThemedText>
+          <ThemedText style={styles.subtitle}>{TEXT.absence_CHOOSE_SUBTITLE}</ThemedText>
+        </View>
 
-      <View style={styles.content}>
-        <ThemedText type="subtitle">{TEXT.absence_TITLE}</ThemedText>
-        <ThemedText style={styles.description}>{TEXT.absence_REQUEST_TYPE_PROMPT}</ThemedText>
-
-        <View style={styles.grid}>
-          {absenceMenus.map((menu, index) => (
-            <Link key={`${String(menu.title)}-${index}`} href={menu.href} asChild>
+        <View style={styles.cardList}>
+          {absenceMenus.map((menu) => (
+            <Link key={menu.title} href={menu.href} asChild>
               <Pressable accessibilityRole="button" style={styles.card}>
-                <ThemedText type="defaultSemiBold">{menu.title}</ThemedText>
-                <ThemedText style={styles.cardDescription}>{menu.description}</ThemedText>
+                <View style={[styles.iconBg, { backgroundColor: menu.iconBg }]}>
+                  <IconSymbol name={menu.icon} size={20} color={menu.iconColor} />
+                </View>
+                <View style={styles.cardText}>
+                  <ThemedText style={styles.cardTitle}>{menu.title}</ThemedText>
+                  <ThemedText style={styles.cardDesc}>{menu.description}</ThemedText>
+                </View>
+                <View style={styles.chevronWrap}>
+                  <IconSymbol name="chevron.right" size={16} color="#585E6D" />
+                </View>
               </Pressable>
             </Link>
           ))}
         </View>
-      </View>
+
+        <View style={styles.policyNote}>
+          <View style={styles.policyIconWrap}>
+            <IconSymbol name="info.circle.fill" size={20} color="#922124" />
+          </View>
+          <View style={styles.policyContent}>
+            <ThemedText style={styles.policyLabel}>{TEXT.absence_POLICY_NOTE_LABEL}</ThemedText>
+            <ThemedText style={styles.policyText}>{TEXT.absence_POLICY_NOTE_TEXT}</ThemedText>
+          </View>
+        </View>
+      </ScrollView>
     </ThemedView>
   );
 }
@@ -56,36 +99,102 @@ export default function absenceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FD',
   },
-  content: {
-    flex: 1,
+  scrollContent: {
     padding: 16,
+    gap: 24,
+    paddingBottom: 32,
   },
-  description: {
-    marginTop: 8,
+  headerSection: {
+    gap: 4,
+  },
+  heading: {
+    fontSize: 20,
+    lineHeight: 32,
+    fontWeight: '600',
+    letterSpacing: -0.24,
+    color: '#191C1F',
+  },
+  subtitle: {
     fontSize: 14,
     lineHeight: 20,
+    color: '#585E6D',
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 20,
+  cardList: {
+    gap: 16,
   },
   card: {
-    width: '48%',
-    minHeight: 104,
-    justifyContent: 'center',
-    borderRadius: 8,
-    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(223, 191, 189, 0.3)',
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    gap: 16,
   },
-  cardDescription: {
-    marginTop: 6,
-    color: '#687076',
+  iconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  cardText: {
+    flex: 1,
+    gap: 2,
+  },
+  cardTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '600',
+    color: '#191C1F',
+  },
+  cardDesc: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#585E6D',
+  },
+  chevronWrap: {
+    opacity: 0.4,
+  },
+  policyNote: {
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: 'rgba(218, 223, 240, 0.3)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#DADFF0',
+    paddingTop: 24,
+    paddingBottom: 24,
+    paddingHorizontal: 24,
+    alignItems: 'flex-start',
+  },
+  policyIconWrap: {
+    paddingTop: 2,
+  },
+  policyContent: {
+    flex: 1,
+    gap: 4,
+  },
+  policyLabel: {
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 16,
+    fontWeight: '500',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: '#585E6D',
+  },
+  policyText: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#5D6371',
   },
 });
