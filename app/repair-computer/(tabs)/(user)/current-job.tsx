@@ -344,7 +344,7 @@ export default function RepairComputerCurrentJobScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={TEXT.REPAIR_COMPUTER_TITLE}
+        title={TEXT.REPAIR_COMPUTER_CURRENT_JOB}
         backHref="/"
         rightContent={roleSwitcher}
       />
@@ -355,12 +355,36 @@ export default function RepairComputerCurrentJobScreen() {
           lightColor="#FFFFFF"
           darkColor="#1F2B30"
         >
-          <ThemedText type="subtitle">
-            {TEXT.REPAIR_COMPUTER_CURRENT_JOB}
-          </ThemedText>
+          <View style={styles.panelHeader}>
+            <ThemedText type="subtitle">
+              {TEXT.REPAIR_COMPUTER_CURRENT_JOB}
+            </ThemedText>
+            <ThemedText style={styles.panelDescription}>
+              {TEXT.REPAIR_COMPUTER_CURRENT_JOBS_DESCRIPTION}
+            </ThemedText>
+          </View>
           {renderContent()}
         </ThemedView>
       </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={TEXT.REPAIR_COMPUTER_INFORM}
+        onPress={() =>
+          navPush(
+            '/repair-computer/inform' as Parameters<typeof navPush>[0],
+          )
+        }
+        style={styles.fab}
+      >
+        <ThemedText
+          lightColor="#FFFFFF"
+          darkColor="#FFFFFF"
+          style={styles.fabIcon}
+        >
+          +
+        </ThemedText>
+      </Pressable>
 
       <Modal
         transparent
@@ -426,6 +450,7 @@ export default function RepairComputerCurrentJobScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FD',
   },
   content: {
     flex: 1,
@@ -435,6 +460,39 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 8,
     padding: 0,
+  },
+  panelHeader: {
+    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+    gap: 4,
+  },
+  panelDescription: {
+    color: '#687076',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 84,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#b33939',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  fabIcon: {
+    fontSize: 30,
+    lineHeight: 34,
+    fontWeight: '300',
+    marginTop: -2,
   },
   listContent: {
     gap: 12,

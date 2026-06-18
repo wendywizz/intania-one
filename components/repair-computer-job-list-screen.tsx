@@ -34,6 +34,7 @@ const LIST_VERTICAL_CHROME = 260;
 
 type RepairComputerJobListScreenProps = {
   title: string;
+  description?: string;
   emptyMessage: string;
   errorMessage: string;
   loadingTitle: string;
@@ -85,6 +86,7 @@ function getHasMore(
 
 export function RepairComputerJobListScreen({
   title,
+  description,
   emptyMessage,
   errorMessage,
   loadingTitle,
@@ -290,7 +292,14 @@ export function RepairComputerJobListScreen({
           lightColor="#FFFFFF"
           darkColor="#1F2B30"
         >
-          <ThemedText type="subtitle">{screenTitle}</ThemedText>
+          <View style={styles.panelHeader}>
+            <ThemedText type="subtitle">{screenTitle}</ThemedText>
+            {description ? (
+              <ThemedText style={styles.panelDescription}>
+                {description}
+              </ThemedText>
+            ) : null}
+          </View>
           {renderContent()}
         </ThemedView>
       </View>
@@ -301,6 +310,7 @@ export function RepairComputerJobListScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FD',
   },
   content: {
     flex: 1,
@@ -310,6 +320,17 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 8,
     padding: 0,
+  },
+  panelHeader: {
+    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+    gap: 4,
+  },
+  panelDescription: {
+    color: '#687076',
+    fontSize: 13,
+    lineHeight: 19,
   },
   listContent: {
     gap: 12,

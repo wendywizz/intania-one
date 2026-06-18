@@ -1,50 +1,76 @@
-﻿// Fallback for using MaterialIcons on Android and web.
+// Individual CJS imports — avoids the lucide-react-native barrel which causes
+// Metro to queue 1000+ .mjs files and stall the web bundler.
+import ArrowLeft from 'lucide-react-native/dist/cjs/icons/arrow-left';
+import Baby from 'lucide-react-native/dist/cjs/icons/baby';
+import Bell from 'lucide-react-native/dist/cjs/icons/bell';
+import Briefcase from 'lucide-react-native/dist/cjs/icons/briefcase';
+import CalendarClock from 'lucide-react-native/dist/cjs/icons/calendar-clock';
+import CalendarRange from 'lucide-react-native/dist/cjs/icons/calendar-range';
+import Calendar from 'lucide-react-native/dist/cjs/icons/calendar';
+import ChartBar from 'lucide-react-native/dist/cjs/icons/chart-bar';
+import ChevronRight from 'lucide-react-native/dist/cjs/icons/chevron-right';
+import CircleCheck from 'lucide-react-native/dist/cjs/icons/circle-check';
+import CircleUser from 'lucide-react-native/dist/cjs/icons/circle-user';
+import Clock from 'lucide-react-native/dist/cjs/icons/clock';
+import Code from 'lucide-react-native/dist/cjs/icons/code';
+import Cross from 'lucide-react-native/dist/cjs/icons/cross';
+import FileText from 'lucide-react-native/dist/cjs/icons/file-text';
+import House from 'lucide-react-native/dist/cjs/icons/house';
+import Inbox from 'lucide-react-native/dist/cjs/icons/inbox';
+import Info from 'lucide-react-native/dist/cjs/icons/info';
+import Laptop from 'lucide-react-native/dist/cjs/icons/laptop';
+import List from 'lucide-react-native/dist/cjs/icons/list';
+import Search from 'lucide-react-native/dist/cjs/icons/search';
+import Send from 'lucide-react-native/dist/cjs/icons/send';
+import Sun from 'lucide-react-native/dist/cjs/icons/sun';
+import UserMinus from 'lucide-react-native/dist/cjs/icons/user-minus';
+import UserRoundSearch from 'lucide-react-native/dist/cjs/icons/user-round-search';
+import User from 'lucide-react-native/dist/cjs/icons/user';
+import Users from 'lucide-react-native/dist/cjs/icons/users';
+import Wrench from 'lucide-react-native/dist/cjs/icons/wrench';
+import type { LucideIcon } from 'lucide-react-native';
+import { OpaqueColorValue, StyleProp, ViewStyle } from 'react-native';
 
-import MaterialIcons from '@react-native-vector-icons/material-icons';
-import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
-import { ComponentProps } from 'react';
-import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
-
-type IconMapping = Record<SymbolViewProps['name'], ComponentProps<typeof MaterialIcons>['name']>;
-type IconSymbolName = keyof typeof MAPPING;
-
-/**
- * Add your SF Symbols to Material Icons mappings here.
- * - see Material Icons in the [Icons Directory](https://icons.expo.fyi).
- * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
- */
 const MAPPING = {
-  'arrow.left': 'arrow-back',
-  'house.fill': 'home',
-  'paperplane.fill': 'send',
-  'chevron.left.forwardslash.chevron.right': 'code',
-  'chevron.right': 'chevron-right',
-  'clock.fill': 'schedule',
-  calendar: 'calendar-today',
-  'person.crop.circle.badge.minus': 'person-off',
-  'list.bullet': 'format-list-bulleted',
-  'wrench.fill': 'build',
-  'tray.fill': 'inbox',
-  'checkmark.circle.fill': 'check-circle',
-  'person.2.fill': 'groups',
-  'bell.fill': 'notifications',
-  'person.fill': 'person',
-  'magnifyingglass': 'search',
-  'doc.text.fill': 'article',
-  'person.circle.fill': 'account-circle',
-  'chart.bar.fill': 'bar-chart',
-  'cross.fill': 'healing',
-  'briefcase.fill': 'work',
-  'sun.max.fill': 'wb-sunny',
-  'figure.child': 'child-care',
-  'info.circle.fill': 'info',
-} as IconMapping;
+  // Navigation / UI
+  'arrow.left': ArrowLeft,
+  'chevron.left.forwardslash.chevron.right': Code,
+  'chevron.right': ChevronRight,
+  'house.fill': House,
+  // Communication
+  'bell.fill': Bell,
+  'paperplane.fill': Send,
+  // People
+  'person.fill': User,
+  'person.2.fill': Users,
+  'person.circle.fill': CircleUser,
+  'person.crop.circle.badge.minus': UserMinus,
+  // Time & Calendar
+  'calendar': Calendar,
+  'calendar-clock': CalendarClock,
+  'calendar-range': CalendarRange,
+  'clock.fill': Clock,
+  // Work
+  'briefcase.fill': Briefcase,
+  'doc.text.fill': FileText,
+  'list.bullet': List,
+  'magnifyingglass': Search,
+  'tray.fill': Inbox,
+  'wrench.fill': Wrench,
+  'laptop': Laptop,
+  'user-round-search': UserRoundSearch,
+  // Status
+  'checkmark.circle.fill': CircleCheck,
+  // Misc
+  'chart.bar.fill': ChartBar,
+  'cross.fill': Cross,
+  'figure.child': Baby,
+  'info.circle.fill': Info,
+  'sun.max.fill': Sun,
+} satisfies Record<string, LucideIcon>;
 
-/**
- * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.
- * This ensures a consistent look across platforms, and optimal resource usage.
- * Icon `name`s are based on SF Symbols and require manual mapping to Material Icons.
- */
+export type IconSymbolName = keyof typeof MAPPING;
+
 export function IconSymbol({
   name,
   size = 24,
@@ -54,8 +80,9 @@ export function IconSymbol({
   name: IconSymbolName;
   size?: number;
   color: string | OpaqueColorValue;
-  style?: StyleProp<TextStyle>;
-  weight?: SymbolWeight;
+  style?: StyleProp<ViewStyle>;
+  weight?: string;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  const Icon = MAPPING[name];
+  return <Icon size={size} color={color as string} style={style} />;
 }

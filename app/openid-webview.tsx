@@ -71,7 +71,7 @@ export default function OpenIdWebViewScreen() {
   if (!authUrl) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.AUTH_LOGIN} onBackPress={cancelLogin} showHomeButton={false} />
+        <NavTopBar title={TEXT.AUTH_LOGIN} onBackPress={cancelLogin} showHomeButton={false} backgroundColor="#ffffff" contentColor="#1f2933" />
         <View style={styles.messageContent}>
           <ThemedText type="subtitle">{TEXT.AUTH_LOGIN_FAILED}</ThemedText>
           <ThemedText style={styles.message}>Authorization URL is missing.</ThemedText>
@@ -87,7 +87,7 @@ export default function OpenIdWebViewScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.AUTH_LOGIN} onBackPress={cancelLogin} showHomeButton={false} />
+      <NavTopBar title={TEXT.AUTH_LOGIN} onBackPress={cancelLogin} showHomeButton={false} backgroundColor="#ffffff" contentColor="#1f2933" />
       {errorMessage ? (
         <View style={styles.messageContent}>
           <ThemedText type="subtitle">{TEXT.AUTH_LOGIN_FAILED}</ThemedText>

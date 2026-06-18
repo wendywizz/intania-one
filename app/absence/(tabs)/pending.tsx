@@ -30,8 +30,8 @@ const absenceTypeLabels: Record<string, string> = {
   [TYPE_absence_HAJJ]: TEXT.absence_HAJJ_TITLE,
 };
 
-const absenceTypeFields = ['absenceType', 'absence_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type'];
-const absenceTypeNameFields = ['absenceTypeName', 'absence_type_name', 'typeName', 'type_name', 'leaveTypeName', 'leave_type_name'];
+const absenceTypeFields = ['absentType', 'absenceType', 'typeAbsence', 'absence_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type'];
+const absenceTypeNameFields = ['absentTypeName', 'absenceTypeName', 'absence_type_name', 'typeName', 'type_name', 'leaveTypeName', 'leave_type_name'];
 const startDateFields = ['startDate', 'start_date', 'dateStart', 'date_start'];
 const endDateFields = ['endDate', 'end_date', 'dateEnd', 'date_end'];
 

@@ -19,6 +19,7 @@ export default function WorkerNewJobScreen() {
   return (
     <RepairComputerJobListScreen
       title={TEXT.REPAIR_COMPUTER_NEW_JOB}
+      description={TEXT.REPAIR_COMPUTER_VIEW_NEW_WORKER_JOBS_DESCRIPTION}
       emptyMessage={TEXT.REPAIR_COMPUTER_NO_NEW_JOBS}
       errorMessage={TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_NEW_JOBS}
       loadingTitle={TEXT.REPAIR_COMPUTER_LOADING_NEW_JOBS}

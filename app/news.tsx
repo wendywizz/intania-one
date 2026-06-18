@@ -1,4 +1,4 @@
-﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
+﻿import { ArrowRight } from 'lucide-react-native';
 import { useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
@@ -76,7 +76,7 @@ function NewsListItem({ item, onPress }: NewsListItemProps) {
         ) : null}
         <View style={styles.readMoreRow}>
           <ThemedText style={styles.readMoreText}>Read more</ThemedText>
-          <MaterialIcons name="arrow-forward" size={14} color="#922124" />
+          <ArrowRight size={14} color="#922124" />
         </View>
       </View>
     </Pressable>

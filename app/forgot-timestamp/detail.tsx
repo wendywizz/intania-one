@@ -2,7 +2,7 @@
   DateTimePickerAndroid,
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { Clock, Info } from 'lucide-react-native';
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -219,11 +219,11 @@ function getStampType(item: ForgotTimestamp) {
 
 function getTimestampHint(stampType: string) {
   if (stampType === "in") {
-    return "Start timestamp 07:00 - 08:45";
+    return TEXT.FORGOT_TIMESTAMP_IN_HINT;
   }
 
   if (stampType === "out") {
-    return "End timestamp 16:30 - 20:30";
+    return TEXT.FORGOT_TIMESTAMP_OUT_HINT;
   }
 
   return "";
@@ -231,11 +231,11 @@ function getTimestampHint(stampType: string) {
 
 function getForgetTypeLabel(stampType: string) {
   if (stampType === "in") {
-    return "Forget timestamp in";
+    return TEXT.FORGOT_TIMESTAMP_STAMP_IN;
   }
 
   if (stampType === "out") {
-    return "Forget timestamp out";
+    return TEXT.FORGOT_TIMESTAMP_STAMP_OUT;
   }
 
   return "";
@@ -448,15 +448,15 @@ export default function ForgotTimestampDetailScreen() {
     const nextErrors: ValidationErrors = {};
 
     if (!approver) {
-      nextErrors.approver = "Approver List is required";
+      nextErrors.approver = TEXT.FORGOT_TIMESTAMP_APPROVER_REQUIRED;
     }
 
     if (!selectedTime) {
-      nextErrors.time = "Time is required";
+      nextErrors.time = TEXT.FORGOT_TIMESTAMP_TIME_REQUIRED;
     }
 
     if (!reason.trim()) {
-      nextErrors.reason = "Reason is required";
+      nextErrors.reason = TEXT.FORGOT_TIMESTAMP_REASON_REQUIRED;
     }
 
     setValidationErrors(nextErrors);
@@ -553,20 +553,20 @@ export default function ForgotTimestampDetailScreen() {
     }
 
     const contextTitle =
-      type === "in" ? "Forgot to clock in?" : type === "out" ? "Forgot to clock out?" : "Forgot timestamp";
+      type === "in" ? TEXT.FORGOT_TIMESTAMP_CONTEXT_IN_TITLE : type === "out" ? TEXT.FORGOT_TIMESTAMP_CONTEXT_OUT_TITLE : TEXT.FORGOT_TIMESTAMP_TITLE;
     const contextDesc =
       type === "in"
-        ? "Select the correct time you actually clocked in on this date."
+        ? TEXT.FORGOT_TIMESTAMP_CONTEXT_IN_DESC
         : type === "out"
-          ? "Select the correct time you actually clocked out on this date."
-          : "Complete the form below to submit your forgot timestamp request.";
+          ? TEXT.FORGOT_TIMESTAMP_CONTEXT_OUT_DESC
+          : TEXT.FORGOT_TIMESTAMP_CONTEXT_DEFAULT_DESC;
 
     return (
       <View>
         {/* Context header card */}
         <View style={styles.contextCard}>
           <View style={styles.contextIconCircle}>
-            <MaterialIcons name="access-time" size={22} color="#B33939" />
+            <Clock size={22} color="#B33939" />
           </View>
           <View style={styles.contextText}>
             <ThemedText style={styles.contextTitle}>{contextTitle}</ThemedText>
@@ -604,7 +604,7 @@ export default function ForgotTimestampDetailScreen() {
           ) : null}
 
           <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>APPROVER</ThemedText>
+            <ThemedText style={styles.fieldLabel}>{TEXT.FORGOT_TIMESTAMP_FIELD_APPROVER}</ThemedText>
             <Pressable
               accessibilityRole="button"
               onPress={() => setIsApproverOpen(true)}
@@ -619,7 +619,7 @@ export default function ForgotTimestampDetailScreen() {
                   !selectedApproverLabel ? styles.placeholder : undefined,
                 ]}
               >
-                {selectedApproverLabel || "Select approver"}
+                {selectedApproverLabel || TEXT.FORGOT_TIMESTAMP_SELECT_APPROVER}
               </ThemedText>
               <ThemedText style={styles.chevron}>⌄</ThemedText>
             </Pressable>
@@ -631,7 +631,7 @@ export default function ForgotTimestampDetailScreen() {
           </View>
 
           <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>EMPLOYEE NAME</ThemedText>
+            <ThemedText style={styles.fieldLabel}>{TEXT.FORGOT_TIMESTAMP_FIELD_EMPLOYEE_NAME}</ThemedText>
             <ThemedText style={styles.requestUserText}>
               {requestUserLabel || "-"}
             </ThemedText>
@@ -639,7 +639,7 @@ export default function ForgotTimestampDetailScreen() {
 
           <View style={styles.dateTimeRow}>
             <View style={[styles.field, styles.dateField]}>
-              <ThemedText style={styles.fieldLabel}>ORIGINAL DATE</ThemedText>
+              <ThemedText style={styles.fieldLabel}>{TEXT.FORGOT_TIMESTAMP_FIELD_ORIGINAL_DATE}</ThemedText>
               {displayTimestamp ? (
                 <TextInput
                   editable={false}
@@ -649,14 +649,14 @@ export default function ForgotTimestampDetailScreen() {
               ) : null}
             </View>
             <View style={[styles.field, styles.timeField]}>
-              <ThemedText style={styles.fieldLabel}>CORRECTED TIME</ThemedText>
+              <ThemedText style={styles.fieldLabel}>{TEXT.FORGOT_TIMESTAMP_FIELD_CORRECTED_TIME}</ThemedText>
               {Platform.OS === "web" ? (
                 <View style={styles.webTimePicker}>
                   <ModalSelectField
                     hasError={Boolean(validationErrors.time)}
                     options={hourModalOptions}
-                    placeholder="Hour"
-                    title="Hour"
+                    placeholder={TEXT.FORGOT_TIMESTAMP_HOUR}
+                    title={TEXT.FORGOT_TIMESTAMP_HOUR}
                     value={selectedTime ? formatTime(selectedTime).slice(0, 2) : ""}
                     width={72}
                     onSelect={(value) => setWebTimePart("hour", value)}
@@ -665,8 +665,8 @@ export default function ForgotTimestampDetailScreen() {
                   <ModalSelectField
                     hasError={Boolean(validationErrors.time)}
                     options={minuteModalOptions}
-                    placeholder="Min"
-                    title="Minute"
+                    placeholder={TEXT.FORGOT_TIMESTAMP_MINUTE}
+                    title={TEXT.FORGOT_TIMESTAMP_MINUTE}
                     value={selectedTime ? formatTime(selectedTime).slice(3, 5) : ""}
                     width={72}
                     onSelect={(value) => setWebTimePart("minute", value)}
@@ -688,7 +688,7 @@ export default function ForgotTimestampDetailScreen() {
                       !selectedTime ? styles.placeholder : undefined,
                     ]}
                   >
-                    {formatTime(selectedTime) || "Select time"}
+                    {formatTime(selectedTime) || TEXT.FORGOT_TIMESTAMP_SELECT_TIME}
                   </ThemedText>
                 </Pressable>
               )}
@@ -717,7 +717,7 @@ export default function ForgotTimestampDetailScreen() {
                     darkColor="#FFFFFF"
                     type="defaultSemiBold"
                   >
-                    Done
+                    {TEXT.FORGOT_TIMESTAMP_DONE}
                   </ThemedText>
                 </Pressable>
               ) : null}
@@ -728,15 +728,14 @@ export default function ForgotTimestampDetailScreen() {
           </View>
 
           <View style={styles.guidanceNote}>
-            <MaterialIcons name="info-outline" size={14} color="rgba(146,33,36,0.7)" />
+            <Info size={14} color="rgba(146,33,36,0.7)" />
             <ThemedText style={styles.guidanceNoteText}>
-              Requests must be submitted by Friday 5:00 PM for current payroll
-              processing.
+              {TEXT.FORGOT_TIMESTAMP_GUIDANCE_NOTE}
             </ThemedText>
           </View>
 
           <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>REASON FOR ADJUSTMENT</ThemedText>
+            <ThemedText style={styles.fieldLabel}>{TEXT.FORGOT_TIMESTAMP_REASON_LABEL}</ThemedText>
             <TextInput
               multiline
               numberOfLines={2}
@@ -747,7 +746,7 @@ export default function ForgotTimestampDetailScreen() {
                   reason: undefined,
                 }));
               }}
-              placeholder="Enter reason"
+              placeholder={TEXT.FORGOT_TIMESTAMP_REASON_PLACEHOLDER}
               placeholderTextColor="#8A969C"
               style={[
                 styles.textInput,
@@ -797,7 +796,7 @@ export default function ForgotTimestampDetailScreen() {
             darkColor="#FFFFFF"
             type="defaultSemiBold"
           >
-            {isSubmitting ? "Submitting..." : "Submit"}
+            {isSubmitting ? TEXT.FORGOT_TIMESTAMP_SUBMITTING : TEXT.FORGOT_TIMESTAMP_SUBMIT}
           </ThemedText>
         </Pressable>
         {isEditMode ? (
@@ -818,7 +817,7 @@ export default function ForgotTimestampDetailScreen() {
               darkColor="#B42318"
               type="defaultSemiBold"
             >
-              {isRemoving ? "Removing..." : "Remove"}
+              {isRemoving ? TEXT.FORGOT_TIMESTAMP_REMOVING : TEXT.SHARED_DELETE_THAI}
             </ThemedText>
           </Pressable>
         ) : null}
@@ -841,7 +840,7 @@ export default function ForgotTimestampDetailScreen() {
             >
               <View style={styles.selectModalHeader}>
                 <ThemedText type="defaultSemiBold" style={styles.selectModalTitle}>
-                  Approver List
+                  {TEXT.FORGOT_TIMESTAMP_APPROVER_LIST_TITLE}
                 </ThemedText>
                 <Pressable
                   accessibilityRole="button"
@@ -905,9 +904,9 @@ export default function ForgotTimestampDetailScreen() {
               lightColor="#FFFFFF"
               darkColor="#151718"
             >
-              <ThemedText type="subtitle">Confirm submit</ThemedText>
+              <ThemedText type="subtitle">{TEXT.FORGOT_TIMESTAMP_CONFIRM_SUBMIT_TITLE}</ThemedText>
               <ThemedText style={styles.confirmMessage}>
-                Do you want to submit this forgot timestamp request?
+                {TEXT.FORGOT_TIMESTAMP_CONFIRM_SUBMIT_MESSAGE}
               </ThemedText>
               <View style={styles.confirmActions}>
                 <Pressable
@@ -916,7 +915,7 @@ export default function ForgotTimestampDetailScreen() {
                   onPress={() => setIsConfirmVisible(false)}
                   style={styles.cancelButton}
                 >
-                  <ThemedText type="defaultSemiBold">NO</ThemedText>
+                  <ThemedText type="defaultSemiBold">{TEXT.CANCEL}</ThemedText>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -935,7 +934,7 @@ export default function ForgotTimestampDetailScreen() {
                     darkColor="#FFFFFF"
                     type="defaultSemiBold"
                   >
-                  {isSubmitting ? "Submitting..." : "YES"}
+                  {isSubmitting ? TEXT.FORGOT_TIMESTAMP_SUBMITTING : TEXT.absence_CONFIRM_SUBMIT_ACTION}
                   </ThemedText>
                 </Pressable>
               </View>
@@ -967,9 +966,9 @@ export default function ForgotTimestampDetailScreen() {
               lightColor="#FFFFFF"
               darkColor="#151718"
             >
-              <ThemedText type="subtitle">Confirm remove</ThemedText>
+              <ThemedText type="subtitle">{TEXT.FORGOT_TIMESTAMP_CONFIRM_REMOVE_TITLE}</ThemedText>
               <ThemedText style={styles.confirmMessage}>
-                Do you want to remove this forgot timestamp request?
+                {TEXT.FORGOT_TIMESTAMP_CONFIRM_REMOVE_MESSAGE}
               </ThemedText>
               <View style={styles.confirmActions}>
                 <Pressable
@@ -978,7 +977,7 @@ export default function ForgotTimestampDetailScreen() {
                   onPress={() => setIsRemoveConfirmVisible(false)}
                   style={styles.cancelButton}
                 >
-                  <ThemedText type="defaultSemiBold">NO</ThemedText>
+                  <ThemedText type="defaultSemiBold">{TEXT.CANCEL}</ThemedText>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -997,7 +996,7 @@ export default function ForgotTimestampDetailScreen() {
                     darkColor="#FFFFFF"
                     type="defaultSemiBold"
                   >
-                    {isRemoving ? "Removing..." : "YES"}
+                    {isRemoving ? TEXT.FORGOT_TIMESTAMP_REMOVING : TEXT.SHARED_DELETE_THAI}
                   </ThemedText>
                 </Pressable>
               </View>

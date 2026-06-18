@@ -48,7 +48,9 @@ export function formatDateTime(value: string) {
 export function formatNewsDate(value: string) {
   const m = parseDateTime(value);
   if (!m) return value;
-  return dateStr(m);
+  const base = m.locale('en').format('D MMMM YYYY');
+  const hasTime = /\d{1,2}:\d{2}/.test(value.trim());
+  return hasTime ? `${base} - ${m.format('HH:mm')}` : base;
 }
 
 export function formatDateOnly(value: string) {

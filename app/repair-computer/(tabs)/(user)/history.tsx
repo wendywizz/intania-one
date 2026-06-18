@@ -260,7 +260,7 @@ export default function RepairComputerHistoryScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={TEXT.REPAIR_COMPUTER_TITLE}
+        title={TEXT.SHARED_HISTORY}
         backHref="/"
         rightContent={roleSwitcher}
       />
@@ -271,7 +271,14 @@ export default function RepairComputerHistoryScreen() {
           lightColor="#FFFFFF"
           darkColor="#1F2B30"
         >
-          <ThemedText type="subtitle">{TEXT.SHARED_HISTORY}</ThemedText>
+          <View style={styles.panelHeader}>
+            <ThemedText type="subtitle">
+              {TEXT.REPAIR_COMPUTER_REPAIR_HISTORY}
+            </ThemedText>
+            <ThemedText style={styles.panelDescription}>
+              {TEXT.REPAIR_COMPUTER_REPAIR_HISTORY_DESCRIPTION}
+            </ThemedText>
+          </View>
           {renderContent()}
         </ThemedView>
       </View>
@@ -282,6 +289,7 @@ export default function RepairComputerHistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FD',
   },
   content: {
     flex: 1,
@@ -291,6 +299,17 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 8,
     padding: 0,
+  },
+  panelHeader: {
+    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+    gap: 4,
+  },
+  panelDescription: {
+    color: '#687076',
+    fontSize: 13,
+    lineHeight: 19,
   },
   listContent: {
     gap: 12,

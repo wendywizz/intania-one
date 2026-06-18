@@ -29,7 +29,7 @@ export const AUTH_REDIRECT_DOMAIN =
   ENV.authRedirectDomain ||
   (EXPO_OS === 'web' ? AUTH_REDIRECT_DOMAINS.development : AUTH_REDIRECT_DOMAINS.native);
 export const AUTH_REDIRECT_PATH = EXPO_OS === 'web' ? '/oauth/callback' : 'oauth/callback';
-export const PHOTO_BASE_URL = `${API_BASE_URL}/api/person/photo/`;
+export const PHOTO_BASE_URL = 'https://apis.eng.psu.ac.th/personnel/v1/photo/';
 export const OPENID_DISCOVERY_URL = `${OPENID_BASE_URL}/application/o/coe-mobile-app/.well-known/openid-configuration`;
 export const OPENID_AUTHORIZE_URL = `${OPENID_BASE_URL}/application/o/authorize/`;
 export const OPENID_TOKEN_URL = `${OPENID_BASE_URL}/application/o/token/`;

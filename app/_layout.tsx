@@ -55,14 +55,13 @@ export default function RootLayout() {
               <Stack.Screen name="news-detail" options={{ headerShown: false }} />
               <Stack.Screen name="notification" options={{ headerShown: false }} />
               <Stack.Screen name="forgot-timestamp" options={{ headerShown: false }} />
-              <Stack.Screen name="forgot-timestamp/detail" options={{ headerShown: false }} />
-              <Stack.Screen name="forgot-timestamp/history-detail" options={{ headerShown: false }} />
               <Stack.Screen name="clear-auth" options={{ headerShown: false }} />
               <Stack.Screen name="login-callback" options={{ headerShown: false }} />
               <Stack.Screen name="openid-webview" options={{ headerShown: false }} />
               <Stack.Screen name="oauth/callback" options={{ headerShown: false }} />
               <Stack.Screen name="person-search" options={{ headerShown: false }} />
               <Stack.Screen name="my-profile" options={{ headerShown: false }} />
+              <Stack.Screen name="edit-profile-field" options={{ headerShown: false }} />
               <Stack.Screen name="modal" options={{ presentation: 'modal', title: TEXT.SHARED_MODAL }} />
             </Stack>
             <StatusBar style="dark" />

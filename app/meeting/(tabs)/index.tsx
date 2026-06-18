@@ -1,4 +1,4 @@
-﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
+﻿import { CalendarDays, CalendarX, Clock, MapPin } from 'lucide-react-native';
 import { TEXT } from "@/constants/text";
 import { StatusBar } from "expo-status-bar";
 import { useFocusEffect } from "expo-router";
@@ -94,19 +94,19 @@ function MeetingCard({ meeting }: { meeting: Meeting }) {
     <View style={styles.itemCard}>
       <View style={styles.itemRow}>
         <View style={styles.iconCircle}>
-          <MaterialIcons name="event" size={20} color="#5D6371" />
+          <CalendarDays size={20} color="#5D6371" />
         </View>
         <View style={styles.itemBody}>
           <ThemedText style={styles.itemTitle} numberOfLines={2}>{title}</ThemedText>
           {schedule ? (
             <View style={styles.metaRow}>
-              <MaterialIcons name="access-time" size={13} color="#585E6D" />
+              <Clock size={13} color="#585E6D" />
               <ThemedText style={styles.metaText}>{schedule}</ThemedText>
             </View>
           ) : null}
           {place ? (
             <View style={styles.metaRow}>
-              <MaterialIcons name="location-on" size={13} color="#585E6D" />
+              <MapPin size={13} color="#585E6D" />
               <ThemedText style={styles.metaText} numberOfLines={1}>{place}</ThemedText>
             </View>
           ) : null}
@@ -209,7 +209,7 @@ export default function TodayMeetingScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
-            <MaterialIcons name="event-busy" size={40} color="#DADFF0" />
+            <CalendarX size={40} color="#DADFF0" />
             <ThemedText style={styles.emptyTitle} type="defaultSemiBold">
               {TEXT.MEETING_NO_MEETINGS_TODAY}
             </ThemedText>

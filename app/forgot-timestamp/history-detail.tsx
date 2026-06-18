@@ -1,5 +1,7 @@
-﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
+﻿import type React from 'react';
+import { CalendarDays, CheckCircle, Clock, Fingerprint, type LucideIcon, User, XCircle } from 'lucide-react-native';
 import { useLocalSearchParams } from "expo-router";
+import { TEXT } from "@/constants/text";
 import { StatusBar } from "expo-status-bar";
 import { useMemo } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
@@ -94,22 +96,30 @@ function getHistoryItemStatus(item: ForgotTimestampHistory): "approved" | "rejec
 }
 
 function getStampTypeLabel(stampType: string) {
-  if (stampType === "in") return "Timestamp In";
-  if (stampType === "out") return "Timestamp Out";
+  if (stampType === "in") return TEXT.FORGOT_TIMESTAMP_STAMP_IN_TYPE;
+  if (stampType === "out") return TEXT.FORGOT_TIMESTAMP_STAMP_OUT_TYPE;
   return stampType || "—";
 }
 
+const DETAIL_ROW_ICON_MAP: Record<string, LucideIcon> = {
+  event: CalendarDays,
+  'access-time': Clock,
+  fingerprint: Fingerprint,
+  person: User,
+};
+
 type DetailRowProps = {
-  icon: React.ComponentProps<typeof MaterialIcons>["name"];
+  icon: string;
   label: string;
   value: string;
 };
 
 function DetailRow({ icon, label, value }: DetailRowProps) {
+  const IconComponent = DETAIL_ROW_ICON_MAP[icon];
   return (
     <View style={styles.detailRow}>
       <View style={styles.detailIconBox}>
-        <MaterialIcons name={icon} size={18} color="#5D6371" />
+        {IconComponent ? <IconComponent size={18} color="#5D6371" /> : null}
       </View>
       <View style={styles.detailText}>
         <ThemedText style={styles.detailLabel}>{label}</ThemedText>
@@ -143,25 +153,25 @@ export default function ForgotTimestampHistoryDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title="Timestamp Detail" backHref="/forgot-timestamp/history" />
+      <NavTopBar title={TEXT.FORGOT_TIMESTAMP_DETAIL_TITLE} backHref="/forgot-timestamp/history" />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.statusCard}>
           {/* Header: stamp type + status badge */}
           <View style={styles.cardHeader}>
             <View style={styles.cardHeaderText}>
-              <ThemedText style={styles.headerTypeLabel}>TYPE</ThemedText>
+              <ThemedText style={styles.headerTypeLabel}>{TEXT.FORGOT_TIMESTAMP_TYPE_LABEL}</ThemedText>
               <ThemedText style={styles.headerTypeValue}>{stampTypeLabel}</ThemedText>
             </View>
             {status === "approved" ? (
               <View style={styles.approvedBadge}>
-                <MaterialIcons name="check-circle" size={14} color="#1E7E34" />
-                <ThemedText style={styles.approvedBadgeText}>Approved</ThemedText>
+                <CheckCircle size={14} color="#1E7E34" />
+                <ThemedText style={styles.approvedBadgeText}>{TEXT.FORGOT_TIMESTAMP_APPROVED_BADGE}</ThemedText>
               </View>
             ) : status === "rejected" ? (
               <View style={styles.rejectedBadge}>
-                <MaterialIcons name="cancel" size={14} color="#991B1B" />
-                <ThemedText style={styles.rejectedBadgeText}>Rejected</ThemedText>
+                <XCircle size={14} color="#991B1B" />
+                <ThemedText style={styles.rejectedBadgeText}>{TEXT.FORGOT_TIMESTAMP_REJECTED_BADGE}</ThemedText>
               </View>
             ) : null}
           </View>
@@ -172,22 +182,22 @@ export default function ForgotTimestampHistoryDetailScreen() {
           <View style={styles.detailRows}>
             <DetailRow
               icon="event"
-              label="Appeal Date"
+              label={TEXT.FORGOT_TIMESTAMP_APPEAL_DATE}
               value={appealDateDisplay}
             />
             <DetailRow
               icon="access-time"
-              label="Timestamp Datetime"
+              label={TEXT.FORGOT_TIMESTAMP_TIMESTAMP_DATETIME}
               value={datetimeDisplay}
             />
             <DetailRow
               icon="fingerprint"
-              label="Timestamp Type"
+              label={TEXT.FORGOT_TIMESTAMP_TIMESTAMP_TYPE}
               value={stampTypeLabel}
             />
             <DetailRow
               icon="person"
-              label="Approver"
+              label={TEXT.absence_APPROVER_LABEL}
               value={approver}
             />
           </View>
@@ -197,7 +207,7 @@ export default function ForgotTimestampHistoryDetailScreen() {
             <>
               <View style={styles.divider} />
               <View style={styles.reasonSection}>
-                <ThemedText style={styles.reasonSectionLabel}>REASON FOR ADJUSTMENT</ThemedText>
+                <ThemedText style={styles.reasonSectionLabel}>{TEXT.FORGOT_TIMESTAMP_REASON_LABEL}</ThemedText>
                 <View style={styles.reasonBox}>
                   <ThemedText style={styles.reasonText}>{reason}</ThemedText>
                 </View>

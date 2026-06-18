@@ -1,4 +1,4 @@
-﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
+﻿import { ChevronRight, Clock, Fingerprint, LogIn, LogOut } from 'lucide-react-native';
 import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useState } from "react";
@@ -24,8 +24,7 @@ import {
 } from "@/services/forgetTimestampService";
 import { formatFullDate } from "@/utils/date-format";
 
-const APPEAL_DOCUMENT_MESSAGE =
-  "Please go to the HR portal to file an appeal with supporting documents.";
+const APPEAL_DOCUMENT_MESSAGE = TEXT.FORGOT_TIMESTAMP_APPEAL_DOCUMENT;
 
 const stampTypeFields = new Set(["stampType", "stamp_type"]);
 const statusFields = ["status", "isActive", "is_active"];
@@ -82,8 +81,8 @@ function sortItemsByDateDesc(items: ForgotTimestamp[]) {
 
 function getItemTitle(item: ForgotTimestamp) {
   const stampType = getStampType(item);
-  if (stampType === "in") return "Forgot stamp in";
-  if (stampType === "out") return "Forgot stamp out";
+  if (stampType === "in") return TEXT.FORGOT_TIMESTAMP_STAMP_IN;
+  if (stampType === "out") return TEXT.FORGOT_TIMESTAMP_STAMP_OUT;
   const title =
     item.date ??
     item.workDate ??
@@ -138,8 +137,7 @@ function ForgotTimestampItem({ item }: { item: ForgotTimestamp }) {
     } as Parameters<typeof router.push>[0]);
   };
 
-  const iconName =
-    stampType === "in" ? "login" : stampType === "out" ? "logout" : "fingerprint";
+  const StampIcon = stampType === "in" ? LogIn : stampType === "out" ? LogOut : Fingerprint;
 
   return (
     <Pressable
@@ -151,7 +149,7 @@ function ForgotTimestampItem({ item }: { item: ForgotTimestamp }) {
       <View style={[styles.itemCard, isUnavailable && styles.itemCardUnavailable]}>
         <View style={styles.itemRow}>
           <View style={styles.iconCircle}>
-            <MaterialIcons name={iconName} size={18} color="#5D6371" />
+            <StampIcon size={18} color="#5D6371" />
           </View>
           <View style={styles.itemInfo}>
             <ThemedText style={styles.itemTitle}>{getItemTitle(item)}</ThemedText>
@@ -162,9 +160,9 @@ function ForgotTimestampItem({ item }: { item: ForgotTimestamp }) {
           {canOpenDetail ? (
             <View style={styles.itemRight}>
               <View style={styles.actionBadge}>
-                <ThemedText style={styles.actionBadgeText}>ACTION REQUIRED</ThemedText>
+                <ThemedText style={styles.actionBadgeText}>{TEXT.FORGOT_TIMESTAMP_ACTION_REQUIRED}</ThemedText>
               </View>
-              <MaterialIcons name="chevron-right" size={16} color="#8B716F" />
+              <ChevronRight size={16} color="#8B716F" />
             </View>
           ) : null}
         </View>
@@ -222,21 +220,19 @@ export default function ForgotTimestampScreen() {
   const listHeader = (
     <View style={styles.listHeader}>
       <View style={styles.welcomeSection}>
-        <ThemedText style={styles.welcomeHeading}>Miss Timestamp</ThemedText>
+        <ThemedText style={styles.welcomeHeading}>{TEXT.FORGOT_TIMESTAMP_TITLE}</ThemedText>
         <ThemedText style={styles.welcomeSubtitle}>
-          You have {pendingCount} pending{" "}
-          {pendingCount === 1 ? "request" : "requests"} requiring attention.
+          คุณมี {pendingCount} คำขอที่รอดำเนินการ
         </ThemedText>
         <ThemedText style={styles.cycleText}>
-          Company Cycle: {currentYear - 1} – {currentYear}
+          {TEXT.FORGOT_TIMESTAMP_COMPANY_CYCLE_LABEL}: {currentYear - 1} – {currentYear}
         </ThemedText>
       </View>
 
       <View style={styles.noteBox}>
-        <MaterialIcons name="schedule" size={20} color="#922124" style={styles.noteIcon} />
+        <Clock size={20} color="#922124" style={styles.noteIcon} />
         <ThemedText style={styles.noteText}>
-          Requests submitted before Friday 5:00 PM will be processed in the
-          current payroll cycle.
+          {TEXT.FORGOT_TIMESTAMP_NOTE_TEXT}
         </ThemedText>
       </View>
     </View>

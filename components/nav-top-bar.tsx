@@ -16,6 +16,8 @@ type NavTopBarProps = {
   showBackButton?: boolean;
   showHomeButton?: boolean;
   rightContent?: ReactNode;
+  backgroundColor?: string;
+  contentColor?: string;
 };
 
 export function NavTopBar({
@@ -25,6 +27,8 @@ export function NavTopBar({
   showBackButton = true,
   showHomeButton = false,
   rightContent,
+  backgroundColor = '#b33939',
+  contentColor = '#FFFFFF',
 }: NavTopBarProps) {
   const insets = useSafeAreaInsets();
 
@@ -50,7 +54,7 @@ export function NavTopBar({
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 8, backgroundColor: '#b33939' }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 8, backgroundColor }]}>
       <View style={styles.leftActions}>
         {showBackButton ? (
           <Pressable
@@ -58,14 +62,14 @@ export function NavTopBar({
             accessibilityRole="button"
             onPress={goBack}
             style={styles.iconButton}>
-            <IconSymbol name="arrow.left" size={24} color="#FFFFFF" />
+            <IconSymbol name="arrow.left" size={24} color={contentColor} />
           </Pressable>
         ) : (
           <View style={styles.iconButtonSpacer} />
         )}
       </View>
 
-      <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold" numberOfLines={1} style={styles.title}>
+      <ThemedText lightColor={contentColor} darkColor={contentColor} type="defaultSemiBold" numberOfLines={1} style={styles.title}>
         {title}
       </ThemedText>
 
@@ -74,7 +78,7 @@ export function NavTopBar({
           rightContent
         ) : showHomeButton ? (
           <Pressable accessibilityLabel={TEXT.NAV_HOME_ACCESSIBILITY_LABEL} accessibilityRole="button" onPress={() => navReplace('/')} style={styles.iconButton}>
-            <IconSymbol name="house.fill" size={23} color="#FFFFFF" />
+            <IconSymbol name="house.fill" size={23} color={contentColor} />
           </Pressable>
         ) : (
           <View style={styles.iconButtonSpacer} />

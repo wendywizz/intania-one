@@ -16,6 +16,7 @@ export default function WorkerCurrentJobScreen() {
   return (
     <RepairComputerJobListScreen
       title={TEXT.REPAIR_COMPUTER_CURRENT_JOB}
+      description={TEXT.REPAIR_COMPUTER_VIEW_WORKER_CURRENT_JOBS_DESCRIPTION}
       emptyMessage={TEXT.REPAIR_COMPUTER_NO_CURRENT_JOBS}
       errorMessage={TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_CURRENT_JOBS}
       loadingTitle={TEXT.REPAIR_COMPUTER_LOADING_CURRENT_JOBS}

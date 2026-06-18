@@ -1,4 +1,5 @@
-﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
+﻿import type React from 'react';
+import { Baby, Briefcase, CalendarCheck, CalendarDays, CalendarRange, Clock, Cross, type LucideIcon, Paperclip, Phone, Plane, User, Users } from 'lucide-react-native';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -32,6 +33,7 @@ const absenceTypeLabels: Record<string, string> = {
 };
 
 const absenceTypeFields = [
+  'absentType',
   'absenceType',
   'absence_type',
   'typeabsence',
@@ -41,6 +43,7 @@ const absenceTypeFields = [
   'type',
 ];
 const absenceTypeNameFields = [
+  'absentTypeName',
   'absenceTypeName',
   'absence_type_name',
   'typeName',
@@ -49,7 +52,36 @@ const absenceTypeNameFields = [
   'leave_type_name',
 ];
 
-type IconName = keyof typeof MaterialIcons.glyphMap;
+type IconName =
+  | 'local-hospital'
+  | 'business-center'
+  | 'beach-access'
+  | 'child-care'
+  | 'mosque'
+  | 'person'
+  | 'notes'
+  | 'date-range'
+  | 'schedule'
+  | 'phone'
+  | 'flight'
+  | 'group'
+  | 'description';
+
+const ICON_MAP: Record<IconName, LucideIcon> = {
+  'local-hospital': Cross,
+  'business-center': Briefcase,
+  'beach-access': CalendarDays,
+  'child-care': Baby,
+  mosque: CalendarDays,
+  person: User,
+  notes: CalendarDays,
+  'date-range': CalendarRange,
+  schedule: Clock,
+  phone: Phone,
+  flight: Plane,
+  group: Users,
+  description: CalendarDays,
+};
 
 const TYPE_ICON: Record<string, IconName> = {
   [TYPE_absence_SICK]: 'local-hospital',
@@ -182,11 +214,12 @@ type FieldProps = {
 
 function Field({ label, value, icon, bold }: FieldProps) {
   if (!value) return null;
+  const IconComponent = ICON_MAP[icon];
   return (
     <View style={styles.field}>
       <ThemedText style={styles.fieldLabel}>{label}</ThemedText>
       <View style={styles.fieldValueRow}>
-        <MaterialIcons name={icon} size={18} color="#B33939" style={styles.fieldIcon} />
+        {IconComponent ? <IconComponent size={18} color="#B33939" style={styles.fieldIcon} /> : null}
         <ThemedText style={[styles.fieldValue, bold && styles.fieldValueBold]} numberOfLines={0}>
           {value}
         </ThemedText>
@@ -205,7 +238,7 @@ function DateFields({ startDate, endDate }: { startDate: string; endDate: string
       <View style={styles.dateField}>
         <ThemedText style={styles.fieldLabel}>START DATE</ThemedText>
         <View style={styles.fieldValueRow}>
-          <MaterialIcons name="event" size={18} color="#B33939" style={styles.fieldIcon} />
+          <CalendarDays size={18} color="#B33939" style={styles.fieldIcon} />
           <ThemedText style={styles.fieldValue}>{startDisplay}</ThemedText>
         </View>
       </View>
@@ -213,7 +246,7 @@ function DateFields({ startDate, endDate }: { startDate: string; endDate: string
       <View style={styles.dateField}>
         <ThemedText style={styles.fieldLabel}>END DATE</ThemedText>
         <View style={styles.fieldValueRow}>
-          <MaterialIcons name="event-available" size={18} color="#B33939" style={styles.fieldIcon} />
+          <CalendarCheck size={18} color="#B33939" style={styles.fieldIcon} />
           <ThemedText style={styles.fieldValue}>{endDisplay}</ThemedText>
         </View>
       </View>
@@ -227,7 +260,7 @@ function FileField({ fileUrl, onPress }: { fileUrl: string; onPress: () => void 
     <View style={styles.field}>
       <ThemedText style={styles.fieldLabel}>{TEXT.absence_MEDICAL_CERTIFICATE_LABEL}</ThemedText>
       <Pressable accessibilityRole="link" onPress={onPress} style={styles.fieldValueRow}>
-        <MaterialIcons name="attach-file" size={18} color="#B33939" style={styles.fieldIcon} />
+        <Paperclip size={18} color="#B33939" style={styles.fieldIcon} />
         <ThemedText lightColor="#B33939" darkColor="#B33939" style={[styles.fieldValue, styles.fileLinkText]}>
           Uploaded file
         </ThemedText>
@@ -266,11 +299,11 @@ export default function absenceDetailScreen() {
   const travelDetail = getDisplayText(getText(item, ['travelDetail', 'travel_detail']));
   const agents = getAgentText(item);
   const fileUploadLink = getText(item, ['fileUploadLink', 'file_upload_link']);
-  const status = getText(item, ['status', 'statusName', 'requestStatus', 'request_status', 'approvalStatus', 'approval_status', 'approvalStatusName', 'flowStatus', 'flow_status']);
+  const status = getText(item, ['status', 'statusName', 'status_name', 'requestStatus', 'request_status', 'approvalStatus', 'approval_status', 'approvalStatusName', 'flowStatus', 'flow_status']);
 
   const isSick = absType === TYPE_absence_SICK;
   const isBusiness = absType === TYPE_absence_BUSINESS;
-  const statusBadge = status ? getStatusBadge(status) : null;
+  const statusBadge = (status && status !== '0') ? getStatusBadge(status) : null;
 
   const loadDetail = useCallback(async () => {
     if (!detailKey) {

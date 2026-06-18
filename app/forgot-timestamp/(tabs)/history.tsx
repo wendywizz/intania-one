@@ -1,4 +1,4 @@
-﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
+﻿import { ChevronRight, Fingerprint, LogIn, LogOut } from 'lucide-react-native';
 import { useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { navPush } from "@/utils/navigation";
@@ -99,8 +99,8 @@ function sortHistoryItems(items: ForgotTimestampHistory[]) {
 
 function getHistoryTitle(item: ForgotTimestampHistory) {
   const stampType = getText(item, Array.from(stampTypeFields)).toLowerCase();
-  if (stampType === "in") return "Forgot stamp in";
-  if (stampType === "out") return "Forgot stamp out";
+  if (stampType === "in") return TEXT.FORGOT_TIMESTAMP_STAMP_IN;
+  if (stampType === "out") return TEXT.FORGOT_TIMESTAMP_STAMP_OUT;
   const date = getHistoryDate(item);
   return date ? formatFullDate(date) : TEXT.SHARED_HISTORY;
 }
@@ -122,8 +122,7 @@ function getHistoryItemStatus(item: ForgotTimestampHistory): "approved" | "rejec
 function ForgotTimestampHistoryItem({ item }: { item: ForgotTimestampHistory }) {
   const status = getHistoryItemStatus(item);
   const stampType = getText(item, Array.from(stampTypeFields)).toLowerCase();
-  const iconName =
-    stampType === "in" ? "login" : stampType === "out" ? "logout" : "fingerprint";
+  const StampIcon = stampType === "in" ? LogIn : stampType === "out" ? LogOut : Fingerprint;
 
   const openDetail = () => {
     navPush({
@@ -140,7 +139,7 @@ function ForgotTimestampHistoryItem({ item }: { item: ForgotTimestampHistory }) 
     >
       <View style={styles.itemCard}>
         <View style={styles.iconCircle}>
-          <MaterialIcons name={iconName} size={18} color="#5D6371" />
+          <StampIcon size={18} color="#5D6371" />
         </View>
         <View style={styles.itemInfo}>
           <ThemedText style={styles.itemTitle}>{getHistoryTitle(item)}</ThemedText>
@@ -149,14 +148,14 @@ function ForgotTimestampHistoryItem({ item }: { item: ForgotTimestampHistory }) 
         <View style={styles.itemRight}>
           {status === "approved" ? (
             <View style={styles.approvedBadge}>
-              <ThemedText style={styles.approvedBadgeText}>Approved</ThemedText>
+              <ThemedText style={styles.approvedBadgeText}>{TEXT.FORGOT_TIMESTAMP_APPROVED_BADGE}</ThemedText>
             </View>
           ) : status === "rejected" ? (
             <View style={styles.rejectedBadge}>
-              <ThemedText style={styles.rejectedBadgeText}>Rejected</ThemedText>
+              <ThemedText style={styles.rejectedBadgeText}>{TEXT.FORGOT_TIMESTAMP_REJECTED_BADGE}</ThemedText>
             </View>
           ) : null}
-          <MaterialIcons name="chevron-right" size={16} color="#8B716F" />
+          <ChevronRight size={16} color="#8B716F" />
         </View>
       </View>
     </Pressable>
@@ -210,12 +209,12 @@ export default function ForgotTimestampHistoryScreen() {
   const listHeader = (
     <View style={styles.listHeader}>
       <View style={styles.statsCard}>
-        <ThemedText style={styles.statsHeading}>History</ThemedText>
+        <ThemedText style={styles.statsHeading}>{TEXT.SHARED_HISTORY}</ThemedText>
         <ThemedText style={styles.statsSubtitle}>
-          Review your resolved timestamp requests below.
+          {TEXT.FORGOT_TIMESTAMP_HISTORY_SUBTITLE}
         </ThemedText>
 
-        <ThemedText style={styles.cycleLabel}>COMPANY CYCLE</ThemedText>
+        <ThemedText style={styles.cycleLabel}>{TEXT.FORGOT_TIMESTAMP_COMPANY_CYCLE_LABEL}</ThemedText>
         <ThemedText style={styles.cycleValue}>
           {currentYear - 1} – {currentYear}
         </ThemedText>
@@ -224,12 +223,12 @@ export default function ForgotTimestampHistoryScreen() {
 
         <View style={styles.statsRow}>
           <View style={styles.statCell}>
-            <ThemedText style={styles.statLabel}>TOTAL APPROVED</ThemedText>
+            <ThemedText style={styles.statLabel}>{TEXT.FORGOT_TIMESTAMP_TOTAL_APPROVED}</ThemedText>
             <ThemedText style={styles.statCountApproved}>{approvedCount}</ThemedText>
           </View>
           <View style={styles.statsVerticalDivider} />
           <View style={styles.statCell}>
-            <ThemedText style={styles.statLabel}>TOTAL REJECTED</ThemedText>
+            <ThemedText style={styles.statLabel}>{TEXT.FORGOT_TIMESTAMP_TOTAL_REJECTED}</ThemedText>
             <ThemedText style={styles.statCountRejected}>{rejectedCount}</ThemedText>
           </View>
         </View>
@@ -290,7 +289,7 @@ export default function ForgotTimestampHistoryScreen() {
           items.length > 0 ? (
             <View style={styles.listFooter}>
               <View style={styles.footerLine} />
-              <ThemedText style={styles.footerText}>End of History</ThemedText>
+              <ThemedText style={styles.footerText}>{TEXT.FORGOT_TIMESTAMP_END_OF_HISTORY}</ThemedText>
               <View style={styles.footerLine} />
             </View>
           ) : null

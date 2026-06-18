@@ -1,5 +1,4 @@
 import { Tabs, router, usePathname } from 'expo-router';
-import { navPush } from '@/utils/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { TEXT } from '@/constants/text';
@@ -312,25 +311,7 @@ export default function RepairComputerTabLayout() {
       </Modal>
     </>
   ) : undefined;
-  const informAction =
-    currentRole === PRIVILEGE_RC_USER && pathname === '/repair-computer/current-job' ? (
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => navPush('/repair-computer/inform' as Parameters<typeof navPush>[0])}
-        style={styles.switchButton}>
-        <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.switchButtonText}>
-          {TEXT.REPAIR_COMPUTER_INFORM}</ThemedText>
-      </Pressable>
-    ) : undefined;
-  const topRightAction =
-    roleSwitcher && informAction ? (
-      <View style={styles.actionGroup}>
-        {informAction}
-        {roleSwitcher}
-      </View>
-    ) : (
-      roleSwitcher ?? informAction
-    );
+  const topRightAction = roleSwitcher;
   return (
     <RepairComputerRoleProvider currentRole={currentRole} roleSwitcher={topRightAction}>
       <View style={styles.container}>
@@ -466,12 +447,6 @@ const styles = StyleSheet.create({
   switchButtonText: {
     fontSize: 13,
     lineHeight: 18,
-  },
-  actionGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 8,
   },
   backdrop: {
     flex: 1,

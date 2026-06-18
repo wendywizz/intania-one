@@ -1,5 +1,5 @@
 ﻿import AsyncStorage from '@react-native-async-storage/async-storage';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { Search } from 'lucide-react-native';
 import { TEXT } from '@/constants/text';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -267,7 +267,7 @@ export default function PersonSearchScreen() {
       <View style={styles.searchRow}>
         <View style={styles.inputWrap}>
           <View pointerEvents="none" style={styles.searchIconWrap}>
-            <MaterialIcons name="search" size={22} color="#8A969C" />
+            <Search size={22} color="#8A969C" />
           </View>
           <TextInput
             accessibilityLabel={TEXT.SHARED_SEARCH_NAME_PLACEHOLDER}

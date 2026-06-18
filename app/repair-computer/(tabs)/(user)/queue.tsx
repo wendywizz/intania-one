@@ -86,12 +86,20 @@ function getWorkerFullName(item: WorkerQueueItem) {
   );
 }
 
+function getQueueCount(item: WorkerQueueItem) {
+  return Number(getText(item, queueCountFields) || "0");
+}
+
 function sortWorkersByNameAsc(items: WorkerQueueItem[]) {
   return [...items].sort((leftItem, rightItem) => {
     return getWorkerFullName(leftItem).localeCompare(
       getWorkerFullName(rightItem),
     );
   });
+}
+
+function computeTotalJobs(items: WorkerQueueItem[]) {
+  return items.reduce((sum, item) => sum + getQueueCount(item), 0);
 }
 
 function getResponsePhoto(item: WorkerQueueItem) {
@@ -135,7 +143,7 @@ function WorkerQueueListItem({
 }: WorkerQueueListItemProps) {
   const workerId = getWorkerId(item);
   const fullName = getWorkerFullName(item);
-  const queueCount = getText(item, queueCountFields) || "0";
+  const queueCount = getQueueCount(item);
   const photoUri = getResponsePhoto(item);
   const photoKey = photoUri || workerId;
   const shouldShowPhoto = Boolean(photoUri) && !failedPhotoIds.has(photoKey);
@@ -155,8 +163,8 @@ function WorkerQueueListItem({
       ) : (
         <View style={styles.photoPlaceholder}>
           <ThemedText
-            lightColor="#0A6E8A"
-            darkColor="#0A6E8A"
+            lightColor="#687076"
+            darkColor="#687076"
             type="defaultSemiBold"
             style={styles.placeholderText}
           >
@@ -169,19 +177,8 @@ function WorkerQueueListItem({
         <ThemedText type="defaultSemiBold" style={styles.workerName}>
           {fullName}
         </ThemedText>
-      </View>
-
-      <View style={styles.queueBadge}>
-        <ThemedText
-          lightColor="#0A6E8A"
-          darkColor="#0A6E8A"
-          type="defaultSemiBold"
-          style={styles.queueCount}
-        >
-          {queueCount}
-        </ThemedText>
-        <ThemedText style={styles.queueLabel}>
-          {TEXT.REPAIR_COMPUTER_JOBS}
+        <ThemedText style={styles.workerMeta}>
+          {TEXT.REPAIR_COMPUTER_ACTIVE_JOBS_PREFIX}{queueCount}
         </ThemedText>
       </View>
     </ThemedView>
@@ -244,6 +241,8 @@ export default function RepairComputerQueueScreen() {
     });
   };
 
+  const totalJobs = computeTotalJobs(workers);
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -291,6 +290,37 @@ export default function RepairComputerQueueScreen() {
             onRefresh={() => loadQueue(true)}
           />
         }
+        ListHeaderComponent={
+          <View style={styles.listHeader}>
+            <ThemedView style={styles.statsCard} lightColor="#FFFFFF" darkColor="#151718">
+              <ThemedText type="defaultSemiBold" style={styles.statsLabel}>
+                {TEXT.REPAIR_COMPUTER_TOTAL_JOBS}
+              </ThemedText>
+              <View style={styles.statsBadge}>
+                <ThemedText
+                  lightColor="#FFFFFF"
+                  darkColor="#FFFFFF"
+                  style={styles.statsCount}
+                >
+                  {totalJobs}
+                </ThemedText>
+                <ThemedText
+                  lightColor="#FFFFFF"
+                  darkColor="#FFFFFF"
+                  style={styles.statsActive}
+                >
+                  {TEXT.REPAIR_COMPUTER_ACTIVE_LABEL}
+                </ThemedText>
+              </View>
+            </ThemedView>
+
+            {workers.length > 0 ? (
+              <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+                Active Jobs
+              </ThemedText>
+            ) : null}
+          </View>
+        }
         renderItem={({ item }) => (
           <WorkerQueueListItem
             failedPhotoIds={failedPhotoIds}
@@ -327,7 +357,14 @@ export default function RepairComputerQueueScreen() {
           lightColor="#FFFFFF"
           darkColor="#1F2B30"
         >
-          <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_QUEUE}</ThemedText>
+          <View style={styles.panelHeader}>
+            <ThemedText type="subtitle">
+              {TEXT.REPAIR_COMPUTER_TECHNICIAN_QUEUE}
+            </ThemedText>
+            <ThemedText style={styles.panelDescription}>
+              {TEXT.REPAIR_COMPUTER_TECHNICIAN_QUEUE_DESCRIPTION}
+            </ThemedText>
+          </View>
           {renderContent()}
         </ThemedView>
       </View>
@@ -338,6 +375,7 @@ export default function RepairComputerQueueScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FD',
   },
   content: {
     flex: 1,
@@ -348,108 +386,141 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 0,
   },
-  listContent: {
-    gap: 12,
+  panelHeader: {
     paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+    gap: 4,
+  },
+  panelDescription: {
+    color: '#687076',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  listContent: {
+    gap: 10,
     paddingBottom: 8,
   },
-  itemCard: {
-    minHeight: 92,
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 8,
+  listHeader: {
+    gap: 14,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  statsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    borderColor: '#D7E6EC',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  statsLabel: {
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  statsBadge: {
+    minWidth: 64,
+    alignItems: 'center',
+    borderRadius: 10,
+    backgroundColor: '#b33939',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  statsCount: {
+    fontSize: 20,
+    lineHeight: 24,
+    fontWeight: '700',
+  },
+  statsActive: {
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '500',
+    opacity: 0.9,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#11181C',
+  },
+  itemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#D7E6EC',
     padding: 14,
+    gap: 14,
   },
   workerPhoto: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: "#E4F0F6",
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#E8EEF2',
   },
   photoPlaceholder: {
-    width: 58,
-    height: 58,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 29,
-    backgroundColor: "#E4F0F6",
+    width: 52,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 26,
+    backgroundColor: '#E8EEF2',
   },
   placeholderText: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 20,
+    lineHeight: 26,
   },
   workerInfo: {
     flex: 1,
-    marginLeft: 14,
+    gap: 3,
   },
   workerName: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 21,
   },
   workerMeta: {
-    color: "#687076",
+    color: '#687076',
     fontSize: 13,
     lineHeight: 18,
-    marginTop: 4,
-  },
-  queueBadge: {
-    minWidth: 64,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#E4F0F6",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  queueCount: {
-    fontSize: 18,
-    lineHeight: 22,
-  },
-  queueLabel: {
-    color: "#687076",
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
   },
   stateContent: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 24,
   },
   stateMessage: {
-    color: "#687076",
+    color: '#687076',
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
-    textAlign: "center",
+    textAlign: 'center',
   },
   errorText: {
-    color: "#B42318",
+    color: '#B42318',
   },
   retryButton: {
     minHeight: 48,
     minWidth: 132,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: '#0A6E8A',
     marginTop: 24,
   },
   emptyCard: {
     minHeight: 120,
-    justifyContent: "center",
+    justifyContent: 'center',
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    borderColor: '#D7E6EC',
     padding: 16,
   },
   emptyMessage: {
-    color: "#687076",
+    color: '#687076',
     fontSize: 14,
     lineHeight: 20,
-    textAlign: "center",
+    textAlign: 'center',
   },
 });

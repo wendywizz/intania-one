@@ -1,5 +1,5 @@
 ﻿import { TEXT } from "@/constants/text";
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { CloudUpload, Eye, Info, Paperclip, X } from 'lucide-react-native';
 import * as DocumentPicker from "expo-document-picker";
 import { Image } from "expo-image";
 import { openBrowserAsync } from "expo-web-browser";
@@ -983,7 +983,7 @@ export default function SickScreen() {
             </ThemedText>
             {selectedFile ? (
               <View style={styles.selectedFileCard}>
-                <MaterialIcons name="attach-file" size={18} color="#B33939" />
+                <Paperclip size={18} color="#B33939" />
                 <ThemedText style={styles.selectedFileName} numberOfLines={1}>
                   {getUploadFileName(selectedFile)}
                 </ThemedText>
@@ -994,7 +994,7 @@ export default function SickScreen() {
                       onPress={handleViewFile}
                       style={styles.fileActionBtn}
                     >
-                      <MaterialIcons name="visibility" size={20} color="#687076" />
+                      <Eye size={20} color="#687076" />
                     </Pressable>
                   ) : null}
                   <Pressable
@@ -1002,7 +1002,7 @@ export default function SickScreen() {
                     onPress={() => setSelectedFile(null)}
                     style={styles.fileActionBtn}
                   >
-                    <MaterialIcons name="close" size={20} color="#B42318" />
+                    <X size={20} color="#B42318" />
                   </Pressable>
                 </View>
               </View>
@@ -1012,7 +1012,7 @@ export default function SickScreen() {
                 onPress={handlePickFile}
                 style={styles.uploadZone}
               >
-                <MaterialIcons name="cloud-upload" size={30} color="#B33939" />
+                <CloudUpload size={30} color="#B33939" />
                 <ThemedText style={styles.uploadZoneText}>
                   {isEditMode && hasUploadedFile
                     ? FILE_PICKER_REUPLOAD_ACTION
@@ -1027,7 +1027,7 @@ export default function SickScreen() {
                 onPress={handleViewUploadedFile}
                 style={styles.uploadedFileLink}
               >
-                <MaterialIcons name="attach-file" size={16} color="#12805C" />
+                <Paperclip size={16} color="#12805C" />
                 <ThemedText
                   lightColor="#12805C"
                   darkColor="#5EC6A3"
@@ -1043,7 +1043,7 @@ export default function SickScreen() {
 
           <View style={styles.policyCard}>
             <View style={styles.policyIconWrap}>
-              <MaterialIcons name="info-outline" size={20} color="#B33939" />
+              <Info size={20} color="#B33939" />
             </View>
             <View style={styles.policyBody}>
               <ThemedText style={styles.policyTitle}>

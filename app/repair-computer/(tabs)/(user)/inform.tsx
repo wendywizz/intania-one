@@ -17,6 +17,7 @@ import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { AppFonts } from "@/constants/fonts";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
@@ -185,7 +186,7 @@ export default function RepairComputerInformScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={TEXT.REPAIR_COMPUTER_TITLE}
+        title={TEXT.REPAIR_COMPUTER_INFORM}
         backHref="/repair-computer/current-job"
       />
 
@@ -199,22 +200,29 @@ export default function RepairComputerInformScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_INFORM}</ThemedText>
+          <View style={styles.heading}>
+            <ThemedText type="subtitle">
+              {TEXT.REPAIR_COMPUTER_NEW_REQUEST}
+            </ThemedText>
+            <ThemedText style={styles.headingDescription}>
+              {TEXT.REPAIR_COMPUTER_NEW_REQUEST_DESCRIPTION}
+            </ThemedText>
+          </View>
 
           <View style={styles.formCard}>
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
+              <ThemedText type="defaultSemiBold" style={styles.fieldLabel}>
                 {TEXT.REPAIR_COMPUTER_DETAIL}
               </ThemedText>
               <TextInput
                 multiline
-                numberOfLines={2}
+                numberOfLines={4}
                 onChangeText={(value) => {
                   setDetail(value);
                   clearValidationError("detail");
                 }}
-                placeholder={TEXT.REPAIR_COMPUTER_DETAIL}
-                placeholderTextColor="#8A969C"
+                placeholder="Describe the problem in detail..."
+                placeholderTextColor="#AEBFC9"
                 style={[
                   styles.input,
                   styles.textArea,
@@ -230,21 +238,30 @@ export default function RepairComputerInformScreen() {
               ) : null}
             </View>
 
+            <View style={styles.fieldDivider} />
+
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
-                {TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
-              </ThemedText>
+              <View style={styles.fieldLabelRow}>
+                <ThemedText type="defaultSemiBold" style={styles.fieldLabel}>
+                  {TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
+                </ThemedText>
+                <ThemedText style={styles.optionalLabel}>
+                  {TEXT.REPAIR_COMPUTER_OPTIONAL}
+                </ThemedText>
+              </View>
               <TextInput
                 onChangeText={setSupplyCode}
-                placeholder={TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
-                placeholderTextColor="#8A969C"
+                placeholder="e.g. PC-12345"
+                placeholderTextColor="#AEBFC9"
                 style={styles.input}
                 value={supplyCode}
               />
             </View>
 
+            <View style={styles.fieldDivider} />
+
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
+              <ThemedText type="defaultSemiBold" style={styles.fieldLabel}>
                 {TEXT.REPAIR_COMPUTER_PHONE}
               </ThemedText>
               <TextInput
@@ -253,8 +270,8 @@ export default function RepairComputerInformScreen() {
                   setPhone(value);
                   clearValidationError("phone");
                 }}
-                placeholder={TEXT.REPAIR_COMPUTER_PHONE}
-                placeholderTextColor="#8A969C"
+                placeholder="+66 (0)00 000-0000"
+                placeholderTextColor="#AEBFC9"
                 style={[
                   styles.input,
                   validationErrors.phone ? styles.inputError : undefined,
@@ -280,13 +297,16 @@ export default function RepairComputerInformScreen() {
           >
             {isSubmitting ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : null}
+            ) : (
+              <IconSymbol name="paperplane.fill" size={18} color="#FFFFFF" />
+            )}
             <ThemedText
               lightColor="#FFFFFF"
               darkColor="#FFFFFF"
               type="defaultSemiBold"
+              style={styles.submitButtonText}
             >
-              {isSubmitting ? "Submitting..." : "Submit"}
+              {isSubmitting ? "Submitting..." : TEXT.REPAIR_COMPUTER_SUBMIT_REQUEST}
             </ThemedText>
           </Pressable>
         </ScrollView>
@@ -312,8 +332,8 @@ export default function RepairComputerInformScreen() {
             style={styles.secondaryButton}
           >
             <ThemedText
-              lightColor="#0A6E8A"
-              darkColor="#0A6E8A"
+              lightColor="#b33939"
+              darkColor="#b33939"
               type="defaultSemiBold"
             >
               {TEXT.REPAIR_COMPUTER_BACK_TO_CURRENT_JOB}
@@ -386,119 +406,159 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FD',
   },
   content: {
-    gap: 16,
+    gap: 20,
     padding: 16,
+    paddingBottom: 32,
+  },
+  heading: {
+    gap: 6,
+  },
+  headingDescription: {
+    color: '#687076',
+    fontSize: 13,
+    lineHeight: 19,
   },
   formCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#E1E2E6',
-    padding: 16,
-    gap: 18,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   field: {
-    gap: 8,
-  },
-  messagePanel: {
-    borderRadius: 8,
+    gap: 10,
     padding: 16,
   },
-  messageText: {
-    color: "#687076",
+  fieldDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#E8EAED',
+    marginHorizontal: 16,
+  },
+  fieldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  fieldLabel: {
+    fontSize: 14,
     lineHeight: 20,
-    marginTop: 10,
+  },
+  optionalLabel: {
+    color: '#9EA3A8',
+    fontSize: 12,
+    lineHeight: 18,
   },
   input: {
     minHeight: 46,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
-    color: "#11181C",
+    borderColor: '#D7E0E8',
+    backgroundColor: '#F8F9FA',
+    color: '#11181C',
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   textArea: {
-    minHeight: 76,
+    minHeight: 96,
   },
   inputError: {
-    borderColor: "#C44D58",
+    borderColor: '#C44D58',
   },
   fieldError: {
-    color: "#C44D58",
-    fontSize: 13,
-    lineHeight: 18,
+    color: '#C44D58',
+    fontSize: 12,
+    lineHeight: 17,
   },
   submitButton: {
-    minHeight: 48,
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#0A6E8A",
-    paddingHorizontal: 18,
+    minHeight: 52,
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 100,
+    backgroundColor: '#b33939',
+    paddingHorizontal: 24,
+    shadowColor: '#b33939',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  submitButtonText: {
+    fontSize: 15,
+    lineHeight: 20,
   },
   disabledButton: {
     opacity: 0.65,
   },
+  messagePanel: {
+    borderRadius: 12,
+    padding: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E1E2E6',
+    gap: 8,
+  },
+  messageText: {
+    color: '#687076',
+    fontSize: 14,
+    lineHeight: 20,
+  },
   secondaryButton: {
     minHeight: 48,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#0A6E8A",
-    backgroundColor: "#FFFFFF",
+    borderColor: '#b33939',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 18,
   },
   backdrop: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
     padding: 24,
   },
   confirmModal: {
-    width: "100%",
+    width: '100%',
     maxWidth: 420,
     borderRadius: 8,
     padding: 18,
   },
   confirmMessage: {
-    color: "#687076",
+    color: '#687076',
     lineHeight: 20,
     marginTop: 10,
   },
   confirmActions: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 12,
     marginTop: 18,
   },
   cancelButton: {
     minHeight: 46,
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
+    borderColor: '#BFD2DA',
+    backgroundColor: '#FFFFFF',
   },
   confirmSubmitButton: {
     minHeight: 46,
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: '#b33939',
   },
 });

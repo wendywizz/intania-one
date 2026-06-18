@@ -1,4 +1,4 @@
-﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
+﻿import { Calendar } from 'lucide-react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
@@ -134,7 +134,7 @@ export default function NewsDetailScreen() {
           <View style={styles.card}>
             {/* Date / category meta row */}
             <View style={styles.metaRow}>
-              <MaterialIcons name="calendar-today" size={14} color="#585E6D" />
+              <Calendar size={14} color="#585E6D" />
               <ThemedText style={styles.metaText}>{metaItems.join(' • ')}</ThemedText>
             </View>
 

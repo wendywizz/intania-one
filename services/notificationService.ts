@@ -206,6 +206,31 @@ function registerNotificationHistoryListeners(Notifications: typeof ExpoNotifica
   });
 }
 
+const NOTIFICATION_ENABLED_KEY = 'PUSH_NOTIFICATION_ENABLED';
+
+export async function getNotificationEnabled(): Promise<boolean> {
+  const pref = await AsyncStorage.getItem(NOTIFICATION_ENABLED_KEY);
+  return pref !== 'false';
+}
+
+export async function setNotificationEnabled(enabled: boolean): Promise<void> {
+  await AsyncStorage.setItem(NOTIFICATION_ENABLED_KEY, enabled ? 'true' : 'false');
+}
+
+export async function checkNotificationPermission(): Promise<boolean> {
+  const Notifications = await loadNotifications();
+  if (!Notifications) return false;
+  const status = await Notifications.getPermissionsAsync();
+  return status.granted || status.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
+}
+
+export async function requestNotificationPermission(): Promise<boolean> {
+  const Notifications = await loadNotifications();
+  if (!Notifications) return false;
+  const status = await Notifications.requestPermissionsAsync();
+  return status.granted || status.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
+}
+
 export async function getNotificationHistory() {
   return readStoredHistory();
 }

@@ -350,4 +350,7 @@ config.server = {
   },
 };
 
+// Allow Metro to process .mjs ESM files (required by lucide-react-native)
+config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'mjs'];
+
 module.exports = config;

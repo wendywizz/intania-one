@@ -18,6 +18,7 @@ import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { AppFonts } from "@/constants/fonts";
 import {
     REPAIR_STATUS_WAIT_WORKER,
@@ -354,6 +355,9 @@ export default function RepairComputerEditJobScreen() {
     }
   };
 
+  const repairTypeName = jobData ? getJobText(jobData, repairTypeNameFields) : '';
+  const informDate = jobData ? formatDateTime(getJobText(jobData, informDateFields)) : '';
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -406,15 +410,9 @@ export default function RepairComputerEditJobScreen() {
     const requesterId = jobData ? getJobText(jobData, requesterIdFields) : "";
     const foremanName = jobData ? getJobText(jobData, foremanNameFields) : "";
     const foremanId = jobData ? getJobText(jobData, foremanIdFields) : "";
-    const repairTypeName = jobData
-      ? getJobText(jobData, repairTypeNameFields)
-      : "";
     const statusName = jobData
       ? getJobText(jobData, statusNameFields) || status
       : status;
-    const informDate = jobData
-      ? formatDateTime(getJobText(jobData, informDateFields))
-      : "";
 
     return (
       <ScrollView
@@ -681,11 +679,25 @@ export default function RepairComputerEditJobScreen() {
           lightColor="#FFFFFF"
           darkColor="#1F2B30"
         >
-          <ThemedText type="subtitle">
-            {isReadOnly
-              ? TEXT.REPAIR_COMPUTER_JOB_DETAIL
-              : TEXT.REPAIR_COMPUTER_EDIT_JOB}
-          </ThemedText>
+          <View style={styles.panelHeader}>
+            <ThemedText type="subtitle" numberOfLines={2}>
+              {repairTypeName ||
+                (isReadOnly
+                  ? TEXT.REPAIR_COMPUTER_JOB_DETAIL
+                  : TEXT.REPAIR_COMPUTER_EDIT_JOB)}
+            </ThemedText>
+            {supplyCode ? (
+              <ThemedText style={styles.panelSubtitle}>
+                {TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL} {supplyCode}
+              </ThemedText>
+            ) : null}
+            {informDate ? (
+              <View style={styles.panelDateRow}>
+                <IconSymbol name="calendar" size={13} color="#687076" />
+                <ThemedText style={styles.panelMeta}>{informDate}</ThemedText>
+              </View>
+            ) : null}
+          </View>
           {renderContent()}
         </ThemedView>
       </View>
@@ -832,6 +844,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+  },
+  panelHeader: {
+    gap: 4,
+    paddingBottom: 4,
+  },
+  panelSubtitle: {
+    color: '#687076',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  panelDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 2,
+  },
+  panelMeta: {
+    color: '#687076',
+    fontSize: 13,
+    lineHeight: 18,
   },
   form: {
     gap: 16,

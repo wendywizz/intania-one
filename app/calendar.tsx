@@ -1,4 +1,4 @@
-﻿import MaterialIcons from '@react-native-vector-icons/material-icons';
+﻿import { ChevronDown, MapPin } from 'lucide-react-native';
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -202,7 +202,7 @@ export default function CalendarScreen() {
             </ThemedText>
             {item.location ? (
               <View style={styles.locationRow}>
-                <MaterialIcons name="location-on" size={12} color="#584140" />
+                <MapPin size={12} color="#584140" />
                 <ThemedText style={styles.locationText} numberOfLines={2}>
                   {item.location}
                 </ThemedText>
@@ -271,7 +271,7 @@ export default function CalendarScreen() {
           >
             {selectedSource?.name || "Select calendar"}
           </ThemedText>
-          <MaterialIcons name="expand-more" size={24} color="#922124" />
+          <ChevronDown size={24} color="#922124" />
         </Pressable>
 
         {/* Source picker modal */}
