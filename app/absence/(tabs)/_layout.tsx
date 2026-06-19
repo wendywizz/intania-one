@@ -20,6 +20,12 @@ export default function absenceTabLayout() {
         tabBarStyle: {
           backgroundColor: TAB_BAR_BG,
           borderTopColor: 'rgba(223, 191, 189, 0.6)',
+          height: 68,
+          paddingBottom: 10,
+          paddingTop: 6,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
         },
       }}>
       <Tabs.Screen
@@ -47,7 +53,7 @@ export default function absenceTabLayout() {
         name="history"
         options={{
           title: TEXT.absence_TAB_HISTORY,
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="calendar" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="history" color={color} />,
         }}
       />
     </Tabs>

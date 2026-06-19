@@ -266,7 +266,7 @@ export default function RepairComputerTabLayout() {
   const roleSwitcher = canSwitchRole ? (
     <>
       <Pressable accessibilityRole="button" onPress={handleSwitchRole} style={styles.switchButton}>
-        <ThemedText lightColor="#0A6E8A" darkColor="#0A6E8A" type="defaultSemiBold" style={styles.switchButtonText}>
+        <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold" style={styles.switchButtonText}>
           {getRoleLabel(currentRole)}
         </ThemedText>
       </Pressable>
@@ -320,6 +320,14 @@ export default function RepairComputerTabLayout() {
             tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
             headerShown: false,
             tabBarButton: HapticTab,
+            tabBarStyle: {
+              height: 68,
+              paddingBottom: 10,
+              paddingTop: 6,
+            },
+            tabBarLabelStyle: {
+              fontSize: 11,
+            },
           }}>
           <Tabs.Screen
             name="(user)/inform"
@@ -350,7 +358,7 @@ export default function RepairComputerTabLayout() {
             options={{
               title: TEXT.SHARED_HISTORY,
               href: visibleFor(PRIVILEGE_RC_USER),
-              tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="history" color={color} />,
             }}
           />
 
@@ -375,7 +383,7 @@ export default function RepairComputerTabLayout() {
             options={{
               title: TEXT.SHARED_HISTORY,
               href: visibleFor(PRIVILEGE_RC_WORKER),
-              tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="history" color={color} />,
             }}
           />
 
@@ -408,7 +416,7 @@ export default function RepairComputerTabLayout() {
             options={{
               title: TEXT.SHARED_HISTORY,
               href: visibleFor(PRIVILEGE_RC_FOREMAN),
-              tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+              tabBarIcon: ({ color }) => <IconSymbol size={28} name="history" color={color} />,
             }}
           />
         </Tabs>
@@ -439,9 +447,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#0A6E8A',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#751A1D',
     paddingHorizontal: 12,
   },
   switchButtonText: {
@@ -452,7 +458,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    backgroundColor: 'rgba(17, 24, 28, 0.45)',
     padding: 24,
   },
   selectModal: {
@@ -477,7 +483,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#E4F0F6',
+    backgroundColor: '#edeef2',
     paddingHorizontal: 14,
   },
   optionScroll: {
@@ -491,14 +497,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
+    borderColor: '#e1e2e6',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   selectedOption: {
-    borderColor: '#0A6E8A',
-    backgroundColor: '#0A6E8A',
+    borderColor: '#b33939',
+    backgroundColor: '#b33939',
   },
   optionText: {
     lineHeight: 20,

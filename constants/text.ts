@@ -225,6 +225,7 @@ export const TEXT = {
   REPAIR_COMPUTER_NO_JOBS_TO_MANAGE: 'ไม่มีงานที่ต้องจัดการ',
   REPAIR_COMPUTER_NO_NEW_JOBS: 'ไม่มีงานใหม่',
   REPAIR_COMPUTER_NO_WORKER_QUEUE: 'ไม่มีคิวช่าง',
+  REPAIR_COMPUTER_PENDING_JOB_TYPE: 'รอการระบุประเภทงาน',
   REPAIR_COMPUTER_PHONE: 'โทรศัพท์',
   REPAIR_COMPUTER_PHONE_LABEL: 'โทรศัพท์:',
   REPAIR_COMPUTER_QUEUE: 'คิว',
@@ -234,6 +235,7 @@ export const TEXT = {
   REPAIR_COMPUTER_STATUS_LABEL: 'สถานะ:',
   REPAIR_COMPUTER_SUPPLY_CODE: 'รหัสครุภัณฑ์',
   REPAIR_COMPUTER_SUPPLY_CODE_LABEL: 'รหัสครุภัณฑ์:',
+  REPAIR_COMPUTER_REPAIR_TYPE_LABEL: 'ประเภทงาน:',
   REPAIR_COMPUTER_TITLE: 'ซ่อมคอมพิวเตอร์',
   REPAIR_COMPUTER_UNABLE_TO_DELETE_JOB: 'ไม่สามารถลบงานซ่อมได้',
   REPAIR_COMPUTER_UNABLE_TO_LOAD_CURRENT_JOBS: 'ไม่สามารถโหลดงานปัจจุบันได้',
@@ -244,6 +246,8 @@ export const TEXT = {
   REPAIR_COMPUTER_UNABLE_TO_OPEN_JOB_DETAIL: 'ไม่สามารถเปิดรายละเอียดงานได้',
   REPAIR_COMPUTER_UNABLE_TO_SUBMIT_REQUEST: 'ไม่สามารถส่งคำขอแจ้งซ่อมคอมพิวเตอร์ได้',
   REPAIR_COMPUTER_UNABLE_TO_UPDATE_JOB: 'ไม่สามารถอัปเดตงานซ่อมคอมพิวเตอร์ได้',
+  REPAIR_COMPUTER_UPDATE_CONFIRM_MESSAGE: 'คุณต้องการอัปเดตข้อมูลงานซ่อมคอมพิวเตอร์ใช่หรือไม่?',
+  REPAIR_COMPUTER_UPDATE_CONFIRM_TITLE: 'ยืนยันการอัปเดต',
   REPAIR_COMPUTER_USER_LABEL: 'ผู้ใช้:',
   REPAIR_COMPUTER_WORKER: 'ช่าง',
   REPAIR_COMPUTER_WORKER_LABEL: 'ช่าง:',
@@ -273,6 +277,9 @@ export const TEXT = {
   PERSON_SEARCH_DESCRIPTION: 'หน้านี้คือหน้าค้นหาบุคลากร',
   PERSON_SEARCH_TITLE: 'ค้นหาบุคลากร',
 
+  // Examiner
+  EXAMINER_MENU_TITLE: 'Examiner',
+
   // Forgot Timestamp
   FORGOT_TIMESTAMP_DESCRIPTION: 'หน้านี้คือหน้าลืมลงเวลา',
   FORGOT_TIMESTAMP_TITLE: 'ลืมลงเวลา',
@@ -287,7 +294,7 @@ export const TEXT = {
 
   // Forgot Timestamp - index screen
   FORGOT_TIMESTAMP_APPEAL_DOCUMENT: 'กรุณาไปที่พอร์ทัล HR เพื่อยื่นอุทธรณ์พร้อมเอกสารประกอบ',
-  FORGOT_TIMESTAMP_NOTE_TEXT: 'คำขอที่ส่งก่อนวันศุกร์ เวลา 17:00 น. จะได้รับการประมวลผลในรอบเงินเดือนปัจจุบัน',
+  FORGOT_TIMESTAMP_NOTE_TEXT: 'หากคุณลืมลงเวลาเข้างานหรือออกงาน คุณสามารถกรอกแบบฟอร์มคำขอลืมลงเวลาภายใน 3 วันหลังจากวันที่ลืมลงเวลาได้ที่หน้านี้',
   FORGOT_TIMESTAMP_COMPANY_CYCLE_LABEL: 'รอบบริษัท',
 
   // Forgot Timestamp - detail screen

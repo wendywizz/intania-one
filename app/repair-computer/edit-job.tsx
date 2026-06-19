@@ -1,6 +1,7 @@
 import { TEXT } from "@/constants/text";
 import { router, useLocalSearchParams } from "expo-router";
 import { navPush } from "@/utils/navigation";
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -157,8 +158,8 @@ function PersonDetailCard({
       ) : (
         <View style={styles.personPhotoPlaceholder}>
           <ThemedText
-            lightColor="#0A6E8A"
-            darkColor="#0A6E8A"
+            lightColor="#b33939"
+            darkColor="#b33939"
             type="defaultSemiBold"
             style={styles.personPhotoInitial}
           >
@@ -693,7 +694,7 @@ export default function RepairComputerEditJobScreen() {
             ) : null}
             {informDate ? (
               <View style={styles.panelDateRow}>
-                <IconSymbol name="calendar" size={13} color="#687076" />
+                <IconSymbol name="calendar" size={13} color="#584140" />
                 <ThemedText style={styles.panelMeta}>{informDate}</ThemedText>
               </View>
             ) : null}
@@ -850,7 +851,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   panelSubtitle: {
-    color: '#687076',
+    color: '#584140',
     fontSize: 13,
     lineHeight: 19,
   },
@@ -861,7 +862,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   panelMeta: {
-    color: '#687076',
+    color: '#584140',
     fontSize: 13,
     lineHeight: 18,
   },
@@ -877,7 +878,7 @@ const styles = StyleSheet.create({
     gap: 12,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    borderColor: "#e1e2e6",
     padding: 14,
   },
   sectionTitle: {
@@ -888,9 +889,9 @@ const styles = StyleSheet.create({
     minHeight: 46,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
+    borderColor: "#e1e2e6",
     backgroundColor: "#FFFFFF",
-    color: "#11181C",
+    color: "#191c1f",
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     paddingHorizontal: 14,
@@ -901,7 +902,7 @@ const styles = StyleSheet.create({
   },
   readOnlyValue: {
     minHeight: 34,
-    color: "#11181C",
+    color: "#191c1f",
     fontSize: 14,
     lineHeight: 20,
     paddingVertical: 6,
@@ -913,14 +914,14 @@ const styles = StyleSheet.create({
     gap: 12,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    borderColor: "#e1e2e6",
     padding: 12,
   },
   personPhoto: {
     width: 56,
     height: 56,
     borderRadius: 8,
-    backgroundColor: "#E4F0F6",
+    backgroundColor: "#edeef2",
   },
   personPhotoPlaceholder: {
     width: 56,
@@ -928,7 +929,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#E4F0F6",
+    backgroundColor: "#edeef2",
   },
   personPhotoInitial: {
     fontSize: 20,
@@ -942,7 +943,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   personMeta: {
-    color: "#687076",
+    color: "#584140",
     fontSize: 13,
     lineHeight: 18,
     marginTop: 3,
@@ -954,14 +955,14 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   stateMessage: {
-    color: "#687076",
+    color: "#584140",
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
     textAlign: "center",
   },
   errorText: {
-    color: "#B42318",
+    color: "#ba1a1a",
   },
   retryButton: {
     minHeight: 48,
@@ -969,7 +970,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: "#b33939",
     marginTop: 24,
   },
   updateButton: {
@@ -979,7 +980,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: "#b33939",
     marginTop: 4,
   },
   disabledButton: {
@@ -998,7 +999,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: "#b33939",
     paddingHorizontal: 18,
   },
   rejectButton: {
@@ -1007,7 +1008,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#C44D58",
+    backgroundColor: "#ba1a1a",
     paddingHorizontal: 18,
   },
   operateButton: {
@@ -1017,7 +1018,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: "#b33939",
     marginTop: 4,
     paddingHorizontal: 18,
   },
@@ -1025,7 +1026,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    backgroundColor: "rgba(17, 24, 28, 0.45)",
     padding: 24,
   },
   confirmModal: {
@@ -1035,7 +1036,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   confirmMessage: {
-    color: "#687076",
+    color: "#584140",
     lineHeight: 20,
     marginTop: 10,
   },
@@ -1051,7 +1052,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
+    borderColor: "#e1e2e6",
     backgroundColor: "#FFFFFF",
   },
   confirmButton: {
@@ -1062,6 +1063,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: "#b33939",
   },
 });

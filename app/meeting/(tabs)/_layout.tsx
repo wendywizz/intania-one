@@ -16,6 +16,14 @@ export default function MeetingTabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarStyle: {
+          height: 68,
+          paddingBottom: 10,
+          paddingTop: 6,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+        },
       }}>
       <Tabs.Screen
         name="index"
@@ -35,7 +43,7 @@ export default function MeetingTabLayout() {
         name="history"
         options={{
           title: TEXT.SHARED_HISTORY,
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="history" color={color} />,
         }}
       />
     </Tabs>

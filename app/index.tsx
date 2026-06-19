@@ -53,6 +53,7 @@ const MENU_ITEMS: ReadonlyArray<{ title: string; href: string; icon: IconName }>
   { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: '/repair-computer', icon: 'laptop' },
   { title: TEXT.CALENDAR_TITLE, href: '/calendar', icon: 'calendar-range' },
   { title: TEXT.PERSON_SEARCH_TITLE, href: '/person-search', icon: 'user-round-search' },
+  { title: TEXT.EXAMINER_MENU_TITLE, href: '/examiner', icon: 'checkmark.circle.fill' },
 ];
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -161,45 +162,36 @@ function UpcomingShiftSection({ data, loading }: UpcomingShiftSectionProps) {
   const cards: React.ReactElement[] = [];
 
   if (data) {
-    // ── Repair computer: supply code + inform status name ───────────────────
+    // ── Repair computer: total count badge → navigate to repair-computer ────
     if (data.repairComputer.success && data.repairComputer.items.length > 0) {
-      data.repairComputer.items.forEach((item, i) => {
-        const supplyCode = getStr(item, 'supplyCode', 'supply_code', 'assetCode', 'asset_code', 'code');
-        const statusName = getStr(item, 'statusLabel', 'status_label', 'statusName', 'status_name', 'labelStatus', 'label_status', 'status');
-        const jobId = getStr(item, 'id', 'jobId', 'job_id', 'informId', 'inform_id');
-        cards.push(
-          <ShiftCard
-            key={`repair-${i}`}
-            icon="laptop"
-            iconBg="#FFF3F3"
-            iconColor={D.primaryContainer}
-            title={supplyCode || `Job #${jobId}` || 'Repair Job'}
-            subtitle={statusName}
-            onPress={jobId ? () => navPush({ pathname: '/repair-computer/edit-job', params: { id: jobId, backHref: '/', readonly: 'true' } } as Parameters<typeof navPush>[0]) : undefined}
-          />
-        );
-      });
+      const count = data.repairComputer.items.length;
+      cards.push(
+        <ShiftCard
+          key="repair-summary"
+          icon="laptop"
+          iconBg="#FFF3F3"
+          iconColor={D.primaryContainer}
+          title="Repair Jobs"
+          subtitle={`${count} active job${count > 1 ? 's' : ''}`}
+          onPress={() => navPush('/repair-computer' as Parameters<typeof navPush>[0])}
+        />
+      );
     }
 
-    // ── Absence: absence type + status name ─────────────────────────────────
+    // ── Absence: total count badge → navigate to absence history ────────────
     if (data.absence.success && data.absence.pending.length > 0) {
-      data.absence.pending.forEach((item, i) => {
-        const typeName = getStr(item, 'absenceTypeName', 'absentTypeName', 'absence_type_name', 'typeName', 'type_name', 'leaveTypeName', 'leave_type_name')
-          || getStr(item, 'absentType', 'absenceType', 'absence_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type')
-          || 'Leave Request';
-        const statusName = getStr(item, 'statusName', 'status_name', 'statusLabel', 'status_label', 'status');
-        cards.push(
-          <ShiftCard
-            key={`absence-${i}`}
-            icon="calendar-clock"
-            iconBg="#FFFBEB"
-            iconColor="#D97706"
-            title={typeName}
-            subtitle={statusName}
-            onPress={() => navPush('/absence/history' as Parameters<typeof navPush>[0])}
-          />
-        );
-      });
+      const count = data.absence.pending.length;
+      cards.push(
+        <ShiftCard
+          key="absence-summary"
+          icon="calendar-clock"
+          iconBg="#FFFBEB"
+          iconColor="#D97706"
+          title="Leave Requests"
+          subtitle={`${count} pending`}
+          onPress={() => navPush('/absence/history' as Parameters<typeof navPush>[0])}
+        />
+      );
     }
 
     // ── Meeting: total count → navigate to meeting list ────────────────────

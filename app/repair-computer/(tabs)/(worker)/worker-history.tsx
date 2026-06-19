@@ -22,6 +22,8 @@ export default function WorkerHistoryScreen() {
       loadingTitle={TEXT.SHARED_LOADING_HISTORY}
       loadPage={loadPage}
       detailBackHref="/repair-computer/worker-history"
+      detailPathname="/repair-computer/job-history-detail"
+      itemShowRepairType
     />
   );
 }

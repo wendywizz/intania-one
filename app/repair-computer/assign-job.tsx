@@ -446,8 +446,8 @@ export default function AssignJobScreen() {
         style={[styles.listItem, isSelected ? styles.selectedItem : undefined]}
       >
         <ThemedText
-          lightColor={isSelected ? "#FFFFFF" : undefined}
-          darkColor={isSelected ? "#FFFFFF" : undefined}
+          lightColor={isSelected ? "#b33939" : undefined}
+          darkColor={isSelected ? "#b33939" : undefined}
           type="defaultSemiBold"
         >
           {getRepairTypeName(item)}
@@ -483,8 +483,8 @@ export default function AssignJobScreen() {
         )}
         <View style={styles.workerText}>
           <ThemedText
-            lightColor={isSelected ? "#FFFFFF" : undefined}
-            darkColor={isSelected ? "#FFFFFF" : undefined}
+            lightColor={isSelected ? "#b33939" : undefined}
+            darkColor={isSelected ? "#b33939" : undefined}
             type="defaultSemiBold"
             style={styles.workerName}
           >
@@ -493,8 +493,8 @@ export default function AssignJobScreen() {
           {details.map((detail, index) => (
             <ThemedText
               key={`${String(detail)}-${index}`}
-              lightColor={isSelected ? "#E8F5F8" : "#687076"}
-              darkColor={isSelected ? "#E8F5F8" : "#687076"}
+              lightColor={isSelected ? "#751A1D" : "#584140"}
+              darkColor={isSelected ? "#751A1D" : "#584140"}
               style={styles.workerMeta}
             >
               {detail}
@@ -787,14 +787,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    borderColor: "#e1e2e6",
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   selectedItem: {
-    borderColor: "#0A6E8A",
-    backgroundColor: "#0A6E8A",
+    borderColor: "#b33939",
+    borderWidth: 1.5,
+    backgroundColor: "#FFF3F3",
   },
   workerItem: {
     minHeight: 78,
@@ -803,21 +804,21 @@ const styles = StyleSheet.create({
     gap: 12,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    borderColor: "#e1e2e6",
     backgroundColor: "#FFFFFF",
     padding: 12,
   },
   workerPhoto: {
     width: 52,
     height: 52,
-    borderRadius: 8,
-    backgroundColor: "#E4F0F6",
+    borderRadius: 26,
+    backgroundColor: "#edeef2",
   },
   workerPhotoPlaceholder: {
     width: 52,
     height: 52,
-    borderRadius: 8,
-    backgroundColor: "#D7E6EC",
+    borderRadius: 26,
+    backgroundColor: "#e1e2e6",
   },
   workerText: {
     flex: 1,
@@ -838,20 +839,20 @@ const styles = StyleSheet.create({
     gap: 12,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    borderColor: "#e1e2e6",
     padding: 12,
   },
   summaryPhoto: {
     width: 64,
     height: 64,
-    borderRadius: 8,
-    backgroundColor: "#E4F0F6",
+    borderRadius: 32,
+    backgroundColor: "#edeef2",
   },
   summaryPhotoPlaceholder: {
     width: 64,
     height: 64,
-    borderRadius: 8,
-    backgroundColor: "#D7E6EC",
+    borderRadius: 32,
+    backgroundColor: "#e1e2e6",
   },
   primaryButton: {
     minHeight: 48,
@@ -860,7 +861,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: "#b33939",
     marginTop: 12,
     paddingHorizontal: 18,
   },
@@ -874,14 +875,14 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   stateMessage: {
-    color: "#687076",
+    color: "#584140",
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
     textAlign: "center",
   },
   errorText: {
-    color: "#B42318",
+    color: "#ba1a1a",
   },
   retryButton: {
     minHeight: 48,
@@ -889,7 +890,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: "#b33939",
     marginTop: 24,
   },
   emptyCard: {
@@ -897,11 +898,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    borderColor: "#e1e2e6",
     padding: 16,
   },
   emptyMessage: {
-    color: "#687076",
+    color: "#584140",
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
@@ -916,7 +917,7 @@ const styles = StyleSheet.create({
   },
   rowDetail: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#D7E6EC",
+    borderBottomColor: "#e1e2e6",
     paddingBottom: 12,
   },
   rowTitle: {
@@ -924,7 +925,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   rowDescription: {
-    color: "#687076",
+    color: "#584140",
     fontSize: 14,
     lineHeight: 20,
     marginTop: 4,
@@ -933,7 +934,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    backgroundColor: "rgba(17, 24, 28, 0.45)",
     padding: 24,
   },
   confirmModal: {
@@ -943,7 +944,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   confirmMessage: {
-    color: "#687076",
+    color: "#584140",
     lineHeight: 20,
     marginTop: 10,
   },
@@ -959,7 +960,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
+    borderColor: "#e1e2e6",
     backgroundColor: "#FFFFFF",
   },
   confirmButton: {
@@ -970,6 +971,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: "#b33939",
   },
 });

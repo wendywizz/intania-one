@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   headingDescription: {
-    color: '#687076',
+    color: '#584140',
     fontSize: 13,
     lineHeight: 19,
   },
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
   },
   fieldDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#E8EAED',
+    backgroundColor: '#e1e2e6',
     marginHorizontal: 16,
   },
   fieldLabelRow: {
@@ -457,9 +457,9 @@ const styles = StyleSheet.create({
     minHeight: 46,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E0E8',
-    backgroundColor: '#F8F9FA',
-    color: '#11181C',
+    borderColor: '#e1e2e6',
+    backgroundColor: '#f2f3f7',
+    color: '#191c1f',
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     paddingHorizontal: 14,
@@ -469,10 +469,10 @@ const styles = StyleSheet.create({
     minHeight: 96,
   },
   inputError: {
-    borderColor: '#C44D58',
+    borderColor: '#ba1a1a',
   },
   fieldError: {
-    color: '#C44D58',
+    color: '#ba1a1a',
     fontSize: 12,
     lineHeight: 17,
   },
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   messageText: {
-    color: '#687076',
+    color: '#584140',
     fontSize: 14,
     lineHeight: 20,
   },
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    backgroundColor: 'rgba(17, 24, 28, 0.45)',
     padding: 24,
   },
   confirmModal: {
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   confirmMessage: {
-    color: '#687076',
+    color: '#584140',
     lineHeight: 20,
     marginTop: 10,
   },
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#BFD2DA',
+    borderColor: '#e1e2e6',
     backgroundColor: '#FFFFFF',
   },
   confirmSubmitButton: {

@@ -60,6 +60,7 @@ export default function RootLayout() {
               <Stack.Screen name="openid-webview" options={{ headerShown: false }} />
               <Stack.Screen name="oauth/callback" options={{ headerShown: false }} />
               <Stack.Screen name="person-search" options={{ headerShown: false }} />
+              <Stack.Screen name="examiner" options={{ headerShown: false }} />
               <Stack.Screen name="my-profile" options={{ headerShown: false }} />
               <Stack.Screen name="edit-profile-field" options={{ headerShown: false }} />
               <Stack.Screen name="modal" options={{ presentation: 'modal', title: TEXT.SHARED_MODAL }} />

@@ -262,12 +262,12 @@ export default function PersonSearchScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.PERSON_SEARCH_TITLE} />
+      <NavTopBar title="Search Person" />
 
-      <View style={styles.searchRow}>
+      <View style={styles.content}>
         <View style={styles.inputWrap}>
           <View pointerEvents="none" style={styles.searchIconWrap}>
-            <Search size={22} color="#8A969C" />
+            <Search size={18} color="#8A969C" />
           </View>
           <TextInput
             accessibilityLabel={TEXT.SHARED_SEARCH_NAME_PLACEHOLDER}
@@ -275,7 +275,7 @@ export default function PersonSearchScreen() {
             autoCorrect={false}
             clearButtonMode="while-editing"
             onChangeText={setKeyword}
-            placeholder="Search by name or Department"
+            placeholder="Search by name or department..."
             placeholderTextColor="#8A969C"
             returnKeyType="search"
             style={styles.input}
@@ -285,58 +285,68 @@ export default function PersonSearchScreen() {
             {isLoading ? <ActivityIndicator color="#B33939" size="small" /> : null}
           </View>
         </View>
-      </View>
 
-      {recentKeywords.length > 0 ? (
-        <ScrollView
-          horizontal
-          keyboardShouldPersistTaps="handled"
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.keywordsContent}
-          style={styles.keywordsRow}
-        >
-          {recentKeywords.map((term) => (
-            <Pressable
-              key={term}
-              accessibilityRole="button"
-              onPress={() => handleBadgePress(term)}
-              style={({ pressed }) => [styles.keywordBadge, pressed && styles.keywordBadgePressed]}
-            >
-              <ThemedText style={styles.keywordBadgeText} numberOfLines={1}>
-                {term}
+        {recentKeywords.length > 0 ? (
+          <ScrollView
+            horizontal
+            keyboardShouldPersistTaps="handled"
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.keywordsContent}
+            style={styles.keywordsRow}
+          >
+            {recentKeywords.map((term, index) => (
+              <Pressable
+                key={term}
+                accessibilityRole="button"
+                onPress={() => handleBadgePress(term)}
+                style={({ pressed }) => [
+                  styles.keywordBadge,
+                  index === 0 && styles.keywordBadgeActive,
+                  pressed && styles.keywordBadgePressed,
+                ]}
+              >
+                <ThemedText
+                  style={[
+                    styles.keywordBadgeText,
+                    index === 0 && styles.keywordBadgeTextActive,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {term}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </ScrollView>
+        ) : null}
+
+        {error ? (
+          <View style={styles.errorBlock}>
+            <ThemedText style={styles.errorText}>{error}</ThemedText>
+            <Pressable accessibilityRole="button" onPress={handleRetry} style={styles.retryButton}>
+              <ThemedText lightColor="#B33939" darkColor="#B33939" type="defaultSemiBold">
+                {TEXT.SHARED_RETRY}
               </ThemedText>
             </Pressable>
-          ))}
-        </ScrollView>
-      ) : null}
+          </View>
+        ) : null}
 
-      {error ? (
-        <View style={styles.errorBlock}>
-          <ThemedText style={styles.errorText}>{error}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={handleRetry} style={styles.retryButton}>
-            <ThemedText lightColor="#B33939" darkColor="#B33939" type="defaultSemiBold">
-              {TEXT.SHARED_RETRY}
-            </ThemedText>
-          </Pressable>
+        <View style={[styles.resultsArea, (results.length > 0 || showEmptyHint) && styles.resultsCard]}>
+          <FlatList
+            style={styles.flatList}
+            contentContainerStyle={styles.listContent}
+            data={results}
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            keyExtractor={getPersonSearchKey}
+            ListEmptyComponent={
+              showEmptyHint ? (
+                <ThemedText style={styles.emptyText}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
+              ) : null
+            }
+            renderItem={({ item }) => <PersonSearchListItem item={item} />}
+          />
         </View>
-      ) : null}
-
-      <View style={[styles.resultsArea, (results.length > 0 || showEmptyHint) && styles.resultsCard]}>
-        <FlatList
-          style={styles.flatList}
-          contentContainerStyle={styles.listContent}
-          data={results}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          keyboardDismissMode="on-drag"
-          keyboardShouldPersistTaps="handled"
-          keyExtractor={getPersonSearchKey}
-          ListEmptyComponent={
-            showEmptyHint ? (
-              <ThemedText style={styles.emptyText}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
-            ) : null
-          }
-          renderItem={({ item }) => <PersonSearchListItem item={item} />}
-        />
       </View>
     </ThemedView>
   );
@@ -345,12 +355,12 @@ export default function PersonSearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: '#F7F7FA',
   },
-  searchRow: {
+  content: {
+    flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingTop: 18,
   },
   inputWrap: {
     position: 'relative',
@@ -358,26 +368,26 @@ const styles = StyleSheet.create({
   },
   searchIconWrap: {
     position: 'absolute',
-    left: 12,
+    left: 14,
     top: 0,
     bottom: 0,
-    width: 24,
+    width: 20,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
   },
   input: {
-    minHeight: 46,
-    borderRadius: 10,
+    height: 48,
+    borderRadius: 0,
     backgroundColor: '#FFFFFF',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#E8ECF0',
+    borderWidth: 1,
+    borderColor: '#E6E7EC',
     color: '#11181C',
     fontFamily: AppFonts.psuRegular,
-    fontSize: 14,
-    paddingLeft: 44,
+    fontSize: 13,
+    paddingLeft: 42,
     paddingRight: 42,
-    paddingVertical: 10,
+    paddingVertical: 0,
   },
   spinnerWrap: {
     position: 'absolute',
@@ -389,79 +399,82 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   keywordsRow: {
-    paddingBottom: 8,
+    marginTop: 14,
+    marginHorizontal: -16,
+    maxHeight: 34,
   },
   keywordsContent: {
     paddingHorizontal: 16,
-    gap: 8,
+    gap: 10,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   keywordBadge: {
-    height: 32,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#E8ECF0',
+    height: 30,
+    minWidth: 76,
+    paddingHorizontal: 16,
+    borderRadius: 15,
+    backgroundColor: '#EEF0F4',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  keywordBadgeActive: {
+    backgroundColor: '#9E1F20',
+  },
   keywordBadgePressed: {
-    backgroundColor: '#F2F3F7',
+    opacity: 0.82,
   },
   keywordBadgeText: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#444D5B',
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#6A6F78',
     fontFamily: AppFonts.psuRegular,
   },
+  keywordBadgeTextActive: {
+    color: '#FFFFFF',
+  },
   resultsArea: {
-    flex: 2,
-    marginHorizontal: 16,
-    marginTop: 8,
+    marginTop: 22,
+    flexGrow: 0,
+    flexShrink: 1,
   },
   resultsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 0,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#ECEEF3',
+    maxHeight: '72%',
   },
-  flatList: {
-    flex: 1,
-  },
+  flatList: {},
   listContent: {
-    paddingBottom: 8,
+    paddingVertical: 0,
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    marginHorizontal: 16,
-    backgroundColor: '#E1E2E6',
+    marginLeft: 82,
+    backgroundColor: '#E7E8EC',
   },
   listItemRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    minHeight: 78,
+    paddingVertical: 8,
+    paddingHorizontal: 13,
     gap: 12,
   },
   avatarWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     overflow: 'hidden',
     backgroundColor: '#F2F3F7',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#E8ECF0',
-    marginTop: 1,
   },
   avatar: {
-    width: 48,
-    height: 48,
+    width: 58,
+    height: 58,
   },
   avatarPlaceholder: {
     backgroundColor: '#E8ECF0',
@@ -469,24 +482,22 @@ const styles = StyleSheet.create({
   listItemText: {
     flex: 1,
     minWidth: 0,
-    justifyContent: 'flex-start',
-    alignSelf: 'flex-start',
+    justifyContent: 'center',
   },
   subtitle: {
-    marginTop: 4,
-    fontSize: 13,
-    lineHeight: 18,
+    marginTop: 3,
+    fontSize: 11,
+    lineHeight: 14,
     color: '#687076',
   },
   emptyText: {
-    marginTop: 24,
+    marginVertical: 22,
     textAlign: 'center',
     color: '#687076',
     fontSize: 14,
   },
   errorBlock: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingTop: 14,
     gap: 8,
   },
   errorText: {

@@ -16,6 +16,14 @@ export default function ForgotTimestampTabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarStyle: {
+          height: 68,
+          paddingBottom: 10,
+          paddingTop: 6,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+        },
       }}
     >
       <Tabs.Screen
@@ -32,7 +40,7 @@ export default function ForgotTimestampTabLayout() {
         options={{
           title: TEXT.SHARED_HISTORY,
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="calendar" color={color} />
+            <IconSymbol size={28} name="history" color={color} />
           ),
         }}
       />

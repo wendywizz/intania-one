@@ -1,5 +1,5 @@
 ---
-name: Intania Staff Buddy
+name: Professional HR Systems
 colors:
   surface: '#f8f9fd'
   surface-dim: '#d9dade'

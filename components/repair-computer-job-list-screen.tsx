@@ -45,7 +45,12 @@ type RepairComputerJobListScreenProps = {
   detailBackHref: string;
   detailPathname?:
     | "/repair-computer/edit-job"
-    | "/repair-computer/foreman-job-detail";
+    | "/repair-computer/foreman-job-detail"
+    | "/repair-computer/job-history-detail"
+    | "/repair-computer/user-job-detail"
+    | "/repair-computer/worker-job-detail";
+  itemRepairTypeOnly?: boolean;
+  itemShowRepairType?: boolean;
 };
 
 function getJobKey(job: RepairComputer, index: number) {
@@ -93,6 +98,8 @@ export function RepairComputerJobListScreen({
   loadPage,
   detailBackHref,
   detailPathname = "/repair-computer/edit-job",
+  itemRepairTypeOnly = false,
+  itemShowRepairType = false,
 }: RepairComputerJobListScreenProps) {
   const { height } = useWindowDimensions();
   const { currentRole, roleSwitcher } = useRepairComputerRole();
@@ -256,12 +263,12 @@ export function RepairComputerJobListScreen({
         onEndReached={loadMoreJobs}
         onEndReachedThreshold={0.4}
         renderItem={({ item }) => (
-          <RepairComputerJobListItem job={item} onPress={openJobDetail} />
+          <RepairComputerJobListItem job={item} repairTypeOnly={itemRepairTypeOnly} showRepairType={itemShowRepairType} onPress={openJobDetail} />
         )}
         ListFooterComponent={
           isLoadingMore ? (
             <View style={styles.footerLoader}>
-              <ActivityIndicator color="#0A6E8A" size="small" />
+              <ActivityIndicator color="#b33939" size="small" />
             </View>
           ) : null
         }
@@ -287,21 +294,17 @@ export function RepairComputerJobListScreen({
       />
 
       <View style={styles.content}>
-        <ThemedView
-          style={styles.panel}
-          lightColor="#FFFFFF"
-          darkColor="#1F2B30"
-        >
-          <View style={styles.panelHeader}>
-            <ThemedText type="subtitle">{screenTitle}</ThemedText>
-            {description ? (
-              <ThemedText style={styles.panelDescription}>
-                {description}
-              </ThemedText>
-            ) : null}
-          </View>
+        <View style={styles.panelHeader}>
+          <ThemedText type="subtitle">{screenTitle}</ThemedText>
+          {description ? (
+            <ThemedText style={styles.panelDescription}>
+              {description}
+            </ThemedText>
+          ) : null}
+        </View>
+        <View style={styles.listWrapper}>
           {renderContent()}
-        </ThemedView>
+        </View>
       </View>
     </ThemedView>
   );
@@ -314,28 +317,26 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
   },
-  panel: {
+  listWrapper: {
     flex: 1,
-    borderRadius: 8,
-    padding: 0,
   },
   panelHeader: {
     paddingTop: 16,
     paddingHorizontal: 16,
-    paddingBottom: 4,
+    paddingBottom: 12,
     gap: 4,
   },
   panelDescription: {
-    color: '#687076',
+    color: '#584140',
     fontSize: 13,
     lineHeight: 19,
   },
   listContent: {
-    gap: 12,
-    paddingTop: 16,
-    paddingBottom: 8,
+    gap: 10,
+    paddingTop: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   stateContent: {
     flex: 1,
@@ -344,14 +345,14 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   stateMessage: {
-    color: "#687076",
+    color: "#584140",
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
     textAlign: "center",
   },
   errorText: {
-    color: "#B42318",
+    color: "#ba1a1a",
   },
   retryButton: {
     minHeight: 48,
@@ -359,7 +360,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: "#b33939",
     marginTop: 24,
   },
   emptyCard: {
@@ -367,11 +368,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    borderColor: "#e1e2e6",
     padding: 16,
   },
   emptyMessage: {
-    color: "#687076",
+    color: "#584140",
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",

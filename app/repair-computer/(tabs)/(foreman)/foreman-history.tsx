@@ -22,6 +22,8 @@ export default function ForemanHistoryScreen() {
       loadingTitle={TEXT.SHARED_LOADING_HISTORY}
       loadPage={loadPage}
       detailBackHref="/repair-computer/foreman-history"
+      detailPathname="/repair-computer/job-history-detail"
+      itemRepairTypeOnly
     />
   );
 }

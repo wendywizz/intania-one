@@ -20,106 +20,57 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import {
-    REPAIR_STATUS_NEW_JOB,
-    REPAIR_STATUS_WAIT_FOREMAN,
-    REPAIR_STATUS_WORKER_REJECT,
+    REPAIR_STATUS_WAIT_WORKER,
+    REPAIR_STATUS_WORKING,
 } from "@/constants/types";
 import type { RepairComputer } from "@/models/types";
 import { getPersonPhoto } from "@/services/personService";
 import {
-    foremanCloseJob,
-    foremanForwardForeman,
-    foremanForwardWorker,
     getJobDetail,
+    submitJob,
+    workerReceiveJob,
 } from "@/services/repairComputerService";
 import { formatDateTime } from "@/utils/date-format";
 import { getRepairStatusBadgeStyle } from "@/utils/repair-computer-status";
 
 const TEXT_NONE = "-";
 const TEXT_RC_NO_SUPPLYCODE = "No supply code";
-type ForemanCurrentJobAction = "forwardWorker" | "forwardForeman" | "closeJob";
 
 const detailFields = ["detail", "description", "repairDetail", "repair_detail", "problem"];
 const repairTypeNameFields = ["repairTypeName", "repair_type_name", "problemTypeName", "problem_type_name"];
 const requesterNameFields = ["staffFullname", "staff_fullname", "staffullName", "requesterFullname", "requester_fullname"];
 const requesterIdFields = [
-  "staff_uni_id",
-  "staffUniId",
-  "staffUNIId",
-  "STAFF_UNI_ID",
-  "staffId",
-  "staffID",
-  "staff_id",
-  "STAFF_ID",
-  "STAFFID",
-  "UNI_STAFF_ID",
-  "uni_staff_id",
-  "uniStaffId",
-  "uniStaffID",
-  "requesterId",
-  "requester_id",
-  "informStaffId",
-  "inform_staff_id",
-];
-const workerNameFields = ["workerFullname", "worker_fullname", "workerName", "worker_name"];
-const workerIdFields = [
-  "worker_uni_id",
-  "workerUniId",
-  "workerUNIId",
-  "WORKER_UNI_ID",
-  "worker",
-  "workerId",
-  "workerID",
-  "worker_id",
-  "workerStaffId",
-  "worker_staff_id",
+  "staff_uni_id", "staffUniId", "staffUNIId", "STAFF_UNI_ID",
+  "staffId", "staffID", "staff_id", "STAFF_ID", "STAFFID",
+  "UNI_STAFF_ID", "uni_staff_id", "uniStaffId", "uniStaffID",
+  "requesterId", "requester_id", "informStaffId", "inform_staff_id",
 ];
 const foremanNameFields = ["foremanFullname", "foreman_fullname", "foremanName", "foreman_name"];
 const foremanIdFields = [
-  "foreman_uni_id",
-  "foremanUniId",
-  "foremanUNIId",
-  "FOREMAN_UNI_ID",
-  "foreman",
-  "foremanId",
-  "foremanID",
-  "foreman_id",
-  "foremanStaffId",
-  "foreman_staff_id",
+  "foreman_uni_id", "foremanUniId", "foremanUNIId", "FOREMAN_UNI_ID",
+  "foreman", "foremanId", "foremanID", "foreman_id", "foremanStaffId", "foreman_staff_id",
 ];
 const statusNameFields = ["statusName", "status_name", "statusLabel", "status_label"];
+const statusIdFields = ["status", "state", "statusId", "status_id"];
 
 function getJobText(job: RepairComputer | null, fields: string[]) {
-  if (!job) {
-    return "";
-  }
-
+  if (!job) return "";
   for (const field of fields) {
     const value = job[field];
-
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-
-    if (typeof value === "number") {
-      return String(value);
-    }
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number") return String(value);
   }
-
   return "";
 }
 
-type RowDetailProps = {
-  description: string;
-  title: string;
-};
+function normalizeStaffId(staffId: string) {
+  return /^\d+$/.test(staffId) ? staffId.padStart(7, "0") : staffId;
+}
 
-function RowDetail({ description, title }: RowDetailProps) {
+function RowDetail({ description, title }: { description: string; title: string }) {
   return (
     <View style={styles.rowDetail}>
-      <ThemedText style={styles.rowTitle}>
-        {title}
-      </ThemedText>
+      <ThemedText style={styles.rowTitle}>{title}</ThemedText>
       <ThemedText type="defaultSemiBold" style={styles.rowDescription}>
         {description}
       </ThemedText>
@@ -127,17 +78,7 @@ function RowDetail({ description, title }: RowDetailProps) {
   );
 }
 
-function normalizeStaffId(staffId: string) {
-  return /^\d+$/.test(staffId) ? staffId.padStart(7, "0") : staffId;
-}
-
-function SectionCard({
-  children,
-  title,
-}: {
-  children: ReactNode;
-  title: string;
-}) {
+function SectionCard({ children, title }: { children: ReactNode; title: string }) {
   return (
     <ThemedView style={styles.sectionCard} lightColor="#FFFFFF" darkColor="#151718">
       <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
@@ -186,36 +127,31 @@ function PersonSummaryCard({
           {name || fallbackTitle}
         </ThemedText>
         {role ? (
-          <ThemedText style={styles.personRole} numberOfLines={1}>
-            {role}
-          </ThemedText>
+          <ThemedText style={styles.personRole} numberOfLines={1}>{role}</ThemedText>
         ) : null}
         {meta ? (
-          <ThemedText style={styles.personMeta} numberOfLines={2}>
-            {meta}
-          </ThemedText>
+          <ThemedText style={styles.personMeta} numberOfLines={2}>{meta}</ThemedText>
         ) : null}
       </View>
     </View>
   );
 }
 
-export default function ForemanJobDetailScreen() {
+export default function WorkerJobDetailScreen() {
   const params = useLocalSearchParams<{
     backHref?: string | string[];
     id?: string | string[];
   }>();
   const jobId = Array.isArray(params.id) ? params.id[0] : params.id;
-  const backHrefParam = Array.isArray(params.backHref)
-    ? params.backHref[0]
-    : params.backHref;
-  const backHref = backHrefParam || "/repair-computer/foreman-new-job";
+  const backHrefParam = Array.isArray(params.backHref) ? params.backHref[0] : params.backHref;
+  const backHref = backHrefParam || "/repair-computer/worker-new-job";
+
   const [data, setData] = useState<RepairComputer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmAction, setConfirmAction] =
-    useState<ForemanCurrentJobAction | null>(null);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAcceptConfirmOpen, setIsAcceptConfirmOpen] = useState(false);
+  const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "">("");
 
@@ -225,19 +161,17 @@ export default function ForemanJobDetailScreen() {
       setIsLoading(false);
       return;
     }
-
     setIsLoading(true);
     setError("");
     setToastMessage("");
     setToastType("");
-
     try {
       const result = await getJobDetail(jobId);
       setData(result);
-    } catch (error) {
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : TEXT.REPAIR_COMPUTER_UNABLE_TO_LOAD_JOB_DETAIL,
       );
       setData(null);
@@ -250,101 +184,105 @@ export default function ForemanJobDetailScreen() {
     loadDetail();
   }, [loadDetail]);
 
-  const status = getJobText(data, ["status", "state", "statusId", "status_id"]);
-  const showActionButtons = status === REPAIR_STATUS_NEW_JOB && Boolean(jobId);
-  const showWaitForemanActionButtons =
-    status === REPAIR_STATUS_WAIT_FOREMAN && Boolean(jobId);
-  const showAssignedWorker = true;
-  const informDateTime = getJobText(data, [
-    "informDateTime",
-    "inform_date_time",
-    "informDate",
-    "inform_date",
-  ]);
-  const rejectDetail = getJobText(data, [
-    "rejectDetail",
-    "reject_detail",
-    "rejectReason",
-    "reject_reason",
-    "reason",
-  ]);
-  const repairTypeName = getJobText(data, repairTypeNameFields);
-  const requesterName = getJobText(data, requesterNameFields);
-  const requesterId = getJobText(data, requesterIdFields);
-  const deptName = getJobText(data, ["deptName", "dept_name", "department"]);
-  const supplyCode = getJobText(data, ["supplyCode", "supply_code"]);
-  const phone = getJobText(data, ["phone", "tel", "telephone"]);
-  const detail = getJobText(data, detailFields);
-  const statusName = getJobText(data, statusNameFields) || status || TEXT_NONE;
-  const badgeStyle = getRepairStatusBadgeStyle(status);
-  const workerName = getJobText(data, workerNameFields);
-  const workerId = getJobText(data, workerIdFields);
-  const foremanName = getJobText(data, foremanNameFields);
-  const foremanId = getJobText(data, foremanIdFields);
-  const pageTitle =
-    backHref === "/repair-computer/manage-job"
-      ? TEXT.REPAIR_COMPUTER_MANAGE_JOB
-      : TEXT.REPAIR_COMPUTER_JOB_DETAIL;
-
-  const handleBackPress = () => {
-    router.replace(backHref as Parameters<typeof router.replace>[0]);
-  };
-
-  const getConfirmContent = (action: ForemanCurrentJobAction) => {
-    if (action === "forwardWorker") {
-      return {
-        title: "Confirm Forward Worker",
-        message: "Do you want to forward this job back to worker?",
-        submit: () => foremanForwardWorker(jobId || ""),
-      };
-    }
-
-    if (action === "forwardForeman") {
-      return {
-        title: "Confirm Forward Foreman",
-        message: "Do you want to forward this job to foreman?",
-        submit: () => foremanForwardForeman(jobId || ""),
-      };
-    }
-
-    return {
-      title: "Confirm Close Job",
-      message: "Do you want to close this repair computer job?",
-      submit: () => foremanCloseJob(jobId || ""),
-    };
-  };
-
-  const handleConfirmAction = async () => {
-    if (!jobId || !confirmAction || isSubmitting) {
-      return;
-    }
-
+  const handleAccept = async () => {
+    if (!jobId || isSubmitting) return;
     setIsSubmitting(true);
     setToastMessage("");
     setToastType("");
-
     try {
-      const result = await getConfirmContent(confirmAction).submit();
-
+      const result = await workerReceiveJob(jobId, true);
       setToastType("success");
       setToastMessage(
         result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE,
       );
       setTimeout(() => {
-        router.replace(backHref as Parameters<typeof router.replace>[0]);
+        router.replace("/repair-computer/worker-current-job");
       }, 1500);
-    } catch (error) {
+    } catch (err) {
       setToastType("error");
       setToastMessage(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : TEXT.REPAIR_COMPUTER_UNABLE_TO_UPDATE_JOB,
       );
     } finally {
       setIsSubmitting(false);
-      setConfirmAction(null);
+      setIsAcceptConfirmOpen(false);
     }
   };
+
+  const handleReject = () => {
+    if (!jobId) return;
+    navPush({
+      pathname: "/repair-computer/worker-reject-job",
+      params: { id: jobId },
+    } as Parameters<typeof navPush>[0]);
+  };
+
+  const handleOperate = () => {
+    if (!jobId) return;
+    navPush({
+      pathname: "/repair-computer/operate-job",
+      params: { id: jobId },
+    } as Parameters<typeof navPush>[0]);
+  };
+
+  const handleCloseJob = async () => {
+    if (!jobId || isSubmitting) return;
+    setIsSubmitting(true);
+    setToastMessage("");
+    setToastType("");
+    try {
+      const result = await submitJob(jobId);
+      setToastType("success");
+      setToastMessage(
+        result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE,
+      );
+      setTimeout(() => {
+        router.replace("/repair-computer/worker-current-job");
+      }, 1500);
+    } catch (err) {
+      setToastType("error");
+      setToastMessage(
+        err instanceof Error
+          ? err.message
+          : TEXT.REPAIR_COMPUTER_UNABLE_TO_UPDATE_JOB,
+      );
+    } finally {
+      setIsSubmitting(false);
+      setIsCloseConfirmOpen(false);
+    }
+  };
+
+  const handleBackPress = () => {
+    router.replace(backHref as Parameters<typeof router.replace>[0]);
+  };
+
+  const statusId = getJobText(data, statusIdFields);
+  const statusName = getJobText(data, statusNameFields) || statusId || TEXT_NONE;
+  const repairTypeName = getJobText(data, repairTypeNameFields);
+  const detail = getJobText(data, detailFields);
+  const informDateTime = getJobText(data, [
+    "informDateTime", "inform_date_time", "informDate", "inform_date",
+  ]);
+  const supplyCode = getJobText(data, ["supplyCode", "supply_code"]);
+  const phone = getJobText(data, ["phone", "tel", "telephone"]);
+  const deptName = getJobText(data, ["deptName", "dept_name", "department"]);
+  const requesterName = getJobText(data, requesterNameFields);
+  const requesterId = getJobText(data, requesterIdFields);
+  const foremanName = getJobText(data, foremanNameFields);
+  const foremanId = getJobText(data, foremanIdFields);
+  const badgeStyle = getRepairStatusBadgeStyle(statusId);
+
+  const isFromNewJob = backHref === "/repair-computer/worker-new-job";
+  const isFromCurrentJob = backHref === "/repair-computer/worker-current-job";
+  const showAcceptReject = isFromNewJob && Boolean(jobId);
+  const showOperate = isFromCurrentJob && statusId === REPAIR_STATUS_WAIT_WORKER;
+  const showCloseJob = isFromCurrentJob && statusId === REPAIR_STATUS_WORKING;
+
+  const pageTitle = isFromNewJob
+    ? TEXT.REPAIR_COMPUTER_NEW_JOB
+    : TEXT.REPAIR_COMPUTER_CURRENT_JOB;
 
   const renderContent = () => {
     if (isLoading) {
@@ -359,22 +297,14 @@ export default function ForemanJobDetailScreen() {
     if (error) {
       return (
         <View style={styles.stateContent}>
-          <ThemedText type="subtitle">
-            {TEXT.SHARED_SOMETHING_WENT_WRONG}
-          </ThemedText>
-          <ThemedText style={[styles.stateMessage, styles.errorText]}>
-            {error}
-          </ThemedText>
+          <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
+          <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
           <Pressable
             accessibilityRole="button"
             onPress={loadDetail}
             style={styles.retryButton}
           >
-            <ThemedText
-              lightColor="#FFFFFF"
-              darkColor="#FFFFFF"
-              type="defaultSemiBold"
-            >
+            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
               {TEXT.SHARED_RETRY}
             </ThemedText>
           </Pressable>
@@ -404,37 +334,41 @@ export default function ForemanJobDetailScreen() {
             </View>
           </View>
 
-          <View style={styles.summaryMetaGrid}>
-            <View style={styles.summaryMetaItem}>
-              <IconSymbol name="calendar" size={15} color="#584140" />
-              <ThemedText style={styles.summaryMetaText} numberOfLines={2}>
-                {informDateTime ? formatDateTime(informDateTime) : TEXT_NONE}
-              </ThemedText>
+          {informDateTime ? (
+            <View style={styles.summaryMetaGrid}>
+              <View style={styles.summaryMetaItem}>
+                <IconSymbol name="calendar" size={15} color="#584140" />
+                <ThemedText style={styles.summaryMetaText} numberOfLines={2}>
+                  {formatDateTime(informDateTime)}
+                </ThemedText>
+              </View>
             </View>
-          </View>
+          ) : null}
         </ThemedView>
 
         <SectionCard title="User Inform">
           <PersonSummaryCard
             fallbackTitle="User"
             id={requesterId}
-            meta={`${TEXT.SHARED_DEPARTMENT_LABEL} ${deptName || TEXT_NONE}`}
+            meta={deptName ? `${TEXT.SHARED_DEPARTMENT_LABEL} ${deptName}` : undefined}
             name={requesterName}
           />
           <View style={styles.detailGrid}>
-            <RowDetail title={TEXT.REPAIR_COMPUTER_PHONE_LABEL} description={phone || TEXT_NONE} />
             <RowDetail
-              title={TEXT.REPAIR_COMPUTER_INFORM_DATE_LABEL}
-              description={informDateTime ? formatDateTime(informDateTime) : TEXT_NONE}
+              title={TEXT.REPAIR_COMPUTER_PHONE_LABEL}
+              description={phone || TEXT_NONE}
             />
+            {informDateTime ? (
+              <RowDetail
+                title={TEXT.REPAIR_COMPUTER_INFORM_DATE_LABEL}
+                description={formatDateTime(informDateTime)}
+              />
+            ) : null}
           </View>
         </SectionCard>
 
         <SectionCard title={TEXT.REPAIR_COMPUTER_DETAIL}>
-          <RowDetail
-            title="Job Type"
-            description={repairTypeName || TEXT_NONE}
-          />
+          <RowDetail title="Job Type" description={repairTypeName || TEXT_NONE} />
           <RowDetail
             title={TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL}
             description={supplyCode || TEXT_RC_NO_SUPPLYCODE}
@@ -449,145 +383,71 @@ export default function ForemanJobDetailScreen() {
           </View>
         </SectionCard>
 
-        {status !== REPAIR_STATUS_NEW_JOB && showAssignedWorker ? (
+        {(foremanName || foremanId) ? (
           <SectionCard title={TEXT.REPAIR_COMPUTER_ASSIGN_CONFIRM}>
-            {workerName || workerId ? (
-              <PersonSummaryCard
-                fallbackTitle="Technician"
-                id={workerId}
-                name={workerName}
-                role="Technician"
-              />
-            ) : null}
-            {foremanName || foremanId ? (
-              <PersonSummaryCard
-                fallbackTitle={TEXT.REPAIR_COMPUTER_FOREMAN}
-                id={foremanId}
-                name={foremanName}
-                role={TEXT.REPAIR_COMPUTER_FOREMAN}
-              />
-            ) : null}
-            {status === REPAIR_STATUS_WORKER_REJECT ? (
-              <RowDetail
-                title={TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL}
-                description={rejectDetail || TEXT_NONE}
-              />
-            ) : null}
+            <PersonSummaryCard
+              fallbackTitle={TEXT.REPAIR_COMPUTER_FOREMAN}
+              id={foremanId}
+              name={foremanName}
+              role={TEXT.REPAIR_COMPUTER_FOREMAN}
+            />
           </SectionCard>
         ) : null}
 
-        {showActionButtons ? (
+        {showAcceptReject ? (
           <View style={styles.actionRow}>
             <Pressable
               accessibilityRole="button"
-              onPress={() => {
-                navPush({
-                  pathname: "/repair-computer/assign-job",
-                  params: {
-                    id: jobId,
-                    backHref: "/repair-computer/foreman-job-detail",
-                  },
-                });
-              }}
-              style={styles.acceptButton}
+              disabled={isSubmitting}
+              onPress={() => setIsAcceptConfirmOpen(true)}
+              style={[styles.acceptButton, isSubmitting ? styles.disabledButton : undefined]}
             >
-              <ThemedText
-                lightColor="#FFFFFF"
-                darkColor="#FFFFFF"
-                type="defaultSemiBold"
-              >
+              {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+              <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
                 Accept
               </ThemedText>
             </Pressable>
-
             <Pressable
               accessibilityRole="button"
-              onPress={() => {
-                navPush({
-                  pathname: "/repair-computer/reject-job",
-                  params: {
-                    id: jobId,
-                    backHref: "/repair-computer/foreman-job-detail",
-                  },
-                });
-              }}
-              style={styles.rejectButton}
+              disabled={isSubmitting}
+              onPress={handleReject}
+              style={[styles.rejectButton, isSubmitting ? styles.disabledButton : undefined]}
             >
-              <ThemedText
-                lightColor="#FFFFFF"
-                darkColor="#FFFFFF"
-                type="defaultSemiBold"
-              >
+              <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
                 Reject
               </ThemedText>
             </Pressable>
           </View>
         ) : null}
 
-        {showWaitForemanActionButtons ? (
-          <View style={styles.actionStack}>
-            <Pressable
-              accessibilityRole="button"
-              disabled={isSubmitting}
-              onPress={() => setConfirmAction("forwardWorker")}
-              style={[
-                styles.forwardButton,
-                isSubmitting ? styles.disabledButton : undefined,
-              ]}
-            >
-              <ThemedText
-                lightColor="#FFFFFF"
-                darkColor="#FFFFFF"
-                type="defaultSemiBold"
-              >
-                Forward Worker
-              </ThemedText>
-            </Pressable>
+        {showOperate ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleOperate}
+            style={styles.operateButton}
+          >
+            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+              Operate
+            </ThemedText>
+          </Pressable>
+        ) : null}
 
-            <Pressable
-              accessibilityRole="button"
-              disabled={isSubmitting}
-              onPress={() => setConfirmAction("forwardForeman")}
-              style={[
-                styles.forwardButton,
-                isSubmitting ? styles.disabledButton : undefined,
-              ]}
-            >
-              <ThemedText
-                lightColor="#FFFFFF"
-                darkColor="#FFFFFF"
-                type="defaultSemiBold"
-              >
-                Forward Foreman
-              </ThemedText>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              disabled={isSubmitting}
-              onPress={() => setConfirmAction("closeJob")}
-              style={[
-                styles.closeJobButton,
-                isSubmitting ? styles.disabledButton : undefined,
-              ]}
-            >
-              <ThemedText
-                lightColor="#FFFFFF"
-                darkColor="#FFFFFF"
-                type="defaultSemiBold"
-              >
-                Close Job
-              </ThemedText>
-            </Pressable>
-          </View>
+        {showCloseJob ? (
+          <Pressable
+            accessibilityRole="button"
+            disabled={isSubmitting}
+            onPress={() => setIsCloseConfirmOpen(true)}
+            style={[styles.closeButton, isSubmitting ? styles.disabledButton : undefined]}
+          >
+            {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+              Close Job
+            </ThemedText>
+          </Pressable>
         ) : null}
       </ScrollView>
     );
   };
-
-  const confirmContent = confirmAction
-    ? getConfirmContent(confirmAction)
-    : null;
 
   return (
     <ThemedView style={styles.container}>
@@ -596,7 +456,6 @@ export default function ForemanJobDetailScreen() {
         onBackPress={handleBackPress}
         showBackButton
       />
-
       <View style={styles.content}>
         <View style={styles.panelHeader}>
           <ThemedText type="subtitle" numberOfLines={1}>
@@ -615,29 +474,25 @@ export default function ForemanJobDetailScreen() {
 
       <Modal
         transparent
-        visible={Boolean(confirmContent)}
+        visible={isAcceptConfirmOpen}
         animationType="fade"
-        onRequestClose={() => setConfirmAction(null)}
+        onRequestClose={() => setIsAcceptConfirmOpen(false)}
       >
         <Pressable
           style={styles.backdrop}
-          onPress={() => setConfirmAction(null)}
+          onPress={() => setIsAcceptConfirmOpen(false)}
         >
           <Pressable>
-            <ThemedView
-              style={styles.confirmModal}
-              lightColor="#FFFFFF"
-              darkColor="#151718"
-            >
-              <ThemedText type="subtitle">{confirmContent?.title}</ThemedText>
+            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
+              <ThemedText type="subtitle">Confirm Accept</ThemedText>
               <ThemedText style={styles.confirmMessage}>
-                {confirmContent?.message}
+                Do you want to accept this repair computer job?
               </ThemedText>
               <View style={styles.confirmActions}>
                 <Pressable
                   accessibilityRole="button"
                   disabled={isSubmitting}
-                  onPress={() => setConfirmAction(null)}
+                  onPress={() => setIsAcceptConfirmOpen(false)}
                   style={styles.cancelButton}
                 >
                   <ThemedText type="defaultSemiBold">No</ThemedText>
@@ -645,20 +500,53 @@ export default function ForemanJobDetailScreen() {
                 <Pressable
                   accessibilityRole="button"
                   disabled={isSubmitting}
-                  onPress={handleConfirmAction}
-                  style={[
-                    styles.confirmButton,
-                    isSubmitting ? styles.disabledButton : undefined,
-                  ]}
+                  onPress={handleAccept}
+                  style={[styles.confirmButton, isSubmitting ? styles.disabledButton : undefined]}
                 >
-                  {isSubmitting ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : null}
-                  <ThemedText
-                    lightColor="#FFFFFF"
-                    darkColor="#FFFFFF"
-                    type="defaultSemiBold"
-                  >
+                  {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                    Yes
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </ThemedView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={isCloseConfirmOpen}
+        animationType="fade"
+        onRequestClose={() => setIsCloseConfirmOpen(false)}
+      >
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setIsCloseConfirmOpen(false)}
+        >
+          <Pressable>
+            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
+              <ThemedText type="subtitle">Confirm Close Job</ThemedText>
+              <ThemedText style={styles.confirmMessage}>
+                Do you want to close this repair computer job?
+              </ThemedText>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isSubmitting}
+                  onPress={() => setIsCloseConfirmOpen(false)}
+                  style={styles.cancelButton}
+                >
+                  <ThemedText type="defaultSemiBold">No</ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isSubmitting}
+                  onPress={handleCloseJob}
+                  style={[styles.confirmButton, isSubmitting ? styles.disabledButton : undefined]}
+                >
+                  {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
                     Yes
                   </ThemedText>
                 </Pressable>
@@ -680,12 +568,11 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  panel: {
-    flex: 1,
-  },
   panelHeader: {
     paddingBottom: 12,
-    gap: 4,
+  },
+  panel: {
+    flex: 1,
   },
   form: {
     gap: 14,
@@ -864,29 +751,12 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: "row",
     gap: 12,
-    marginTop: 4,
-  },
-  actionStack: {
-    gap: 12,
-    marginTop: 4,
   },
   acceptButton: {
     flex: 1,
     minHeight: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#b33939",
-  },
-  closeJobButton: {
-    minHeight: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#191c1f",
-  },
-  forwardButton: {
-    minHeight: 48,
+    flexDirection: "row",
+    gap: 8,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
@@ -899,6 +769,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     backgroundColor: "#ba1a1a",
+  },
+  operateButton: {
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "#b33939",
+  },
+  closeButton: {
+    minHeight: 48,
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "#191c1f",
   },
   disabledButton: {
     opacity: 0.65,

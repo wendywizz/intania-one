@@ -163,8 +163,8 @@ function WorkerQueueListItem({
       ) : (
         <View style={styles.photoPlaceholder}>
           <ThemedText
-            lightColor="#687076"
-            darkColor="#687076"
+            lightColor="#584140"
+            darkColor="#584140"
             type="defaultSemiBold"
             style={styles.placeholderText}
           >
@@ -352,21 +352,17 @@ export default function RepairComputerQueueScreen() {
       />
 
       <View style={styles.content}>
-        <ThemedView
-          style={styles.panel}
-          lightColor="#FFFFFF"
-          darkColor="#1F2B30"
-        >
-          <View style={styles.panelHeader}>
-            <ThemedText type="subtitle">
-              {TEXT.REPAIR_COMPUTER_TECHNICIAN_QUEUE}
-            </ThemedText>
-            <ThemedText style={styles.panelDescription}>
-              {TEXT.REPAIR_COMPUTER_TECHNICIAN_QUEUE_DESCRIPTION}
-            </ThemedText>
-          </View>
+        <View style={styles.panelHeader}>
+          <ThemedText type="subtitle">
+            {TEXT.REPAIR_COMPUTER_TECHNICIAN_QUEUE}
+          </ThemedText>
+          <ThemedText style={styles.panelDescription}>
+            {TEXT.REPAIR_COMPUTER_TECHNICIAN_QUEUE_DESCRIPTION}
+          </ThemedText>
+        </View>
+        <View style={styles.listWrapper}>
           {renderContent()}
-        </ThemedView>
+        </View>
       </View>
     </ThemedView>
   );
@@ -379,31 +375,29 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
   },
-  panel: {
+  listWrapper: {
     flex: 1,
-    borderRadius: 8,
-    padding: 0,
   },
   panelHeader: {
     paddingTop: 16,
     paddingHorizontal: 16,
-    paddingBottom: 4,
+    paddingBottom: 12,
     gap: 4,
   },
   panelDescription: {
-    color: '#687076',
+    color: '#584140',
     fontSize: 13,
     lineHeight: 19,
   },
   listContent: {
     gap: 10,
-    paddingBottom: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   listHeader: {
     gap: 14,
-    paddingTop: 16,
+    paddingTop: 4,
     paddingBottom: 4,
   },
   statsCard: {
@@ -412,7 +406,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
+    borderColor: '#e1e2e6',
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
@@ -442,14 +436,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#11181C',
+    color: '#191c1f',
   },
   itemCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
+    borderColor: '#e1e2e6',
     padding: 14,
     gap: 14,
   },
@@ -457,7 +451,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#E8EEF2',
+    backgroundColor: '#edeef2',
   },
   photoPlaceholder: {
     width: 52,
@@ -465,7 +459,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 26,
-    backgroundColor: '#E8EEF2',
+    backgroundColor: '#edeef2',
   },
   placeholderText: {
     fontSize: 20,
@@ -480,7 +474,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   workerMeta: {
-    color: '#687076',
+    color: '#584140',
     fontSize: 13,
     lineHeight: 18,
   },
@@ -491,14 +485,14 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   stateMessage: {
-    color: '#687076',
+    color: '#584140',
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
     textAlign: 'center',
   },
   errorText: {
-    color: '#B42318',
+    color: '#ba1a1a',
   },
   retryButton: {
     minHeight: 48,
@@ -506,7 +500,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#0A6E8A',
+    backgroundColor: '#b33939',
     marginTop: 24,
   },
   emptyCard: {
@@ -514,11 +508,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D7E6EC',
+    borderColor: '#e1e2e6',
     padding: 16,
   },
   emptyMessage: {
-    color: '#687076',
+    color: '#584140',
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',

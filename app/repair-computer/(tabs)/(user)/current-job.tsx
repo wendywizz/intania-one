@@ -212,10 +212,10 @@ export default function RepairComputerCurrentJobScreen() {
 
     blurActiveWebElement();
     navPush({
-      pathname: "/repair-computer/edit-job",
+      pathname: "/repair-computer/user-job-detail",
       params: {
         id: jobId,
-        ...(canEditJob(job) ? {} : { readonly: "true" }),
+        backHref: "/repair-computer/current-job",
       },
     } as Parameters<typeof navPush>[0]);
   };
@@ -322,7 +322,7 @@ export default function RepairComputerCurrentJobScreen() {
         ListFooterComponent={
           isLoadingMore ? (
             <View style={styles.footerLoader}>
-              <ActivityIndicator color="#0A6E8A" size="small" />
+              <ActivityIndicator color="#b33939" size="small" />
             </View>
           ) : null
         }
@@ -350,21 +350,17 @@ export default function RepairComputerCurrentJobScreen() {
       />
 
       <View style={styles.content}>
-        <ThemedView
-          style={styles.panel}
-          lightColor="#FFFFFF"
-          darkColor="#1F2B30"
-        >
-          <View style={styles.panelHeader}>
-            <ThemedText type="subtitle">
-              {TEXT.REPAIR_COMPUTER_CURRENT_JOB}
-            </ThemedText>
-            <ThemedText style={styles.panelDescription}>
-              {TEXT.REPAIR_COMPUTER_CURRENT_JOBS_DESCRIPTION}
-            </ThemedText>
-          </View>
+        <View style={styles.panelHeader}>
+          <ThemedText type="subtitle">
+            {TEXT.REPAIR_COMPUTER_CURRENT_JOB}
+          </ThemedText>
+          <ThemedText style={styles.panelDescription}>
+            {TEXT.REPAIR_COMPUTER_CURRENT_JOBS_DESCRIPTION}
+          </ThemedText>
+        </View>
+        <View style={styles.listWrapper}>
           {renderContent()}
-        </ThemedView>
+        </View>
       </View>
 
       <Pressable
@@ -454,21 +450,18 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
   },
-  panel: {
+  listWrapper: {
     flex: 1,
-    borderRadius: 8,
-    padding: 0,
   },
   panelHeader: {
     paddingTop: 16,
     paddingHorizontal: 16,
-    paddingBottom: 4,
+    paddingBottom: 12,
     gap: 4,
   },
   panelDescription: {
-    color: '#687076',
+    color: '#584140',
     fontSize: 13,
     lineHeight: 19,
   },
@@ -495,9 +488,10 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
   listContent: {
-    gap: 12,
-    paddingTop: 16,
-    paddingBottom: 8,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 80,
   },
   stateContent: {
     flex: 1,
@@ -506,14 +500,14 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   stateMessage: {
-    color: "#687076",
+    color: "#584140",
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
     textAlign: "center",
   },
   errorText: {
-    color: "#B42318",
+    color: "#ba1a1a",
   },
   retryButton: {
     minHeight: 48,
@@ -521,7 +515,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: "#b33939",
     marginTop: 24,
   },
   emptyCard: {
@@ -529,11 +523,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
+    borderColor: "#e1e2e6",
     padding: 16,
   },
   emptyMessage: {
-    color: "#687076",
+    color: "#584140",
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
@@ -546,7 +540,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    backgroundColor: "rgba(17, 24, 28, 0.45)",
     padding: 24,
   },
   confirmModal: {
@@ -556,7 +550,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   confirmMessage: {
-    color: "#687076",
+    color: "#584140",
     lineHeight: 20,
     marginTop: 10,
   },
@@ -572,7 +566,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
+    borderColor: "#e1e2e6",
     backgroundColor: "#FFFFFF",
   },
   confirmDeleteButton: {
@@ -583,7 +577,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#C44D58",
+    backgroundColor: "#ba1a1a",
   },
   disabledButton: {
     opacity: 0.65,

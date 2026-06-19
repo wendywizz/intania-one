@@ -15,6 +15,7 @@ import Clock from 'lucide-react-native/dist/cjs/icons/clock';
 import Code from 'lucide-react-native/dist/cjs/icons/code';
 import Cross from 'lucide-react-native/dist/cjs/icons/cross';
 import FileText from 'lucide-react-native/dist/cjs/icons/file-text';
+import History from 'lucide-react-native/dist/cjs/icons/history';
 import House from 'lucide-react-native/dist/cjs/icons/house';
 import Inbox from 'lucide-react-native/dist/cjs/icons/inbox';
 import Info from 'lucide-react-native/dist/cjs/icons/info';
@@ -36,6 +37,7 @@ const MAPPING = {
   'arrow.left': ArrowLeft,
   'chevron.left.forwardslash.chevron.right': Code,
   'chevron.right': ChevronRight,
+  'history': History,
   'house.fill': House,
   // Communication
   'bell.fill': Bell,

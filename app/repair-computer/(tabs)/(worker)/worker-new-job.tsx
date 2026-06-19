@@ -25,6 +25,7 @@ export default function WorkerNewJobScreen() {
       loadingTitle={TEXT.REPAIR_COMPUTER_LOADING_NEW_JOBS}
       loadPage={loadPage}
       detailBackHref="/repair-computer/worker-new-job"
+      detailPathname="/repair-computer/worker-job-detail"
     />
   );
 }

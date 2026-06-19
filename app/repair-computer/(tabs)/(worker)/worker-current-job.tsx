@@ -22,6 +22,8 @@ export default function WorkerCurrentJobScreen() {
       loadingTitle={TEXT.REPAIR_COMPUTER_LOADING_CURRENT_JOBS}
       loadPage={loadPage}
       detailBackHref="/repair-computer/worker-current-job"
+      detailPathname="/repair-computer/worker-job-detail"
+      itemShowRepairType
     />
   );
 }

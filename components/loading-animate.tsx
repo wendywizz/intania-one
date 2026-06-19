@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   },
   primaryDot: {
     top: 4,
-    backgroundColor: '#0A6E8A',
+    backgroundColor: '#b33939',
   },
   secondaryDot: {
     bottom: 8,
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   message: {
-    color: '#687076',
+    color: '#584140',
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
