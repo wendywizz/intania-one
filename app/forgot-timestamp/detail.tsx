@@ -496,7 +496,7 @@ export default function ForgotTimestampDetailScreen() {
       setToastType("success");
       setToastMessage(result.message || TEXT.SHARED_SUCCESS);
       await new Promise((resolve) => setTimeout(resolve, REDIRECT_DELAY_MS));
-      router.replace("/forgot-timestamp/index");
+      router.replace("/forgot-timestamp");
     } catch (error) {
       setToastType("error");
       setToastMessage(
@@ -531,7 +531,7 @@ export default function ForgotTimestampDetailScreen() {
       setToastType("success");
       setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
       await new Promise((resolve) => setTimeout(resolve, REDIRECT_DELAY_MS));
-      router.replace("/forgot-timestamp/index");
+      router.replace("/forgot-timestamp");
     } catch (error) {
       setToastType("error");
       setToastMessage(
@@ -773,7 +773,7 @@ export default function ForgotTimestampDetailScreen() {
       <StatusBar style="light" />
       <NavTopBar
         title={TEXT.FORGOT_TIMESTAMP_TITLE}
-        backHref="/forgot-timestamp/index"
+        backHref="/forgot-timestamp"
       />
       <ScrollView contentContainerStyle={styles.content}>
         {renderContent()}

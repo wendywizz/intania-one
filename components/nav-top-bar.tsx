@@ -41,7 +41,7 @@ export function NavTopBar({
     }
 
     if (backHref) {
-      router.replace(backHref);
+      router.navigate(backHref);
       return;
     }
 
@@ -50,7 +50,7 @@ export function NavTopBar({
       return;
     }
 
-    router.replace('/');
+    router.navigate('/');
   };
 
   return (
