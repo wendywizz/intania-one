@@ -1,4 +1,4 @@
-import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
 
 import { AuthProvider } from '@/context/AuthContext';
+import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { registerForegroundNotificationHandler } from '@/services/notificationService';
 
 SplashScreen.preventAutoHideAsync();
@@ -17,6 +18,36 @@ SplashScreen.preventAutoHideAsync();
 export const unstable_settings = {
   anchor: 'index',
 };
+
+function AppStack() {
+  const { isDarkMode } = useTheme();
+  return (
+    <NavThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
+      <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="absence" options={{ headerShown: false }} />
+        <Stack.Screen name="meeting" options={{ headerShown: false }} />
+        <Stack.Screen name="repair-computer" options={{ headerShown: false }} />
+        <Stack.Screen name="calendar" options={{ headerShown: false }} />
+        <Stack.Screen name="news" options={{ headerShown: false }} />
+        <Stack.Screen name="news-detail" options={{ headerShown: false }} />
+        <Stack.Screen name="notification" options={{ headerShown: false }} />
+        <Stack.Screen name="forgot-timestamp" options={{ headerShown: false }} />
+        <Stack.Screen name="clear-auth" options={{ headerShown: false }} />
+        <Stack.Screen name="login-callback" options={{ headerShown: false }} />
+        <Stack.Screen name="openid-webview" options={{ headerShown: false }} />
+        <Stack.Screen name="oauth/callback" options={{ headerShown: false }} />
+        <Stack.Screen name="person-search" options={{ headerShown: false }} />
+        <Stack.Screen name="examiner" options={{ headerShown: false }} />
+        <Stack.Screen name="examinar" options={{ headerShown: false }} />
+        <Stack.Screen name="my-profile" options={{ headerShown: false }} />
+        <Stack.Screen name="edit-profile-field" options={{ headerShown: false }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', title: TEXT.SHARED_MODAL }} />
+      </Stack>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+    </NavThemeProvider>
+  );
+}
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -44,28 +75,8 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <ThemeProvider value={DefaultTheme}>
-            <Stack>
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="absence" options={{ headerShown: false }} />
-              <Stack.Screen name="meeting" options={{ headerShown: false }} />
-              <Stack.Screen name="repair-computer" options={{ headerShown: false }} />
-              <Stack.Screen name="calendar" options={{ headerShown: false }} />
-              <Stack.Screen name="news" options={{ headerShown: false }} />
-              <Stack.Screen name="news-detail" options={{ headerShown: false }} />
-              <Stack.Screen name="notification" options={{ headerShown: false }} />
-              <Stack.Screen name="forgot-timestamp" options={{ headerShown: false }} />
-              <Stack.Screen name="clear-auth" options={{ headerShown: false }} />
-              <Stack.Screen name="login-callback" options={{ headerShown: false }} />
-              <Stack.Screen name="openid-webview" options={{ headerShown: false }} />
-              <Stack.Screen name="oauth/callback" options={{ headerShown: false }} />
-              <Stack.Screen name="person-search" options={{ headerShown: false }} />
-              <Stack.Screen name="examiner" options={{ headerShown: false }} />
-              <Stack.Screen name="my-profile" options={{ headerShown: false }} />
-              <Stack.Screen name="edit-profile-field" options={{ headerShown: false }} />
-              <Stack.Screen name="modal" options={{ presentation: 'modal', title: TEXT.SHARED_MODAL }} />
-            </Stack>
-            <StatusBar style="dark" />
+          <ThemeProvider>
+            <AppStack />
           </ThemeProvider>
         </AuthProvider>
       </SafeAreaProvider>

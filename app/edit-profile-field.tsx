@@ -17,6 +17,7 @@ import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
+import { updatePersonInfo } from '@/services/personService';
 
 type Field = 'phone' | 'email';
 
@@ -45,26 +46,34 @@ const FIELD_CONFIG: Record<Field, {
 
 export default function EditProfileFieldScreen() {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ field?: string; value?: string }>();
+  const params = useLocalSearchParams<{ field?: string; value?: string; staffId?: string }>();
   const field = (params.field === 'email' ? 'email' : 'phone') as Field;
+  const staffId = params.staffId ?? '';
   const config = FIELD_CONFIG[field];
 
   const [value, setValue] = useState(params.value ?? '');
   const [isFocused, setIsFocused] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [isSaving, setIsSaving] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
   const handleSave = async () => {
-    if (!value.trim()) return;
+    if (!value.trim() || !staffId) return;
     setIsSaving(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setIsSaving(false);
-    setToastMessage(`${config.label} updated successfully`);
-    setTimeout(() => router.back(), 1400);
+    try {
+      await updatePersonInfo(staffId, field, value.trim());
+      setToastType('success');
+      setToastMessage(`${config.label} updated successfully`);
+    } catch (error) {
+      setToastType('error');
+      setToastMessage(error instanceof Error ? error.message : 'Update failed');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const canSave = value.trim().length > 0 && !isSaving;
+  const canSave = value.trim().length > 0 && Boolean(staffId) && !isSaving;
 
   return (
     <ThemedView style={styles.container} lightColor="#F5F6FA">
@@ -92,6 +101,7 @@ export default function EditProfileFieldScreen() {
                 autoCorrect={false}
                 placeholder={config.placeholder}
                 placeholderTextColor="#9CA3AF"
+                underlineColorAndroid="transparent"
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
                 returnKeyType="done"
@@ -125,7 +135,7 @@ export default function EditProfileFieldScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      <AppToast message={toastMessage} type="success" />
+      <AppToast message={toastMessage} type={toastType} />
     </ThemedView>
   );
 }
@@ -171,6 +181,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#191C1F',
     paddingVertical: 13,
+    outlineStyle: 'none',
   },
 
   footer: {

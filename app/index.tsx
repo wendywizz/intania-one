@@ -21,11 +21,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/AuthContext';
-import type { AuthUser, News } from '@/models/types';
+import type { AuthUser, ExamTask, News } from '@/models/types';
 import { getUnreadNotificationCount } from '@/services/notificationService';
 import { staffNewsFeed } from '@/services/newsService';
 import { getActiveSummary, type ActiveSummaryData } from '@/services/activeSummaryService';
-import { getPersonnelSuggestions } from '@/services/personService';
+import { listExamTasks } from '@/services/examinarService';
 import { formatNewsDate } from '@/utils/date-format';
 import { navPush } from '@/utils/navigation';
 import { ENDPOINTS } from '@/constants/endpoints';
@@ -96,17 +96,22 @@ function wait(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
-// ─── Helpers for extracting display fields from unknown upstream shapes ──────
-
-function getStr(obj: Record<string, unknown>, ...keys: string[]): string {
-  for (const k of keys) {
-    const v = obj[k];
-    if (typeof v === 'string' && v.trim() && v.trim() !== '0') return v.trim();
-    if (typeof v === 'number' && v !== 0) return String(v);
-  }
-  return '';
+function getCurrentExamParams(): { year: string; term: string; period: string } {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = String(now.getFullYear());
+  if (month >= 8 && month <= 12) return { year, term: '1', period: month <= 10 ? 'mid' : 'final' };
+  if (month >= 1 && month <= 5)  return { year, term: '2', period: month <= 3  ? 'mid' : 'final' };
+  return { year, term: '3', period: 'final' };
 }
 
+function isExamUpcoming(task: ExamTask): boolean {
+  const raw = String(task.date ?? (task as Record<string, unknown>).exam_date ?? '').trim();
+  if (!raw) return false;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const d = new Date(raw); d.setHours(0, 0, 0, 0);
+  return !isNaN(d.getTime()) && d >= today;
+}
 
 // ─── Shift card component ─────────────────────────────────────────────────────
 
@@ -156,9 +161,10 @@ function ShiftCard({ icon, iconBg, iconColor, title, subtitle, onPress, badge }:
 type UpcomingShiftSectionProps = {
   data: ActiveSummaryData | null;
   loading: boolean;
+  upcomingExams: ExamTask[];
 };
 
-function UpcomingShiftSection({ data, loading }: UpcomingShiftSectionProps) {
+function UpcomingShiftSection({ data, loading, upcomingExams }: UpcomingShiftSectionProps) {
   const cards: React.ReactElement[] = [];
 
   if (data) {
@@ -226,6 +232,25 @@ function UpcomingShiftSection({ data, loading }: UpcomingShiftSectionProps) {
         />
       );
     }
+  }
+
+  // ── Examinar: upcoming exams ─────────────────────────────────────────────
+  if (upcomingExams.length > 0) {
+    const count = upcomingExams.length;
+    const nearest = upcomingExams[0] as Record<string, unknown>;
+    const nearestDate = String(nearest.date_label ?? nearest.date ?? '');
+    cards.push(
+      <ShiftCard
+        key="examinar-summary"
+        icon="checkmark.circle.fill"
+        iconBg="#F0FDF4"
+        iconColor="#059669"
+        title={TEXT.EXAMINAR_HEADER_TITLE}
+        subtitle={nearestDate || `${count} รายการ`}
+        badge={count}
+        onPress={() => navPush('/examinar' as Parameters<typeof navPush>[0])}
+      />
+    );
   }
 
   return (
@@ -346,9 +371,9 @@ export default function HomeScreen() {
   const [newsItems, setNewsItems] = useState<News[]>([]);
   const [isNewsLoading, setIsNewsLoading] = useState(true);
   const [avatarFailed, setAvatarFailed] = useState(false);
-  const [personPhotoUri, setPersonPhotoUri] = useState<string | null>(null);
   const [activeSummary, setActiveSummary] = useState<ActiveSummaryData | null>(null);
   const [isActiveSummaryLoading, setIsActiveSummaryLoading] = useState(false);
+  const [upcomingExams, setUpcomingExams] = useState<ExamTask[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const processedCallbackRef = useRef('');
@@ -361,7 +386,6 @@ export default function HomeScreen() {
 
   useEffect(() => {
     setAvatarFailed(false);
-    setPersonPhotoUri(null);
   }, [authUser?.staffId]);
 
   useEffect(() => {
@@ -429,13 +453,12 @@ export default function HomeScreen() {
         setIsActiveSummaryLoading(false);
       });
 
-      void getPersonnelSuggestions(staffId).then((persons) => {
-        if (!isActive) return;
-        const photo = (persons[0] as Record<string, unknown> | undefined)?.photo;
-        if (typeof photo === 'string' && photo.trim()) {
-          setPersonPhotoUri(`data:image/jpeg;base64,${photo.trim()}`);
-        }
-      }).catch(() => {});
+      const examParams = getCurrentExamParams();
+      void listExamTasks({ staff_id: staffId, ...examParams }).then((tasks) => {
+        if (isActive) setUpcomingExams(tasks.filter(isExamUpcoming));
+      }).catch(() => {
+        if (isActive) setUpcomingExams([]);
+      });
 
       return () => { isActive = false; };
     }, [authUser]),
@@ -453,12 +476,9 @@ export default function HomeScreen() {
         ? getActiveSummary(staffId, userId).then(setActiveSummary).catch(() => setActiveSummary(null))
         : Promise.resolve(),
       staffId
-        ? getPersonnelSuggestions(staffId).then((persons) => {
-            const photo = (persons[0] as Record<string, unknown> | undefined)?.photo;
-            if (typeof photo === 'string' && photo.trim()) {
-              setPersonPhotoUri(`data:image/jpeg;base64,${photo.trim()}`);
-            }
-          }).catch(() => {})
+        ? listExamTasks({ staff_id: staffId, ...getCurrentExamParams() })
+            .then((tasks) => setUpcomingExams(tasks.filter(isExamUpcoming)))
+            .catch(() => setUpcomingExams([]))
         : Promise.resolve(),
     ]);
 
@@ -545,10 +565,9 @@ export default function HomeScreen() {
   const displayedNews = newsItems;
   const menuCardWidth = Math.floor((screenWidth - D.pad * 2 - D.gap * 2) / 3);
   const newsCardWidth = Math.floor(screenWidth * 0.72);
-  const authPhotoUrl = authUser?.staffId
-    ? `${ENDPOINTS.photoBase}${encodeURIComponent(String(authUser.staffId))}.jpg`
+  const avatarSource = authUser?.staffId
+    ? `${ENDPOINTS.photoBase}${String(authUser.staffId)}.jpg`
     : null;
-  const avatarSource = personPhotoUri || authPhotoUrl;
 
   return (
     <View style={[styles.container, { backgroundColor: D.background }]}>
@@ -662,7 +681,7 @@ export default function HomeScreen() {
           </View>
 
           {/* Upcoming Shift section */}
-          <UpcomingShiftSection data={activeSummary} loading={isActiveSummaryLoading} />
+          <UpcomingShiftSection data={activeSummary} loading={isActiveSummaryLoading} upcomingExams={upcomingExams} />
 
           {/* Menu section */}
           <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} style={styles.sectionTitle}>

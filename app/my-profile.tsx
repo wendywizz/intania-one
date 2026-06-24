@@ -6,8 +6,9 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Alert, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
+import { AppToast } from '@/components/app-toast';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -16,8 +17,9 @@ import { AppFonts } from '@/constants/fonts';
 import { ENDPOINTS } from '@/constants/endpoints';
 import { TEXT } from '@/constants/text';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import type { Person } from '@/models/types';
-import { getPersonnelSuggestions } from '@/services/personService';
+import { getPersonnelSuggestions, uploadPersonPhoto } from '@/services/personService';
 import {
   checkNotificationPermission,
   getNotificationEnabled,
@@ -122,6 +124,7 @@ function IconCircle({
 
 export default function MyProfileScreen() {
   const { user: authUser, signOut } = useAuth();
+  const { isDarkMode, toggleDarkMode } = useTheme();
   const staffId = String(authUser?.staffId || '').trim();
 
   const [person, setPerson] = useState<Person | null>(null);
@@ -134,7 +137,10 @@ export default function MyProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [biometricEnabled, setBiometricEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoToastMessage, setPhotoToastMessage] = useState('');
+  const [photoToastType, setPhotoToastType] = useState<'success' | 'error'>('success');
 
   const photoUrl = staffId
     ? `${ENDPOINTS.photoBase}${encodeURIComponent(staffId)}.jpg`
@@ -201,8 +207,7 @@ export default function MyProfileScreen() {
       quality: 0.8,
     });
     if (!result.canceled && result.assets[0]) {
-      setLocalPhotoUri(result.assets[0].uri);
-      setPhotoFailed(false);
+      setPendingPhotoUri(result.assets[0].uri);
     }
   }
 
@@ -220,8 +225,26 @@ export default function MyProfileScreen() {
       quality: 0.8,
     });
     if (!result.canceled && result.assets[0]) {
-      setLocalPhotoUri(result.assets[0].uri);
-      setPhotoFailed(false);
+      setPendingPhotoUri(result.assets[0].uri);
+    }
+  }
+
+  async function handleConfirmPhoto() {
+    if (!pendingPhotoUri || !staffId) return;
+    const uri = pendingPhotoUri;
+    setPendingPhotoUri(null);
+    setLocalPhotoUri(uri);
+    setPhotoFailed(false);
+    setIsUploadingPhoto(true);
+    try {
+      await uploadPersonPhoto(staffId, uri);
+      setPhotoToastType('success');
+      setPhotoToastMessage('อัปโหลดรูปภาพสำเร็จ');
+    } catch (error) {
+      setPhotoToastType('error');
+      setPhotoToastMessage(error instanceof Error ? error.message : 'อัปโหลดรูปภาพไม่สำเร็จ');
+    } finally {
+      setIsUploadingPhoto(false);
     }
   }
 
@@ -323,7 +346,9 @@ export default function MyProfileScreen() {
                 )}
               </View>
               <View style={styles.cameraBadge}>
-                <Camera size={14} color="#FFFFFF" />
+                {isUploadingPhoto
+                  ? <ActivityIndicator size="small" color="#FFFFFF" />
+                  : <Camera size={14} color="#FFFFFF" />}
               </View>
             </Pressable>
             <ThemedText style={styles.heroName}>{name}</ThemedText>
@@ -394,6 +419,51 @@ export default function MyProfileScreen() {
             </Pressable>
           </Modal>
 
+          {/* ── Photo confirm modal ───────────────────────────────────────── */}
+          <Modal
+            transparent
+            visible={Boolean(pendingPhotoUri)}
+            animationType="fade"
+            onRequestClose={() => setPendingPhotoUri(null)}
+          >
+            <View style={styles.confirmPhotoBackdrop}>
+              <View style={styles.confirmPhotoSheet}>
+                <ThemedText style={styles.confirmPhotoTitle}>ใช้รูปภาพนี้?</ThemedText>
+
+                <View style={styles.confirmPhotoPreviewRing}>
+                  {pendingPhotoUri ? (
+                    <Image
+                      source={{ uri: pendingPhotoUri }}
+                      style={styles.confirmPhotoPreview}
+                      contentFit="cover"
+                    />
+                  ) : null}
+                </View>
+
+                <ThemedText style={styles.confirmPhotoSubtitle}>
+                  รูปภาพจะถูกอัปโหลดเป็นรูปโปรไฟล์ของคุณ
+                </ThemedText>
+
+                <View style={styles.confirmPhotoActions}>
+                  <Pressable
+                    style={({ pressed }) => [styles.confirmPhotoCancelBtn, pressed && { opacity: 0.7 }]}
+                    onPress={() => setPendingPhotoUri(null)}
+                    accessibilityRole="button"
+                  >
+                    <ThemedText style={styles.confirmPhotoCancelText}>ยกเลิก</ThemedText>
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [styles.confirmPhotoConfirmBtn, pressed && { opacity: 0.85 }]}
+                    onPress={handleConfirmPhoto}
+                    accessibilityRole="button"
+                  >
+                    <ThemedText style={styles.confirmPhotoConfirmText}>ใช้รูปนี้</ThemedText>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
           {/* ── Personal Information ───────────────────────────────────────── */}
           <View style={styles.section}>
             <ThemedText style={styles.sectionTitle}>Personal Information</ThemedText>
@@ -415,7 +485,7 @@ export default function MyProfileScreen() {
                   <Pressable
                     accessibilityRole="button"
                     style={({ pressed }) => [styles.infoRow, pressed && styles.infoRowPressed]}
-                    onPress={() => router.push({ pathname: '/edit-profile-field', params: { field: 'phone', value: phone } })}
+                    onPress={() => router.push({ pathname: '/edit-profile-field', params: { field: 'phone', value: phone, staffId } })}
                   >
                     <IconCircle bg={D.iconBgPhone} color={D.iconColorPhone} name="phone" />
                     <View style={styles.infoBody}>
@@ -433,7 +503,7 @@ export default function MyProfileScreen() {
                   <Pressable
                     accessibilityRole="button"
                     style={({ pressed }) => [styles.infoRow, pressed && styles.infoRowPressed]}
-                    onPress={() => router.push({ pathname: '/edit-profile-field', params: { field: 'email', value: email } })}
+                    onPress={() => router.push({ pathname: '/edit-profile-field', params: { field: 'email', value: email, staffId } })}
                   >
                     <IconCircle bg={D.iconBgEmail} color={D.iconColorEmail} name="email" />
                     <View style={styles.infoBody}>
@@ -494,8 +564,8 @@ export default function MyProfileScreen() {
                   <ThemedText style={styles.toggleSubtitle}>Switch to low-light theme</ThemedText>
                 </View>
                 <Switch
-                  value={darkModeEnabled}
-                  onValueChange={setDarkModeEnabled}
+                  value={isDarkMode}
+                  onValueChange={toggleDarkMode}
                   trackColor={{ false: '#E1E2E6', true: D.primary }}
                   thumbColor="#FFFFFF"
                 />
@@ -518,6 +588,7 @@ export default function MyProfileScreen() {
 
         </ScrollView>
       )}
+      <AppToast message={photoToastMessage} type={photoToastType} />
     </ThemedView>
   );
 }
@@ -816,5 +887,84 @@ emptyRow: {
     color: '#9CA3AF',
     textAlign: 'center',
     marginTop: 4,
+  },
+
+  // ── Photo confirm modal ──────────────────────────────────────────────────────
+  confirmPhotoBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  confirmPhotoSheet: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    gap: 16,
+  },
+  confirmPhotoTitle: {
+    fontSize: 18,
+    lineHeight: 26,
+    fontFamily: AppFonts.psuBold,
+    color: '#191C1F',
+  },
+  confirmPhotoPreviewRing: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 3,
+    borderColor: D.avatarRing,
+    overflow: 'hidden',
+  },
+  confirmPhotoPreview: {
+    width: '100%',
+    height: '100%',
+  },
+  confirmPhotoSubtitle: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontFamily: AppFonts.psuRegular,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  confirmPhotoActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+    marginTop: 4,
+  },
+  confirmPhotoCancelBtn: {
+    flex: 1,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+  },
+  confirmPhotoCancelText: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: AppFonts.psuBold,
+    color: '#6B7280',
+  },
+  confirmPhotoConfirmBtn: {
+    flex: 1,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: D.primary,
+  },
+  confirmPhotoConfirmText: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: AppFonts.psuBold,
+    color: '#FFFFFF',
   },
 });

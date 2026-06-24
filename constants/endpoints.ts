@@ -43,10 +43,14 @@ export const ENDPOINTS = {
   absence: `${API_BASE_URL}/api/absence`,
   repairComputer: `${API_BASE_URL}/api/repair-computer`,  
   person: `${API_BASE_URL}/api/person`,
+  personUpdateInfo: `${API_BASE_URL}/api/person/update-info`,
+  personUploadPhoto: `${API_BASE_URL}/api/person/upload-photo`,
   meeting: `${API_BASE_URL}/api/meeting`,
   photoBase: PHOTO_BASE_URL,
   execCalendar: '/api/exec-calendars',
   pushRegisterDevice: `${API_BASE_URL}/api/push/register-device`,
+  examinar: `${API_BASE_URL}/api/examinar`,
+  examinarDetail: `${API_BASE_URL}/api/examinar/detail`,
 };
 
 export const METRO_PROXY_ENDPOINTS = {

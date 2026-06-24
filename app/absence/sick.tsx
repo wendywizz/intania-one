@@ -14,6 +14,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   TextInput,
   View,
 } from "react-native";
@@ -376,6 +377,7 @@ export default function SickScreen() {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [halfDay, setHalfDay] = useState("");
   const [contact, setContact] = useState("");
+  const [hasMedicalCert, setHasMedicalCert] = useState(false);
   const [selectedFile, setSelectedFile] =
     useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [openSelect, setOpenSelect] = useState<"approver" | "halfDay" | null>(
@@ -508,6 +510,8 @@ export default function SickScreen() {
 
     setReason(getItemText(editItem, ["reason", "detail", "description"]));
     setContact(getItemText(editItem, ["contact", "contactChannel", "contact_channel", "phone"]));
+    const existingFile = getItemText(editItem, ["fileUpload", "file_upload", "medicalCertificate", "medical_certificate", "image", "image_url"]);
+    if (existingFile) setHasMedicalCert(true);
 
     const nextStartDate = parseDateParamValue(
       getItemText(editItem, ["startDate", "start_date", "dateStart", "date_start"]),
@@ -558,7 +562,7 @@ export default function SickScreen() {
       return null;
     }
 
-    return getWeekdayLeaveDayCount(startDate, endDate, halfDay !== "0");
+    return getWeekdayLeaveDayCount(startDate, endDate, Number(halfDay) > 0);
   }, [dateError, endDate, halfDay, startDate, startDateError]);
 
   const handlePickFile = useCallback(async () => {
@@ -978,66 +982,82 @@ export default function SickScreen() {
           </View>
 
           <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>
-              {FILE_PICKER_LABEL}
-            </ThemedText>
-            {selectedFile ? (
-              <View style={styles.selectedFileCard}>
-                <Paperclip size={18} color="#B33939" />
-                <ThemedText style={styles.selectedFileName} numberOfLines={1}>
-                  {getUploadFileName(selectedFile)}
-                </ThemedText>
-                <View style={styles.fileActions}>
-                  {activeFileUrl ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={handleViewFile}
-                      style={styles.fileActionBtn}
-                    >
-                      <Eye size={20} color="#687076" />
-                    </Pressable>
-                  ) : null}
+            <View style={styles.toggleRow}>
+              <ThemedText style={styles.fieldLabel}>
+                {TEXT.absence_MEDICAL_CERTIFICATE_TOGGLE}
+              </ThemedText>
+              <Switch
+                value={hasMedicalCert}
+                onValueChange={(value) => {
+                  setHasMedicalCert(value);
+                  if (!value) setSelectedFile(null);
+                }}
+                trackColor={{ false: '#E0E0E0', true: '#F4C4C4' }}
+                thumbColor={hasMedicalCert ? '#B33939' : '#BDBDBD'}
+              />
+            </View>
+
+            {hasMedicalCert ? (
+              <>
+                {selectedFile ? (
+                  <View style={styles.selectedFileCard}>
+                    <Paperclip size={18} color="#B33939" />
+                    <ThemedText style={styles.selectedFileName} numberOfLines={1}>
+                      {getUploadFileName(selectedFile)}
+                    </ThemedText>
+                    <View style={styles.fileActions}>
+                      {activeFileUrl ? (
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={handleViewFile}
+                          style={styles.fileActionBtn}
+                        >
+                          <Eye size={20} color="#687076" />
+                        </Pressable>
+                      ) : null}
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => setSelectedFile(null)}
+                        style={styles.fileActionBtn}
+                      >
+                        <X size={20} color="#B42318" />
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
                   <Pressable
                     accessibilityRole="button"
-                    onPress={() => setSelectedFile(null)}
-                    style={styles.fileActionBtn}
+                    onPress={handlePickFile}
+                    style={styles.uploadZone}
                   >
-                    <X size={20} color="#B42318" />
+                    <CloudUpload size={30} color="#B33939" />
+                    <ThemedText style={styles.uploadZoneText}>
+                      {isEditMode && hasUploadedFile
+                        ? FILE_PICKER_REUPLOAD_ACTION
+                        : FILE_PICKER_ACTION}
+                    </ThemedText>
+                    <ThemedText style={styles.uploadZoneHint}>PDF, JPG, PNG</ThemedText>
                   </Pressable>
-                </View>
-              </View>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                onPress={handlePickFile}
-                style={styles.uploadZone}
-              >
-                <CloudUpload size={30} color="#B33939" />
-                <ThemedText style={styles.uploadZoneText}>
-                  {isEditMode && hasUploadedFile
-                    ? FILE_PICKER_REUPLOAD_ACTION
-                    : FILE_PICKER_ACTION}
-                </ThemedText>
-                <ThemedText style={styles.uploadZoneHint}>PDF, JPG, PNG</ThemedText>
-              </Pressable>
-            )}
-            {uploadedFileUrl && !selectedFile ? (
-              <Pressable
-                accessibilityRole="link"
-                onPress={handleViewUploadedFile}
-                style={styles.uploadedFileLink}
-              >
-                <Paperclip size={16} color="#12805C" />
-                <ThemedText
-                  lightColor="#12805C"
-                  darkColor="#5EC6A3"
-                  type="defaultSemiBold"
-                  style={styles.uploadedFileLinkText}
-                  numberOfLines={1}
-                >
-                  Uploaded file
-                </ThemedText>
-              </Pressable>
+                )}
+                {uploadedFileUrl && !selectedFile ? (
+                  <Pressable
+                    accessibilityRole="link"
+                    onPress={handleViewUploadedFile}
+                    style={styles.uploadedFileLink}
+                  >
+                    <Paperclip size={16} color="#12805C" />
+                    <ThemedText
+                      lightColor="#12805C"
+                      darkColor="#5EC6A3"
+                      type="defaultSemiBold"
+                      style={styles.uploadedFileLinkText}
+                      numberOfLines={1}
+                    >
+                      Uploaded file
+                    </ThemedText>
+                  </Pressable>
+                ) : null}
+              </>
             ) : null}
           </View>
 
@@ -1164,6 +1184,7 @@ export default function SickScreen() {
                   onPress={handleConfirmSubmit}
                   style={[
                     styles.submitButton,
+                    styles.confirmActionButton,
                     isSubmitting ? styles.disabledButton : undefined,
                   ]}
                 >
@@ -1519,6 +1540,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     textAlign: "center",
   },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   uploadZone: {
     borderWidth: 1.5,
     borderColor: "#D1D5DB",
@@ -1663,6 +1689,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     backgroundColor: "#B42318",
+  },
+  confirmActionButton: {
+    flex: 1,
+    minHeight: 48,
+    paddingHorizontal: 16,
   },
   secondaryButton: {
     minHeight: 48,
