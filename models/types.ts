@@ -32,6 +32,40 @@ export type Meeting = {
   [key: string]: unknown;
 };
 
+export type MeetingAgendaItem = {
+  record_id?: number;
+  index?: string;
+  topic?: string;
+  has_pdf?: boolean;
+  pdf_url?: string | null;
+  pdf_pages?: number;
+  [key: string]: unknown;
+};
+
+export type MeetingSubtopic = {
+  record_id?: number;
+  sub3_id?: number;
+  index?: string;
+  topic?: string;
+  has_pdf?: boolean;
+  pdf_url?: string | null;
+  pdf_pages?: number;
+  items?: MeetingAgendaItem[];
+  [key: string]: unknown;
+};
+
+export type MeetingTopic = {
+  record_id?: number;
+  sub2_id?: number;
+  index?: string;
+  topic?: string;
+  has_pdf?: boolean;
+  pdf_url?: string | null;
+  pdf_pages?: number;
+  subtopics?: MeetingSubtopic[];
+  [key: string]: unknown;
+};
+
 export type ExamTask = {
   room_id?: string;
   room?: string;

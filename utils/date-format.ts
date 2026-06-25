@@ -23,7 +23,13 @@ export function parseDateTime(value: string) {
     return null;
   }
 
-  const parsedDate = moment(trimmedValue, PARSE_FORMATS, true);
+  // Phoenix API returns Buddhist Era years (e.g. 2569 = CE 2026). Convert to CE before parsing.
+  const normalized = trimmedValue.replace(/^(\d{4})/, (_, y) => {
+    const n = parseInt(y, 10);
+    return n > 2400 ? String(n - 543) : y;
+  });
+
+  const parsedDate = moment(normalized, PARSE_FORMATS, true);
   return parsedDate.isValid() ? parsedDate : null;
 }
 
@@ -96,4 +102,23 @@ export function formatDateRange(startDate: string, endDate: string) {
 export function formatDateAndTime(dateValue: string, timeValue: string) {
   const value = [dateValue, timeValue].filter(Boolean).join(' ');
   return value ? formatDateTime(value) : '';
+}
+
+export function formatMeetingDetailDate(value: string): string {
+  const m = parseDateTime(value);
+  if (!m) return value;
+  const hasTime = /\d{1,2}:\d{2}/.test(value.trim());
+  const dayName = m.format('dddd');
+  const fullDayName = dayName.startsWith('วัน') ? dayName : `วัน${dayName}`;
+  const datePart = `${fullDayName}ที่ ${m.format('D MMMM')} พ.ศ. ${beYear(m)}`;
+  const timePart = hasTime ? ` • ${m.format('HH:mm')} น.` : '';
+  return `${datePart}${timePart}`;
+}
+
+export function formatTimeOnly(value: string): string {
+  if (!value || !/\d{1,2}:\d{2}/.test(value)) return '';
+  const m = parseDateTime(value);
+  if (m) return m.format('H:mm');
+  const match = value.match(/(\d{1,2}:\d{2})/);
+  return match ? match[1] : '';
 }

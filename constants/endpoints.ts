@@ -46,6 +46,8 @@ export const ENDPOINTS = {
   personUpdateInfo: `${API_BASE_URL}/api/person/update-info`,
   personUploadPhoto: `${API_BASE_URL}/api/person/upload-photo`,
   meeting: `${API_BASE_URL}/api/meeting`,
+  meetingTopics: `${API_BASE_URL}/api/meeting/topics`,
+  meetingPdf: `${API_BASE_URL}/api/meeting/pdf`,
   photoBase: PHOTO_BASE_URL,
   execCalendar: '/api/exec-calendars',
   pushRegisterDevice: `${API_BASE_URL}/api/push/register-device`,

@@ -191,6 +191,12 @@ export const TEXT = {
   MEETING_NO_MEETINGS_TODAY: 'ไม่มีการประชุมวันนี้',
   MEETING_TODAY: 'ประชุมวันนี้',
   MEETING_UNABLE_TO_LOAD_MEETINGS: 'ไม่สามารถโหลดข้อมูลการประชุมได้',
+  MEETING_AGENDA_TITLE: 'วาระการประชุม',
+  MEETING_AGENDA_SECTION: 'วาระการประชุม',
+  MEETING_TOPICS_COUNT: ' วาระ',
+  MEETING_LOADING_AGENDA: 'กำลังโหลดวาระการประชุม',
+  MEETING_NO_AGENDA: 'ไม่มีวาระการประชุม',
+  MEETING_UNABLE_TO_LOAD_AGENDA: 'ไม่สามารถโหลดวาระการประชุมได้',
 
   // Repair Computer
   REPAIR_COMPUTER_APPROVEMENT: 'อนุมัติครุภัณฑ์คอมพิวเตอร์',

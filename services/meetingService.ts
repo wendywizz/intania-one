@@ -1,5 +1,5 @@
 import { ENDPOINTS } from '../constants/endpoints';
-import type { Meeting } from '../models/types';
+import type { Meeting, MeetingTopic } from '../models/types';
 import { ensureSuccess, requestJson, type JsonMap } from './api';
 
 function createMeetingUrl(
@@ -28,4 +28,15 @@ export async function listMeeting(
   ensureSuccess(json);
 
   return Array.isArray(json.data) ? (json.data as Meeting[]) : [];
+}
+
+export async function getMeetingTopics(
+  mId = '',
+  mainId = '',
+): Promise<MeetingTopic[]> {
+  const url = new URL(ENDPOINTS.meetingTopics);
+  if (mId) url.searchParams.set('m_id', mId);
+  if (mainId) url.searchParams.set('main_id', mainId);
+  const json = await requestJson<JsonMap>(url.toString());
+  return Array.isArray(json.data) ? (json.data as MeetingTopic[]) : [];
 }

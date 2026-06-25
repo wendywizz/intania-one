@@ -1,7 +1,7 @@
-﻿import { CalendarDays, CalendarX, Clock, MapPin } from 'lucide-react-native';
+﻿import { CalendarDays, CalendarX, ChevronRight, MapPin } from 'lucide-react-native';
 import { TEXT } from "@/constants/text";
 import { StatusBar } from "expo-status-bar";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
     FlatList,
@@ -21,12 +21,13 @@ import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { Meeting } from "@/models/types";
 import { listMeeting } from "@/services/meetingService";
-import { formatDateAndTime, formatDateOnly } from "@/utils/date-format";
+import { formatDateOnly, formatTimeOnly, parseDateTime } from "@/utils/date-format";
 
-const titleFields = ["title", "topic", "subject", "meetingName", "meetingTitle", "name"];
-const dateFields = ["meetingDate", "date", "startDate", "meeting_date", "start_date"];
+const titleFields = ["name", "title", "topic", "subject", "meetingName", "meetingTitle"];
+const dateFields = ["m_lastdate", "meetingDate", "date", "startDate", "meeting_date", "start_date"];
 const timeFields = ["meetingTime", "time", "startTime", "meeting_time", "start_time"];
-const placeFields = ["location", "place", "room", "meetingRoom", "meeting_room"];
+const placeFields = ["room", "location", "place", "meetingRoom", "meeting_room"];
+const meetingNoFields = ["m_no", "meeting_no", "no", "number", "meeting_number"];
 
 function getText(meeting: Meeting, fields: string[]) {
   for (const field of fields) {
@@ -43,10 +44,10 @@ function getMeetingId(meeting: Meeting, index: number) {
 }
 
 function getDateSortKey(meeting: Meeting) {
-  const date = getText(meeting, dateFields);
-  const time = getText(meeting, timeFields);
-  const ts = Date.parse([date, time].filter(Boolean).join(" "));
-  return Number.isNaN(ts) ? "" : new Date(ts).toISOString().slice(0, 10);
+  const raw = getText(meeting, dateFields);
+  if (!raw) return "";
+  const m = parseDateTime(raw);
+  return m ? m.format('YYYY-MM-DD') : "";
 }
 
 type DateHeaderRow = { type: "date-header"; key: string; label: string };
@@ -87,35 +88,45 @@ function MeetingCard({ meeting }: { meeting: Meeting }) {
   const date = getText(meeting, dateFields);
   const time = getText(meeting, timeFields);
   const place = getText(meeting, placeFields);
-  const detail = getText(meeting, ["detail", "description", "agenda", "remark"]);
-  const schedule = formatDateAndTime(date, time);
+  const meetingNo = getText(meeting, meetingNoFields);
+  const timeStr = formatTimeOnly(date) || formatTimeOnly(time);
+
+  function handlePress() {
+    router.push({
+      pathname: '/meeting/detail',
+      params: {
+        m_id: String(meeting.m_id ?? ''),
+        main_id: String(meeting.main_id ?? ''),
+        name: title,
+        date,
+        room: place,
+        meeting_no: meetingNo,
+      },
+    });
+  }
 
   return (
-    <View style={styles.itemCard}>
+    <Pressable style={styles.itemCard} onPress={handlePress} accessibilityRole="button">
       <View style={styles.itemRow}>
-        <View style={styles.iconCircle}>
-          <CalendarDays size={20} color="#5D6371" />
+        <View style={[styles.timeBox, timeStr ? styles.timeBoxHasTime : styles.timeBoxNoTime]}>
+          {timeStr ? (
+            <ThemedText style={styles.timeText}>{timeStr}</ThemedText>
+          ) : (
+            <CalendarDays size={20} color="#5D6371" />
+          )}
         </View>
         <View style={styles.itemBody}>
           <ThemedText style={styles.itemTitle} numberOfLines={2}>{title}</ThemedText>
-          {schedule ? (
-            <View style={styles.metaRow}>
-              <Clock size={13} color="#585E6D" />
-              <ThemedText style={styles.metaText}>{schedule}</ThemedText>
-            </View>
-          ) : null}
           {place ? (
             <View style={styles.metaRow}>
               <MapPin size={13} color="#585E6D" />
               <ThemedText style={styles.metaText} numberOfLines={1}>{place}</ThemedText>
             </View>
           ) : null}
-          {detail ? (
-            <ThemedText style={styles.detailText} numberOfLines={2}>{detail}</ThemedText>
-          ) : null}
         </View>
+        <ChevronRight size={20} color="#8B716F" style={styles.chevron} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -272,15 +283,23 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  itemRow: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
-  iconCircle: {
-    width: 40,
-    height: 40,
+  itemRow: { flexDirection: "row", gap: 12, alignItems: "center" },
+  chevron: { flexShrink: 0 },
+  timeBox: {
+    width: 54,
+    minHeight: 44,
     borderRadius: 8,
-    backgroundColor: "#DADFF0",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
+  },
+  timeBoxHasTime: { backgroundColor: "#F5E8E8" },
+  timeBoxNoTime: { backgroundColor: "#DADFF0" },
+  timeText: {
+    fontFamily: AppFonts.psuBold,
+    fontSize: 15,
+    color: "#922124",
+    textAlign: "center",
   },
   itemBody: { flex: 1, gap: 6 },
   itemTitle: {

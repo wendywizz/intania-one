@@ -353,4 +353,8 @@ config.server = {
 // Allow Metro to process .mjs ESM files (required by lucide-react-native)
 config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'mjs'];
 
+// Disable package exports map enforcement so direct dist/cjs/icons/* imports
+// (used to avoid Metro queuing 1000+ .mjs barrel files) resolve without warnings.
+config.resolver.unstable_enablePackageExports = false;
+
 module.exports = config;
