@@ -3,6 +3,7 @@ import {AppState} from 'react-native';
 import type {AuthUser} from '../models/types';
 import * as authService from '../services/authService';
 import {registerLoggedInDevice, subscribeToLoggedInDevicePushTokenChanges} from '../services/deviceService';
+import {DEV_STAFF_ID} from '../constants/devConfig';
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -65,11 +66,13 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     return subscribeToLoggedInDevicePushTokenChanges(user);
   }, [user]);
 
+  const effectiveUser: AuthUser | null = user && __DEV__ && DEV_STAFF_ID ? {...user, staffId: DEV_STAFF_ID} : user;
+
   const value = useMemo<AuthContextValue>(
     () => ({
-      user,
+      user: effectiveUser,
       loading,
-      signedIn: Boolean(user),
+      signedIn: Boolean(effectiveUser),
       completeWebSignIn: async (params) => {
         setLoading(true);
         try {
@@ -104,7 +107,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         setUser(null);
       },
     }),
-    [loading, user],
+    [loading, effectiveUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

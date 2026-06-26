@@ -23,6 +23,7 @@ import Laptop from 'lucide-react-native/dist/cjs/icons/laptop';
 import List from 'lucide-react-native/dist/cjs/icons/list';
 import Search from 'lucide-react-native/dist/cjs/icons/search';
 import Send from 'lucide-react-native/dist/cjs/icons/send';
+import Settings from 'lucide-react-native/dist/cjs/icons/settings';
 import Sun from 'lucide-react-native/dist/cjs/icons/sun';
 import UserMinus from 'lucide-react-native/dist/cjs/icons/user-minus';
 import UserRoundSearch from 'lucide-react-native/dist/cjs/icons/user-round-search';
@@ -41,6 +42,7 @@ const MAPPING = {
   'house.fill': House,
   // Communication
   'bell.fill': Bell,
+  'gearshape.fill': Settings,
   'paperplane.fill': Send,
   // People
   'person.fill': User,

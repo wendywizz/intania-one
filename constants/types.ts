@@ -49,6 +49,31 @@ export const REPAIR_COMPUTER_PRIVILEGES = {
 export type RepairComputerRole =
   (typeof REPAIR_COMPUTER_PRIVILEGES)[keyof typeof REPAIR_COMPUTER_PRIVILEGES];
 
+// Public Repair roles (maps to PHP API role strings)
+export const PR_ROLE_INFORMER = 'informer' as const;
+export const PR_ROLE_APPROVE = 'approve' as const;
+export const PR_ROLE_ADMIN = 'administration' as const;
+export const PR_ROLE_HEADER = 'header' as const;
+export const PR_ROLE_TECHNICIAN = 'technician' as const;
+
+export type PublicRepairRole =
+  | typeof PR_ROLE_INFORMER
+  | typeof PR_ROLE_APPROVE
+  | typeof PR_ROLE_ADMIN
+  | typeof PR_ROLE_HEADER
+  | typeof PR_ROLE_TECHNICIAN;
+
+export const PR_DEFAULT_ROLE: PublicRepairRole = PR_ROLE_INFORMER;
+
+// Higher number = higher default priority when user has multiple roles
+export const PR_ROLE_PRIORITY: Record<PublicRepairRole, number> = {
+  approve: 4,
+  administration: 3,
+  header: 2,
+  technician: 1,
+  informer: 0,
+};
+
 export const REPAIR_STATUS_NEW_JOB = '0';
 export const REPAIR_STATUS_WAIT_WORKER = '2';
 export const REPAIR_STATUS_WORKER_REJECT = '2.1';

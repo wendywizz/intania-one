@@ -1,12 +1,12 @@
 import type React from 'react';
-import { Bell, Camera, ChevronRight, Fingerprint, Images, LogOut, Mail, MapPin, Moon, Phone, Trash2, User } from 'lucide-react-native';
+import { Bell, Camera, ChevronRight, Images, Mail, MapPin, Phone, Trash2, User } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { ActivityIndicator, Alert, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppToast } from '@/components/app-toast';
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -17,17 +17,9 @@ import { AppFonts } from '@/constants/fonts';
 import { ENDPOINTS } from '@/constants/endpoints';
 import { TEXT } from '@/constants/text';
 import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@/context/ThemeContext';
 import type { Person } from '@/models/types';
 import { getPersonnelSuggestions, uploadPersonPhoto } from '@/services/personService';
-import {
-  checkNotificationPermission,
-  getNotificationEnabled,
-  getUnreadNotificationCount,
-  requestNotificationPermission,
-  setNotificationEnabled,
-} from '@/services/notificationService';
-import { registerLoggedInDevice } from '@/services/deviceService';
+import { getUnreadNotificationCount } from '@/services/notificationService';
 
 const D = {
   bg: '#F5F6FA',
@@ -44,12 +36,6 @@ const D = {
   iconColorPhone: '#16A34A',
   iconBgEmail: '#FEE2E2',
   iconColorEmail: '#DC2626',
-  iconBgBell: '#EDE9FE',
-  iconColorBell: '#7C3AED',
-  iconBgBio: '#FFF7ED',
-  iconColorBio: '#EA580C',
-  iconBgDark: '#F1F5F9',
-  iconColorDark: '#475569',
 } as const;
 
 function str(v: unknown): string {
@@ -98,9 +84,6 @@ const ICON_CIRCLE_MAP: Record<string, React.ComponentType<{ size: number; color:
   place: MapPin,
   phone: Phone,
   email: Mail,
-  notifications: Bell,
-  fingerprint: Fingerprint,
-  'dark-mode': Moon,
 };
 
 function IconCircle({
@@ -123,8 +106,7 @@ function IconCircle({
 }
 
 export default function MyProfileScreen() {
-  const { user: authUser, signOut } = useAuth();
-  const { isDarkMode, toggleDarkMode } = useTheme();
+  const { user: authUser } = useAuth();
   const staffId = String(authUser?.staffId || '').trim();
 
   const [person, setPerson] = useState<Person | null>(null);
@@ -134,9 +116,6 @@ export default function MyProfileScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [localPhotoUri, setLocalPhotoUri] = useState<string | null>(null);
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [notificationsLoading, setNotificationsLoading] = useState(true);
-  const [biometricEnabled, setBiometricEnabled] = useState(true);
   const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoToastMessage, setPhotoToastMessage] = useState('');
@@ -164,14 +143,6 @@ export default function MyProfileScreen() {
 
   useEffect(() => { void loadPerson(); }, [loadPerson]);
 
-  useEffect(() => {
-    void Promise.all([checkNotificationPermission(), getNotificationEnabled()])
-      .then(([hasPermission, prefEnabled]) => {
-        setNotificationsEnabled(hasPermission && prefEnabled);
-      })
-      .finally(() => setNotificationsLoading(false));
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -181,17 +152,6 @@ export default function MyProfileScreen() {
       return () => { active = false; };
     }, []),
   );
-
-  function handleLogout() {
-    Alert.alert(
-      TEXT.HOME_CONFIRM_LOGOUT_TITLE,
-      TEXT.HOME_CONFIRM_LOGOUT_MESSAGE,
-      [
-        { text: TEXT.CANCEL, style: 'cancel' },
-        { text: TEXT.HOME_LOGOUT, style: 'destructive', onPress: () => signOut() },
-      ],
-    );
-  }
 
   async function handleTakePhoto() {
     setShowPhotoMenu(false);
@@ -252,39 +212,6 @@ export default function MyProfileScreen() {
     setShowPhotoMenu(false);
     setLocalPhotoUri(null);
     setPhotoFailed(true);
-  }
-
-  async function handleNotificationsToggle(next: boolean) {
-    if (next) {
-      const granted = await requestNotificationPermission();
-      if (!granted) {
-        Alert.alert(
-          'Permission Required',
-          'Notifications are blocked. Please enable them in your device Settings.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => Linking.openSettings() },
-          ],
-        );
-        return;
-      }
-      await setNotificationEnabled(true);
-      setNotificationsEnabled(true);
-      if (authUser) {
-        void registerLoggedInDevice(authUser).catch(() => null);
-      }
-    } else {
-      await setNotificationEnabled(false);
-      setNotificationsEnabled(false);
-      Alert.alert(
-        'Notifications Disabled',
-        'To fully stop notifications, also disable them in your device Settings.',
-        [
-          { text: 'OK', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => Linking.openSettings() },
-        ],
-      );
-    }
   }
 
   const personPhotoUri = person ? getPersonPhoto(person) : '';
@@ -523,69 +450,6 @@ export default function MyProfileScreen() {
             </View>
           </View>
 
-          {/* ── App Settings ───────────────────────────────────────────────── */}
-          <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>App Settings</ThemedText>
-
-            <View style={styles.settingsCard}>
-              <View style={[styles.toggleRow, styles.toggleDivider]}>
-                <IconCircle bg={D.iconBgBell} color={D.iconColorBell} name="notifications" />
-                <View style={styles.toggleBody}>
-                  <ThemedText style={styles.toggleTitle}>Push Notifications</ThemedText>
-                  <ThemedText style={styles.toggleSubtitle}>Leave updates and reminders</ThemedText>
-                </View>
-                <Switch
-                  value={notificationsEnabled}
-                  onValueChange={handleNotificationsToggle}
-                  disabled={notificationsLoading}
-                  trackColor={{ false: '#E1E2E6', true: D.primary }}
-                  thumbColor="#FFFFFF"
-                />
-              </View>
-
-              <View style={[styles.toggleRow, styles.toggleDivider]}>
-                <IconCircle bg={D.iconBgBio} color={D.iconColorBio} name="fingerprint" />
-                <View style={styles.toggleBody}>
-                  <ThemedText style={styles.toggleTitle}>Biometric Login</ThemedText>
-                  <ThemedText style={styles.toggleSubtitle}>FaceID or Fingerprint</ThemedText>
-                </View>
-                <Switch
-                  value={biometricEnabled}
-                  onValueChange={setBiometricEnabled}
-                  trackColor={{ false: '#E1E2E6', true: D.primary }}
-                  thumbColor="#FFFFFF"
-                />
-              </View>
-
-              <View style={styles.toggleRow}>
-                <IconCircle bg={D.iconBgDark} color={D.iconColorDark} name="dark-mode" />
-                <View style={styles.toggleBody}>
-                  <ThemedText style={styles.toggleTitle}>Dark Appearance</ThemedText>
-                  <ThemedText style={styles.toggleSubtitle}>Switch to low-light theme</ThemedText>
-                </View>
-                <Switch
-                  value={isDarkMode}
-                  onValueChange={toggleDarkMode}
-                  trackColor={{ false: '#E1E2E6', true: D.primary }}
-                  thumbColor="#FFFFFF"
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* ── Logout ─────────────────────────────────────────────────────── */}
-          <View style={styles.section}>
-            <Pressable
-              style={({ pressed }) => [styles.logoutButton, pressed && styles.logoutButtonPressed]}
-              onPress={handleLogout}
-              accessibilityRole="button"
-            >
-              <LogOut size={20} color={D.primary} />
-              <ThemedText style={styles.logoutText}>{TEXT.HOME_LOGOUT}</ThemedText>
-            </Pressable>
-            <ThemedText style={styles.versionText}>App Version 2.4.0 (Build 892)</ThemedText>
-          </View>
-
         </ScrollView>
       )}
       <AppToast message={photoToastMessage} type={photoToastType} />
@@ -816,77 +680,6 @@ emptyRow: {
     fontSize: 14,
     fontFamily: AppFonts.psuRegular,
     color: D.mutedText,
-  },
-
-  // ── Settings card ───────────────────────────────────────────────────────────
-  settingsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: D.border,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  toggleDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  toggleBody: { flex: 1, gap: 2 },
-  toggleTitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: AppFonts.psuBold,
-    color: '#191C1F',
-  },
-  toggleSubtitle: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontFamily: AppFonts.psuRegular,
-    color: D.mutedText,
-  },
-
-  // ── Logout ──────────────────────────────────────────────────────────────────
-  logoutButton: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: D.border,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  logoutButtonPressed: { backgroundColor: '#FFF5F5' },
-  logoutText: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontFamily: AppFonts.psuBold,
-    color: D.primary,
-  },
-  versionText: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontFamily: AppFonts.psuRegular,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    marginTop: 4,
   },
 
   // ── Photo confirm modal ──────────────────────────────────────────────────────

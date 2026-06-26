@@ -3,7 +3,8 @@ import { ENV } from './config';
 const EXPO_OS = process.env.EXPO_OS ?? '';
 
 export const API_DOMAINS = {
-  development: 'http://localhost:1337',
+  //development: 'http://localhost:1337',
+  development: 'http://172.31.133.131:1337',
   production: 'https://saas.eng.psu.ac.th',
 };
 
@@ -48,6 +49,7 @@ export const ENDPOINTS = {
   meeting: `${API_BASE_URL}/api/meeting`,
   meetingTopics: `${API_BASE_URL}/api/meeting/topics`,
   meetingPdf: `${API_BASE_URL}/api/meeting/pdf`,
+  publicRepair: `${API_BASE_URL}/api/public-repair`,
   photoBase: PHOTO_BASE_URL,
   execCalendar: '/api/exec-calendars',
   pushRegisterDevice: `${API_BASE_URL}/api/push/register-device`,

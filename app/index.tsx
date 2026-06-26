@@ -51,6 +51,7 @@ const MENU_ITEMS: ReadonlyArray<{ title: string; href: string; icon: IconName }>
   { title: TEXT.FORGOT_TIMESTAMP_TITLE, href: '/forgot-timestamp', icon: 'clock.fill' },
   { title: TEXT.MEETING_MENU_TITLE, href: '/meeting', icon: 'person.2.fill' },
   { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: '/repair-computer', icon: 'laptop' },
+  { title: TEXT.PUBLIC_REPAIR_MENU_TITLE, href: '/public-repair', icon: 'wrench.fill' },
   { title: TEXT.CALENDAR_TITLE, href: '/calendar', icon: 'calendar-range' },
   { title: TEXT.PERSON_SEARCH_TITLE, href: '/person-search', icon: 'user-round-search' },
   { title: TEXT.EXAMINER_MENU_TITLE, href: '/examiner', icon: 'checkmark.circle.fill' },
@@ -62,9 +63,9 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+const GREETINGS = ['Hooray', 'Hi', 'Hello', "What's up", 'Howdy', 'Yo'];
 function getGreeting() {
-  const h = new Date().getHours();
-  return h < 12 ? TEXT.HOME_GREETING_MORNING : h < 17 ? TEXT.HOME_GREETING_AFTERNOON : TEXT.HOME_GREETING_EVENING;
+  return GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
 }
 
 function getDateString() {
@@ -563,6 +564,7 @@ export default function HomeScreen() {
   // ─── Authenticated ──────────────────────────────────────────────────────────
 
   const displayedNews = newsItems;
+  const effectiveStaffId = authUser?.staffId ?? '';
   const menuCardWidth = Math.floor((screenWidth - D.pad * 2 - D.gap * 2) / 3);
   const newsCardWidth = Math.floor(screenWidth * 0.72);
   const avatarSource = authUser?.staffId
@@ -598,18 +600,37 @@ export default function HomeScreen() {
           </View>
         </Pressable>
 
-        <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={styles.headerTitle}>
-          {TEXT.HOME_APP_NAME}
-        </ThemedText>
+        <View style={styles.headerCenter}>
+          <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={styles.headerTitle}>
+            {getGreeting()}, {getFirstName(authUser)}
+          </ThemedText>
+          <ThemedText lightColor="rgba(255,255,255,0.6)" darkColor="rgba(255,255,255,0.6)" style={styles.headerStaffId}>
+            {getDateString()}
+          </ThemedText>
+          {!!effectiveStaffId && (
+            <ThemedText lightColor="rgba(255,255,255,0.65)" darkColor="rgba(255,255,255,0.65)" style={styles.headerStaffId}>
+              ID: {effectiveStaffId}
+            </ThemedText>
+          )}
+        </View>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Notifications"
-          onPress={() => navPush('/notification')}
-          style={styles.bellBtn}>
-          <IconSymbol name="bell.fill" size={22} color={D.onPrimary} />
-          {unreadCount > 0 ? <View style={styles.bellBadge} /> : null}
-        </Pressable>
+        <View style={styles.headerRight}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Settings"
+            onPress={() => navPush('/settings')}
+            style={styles.iconBtn}>
+            <IconSymbol name="gearshape.fill" size={22} color={D.onPrimary} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+            onPress={() => navPush('/notification')}
+            style={styles.iconBtn}>
+            <IconSymbol name="bell.fill" size={22} color={D.onPrimary} />
+            {unreadCount > 0 ? <View style={styles.bellBadge} /> : null}
+          </Pressable>
+        </View>
       </View>
 
       {/* ── Scrollable content ────────────────────────────────────────────── */}
@@ -618,17 +639,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={D.onPrimary} />}>
 
-        {/* Greeting — full-bleed red, visually extends the header */}
-        <View style={styles.greetingCard}>
-          <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={styles.greetingTitle}>
-            {getGreeting()}, {getFirstName(authUser)}
-          </ThemedText>
-          <ThemedText lightColor="rgba(255,255,255,0.6)" darkColor="rgba(255,255,255,0.6)" style={styles.greetingDate}>
-            {getDateString()}
-          </ThemedText>
-        </View>
-
-        {/* Padded sections below the greeting */}
+        {/* Padded sections below the header */}
         <View style={styles.innerContent}>
 
           {/* News section */}
@@ -784,14 +795,26 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 18,
   },
-  headerTitle: {
+  headerCenter: {
     flex: 1,
     marginHorizontal: 12,
+    gap: 1,
+  },
+  headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     lineHeight: 24,
   },
-  bellBtn: {
+  headerStaffId: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  iconBtn: {
     width: 40,
     height: 40,
     alignItems: 'center',
@@ -817,24 +840,7 @@ const styles = StyleSheet.create({
   },
 
   // Greeting — same red as header, no border-radius, full-width
-  greetingCard: {
-    backgroundColor: D.primaryContainer,
-    paddingHorizontal: D.pad,
-    paddingTop: 12,
-    paddingBottom: 12,
-    gap: 4,
-  },
-  greetingTitle: {
-    fontSize: 14,
-    fontWeight: '400',
-    lineHeight: 19,
-  },
-  greetingDate: {
-    fontSize: 12,
-    lineHeight: 17,
-  },
-
-  // Inner padded content below greeting
+  // Inner padded content below header
   innerContent: {
     paddingHorizontal: D.pad,
     paddingTop: 20,
