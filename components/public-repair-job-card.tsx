@@ -1,5 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
+import { TEXT } from '@/constants/text';
 import type { PublicRepairJob } from '@/models/types';
+import { formatDateOnly } from '@/utils/date-format';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -21,43 +23,55 @@ function statusColor(status?: string) {
   return STATUS_COLORS[status] ?? { bg: '#F3F4F6', text: '#6B7280' };
 }
 
+function statusBadge(job: PublicRepairJob): { label: string; bg: string; text: string } {
+  if (job.pending_type === 'header_rejected') {
+    return { label: TEXT.PR_PENDING_HEADER_REJECTED, bg: '#FEF2F2', text: '#B91C1C' };
+  }
+  if (job.pending_type === 'new') {
+    return { label: TEXT.PR_PENDING_NEW, bg: '#EFF6FF', text: '#2563EB' };
+  }
+  const sc = statusColor(job.repair_status);
+  return { label: job.repair_status_name ?? job.repair_status ?? '', bg: sc.bg, text: sc.text };
+}
+
 type Props = {
   job: PublicRepairJob;
   onPress: (job: PublicRepairJob) => void;
 };
 
 export function PublicRepairJobCard({ job, onPress }: Props) {
-  const sc = statusColor(job.repair_status);
-  const number = job.repair_number ? `#${job.repair_number}` : `ID ${job.repair_id}`;
+  const badge = statusBadge(job);
+  const number = job.repair_number ? `#${job.repair_number}` : `${job.repair_id}`;
   const location = [job.repair_place, job.building_name].filter(Boolean).join(' · ');
+  const dateRaw = job.repair_inform_date_th || job.repair_inform_date;
+  const dateText = dateRaw ? formatDateOnly(dateRaw) : null;
 
   return (
     <Pressable style={styles.card} onPress={() => onPress(job)} accessibilityRole="button">
+      {/* Row 1: หมายเลขงาน + สถานะ */}
       <View style={styles.row}>
         <ThemedText style={styles.number}>{number}</ThemedText>
-        <View style={[styles.badge, { backgroundColor: sc.bg }]}>
-          <ThemedText style={[styles.badgeText, { color: sc.text }]}>
-            {job.repair_status_name ?? job.repair_status}
+        <View style={[styles.badge, { backgroundColor: badge.bg }]}>
+          <ThemedText style={[styles.badgeText, { color: badge.text }]}>
+            {badge.label}
           </ThemedText>
         </View>
       </View>
 
+      {/* Row 2: ประเภทงาน */}
       {!!job.work_category_name && (
         <ThemedText style={styles.category}>{job.work_category_name}</ThemedText>
       )}
 
-      <ThemedText style={styles.description} numberOfLines={2}>
-        {job.repair_inform ?? '—'}
-      </ThemedText>
+      {/* Row 3: สถานที่ */}
+      {!!location && (
+        <ThemedText style={styles.location} numberOfLines={1}>{location}</ThemedText>
+      )}
 
-      <View style={styles.footer}>
-        {!!location && (
-          <ThemedText style={styles.meta} numberOfLines={1}>{location}</ThemedText>
-        )}
-        {!!job.repair_inform_date_th && (
-          <ThemedText style={styles.date}>{job.repair_inform_date_th}</ThemedText>
-        )}
-      </View>
+      {/* Row 4: วันที่แจ้ง */}
+      {!!dateText && (
+        <ThemedText style={styles.date}>แจ้งเมื่อ {dateText}</ThemedText>
+      )}
     </Pressable>
   );
 }
@@ -69,7 +83,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginHorizontal: 12,
     marginVertical: 5,
-    gap: 6,
+    gap: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.07,
@@ -80,9 +94,7 @@ const styles = StyleSheet.create({
   number: { fontSize: 13, fontWeight: '600', color: '#374151' },
   badge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
   badgeText: { fontSize: 11, fontWeight: '600' },
-  category: { fontSize: 12, color: '#922124', fontWeight: '500' },
-  description: { fontSize: 14, color: '#111827', lineHeight: 20 },
-  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 },
-  meta: { flex: 1, fontSize: 12, color: '#6B7280' },
-  date: { fontSize: 12, color: '#9CA3AF', marginLeft: 8 },
+  category: { fontSize: 14, color: '#922124', fontWeight: '600' },
+  location: { fontSize: 13, color: '#6B7280' },
+  date: { fontSize: 12, color: '#9CA3AF' },
 });

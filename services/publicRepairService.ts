@@ -33,9 +33,9 @@ async function postJson<T>(url: string, body: unknown, method = 'POST'): Promise
 // ── Privilege ─────────────────────────────────────────────────────────────────
 
 export async function getPrivilege(staffId: string): Promise<PublicRepairPrivilege> {
-  const json = await getJson<{ success: boolean; data: PublicRepairPrivilege }>(
-    buildUrl('/privilege', { staff_id: staffId }),
-  );
+  const url = new URL(ENDPOINTS.publicRepairRoleCheck);
+  url.searchParams.set('staff_id', staffId);
+  const json = await getJson<{ success: boolean; data: PublicRepairPrivilege }>(url.toString());
   if (!json.success || !json.data) throw new Error('ไม่สามารถตรวจสอบสิทธิ์ได้');
   return json.data;
 }
@@ -48,6 +48,19 @@ export async function getList(
   start = 0,
   length = 20,
 ): Promise<ListResponse<PublicRepairJob>> {
+  // Approver ("หัวหน้าสาธารณูปการ") pending screen — backed by the Infor approve_new
+  // endpoint, which returns the full list in one response (no pagination).
+  if (type === 'approve_pending') return getApproveNewJobs(staffId, start);
+
+  // Approver history top-tabs (ซ่อมได้ / ซ่อมไม่ได้) — each backed by its own Infor
+  // endpoint, returned as a full list in one response (no pagination).
+  if (type === 'approve_history_repairable') {
+    return getRepairListFromUrl(ENDPOINTS.publicRepairCanRepair, staffId, start);
+  }
+  if (type === 'approve_history_unrepairable') {
+    return getRepairListFromUrl(ENDPOINTS.publicRepairNotRepair, staffId, start);
+  }
+
   const perPage = length;
   const page = Math.floor(start / perPage);
   const json = await getJson<{
@@ -65,12 +78,38 @@ export async function getList(
   };
 }
 
+// ── Approver lists (full list per response, no pagination) ─────────────────────
+
+async function getRepairListFromUrl(
+  endpoint: string,
+  staffId: string,
+  start = 0,
+): Promise<ListResponse<PublicRepairJob>> {
+  // Upstream returns the full list at once, so paginated follow-up calls are empty.
+  if (start > 0) return { data: [], totalCount: 0, message: '' };
+
+  const url = new URL(endpoint);
+  url.searchParams.set('staff_id', staffId);
+  const json = await getJson<{ success: boolean; data: PublicRepairJob[]; total_count?: number }>(
+    url.toString(),
+  );
+
+  if (!json.success) throw new Error('ไม่สามารถโหลดรายการได้');
+  const data = Array.isArray(json.data) ? json.data : [];
+  return { data, totalCount: Number(json.total_count ?? data.length), message: '' };
+}
+
+export function getApproveNewJobs(staffId: string, start = 0): Promise<ListResponse<PublicRepairJob>> {
+  return getRepairListFromUrl(ENDPOINTS.publicRepairApproveNew, staffId, start);
+}
+
 // ── Detail ────────────────────────────────────────────────────────────────────
 
 export async function getDetail(repairId: number, staffId: string): Promise<PublicRepairDetail> {
-  const json = await getJson<{ success: boolean; data: PublicRepairDetail }>(
-    buildUrl('/detail', { repair_id: repairId, staff_id: staffId }),
-  );
+  const url = new URL(ENDPOINTS.publicRepairDetail);
+  url.searchParams.set('repair_id', String(repairId));
+  url.searchParams.set('staff_id', staffId);
+  const json = await getJson<{ success: boolean; data: PublicRepairDetail }>(url.toString());
   if (!json.success || !json.data) throw new Error('ไม่สามารถโหลดรายละเอียดได้');
   return json.data;
 }

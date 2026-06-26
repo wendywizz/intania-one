@@ -353,8 +353,22 @@ config.server = {
 // Allow Metro to process .mjs ESM files (required by lucide-react-native)
 config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'mjs'];
 
-// Disable package exports map enforcement so direct dist/cjs/icons/* imports
-// (used to avoid Metro queuing 1000+ .mjs barrel files) resolve without warnings.
-config.resolver.unstable_enablePackageExports = false;
+// lucide-react-native only declares "." and "./icons" in its package "exports",
+// so the per-icon deep imports in components/ui/icon-symbol.tsx (used to avoid
+// Metro queuing 1000+ .mjs barrel files) trip a package-exports warning and fall
+// back to file-based resolution. Rather than disabling package exports globally
+// (which reverts every dependency to legacy resolution and can break other SDK 54
+// packages), bypass exports resolution only for lucide's deep icon imports.
+const defaultResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName.startsWith('lucide-react-native/dist/')) {
+    return context.resolveRequest(
+      { ...context, unstable_enablePackageExports: false },
+      moduleName,
+      platform,
+    );
+  }
+  return (defaultResolveRequest ?? context.resolveRequest)(context, moduleName, platform);
+};
 
 module.exports = config;

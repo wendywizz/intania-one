@@ -10,25 +10,36 @@ import { getList } from '@/services/publicRepairService';
 import { navPush } from '@/utils/navigation';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 const ITEM_HEIGHT = 120;
 const CHROME_HEIGHT = 200;
 
+export type PublicRepairSegment = {
+  label: string;
+  listType: string;
+};
+
 type Props = {
   title: string;
-  listType: string;
   staffId: string;
+  /** Single list mode. Ignored when `segments` is provided. */
+  listType?: string;
+  /** Top-tab mode: renders a segmented bar and lists the selected segment. */
+  segments?: PublicRepairSegment[];
 };
 
 function getPageSize(height: number) {
   return Math.max(5, Math.ceil((height - CHROME_HEIGHT) / ITEM_HEIGHT));
 }
 
-export function PublicRepairListScreen({ title, listType, staffId }: Props) {
+export function PublicRepairListScreen({ title, listType, staffId, segments }: Props) {
   const { roleSwitcher } = usePublicRepairRole();
   const { height } = useWindowDimensions();
   const pageSize = getPageSize(height);
+
+  const [activeSegment, setActiveSegment] = useState(0);
+  const currentListType = segments ? segments[activeSegment].listType : (listType ?? '');
 
   const [jobs, setJobs] = useState<PublicRepairJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +62,7 @@ export function PublicRepairListScreen({ title, listType, staffId }: Props) {
     }
 
     try {
-      const result = await getList(listType, staffId, start, pageSize);
+      const result = await getList(currentListType, staffId, start, pageSize);
       loadedRef.current.add(start);
       setJobs((prev) => (start === 0 ? result.data : [...prev, ...result.data]));
       setHasMore(result.data.length >= pageSize && start + result.data.length < (result.totalCount || Infinity));
@@ -67,7 +78,14 @@ export function PublicRepairListScreen({ title, listType, staffId }: Props) {
       setIsRefreshing(false);
       setIsLoadingMore(false);
     }
-  }, [listType, staffId, pageSize]);
+  }, [currentListType, staffId, pageSize]);
+
+  const selectSegment = useCallback((index: number) => {
+    if (index === activeSegment) return;
+    loadedRef.current = new Set();
+    setJobs([]);
+    setActiveSegment(index);
+  }, [activeSegment]);
 
   const refresh = useCallback(() => {
     loadedRef.current = new Set();
@@ -94,7 +112,27 @@ export function PublicRepairListScreen({ title, listType, staffId }: Props) {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={title} showHomeButton rightContent={roleSwitcher} />
+      <NavTopBar title={title} backHref="/" rightContent={roleSwitcher} />
+
+      {segments && (
+        <View style={styles.segmentBar}>
+          {segments.map((seg, i) => {
+            const active = i === activeSegment;
+            return (
+              <Pressable
+                key={seg.listType}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                style={[styles.segment, active && styles.segmentActive]}
+                onPress={() => selectSegment(i)}>
+                <ThemedText style={[styles.segmentText, active && styles.segmentTextActive]}>
+                  {seg.label}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
 
       {isLoading ? (
         <LoadingAnimate title={title} desc={TEXT.PR_LOADING} />
@@ -125,6 +163,26 @@ export function PublicRepairListScreen({ title, listType, staffId }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  segmentBar: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  segment: {
+    flex: 1,
+    minHeight: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E1E2E6',
+    backgroundColor: '#FFFFFF',
+  },
+  segmentActive: { backgroundColor: '#751A1D', borderColor: '#751A1D' },
+  segmentText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
+  segmentTextActive: { color: '#FFFFFF' },
   list: { paddingVertical: 6 },
   emptyContainer: { flexGrow: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },

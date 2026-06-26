@@ -161,9 +161,27 @@ export type PublicRepairJob = {
   repair_requisition?: string;
   repair_examine?: string | null;
   lastupdate?: string;
+  // approve_new (Head/approver pending) — distinguishes new jobs from those
+  // returned by the Header role, with the rejection metadata.
+  pending_type?: 'new' | 'header_rejected' | string;
+  repair_not_note?: string;
+  not_header_staff?: string | null;
+  not_header_date?: string | null;
+  repair_type_label?: string;
+  informer_position?: string;
+};
+
+export type PublicRepairInformer = {
+  STAFF_ID?: string;
+  FNAME_TH?: string;
+  SNAME_TH?: string;
+  DEPT_ID?: string;
+  POSITION_NAME?: string;
+  DEPT_NAME_TH?: string;
 };
 
 export type PublicRepairDetail = PublicRepairJob & {
+  informer?: PublicRepairInformer;
   header?: {
     repair_header_id?: number;
     header_name?: string;

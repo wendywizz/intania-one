@@ -59,7 +59,7 @@ export default function PublicRepairDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.PR_DETAIL_TITLE} />
+      <NavTopBar title={TEXT.PR_DETAIL_TITLE} backHref="/public-repair" showHomeButton />
 
       {isLoading ? (
         <ActivityIndicator style={styles.loader} size="large" color="#922124" />
@@ -95,6 +95,8 @@ export default function PublicRepairDetailScreen() {
             <Row label={TEXT.PR_DETAIL_BUILDING}   value={detail.building_name} />
             <Row label={TEXT.PR_DETAIL_DESCRIPTION} value={detail.repair_inform} />
             <Row label={TEXT.PR_DETAIL_INFORMER}   value={detail.informer_name} />
+            <Row label={TEXT.PR_DETAIL_POSITION}   value={detail.informer_position} />
+            <Row label={TEXT.PR_DETAIL_DEPARTMENT} value={detail.repair_inform_dept_name} />
             <Row label={TEXT.PR_DETAIL_DATE}       value={detail.repair_inform_date_th ?? detail.repair_inform_date} />
             {detail.repair_tel ? <Row label="โทรศัพท์" value={detail.repair_tel} /> : null}
             {detail.repair_remark ? <Row label="หมายเหตุ" value={detail.repair_remark} /> : null}
