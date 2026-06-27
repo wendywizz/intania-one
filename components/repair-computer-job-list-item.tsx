@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import type { RepairComputer } from '@/models/types';
+import { getCategoryIcon } from '@/utils/category-icon';
 import { formatDateTime } from '@/utils/date-format';
 import { getRepairStatusBadgeStyle } from '@/utils/repair-computer-status';
 
@@ -50,7 +51,11 @@ export function RepairComputerJobListItem({ job, fallbackTitle = TEXT.REPAIR_COM
   const jobId = getRepairComputerJobId(job);
   const jobTitle = getRepairComputerJobText(job, repairTypeOnly ? repairTypeTitleFields : titleFields) || fallbackTitle || jobId || '-';
   const supplyCode = getRepairComputerJobText(job, supplyFields);
-  const repairTypeName = showRepairType ? getRepairComputerJobText(job, repairTypeTitleFields) : '';
+  const repairType = getRepairComputerJobText(job, repairTypeTitleFields);
+  // Only show the repair-type row when it adds info beyond the title (avoids the
+  // duplicate "ประเภทงาน" line under a title that already is the repair type).
+  const repairTypeName = showRepairType && repairType !== jobTitle ? repairType : '';
+  const categoryIcon = getCategoryIcon(repairType);
   const informDate = formatDateTime(getRepairComputerJobText(job, informDateFields));
   const statusLabel = getRepairComputerJobText(job, statusLabelFields);
   const statusId = getRepairComputerJobText(job, statusIdFields);
@@ -59,43 +64,59 @@ export function RepairComputerJobListItem({ job, fallbackTitle = TEXT.REPAIR_COM
   const content = (
     <Pressable accessibilityRole="button" disabled={!onPress} onPress={() => onPress?.(job)}>
       <ThemedView style={styles.itemCard} lightColor="#FFFFFF" darkColor="#151718">
-        <View style={styles.itemHeader}>
-          <ThemedText type="defaultSemiBold" style={styles.itemTitle} numberOfLines={2}>
-            {jobTitle}
-          </ThemedText>
-          {statusLabel ? (
-            <View style={[styles.statusBadge, { backgroundColor: badgeStyle.background }]}>
-              <ThemedText style={[styles.statusText, { color: badgeStyle.text }]}>
-                {statusLabel}
-              </ThemedText>
+        <View style={styles.itemRow}>
+          {/* Leading category icon — only when a repair type is defined */}
+          {repairType ? (
+            <View style={styles.iconBox}>
+              <IconSymbol name={categoryIcon} size={22} color="#922124" />
             </View>
           ) : null}
+
+          <View style={styles.itemBody}>
+            <View style={styles.itemHeader}>
+              <ThemedText type="defaultSemiBold" style={styles.itemTitle} numberOfLines={2}>
+                {jobTitle}
+              </ThemedText>
+              {statusLabel ? (
+                <View style={[styles.statusBadge, { backgroundColor: badgeStyle.background }]}>
+                  <ThemedText style={[styles.statusText, { color: badgeStyle.text }]}>
+                    {statusLabel}
+                  </ThemedText>
+                </View>
+              ) : null}
+            </View>
+
+            {supplyCode ? (
+              <View style={styles.codeRow}>
+                <ThemedText style={styles.codeLabel}>
+                  {TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL}{' '}
+                </ThemedText>
+                <ThemedText style={styles.codeValue}>{supplyCode}</ThemedText>
+              </View>
+            ) : null}
+
+            {repairTypeName ? (
+              <View style={styles.codeRow}>
+                <ThemedText style={styles.codeLabel}>
+                  {TEXT.REPAIR_COMPUTER_REPAIR_TYPE_LABEL}{' '}
+                </ThemedText>
+                <ThemedText style={styles.repairTypeValue}>{repairTypeName}</ThemedText>
+              </View>
+            ) : null}
+
+            {informDate ? (
+              <View style={styles.dateRow}>
+                <IconSymbol name="calendar" size={13} color="#584140" />
+                <ThemedText style={styles.itemMeta}>{informDate}</ThemedText>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Navigable indicator */}
+          {onPress ? (
+            <IconSymbol name="chevron.right" size={18} color="#9CA3AF" style={styles.chevron} />
+          ) : null}
         </View>
-
-        {supplyCode ? (
-          <View style={styles.codeRow}>
-            <ThemedText style={styles.codeLabel}>
-              {TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL}{' '}
-            </ThemedText>
-            <ThemedText style={styles.codeValue}>{supplyCode}</ThemedText>
-          </View>
-        ) : null}
-
-        {repairTypeName ? (
-          <View style={styles.codeRow}>
-            <ThemedText style={styles.codeLabel}>
-              {TEXT.REPAIR_COMPUTER_REPAIR_TYPE_LABEL}{' '}
-            </ThemedText>
-            <ThemedText style={styles.repairTypeValue}>{repairTypeName}</ThemedText>
-          </View>
-        ) : null}
-
-        {informDate ? (
-          <View style={styles.dateRow}>
-            <IconSymbol name="calendar" size={13} color="#584140" />
-            <ThemedText style={styles.itemMeta}>{informDate}</ThemedText>
-          </View>
-        ) : null}
       </ThemedView>
     </Pressable>
   );
@@ -128,6 +149,26 @@ const styles = StyleSheet.create({
     gap: 8,
     boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
     elevation: 1,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  iconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FBEAEA',
+  },
+  itemBody: {
+    flex: 1,
+    gap: 8,
+  },
+  chevron: {
+    alignSelf: 'center',
   },
   itemHeader: {
     flexDirection: 'row',

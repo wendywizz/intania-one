@@ -51,7 +51,7 @@ const MENU_ITEMS: ReadonlyArray<{ title: string; href: string; icon: IconName }>
   { title: TEXT.FORGOT_TIMESTAMP_TITLE, href: '/forgot-timestamp', icon: 'clock.fill' },
   { title: TEXT.MEETING_MENU_TITLE, href: '/meeting', icon: 'person.2.fill' },
   { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: '/repair-computer', icon: 'laptop' },
-  { title: TEXT.PUBLIC_REPAIR_MENU_TITLE, href: '/public-repair', icon: 'wrench.fill' },
+  { title: TEXT.PUBLIC_REPAIR_MENU_TITLE, href: '/notice-repair', icon: 'wrench.fill' },
   { title: TEXT.CALENDAR_TITLE, href: '/calendar', icon: 'calendar-range' },
   { title: TEXT.PERSON_SEARCH_TITLE, href: '/person-search', icon: 'user-round-search' },
   { title: TEXT.EXAMINER_MENU_TITLE, href: '/examiner', icon: 'checkmark.circle.fill' },

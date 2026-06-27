@@ -56,17 +56,17 @@ export const PR_ROLE_ADMIN = 'administration' as const;
 export const PR_ROLE_HEADER = 'header' as const;
 export const PR_ROLE_TECHNICIAN = 'technician' as const;
 
-export type PublicRepairRole =
+export type NoticeRepairRole =
   | typeof PR_ROLE_INFORMER
   | typeof PR_ROLE_APPROVE
   | typeof PR_ROLE_ADMIN
   | typeof PR_ROLE_HEADER
   | typeof PR_ROLE_TECHNICIAN;
 
-export const PR_DEFAULT_ROLE: PublicRepairRole = PR_ROLE_INFORMER;
+export const PR_DEFAULT_ROLE: NoticeRepairRole = PR_ROLE_INFORMER;
 
 // Higher number = higher default priority when user has multiple roles
-export const PR_ROLE_PRIORITY: Record<PublicRepairRole, number> = {
+export const PR_ROLE_PRIORITY: Record<NoticeRepairRole, number> = {
   approve: 4,
   administration: 3,
   header: 2,

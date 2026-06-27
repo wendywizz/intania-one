@@ -121,7 +121,7 @@ export type ExamDetail = {
   [key: string]: unknown;
 };
 
-export type PublicRepairPrivilege = {
+export type NoticeRepairPrivilege = {
   success?: boolean;
   staff_id?: number;
   uni_staff_id?: string;
@@ -133,7 +133,7 @@ export type PublicRepairPrivilege = {
   approve_dept_ids: number[];
 };
 
-export type PublicRepairJob = {
+export type NoticeRepairJob = {
   repair_id: number;
   repair_year?: number;
   repair_numb?: number;
@@ -171,7 +171,7 @@ export type PublicRepairJob = {
   informer_position?: string;
 };
 
-export type PublicRepairInformer = {
+export type NoticeRepairInformer = {
   STAFF_ID?: string;
   FNAME_TH?: string;
   SNAME_TH?: string;
@@ -180,8 +180,8 @@ export type PublicRepairInformer = {
   DEPT_NAME_TH?: string;
 };
 
-export type PublicRepairDetail = PublicRepairJob & {
-  informer?: PublicRepairInformer;
+export type NoticeRepairDetail = NoticeRepairJob & {
+  informer?: NoticeRepairInformer;
   header?: {
     repair_header_id?: number;
     header_name?: string;
@@ -205,7 +205,7 @@ export type PublicRepairDetail = PublicRepairJob & {
   admin_staff_name?: string;
 };
 
-export type PublicRepairReference = {
+export type NoticeRepairReference = {
   work_category_id?: number;
   work_category_name?: string;
   work_type_id?: number;

@@ -218,6 +218,7 @@ export const TEXT = {
   PR_TAB_DONE: 'เสร็จสิ้น',
   PR_TAB_ASSIGNED: 'งานที่ได้รับ',
 
+  PR_LIST_SUBTITLE: 'ติดตามและจัดการรายการแจ้งซ่อมสาธารณูปการ',
   PR_LOADING: 'กำลังโหลดรายการ',
   PR_LOADING_PRIVILEGE: 'กำลังตรวจสอบสิทธิ์',
   PR_NO_ITEMS: 'ไม่มีรายการแจ้งซ่อม',
@@ -265,6 +266,21 @@ export const TEXT = {
   PR_ACTION_ACCEPT: 'ออกเลขรับ',
   PR_ACTION_EXAMINE_OK: 'งานเรียบร้อย',
   PR_ACTION_EXAMINE_NOT_OK: 'งานไม่เรียบร้อย',
+
+  // Approver (หัวหน้าสาธารณูปการ) detail actions on a new job (status 001)
+  PR_ACTION_AGREE: 'เห็นชอบ',
+  PR_ACTION_NOT_AGREE: 'ไม่เห็นชอบ',
+  PR_ACTION_CANCEL: 'ยกเลิก',
+  PR_ACTION_CONFIRM: 'ยืนยัน',
+  PR_ACTION_AGREE_CONFIRM: 'ยืนยันการเห็นชอบใบแจ้งซ่อมนี้?',
+  PR_ACTION_CANCEL_CONFIRM: 'ยืนยันการยกเลิกใบแจ้งซ่อมนี้?',
+  PR_ACTION_NOT_AGREE_CONFIRM: 'ยืนยันการไม่เห็นชอบใบแจ้งซ่อมนี้?',
+  PR_ACTION_NOT_AGREE_REASON_LABEL: 'เหตุผลที่ไม่เห็นชอบ',
+  PR_ACTION_NOT_AGREE_REASON_PLACEHOLDER: 'กรุณาระบุเหตุผล',
+  PR_ACTION_REASON_REQUIRED: 'กรุณาระบุเหตุผล',
+  PR_ACTION_SUBMIT: 'ส่ง',
+  PR_ACTION_SUCCESS: 'ดำเนินการสำเร็จ',
+  PR_ACTION_FAILED: 'ดำเนินการไม่สำเร็จ',
 
   // Repair Computer
   REPAIR_COMPUTER_APPROVEMENT: 'อนุมัติครุภัณฑ์คอมพิวเตอร์',

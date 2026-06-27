@@ -28,8 +28,7 @@ function AppStack() {
         <Stack.Screen name="absence" options={{ headerShown: false }} />
         <Stack.Screen name="meeting" options={{ headerShown: false }} />
         <Stack.Screen name="repair-computer" options={{ headerShown: false }} />
-        <Stack.Screen name="public-repair" options={{ headerShown: false }} />
-        <Stack.Screen name="public-repair/detail" options={{ headerShown: false }} />
+        <Stack.Screen name="notice-repair" options={{ headerShown: false }} />
         <Stack.Screen name="calendar" options={{ headerShown: false }} />
         <Stack.Screen name="news" options={{ headerShown: false }} />
         <Stack.Screen name="news-detail" options={{ headerShown: false }} />
@@ -86,3 +85,4 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
