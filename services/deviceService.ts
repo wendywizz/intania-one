@@ -304,11 +304,14 @@ async function registerLoggedInDeviceWithToken(user: AuthUser, pushToken: PushRe
 }
 
 export async function registerLoggedInDevice(user: AuthUser) {
+  // The web build has no push capability — never register a device there.
+  if (Platform.OS === "web") return;
   const pushToken = await getPushRegistrationToken();
   await registerLoggedInDeviceWithToken(user, pushToken);
 }
 
 export async function registerLoggedInDeviceOnce(user: AuthUser) {
+  if (Platform.OS === "web") return;
   const staffId = getStaffId(user);
   const deviceId = await getDeviceId();
   const pushToken = await getPushRegistrationToken();
@@ -336,6 +339,9 @@ export async function registerLoggedInDeviceOnce(user: AuthUser) {
 }
 
 export function subscribeToLoggedInDevicePushTokenChanges(user: AuthUser) {
+  // No push tokens on web — nothing to subscribe to.
+  if (Platform.OS === "web") return () => {};
+
   let subscription: { remove: () => void } | null = null;
   let isDisposed = false;
 

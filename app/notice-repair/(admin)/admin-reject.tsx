@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TEXT } from '@/constants/text';
 import { useAuth } from '@/context/AuthContext';
-import { notAgreeRepair } from '@/services/noticeRepairService';
+import { adminRejectRepair } from '@/services/noticeRepairService';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
@@ -12,7 +12,7 @@ import {
   Pressable, ScrollView, StyleSheet, TextInput, View,
 } from 'react-native';
 
-export default function NoticeRepairNotAgreeScreen() {
+export default function NoticeRepairAdminRejectScreen() {
   const { repair_id, staff_id: paramStaff } = useLocalSearchParams<{ repair_id: string; staff_id: string }>();
   const { user } = useAuth();
   const staffId = paramStaff ?? user?.staffId ?? '';
@@ -41,13 +41,13 @@ export default function NoticeRepairNotAgreeScreen() {
     if (!trimmed || submitting) return;
     setSubmitting(true);
     try {
-      await notAgreeRepair(repair_id, staffId, trimmed);
+      await adminRejectRepair(repair_id, staffId, trimmed);
       setConfirmOpen(false);
       Alert.alert(TEXT.NOTICE_REPAIR_ACTION_SUCCESS, undefined, [
         {
           text: TEXT.NOTICE_REPAIR_ACTION_CONFIRM,
           onPress: () => {
-            // Pop the not-agree screen + the detail to land back on the list,
+            // Pop the reject screen + the detail to land back on the list,
             // which reloads on focus and drops the rejected job.
             if (router.canDismiss()) router.dismiss(2);
             else router.back();
@@ -64,13 +64,13 @@ export default function NoticeRepairNotAgreeScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.NOTICE_REPAIR_ACTION_NOT_AGREE} />
+      <NavTopBar title={TEXT.NOTICE_REPAIR_ACTION_ADMIN_REJECT} />
 
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <ThemedText style={styles.label}>{TEXT.NOTICE_REPAIR_ACTION_NOT_AGREE_REASON_LABEL}</ThemedText>
+          <ThemedText style={styles.label}>{TEXT.NOTICE_REPAIR_ACTION_ADMIN_REJECT_REASON_LABEL}</ThemedText>
           <TextInput
             value={reason}
             onChangeText={onChangeReason}
@@ -101,9 +101,9 @@ export default function NoticeRepairNotAgreeScreen() {
 
       <ConfirmModal
         visible={confirmOpen}
-        title={TEXT.NOTICE_REPAIR_ACTION_NOT_AGREE}
-        message={TEXT.NOTICE_REPAIR_ACTION_NOT_AGREE_CONFIRM}
-        confirmLabel={TEXT.NOTICE_REPAIR_ACTION_NOT_AGREE}
+        title={TEXT.NOTICE_REPAIR_ACTION_ADMIN_REJECT}
+        message={TEXT.NOTICE_REPAIR_ACTION_ADMIN_REJECT_CONFIRM}
+        confirmLabel={TEXT.NOTICE_REPAIR_ACTION_ADMIN_REJECT}
         destructive
         loading={submitting}
         onConfirm={doSubmit}

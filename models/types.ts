@@ -160,6 +160,7 @@ export type NoticeRepairJob = {
   repair_administration_date?: string;
   repair_requisition?: string;
   repair_examine?: string | null;
+  repair_examine_remark?: string | null;
   lastupdate?: string;
   // approve_new (Head/approver pending) — distinguishes new jobs from those
   // returned by the Header role, with the rejection metadata.
@@ -184,6 +185,7 @@ export type NoticeRepairDetail = NoticeRepairJob & {
   informer?: NoticeRepairInformer;
   header?: {
     repair_header_id?: number;
+    header_staff?: string;
     header_name?: string;
     header_date_start?: string;
     header_date_end?: string;
@@ -192,13 +194,21 @@ export type NoticeRepairDetail = NoticeRepairJob & {
     repair_finish_date?: string;
     repair_note_date?: string;
   } | null;
-  technicians?: { repair_technician?: number; name?: string; staff_type?: string }[];
-  requisition?: {
-    requisition_equipment?: string;
-    requisition_equipment_number?: number;
-    requisition_equipment_unit?: string;
-    requisition_equipment_price?: number;
+  technicians?: { type?: string; staff_id?: string | null; name?: string }[];
+  // full_detail / header_detail material lines (requisition_equipment rows).
+  requisitions?: {
+    name?: string;
+    number?: number;
+    unit?: string;
+    price_unit?: number;
+    price?: number;
+    /** 'd' = ผู้แจ้งจัดหาเอง, 'c' = หน่วยอาคารฯ จัดหาให้. */
+    status?: string;
   }[];
+  // Foreman assessment ('y' can repair) and informer examination result.
+  repair?: string;
+  repair_estimate?: string;
+  examine?: { repair_examine?: string; repair_examine_remark?: string };
   not_repair?: Record<string, unknown> | null;
   informer_name?: string;
   approve_staff_name?: string;

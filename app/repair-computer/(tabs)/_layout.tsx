@@ -334,6 +334,8 @@ export default function RepairComputerTabLayout() {
             options={{
               title: TEXT.REPAIR_COMPUTER_INFORM,
               href: null,
+              // Reached via the FAB; hide the bottom tab bar while open.
+              tabBarStyle: { display: 'none' },
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
             }}
           />

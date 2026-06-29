@@ -28,10 +28,10 @@ function statusColor(status?: string) {
 
 function statusBadge(job: NoticeRepairJob): { label: string; bg: string; text: string } {
   if (job.pending_type === 'header_rejected') {
-    return { label: TEXT.PR_PENDING_HEADER_REJECTED, bg: '#FEF2F2', text: '#B91C1C' };
+    return { label: TEXT.NOTICE_REPAIR_PENDING_HEADER_REJECTED, bg: '#FEF2F2', text: '#B91C1C' };
   }
   if (job.pending_type === 'new') {
-    return { label: TEXT.PR_PENDING_NEW, bg: '#EFF6FF', text: '#2563EB' };
+    return { label: TEXT.NOTICE_REPAIR_PENDING_NEW, bg: '#EFF6FF', text: '#2563EB' };
   }
   const sc = statusColor(job.repair_status);
   return { label: job.repair_status_name ?? job.repair_status ?? '', bg: sc.bg, text: sc.text };

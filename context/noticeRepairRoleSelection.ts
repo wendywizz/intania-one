@@ -1,16 +1,16 @@
 import {
-  PR_ROLE_INFORMER, PR_ROLE_APPROVE, PR_ROLE_ADMIN,
-  PR_ROLE_HEADER, PR_ROLE_TECHNICIAN, PR_ROLE_PRIORITY,
+  NOTICE_REPAIR_ROLE_INFORMER, NOTICE_REPAIR_ROLE_APPROVE, NOTICE_REPAIR_ROLE_ADMIN,
+  NOTICE_REPAIR_ROLE_HEADER, NOTICE_REPAIR_ROLE_TECHNICIAN, NOTICE_REPAIR_ROLE_PRIORITY,
   type NoticeRepairRole,
 } from '@/constants/types';
 import { TEXT } from '@/constants/text';
 
 export const noticeRepairRoleOptions = [
-  { label: TEXT.PR_ROLE_INFORMER,   value: PR_ROLE_INFORMER },
-  { label: TEXT.PR_ROLE_TECHNICIAN, value: PR_ROLE_TECHNICIAN },
-  { label: TEXT.PR_ROLE_HEADER,     value: PR_ROLE_HEADER },
-  { label: TEXT.PR_ROLE_ADMIN,      value: PR_ROLE_ADMIN },
-  { label: TEXT.PR_ROLE_APPROVE,    value: PR_ROLE_APPROVE },
+  { label: TEXT.NOTICE_REPAIR_ROLE_INFORMER,   value: NOTICE_REPAIR_ROLE_INFORMER },
+  { label: TEXT.NOTICE_REPAIR_ROLE_TECHNICIAN, value: NOTICE_REPAIR_ROLE_TECHNICIAN },
+  { label: TEXT.NOTICE_REPAIR_ROLE_HEADER,     value: NOTICE_REPAIR_ROLE_HEADER },
+  { label: TEXT.NOTICE_REPAIR_ROLE_ADMIN,      value: NOTICE_REPAIR_ROLE_ADMIN },
+  { label: TEXT.NOTICE_REPAIR_ROLE_APPROVE,    value: NOTICE_REPAIR_ROLE_APPROVE },
 ] as const;
 
 const privilegeCache = new Map<string, NoticeRepairRole[]>();
@@ -25,17 +25,17 @@ export function setCachedPRRoles(userId: string, roles: NoticeRepairRole[]) {
 }
 
 export function getDefaultPRRole(roles: NoticeRepairRole[]): NoticeRepairRole {
-  if (!roles.length) return PR_ROLE_INFORMER;
+  if (!roles.length) return NOTICE_REPAIR_ROLE_INFORMER;
   return roles.reduce(
     (best, role) =>
-      (PR_ROLE_PRIORITY[role] ?? 0) > (PR_ROLE_PRIORITY[best] ?? 0) ? role : best,
-    PR_ROLE_INFORMER as NoticeRepairRole,
+      (NOTICE_REPAIR_ROLE_PRIORITY[role] ?? 0) > (NOTICE_REPAIR_ROLE_PRIORITY[best] ?? 0) ? role : best,
+    NOTICE_REPAIR_ROLE_INFORMER as NoticeRepairRole,
   );
 }
 
 export function getAccessiblePRRoleOptions(roles: NoticeRepairRole[]) {
   const set = new Set(roles);
-  if (!set.has(PR_ROLE_INFORMER)) set.add(PR_ROLE_INFORMER);
+  if (!set.has(NOTICE_REPAIR_ROLE_INFORMER)) set.add(NOTICE_REPAIR_ROLE_INFORMER);
   return noticeRepairRoleOptions.filter((o) => set.has(o.value));
 }
 
@@ -49,10 +49,12 @@ export function setCachedPRSelectedRole(userId: string, role: NoticeRepairRole) 
 
 export function getPRDefaultRoute(role: NoticeRepairRole): string {
   switch (role) {
-    case PR_ROLE_APPROVE:     return '/notice-repair/approve-pending';
-    case PR_ROLE_ADMIN:       return '/notice-repair/admin-approved';
-    case PR_ROLE_HEADER:      return '/notice-repair/header-pending';
-    case PR_ROLE_TECHNICIAN:  return '/notice-repair/tech-assigned';
-    default:                  return '/notice-repair/inform';
+    case NOTICE_REPAIR_ROLE_APPROVE:     return '/notice-repair/approve-pending';
+    case NOTICE_REPAIR_ROLE_ADMIN:       return '/notice-repair/admin-pending-receipt';
+    case NOTICE_REPAIR_ROLE_HEADER:      return '/notice-repair/header-pending';
+    case NOTICE_REPAIR_ROLE_TECHNICIAN:  return '/notice-repair/tech-assigned';
+    // Informer lands on the current-job tab; the add (inform) screen is reached
+    // via the floating button there.
+    default:                  return '/notice-repair/informer-current';
   }
 }

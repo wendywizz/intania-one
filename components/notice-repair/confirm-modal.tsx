@@ -47,7 +47,7 @@ export function ConfirmModal({
               style={[styles.btn, destructive ? styles.destructiveBtn : styles.confirmBtn, loading && styles.btnDisabled]}>
               {loading
                 ? <ActivityIndicator color="#fff" />
-                : <ThemedText style={styles.confirmText}>{confirmLabel ?? TEXT.PR_ACTION_CONFIRM}</ThemedText>}
+                : <ThemedText style={styles.confirmText}>{confirmLabel ?? TEXT.NOTICE_REPAIR_ACTION_CONFIRM}</ThemedText>}
             </Pressable>
           </View>
         </ThemedView>

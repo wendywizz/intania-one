@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
-import { PR_DEFAULT_ROLE, type NoticeRepairRole } from '@/constants/types';
+import { NOTICE_REPAIR_DEFAULT_ROLE, type NoticeRepairRole } from '@/constants/types';
 
 type ContextValue = {
   currentRole: NoticeRepairRole;
@@ -9,8 +9,8 @@ type ContextValue = {
 };
 
 const Ctx = createContext<ContextValue>({
-  currentRole: PR_DEFAULT_ROLE,
-  availableRoles: [PR_DEFAULT_ROLE],
+  currentRole: NOTICE_REPAIR_DEFAULT_ROLE,
+  availableRoles: [NOTICE_REPAIR_DEFAULT_ROLE],
   staffId: '',
 });
 

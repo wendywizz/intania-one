@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { SemanticColors } from '@/constants/designSystem';
+import { SemanticColors } from '@/constants/theme';
 
 const STORAGE_KEY = '@app_dark_mode';
 

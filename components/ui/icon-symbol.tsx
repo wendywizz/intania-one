@@ -20,7 +20,10 @@ import CalendarClock from 'lucide-react-native/dist/cjs/icons/calendar-clock';
 import CalendarRange from 'lucide-react-native/dist/cjs/icons/calendar-range';
 import Calendar from 'lucide-react-native/dist/cjs/icons/calendar';
 import ChartBar from 'lucide-react-native/dist/cjs/icons/chart-bar';
+import ChevronDown from 'lucide-react-native/dist/cjs/icons/chevron-down';
 import ChevronRight from 'lucide-react-native/dist/cjs/icons/chevron-right';
+import MapPin from 'lucide-react-native/dist/cjs/icons/map-pin';
+import Phone from 'lucide-react-native/dist/cjs/icons/phone';
 import CircleCheck from 'lucide-react-native/dist/cjs/icons/circle-check';
 import CircleUser from 'lucide-react-native/dist/cjs/icons/circle-user';
 import Clock from 'lucide-react-native/dist/cjs/icons/clock';
@@ -33,6 +36,7 @@ import Inbox from 'lucide-react-native/dist/cjs/icons/inbox';
 import Info from 'lucide-react-native/dist/cjs/icons/info';
 import Laptop from 'lucide-react-native/dist/cjs/icons/laptop';
 import List from 'lucide-react-native/dist/cjs/icons/list';
+import Plus from 'lucide-react-native/dist/cjs/icons/plus';
 import Search from 'lucide-react-native/dist/cjs/icons/search';
 import Send from 'lucide-react-native/dist/cjs/icons/send';
 import Settings from 'lucide-react-native/dist/cjs/icons/settings';
@@ -50,8 +54,12 @@ const MAPPING = {
   'arrow.left': ArrowLeft,
   'chevron.left.forwardslash.chevron.right': Code,
   'chevron.right': ChevronRight,
+  'chevron.down': ChevronDown,
+  'mappin': MapPin,
+  'phone.fill': Phone,
   'history': History,
   'house.fill': House,
+  'plus': Plus,
   // Communication
   'bell.fill': Bell,
   'gearshape.fill': Settings,

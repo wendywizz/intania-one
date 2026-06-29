@@ -1,4 +1,4 @@
-import { useDesignSystem } from "@/constants/designSystem";
+import { useDesignSystem } from "@/constants/theme";
 import React from "react";
 import { View, ViewStyle } from "react-native";
 import { ThemedText } from "./themed-text";

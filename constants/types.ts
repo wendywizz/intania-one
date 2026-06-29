@@ -50,23 +50,23 @@ export type RepairComputerRole =
   (typeof REPAIR_COMPUTER_PRIVILEGES)[keyof typeof REPAIR_COMPUTER_PRIVILEGES];
 
 // Public Repair roles (maps to PHP API role strings)
-export const PR_ROLE_INFORMER = 'informer' as const;
-export const PR_ROLE_APPROVE = 'approve' as const;
-export const PR_ROLE_ADMIN = 'administration' as const;
-export const PR_ROLE_HEADER = 'header' as const;
-export const PR_ROLE_TECHNICIAN = 'technician' as const;
+export const NOTICE_REPAIR_ROLE_INFORMER = 'informer' as const;
+export const NOTICE_REPAIR_ROLE_APPROVE = 'approve' as const;
+export const NOTICE_REPAIR_ROLE_ADMIN = 'administration' as const;
+export const NOTICE_REPAIR_ROLE_HEADER = 'header' as const;
+export const NOTICE_REPAIR_ROLE_TECHNICIAN = 'technician' as const;
 
 export type NoticeRepairRole =
-  | typeof PR_ROLE_INFORMER
-  | typeof PR_ROLE_APPROVE
-  | typeof PR_ROLE_ADMIN
-  | typeof PR_ROLE_HEADER
-  | typeof PR_ROLE_TECHNICIAN;
+  | typeof NOTICE_REPAIR_ROLE_INFORMER
+  | typeof NOTICE_REPAIR_ROLE_APPROVE
+  | typeof NOTICE_REPAIR_ROLE_ADMIN
+  | typeof NOTICE_REPAIR_ROLE_HEADER
+  | typeof NOTICE_REPAIR_ROLE_TECHNICIAN;
 
-export const PR_DEFAULT_ROLE: NoticeRepairRole = PR_ROLE_INFORMER;
+export const NOTICE_REPAIR_DEFAULT_ROLE: NoticeRepairRole = NOTICE_REPAIR_ROLE_INFORMER;
 
 // Higher number = higher default priority when user has multiple roles
-export const PR_ROLE_PRIORITY: Record<NoticeRepairRole, number> = {
+export const NOTICE_REPAIR_ROLE_PRIORITY: Record<NoticeRepairRole, number> = {
   approve: 4,
   administration: 3,
   header: 2,
