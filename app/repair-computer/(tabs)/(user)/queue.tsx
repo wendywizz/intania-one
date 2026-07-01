@@ -347,19 +347,13 @@ export default function RepairComputerQueueScreen() {
     <ThemedView style={styles.container}>
       <NavTopBar
         title={TEXT.REPAIR_COMPUTER_TITLE}
+        subtitle={TEXT.REPAIR_COMPUTER_TECHNICIAN_QUEUE}
+        moduleIcon="laptop"
         backHref="/"
         rightContent={roleSwitcher}
       />
 
       <View style={styles.content}>
-        <View style={styles.panelHeader}>
-          <ThemedText type="subtitle">
-            {TEXT.REPAIR_COMPUTER_TECHNICIAN_QUEUE}
-          </ThemedText>
-          <ThemedText style={styles.panelDescription}>
-            {TEXT.REPAIR_COMPUTER_TECHNICIAN_QUEUE_DESCRIPTION}
-          </ThemedText>
-        </View>
         <View style={styles.listWrapper}>
           {renderContent()}
         </View>
@@ -378,17 +372,6 @@ const styles = StyleSheet.create({
   },
   listWrapper: {
     flex: 1,
-  },
-  panelHeader: {
-    paddingTop: 16,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 4,
-  },
-  panelDescription: {
-    color: '#584140',
-    fontSize: 13,
-    lineHeight: 19,
   },
   listContent: {
     gap: 10,

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
-
+import { colors } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -11,6 +11,8 @@ import { acquireNavLock, navReplace } from '@/utils/navigation';
 
 type NavTopBarProps = {
   title: string;
+  subtitle?: string;
+  moduleIcon?: string;
   backHref?: Href;
   onBackPress?: () => void;
   showBackButton?: boolean;
@@ -22,6 +24,8 @@ type NavTopBarProps = {
 
 export function NavTopBar({
   title,
+  subtitle,
+  moduleIcon,
   backHref,
   onBackPress,
   showBackButton = true,
@@ -54,7 +58,7 @@ export function NavTopBar({
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 8, backgroundColor }]}>
+    <View style={[styles.container, subtitle ? styles.containerWithSubtitle : null, { paddingTop: insets.top + 8, backgroundColor }]}>
       <View style={styles.leftActions}>
         {showBackButton ? (
           <Pressable
@@ -69,9 +73,23 @@ export function NavTopBar({
         )}
       </View>
 
-      <ThemedText lightColor={contentColor} darkColor={contentColor} type="defaultSemiBold" numberOfLines={1} style={styles.title}>
-        {title}
-      </ThemedText>
+      <View style={styles.titleContainer}>
+          {moduleIcon ? (
+          <View style={[styles.iconCircle, { backgroundColor: `${contentColor}20`, borderColor: colors.iconCircleBorder, borderWidth: 2 }]}>
+          <IconSymbol name={moduleIcon} size={28} color={contentColor} />
+          </View>
+        ) : null}
+        <View style={styles.textContainer}>
+          <ThemedText lightColor={contentColor} darkColor={contentColor} type="defaultSemiBold" numberOfLines={1} style={styles.title}>
+            {title}
+          </ThemedText>
+          {subtitle ? (
+            <ThemedText lightColor={contentColor} darkColor={contentColor} numberOfLines={2} style={styles.subtitle}>
+              {subtitle}
+            </ThemedText>
+          ) : null}
+    </View>
+      </View>
 
       <View style={[styles.rightActions, rightContent ? styles.customRightActions : undefined]}>
         {rightContent ? (
@@ -95,13 +113,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
   },
+  containerWithSubtitle: {
+    minHeight: 88,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
   leftActions: {
     width: 48,
     alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  titleContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  textContainer: {
+    flex: 1,
+    gap: 4,
   },
   rightActions: {
     minWidth: 48,
     alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   customRightActions: {
     minWidth: 116,
@@ -118,8 +153,20 @@ const styles = StyleSheet.create({
     height: 40,
   },
   title: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  subtitle: {
+    fontSize: 14,
+    opacity: 0.9,
+    lineHeight: 18,
+  },
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
+

@@ -219,7 +219,12 @@ export default function CalendarScreen() {
     return (
       <ThemedView style={styles.container}>
         <StatusBar style="light" />
-        <NavTopBar title={TEXT.CALENDAR_TITLE} backHref="/" />
+        <NavTopBar
+          title={TEXT.CALENDAR_TITLE}
+          subtitle={TEXT.CALENDAR_SUBTITLE}
+          moduleIcon="calendar-range"
+          backHref="/"
+        />
         <LoadingAnimate
           title="Loading calendar"
           desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
@@ -233,7 +238,12 @@ export default function CalendarScreen() {
     return (
       <ThemedView style={styles.container}>
         <StatusBar style="light" />
-        <NavTopBar title={TEXT.CALENDAR_TITLE} backHref="/" />
+        <NavTopBar
+          title={TEXT.CALENDAR_TITLE}
+          subtitle={TEXT.CALENDAR_SUBTITLE}
+          moduleIcon="calendar-range"
+          backHref="/"
+        />
         <ErrorState
           title={TEXT.SHARED_UNABLE_TO_COMPLETE}
           message={errorMessage}
@@ -248,7 +258,12 @@ export default function CalendarScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.CALENDAR_TITLE} backHref="/" />
+      <NavTopBar
+        title={TEXT.CALENDAR_TITLE}
+        subtitle={TEXT.CALENDAR_SUBTITLE}
+        moduleIcon="calendar-range"
+        backHref="/"
+      />
 
       {/* Fixed calendar panel */}
       <View style={styles.calendarPane}>

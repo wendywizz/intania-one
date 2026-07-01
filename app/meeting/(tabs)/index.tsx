@@ -166,7 +166,12 @@ export default function TodayMeetingScreen() {
     return (
       <ThemedView style={styles.container}>
         <StatusBar style="light" />
-        <NavTopBar title={TEXT.MEETING_HEADER_TITLE} backHref="/" />
+        <NavTopBar
+          title={TEXT.MEETING_HEADER_TITLE}
+          subtitle={TEXT.MEETING_TODAY}
+          moduleIcon="person.2.fill"
+          backHref="/"
+        />
         <LoadingAnimate title={TEXT.MEETING_LOADING_MEETINGS} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
       </ThemedView>
     );
@@ -176,7 +181,12 @@ export default function TodayMeetingScreen() {
     return (
       <ThemedView style={styles.container}>
         <StatusBar style="light" />
-        <NavTopBar title={TEXT.MEETING_HEADER_TITLE} backHref="/" />
+        <NavTopBar
+          title={TEXT.MEETING_HEADER_TITLE}
+          subtitle={TEXT.MEETING_TODAY}
+          moduleIcon="person.2.fill"
+          backHref="/"
+        />
         <ErrorState
           title={TEXT.SHARED_SOMETHING_WENT_WRONG}
           message={error}
@@ -189,7 +199,12 @@ export default function TodayMeetingScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.MEETING_HEADER_TITLE} backHref="/" />
+      <NavTopBar
+        title={TEXT.MEETING_HEADER_TITLE}
+        subtitle={TEXT.MEETING_TODAY}
+        moduleIcon="person.2.fill"
+        backHref="/"
+      />
       <FlatList<ListRow>
         contentContainerStyle={styles.listContent}
         data={rows}

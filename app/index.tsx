@@ -307,7 +307,7 @@ function UpcomingShiftSection({ data, loading, upcomingExams }: UpcomingShiftSec
           title="Timestamp"
           subtitle=""
           badge={count}
-          onPress={() => navPush('/timestamp' as Parameters<typeof navPush>[0])}
+          onPress={() => navPush('/timestamp/forgot-timestamp' as Parameters<typeof navPush>[0])}
         />
       );
     }
@@ -642,7 +642,6 @@ export default function HomeScreen() {
   // ─── Authenticated ──────────────────────────────────────────────────────────
 
   const displayedNews = newsItems;
-  const effectiveStaffId = authUser?.staffId ?? '';
   const menuCardWidth = Math.floor((screenWidth - D.pad * 2 - D.gap * 2) / 3);
   const newsCardWidth = Math.floor(screenWidth * 0.72);
   const avatarSource = authUser?.staffId
@@ -685,11 +684,6 @@ export default function HomeScreen() {
           <ThemedText lightColor="rgba(255,255,255,0.6)" darkColor="rgba(255,255,255,0.6)" style={styles.headerStaffId}>
             {getDateString()}
           </ThemedText>
-          {!!effectiveStaffId && (
-            <ThemedText lightColor="rgba(255,255,255,0.65)" darkColor="rgba(255,255,255,0.65)" style={styles.headerStaffId}>
-              ID: {effectiveStaffId}
-            </ThemedText>
-          )}
         </View>
 
         <View style={styles.headerRight}>
@@ -840,8 +834,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 88,
     paddingHorizontal: D.pad,
-    paddingBottom: 12,
+    paddingBottom: 10,
     backgroundColor: D.primaryContainer,
   },
   avatarBtn: {
@@ -876,7 +871,7 @@ const styles = StyleSheet.create({
   headerCenter: {
     flex: 1,
     marginHorizontal: 12,
-    gap: 1,
+    gap: 3,
   },
   headerTitle: {
     fontSize: 18,

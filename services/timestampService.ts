@@ -25,6 +25,8 @@ export type TimestampCalendarDay = {
   holidayName?: string;
   isLeave?: boolean;
   leaveType?: string;
+  // true when the scan-in was flagged late (ABSENCE.timestamp.flag_in = 2)
+  isLate?: boolean;
 };
 
 export type TimestampCalendar = {

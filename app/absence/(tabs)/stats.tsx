@@ -75,16 +75,17 @@ function mapStatsData(data: unknown): StatsData | null {
 const ABSENCE_MAX_TIMES = 18;
 const ABSENCE_MAX_DAYS = 45;
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+const MONTH_NAMES_TH = [
+  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
 ];
 
 function formatBudgetDateLong(value: string) {
   const [year, month, day] = value.split('-');
   if (!year || !month || !day) return value || '-';
-  const monthName = MONTH_NAMES[parseInt(month, 10) - 1] ?? month;
-  return `${parseInt(day, 10)} ${monthName} ${year}`;
+  const monthName = MONTH_NAMES_TH[parseInt(month, 10) - 1] ?? month;
+  const yearBuddhist = parseInt(year, 10) + 543;
+  return `${parseInt(day, 10)} ${monthName} ${yearBuddhist}`;
 }
 
 function fmt(n: number) {
@@ -175,7 +176,7 @@ function DetailGridCard({ sickUsedCount, sickUsedDays, businessUsedCount, busine
     <View style={styles.gridRow}>
       <View style={[styles.card, styles.gridCard]}>
         <View style={styles.gridCardTop}>
-          <IconSymbol name="cross.fill" size={20} color="#922124" />
+          <IconSymbol name="cross.fill" size={18} color="#922124" />
           <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
         </View>
         <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_SICK_TITLE}</ThemedText>
@@ -192,7 +193,7 @@ function DetailGridCard({ sickUsedCount, sickUsedDays, businessUsedCount, busine
       </View>
       <View style={[styles.card, styles.gridCard]}>
         <View style={styles.gridCardTop}>
-          <IconSymbol name="briefcase.fill" size={20} color="#922124" />
+          <IconSymbol name="briefcase.fill" size={18} color="#922124" />
           <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
         </View>
         <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_BUSINESS_TITLE}</ThemedText>
@@ -218,7 +219,7 @@ function VacationCard({ relaxUsedDays, relaxTotalYearDays, relaxStoreDays, relax
     <View style={styles.card}>
       <View style={styles.vacationHeader}>
         <View style={styles.vacationIconBg}>
-          <IconSymbol name="sun.max.fill" size={18} color="#922124" />
+          <IconSymbol name="sun.max.fill" size={16} color="#922124" />
         </View>
         <View style={styles.vacationTitleBlock}>
           <ThemedText style={styles.summaryTitle}>{TEXT.ABSENCE_RELAX_TITLE}</ThemedText>
@@ -260,7 +261,7 @@ function OthersGridCard({ birthUsedCount, lateUsedCount, lateLimitCount }: Pick<
     <View style={styles.gridRow}>
       <View style={[styles.card, styles.gridCard]}>
         <View style={styles.gridCardTop}>
-          <IconSymbol name="figure.child" size={20} color="#922124" />
+          <IconSymbol name="figure.child" size={18} color="#922124" />
           <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
         </View>
         <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_BIRTH_TITLE}</ThemedText>
@@ -271,7 +272,7 @@ function OthersGridCard({ birthUsedCount, lateUsedCount, lateLimitCount }: Pick<
       </View>
       <View style={[styles.card, styles.gridCard]}>
         <View style={styles.gridCardTop}>
-          <IconSymbol name="clock.fill" size={20} color="#922124" />
+          <IconSymbol name="clock.fill" size={18} color="#922124" />
           <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
         </View>
         <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_STATS_LATE_TITLE}</ThemedText>
@@ -372,11 +373,11 @@ export default function StatsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENCE_TITLE} />
-      <View style={styles.pageTitleSection}>
-        <ThemedText style={styles.pageTitle}>{TEXT.ABSENCE_STATS_TITLE}</ThemedText>
-        <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_STATS_SUBTITLE}</ThemedText>
-      </View>
+      <NavTopBar
+        title={TEXT.ABSENCE_TITLE}
+        subtitle={TEXT.ABSENCE_STATS_TITLE}
+        moduleIcon="calendar-clock"
+      />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
@@ -447,15 +448,14 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   infoLabel: {
-    fontSize: 10,
-    lineHeight: 14,
+    fontSize: 14,
+    lineHeight: 20,
     fontWeight: '600',
-    textTransform: 'uppercase',
     color: '#584140',
   },
   infoValue: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 16,
+    lineHeight: 24,
     color: '#191C1F',
   },
   cardDivider: {
@@ -476,14 +476,14 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   summaryTitle: {
-    fontSize: 20,
-    lineHeight: 28,
+    fontSize: 16,
+    lineHeight: 22,
     fontWeight: '700',
     color: '#191C1F',
   },
   summarySubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
     color: '#584140',
   },
   percentCircle: {
@@ -525,14 +525,14 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   tileValueBig: {
-    fontSize: 20,
-    lineHeight: 28,
+    fontSize: 16,
+    lineHeight: 22,
     fontWeight: '600',
     color: '#922124',
   },
   tileValueDim: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
     color: '#584140',
   },
 
@@ -565,8 +565,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   gridCardTitle: {
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 20,
     fontWeight: '600',
     color: '#191C1F',
   },
@@ -617,14 +617,14 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   vacationNumBig: {
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: 28,
+    lineHeight: 36,
     fontWeight: '700',
     color: '#922124',
   },
   vacationNumDim: {
-    fontSize: 20,
-    lineHeight: 28,
+    fontSize: 16,
+    lineHeight: 22,
     fontWeight: '600',
     color: '#584140',
   },
@@ -661,8 +661,8 @@ const styles = StyleSheet.create({
     color: '#191C1F',
   },
   vacationDetailValue: {
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 22,
     fontWeight: '600',
     color: '#191C1F',
   },

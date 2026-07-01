@@ -1,5 +1,13 @@
 // Dev overrides — must be empty strings before building for production.
 // Set DEV_STAFF_ID to a UNI_STAFF_ID to impersonate that user across ALL features.
 
+// Auth user
 //export const DEV_STAFF_ID: string = '';
-export const DEV_STAFF_ID: string = ''; // พี่ตา อาคาร
+
+// Notice Repair
+//export const DEV_STAFF_ID: string = '0030514'; // พี่ตา อาคาร
+
+// Repair Computer
+//export const DEV_STAFF_ID: string = '0024028'; // Foreman ฉัน
+//export const DEV_STAFF_ID: string = '0047773'; // Technician โบ้
+//export const DEV_STAFF_ID: string = '0024038'; // Technician บาส

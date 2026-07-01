@@ -343,21 +343,15 @@ export default function RepairComputerCurrentJobScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar
-        title={TEXT.REPAIR_COMPUTER_CURRENT_JOB}
+                        <NavTopBar
+        title={TEXT.REPAIR_COMPUTER_TITLE}
+        subtitle={TEXT.REPAIR_COMPUTER_CURRENT_JOB}
+        moduleIcon="laptop"
         backHref="/"
         rightContent={roleSwitcher}
       />
 
       <View style={styles.content}>
-        <View style={styles.panelHeader}>
-          <ThemedText type="subtitle">
-            {TEXT.REPAIR_COMPUTER_CURRENT_JOB}
-          </ThemedText>
-          <ThemedText style={styles.panelDescription}>
-            {TEXT.REPAIR_COMPUTER_CURRENT_JOBS_DESCRIPTION}
-          </ThemedText>
-        </View>
         <View style={styles.listWrapper}>
           {renderContent()}
         </View>
@@ -451,19 +445,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  listWrapper: {
+    listWrapper: {
     flex: 1,
-  },
-  panelHeader: {
-    paddingTop: 16,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 4,
-  },
-  panelDescription: {
-    color: '#584140',
-    fontSize: 13,
-    lineHeight: 19,
   },
   fab: {
     position: 'absolute',

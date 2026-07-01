@@ -260,11 +260,11 @@ export default function HistoryScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENCE_TITLE} />
-      <View style={styles.pageTitleSection}>
-        <ThemedText style={styles.pageTitle}>{TEXT.ABSENCE_HISTORY_TITLE}</ThemedText>
-        <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_HISTORY_SUBTITLE}</ThemedText>
-      </View>
+      <NavTopBar
+        title={TEXT.ABSENCE_TITLE}
+        subtitle={TEXT.ABSENCE_HISTORY_TITLE}
+        moduleIcon="calendar-clock"
+      />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );

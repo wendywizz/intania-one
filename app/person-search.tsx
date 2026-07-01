@@ -262,7 +262,12 @@ export default function PersonSearchScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="Search Person" />
+      <NavTopBar
+        title={TEXT.PERSON_SEARCH_TITLE}
+        subtitle={TEXT.PERSON_SEARCH_SUBTITLE}
+        moduleIcon="user-round-search"
+        backHref="/"
+      />
 
       <View style={styles.content}>
         <View style={styles.inputWrap}>

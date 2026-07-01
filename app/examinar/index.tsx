@@ -286,7 +286,12 @@ export default function ExaminarListScreen() {
     return (
       <ThemedView style={styles.container}>
         <StatusBar style="light" />
-        <NavTopBar title={TEXT.EXAMINAR_HEADER_TITLE} backHref="/" />
+        <NavTopBar
+          title={TEXT.EXAMINAR_HEADER_TITLE}
+          subtitle={TEXT.EXAMINAR_HEADER_SUBTITLE}
+          moduleIcon="checkmark.circle.fill"
+          backHref="/"
+        />
         {filterBar}
         <LoadingAnimate title={TEXT.EXAMINAR_LOADING} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
       </ThemedView>
@@ -297,7 +302,12 @@ export default function ExaminarListScreen() {
     return (
       <ThemedView style={styles.container}>
         <StatusBar style="light" />
-        <NavTopBar title={TEXT.EXAMINAR_HEADER_TITLE} backHref="/" />
+        <NavTopBar
+          title={TEXT.EXAMINAR_HEADER_TITLE}
+          subtitle={TEXT.EXAMINAR_HEADER_SUBTITLE}
+          moduleIcon="checkmark.circle.fill"
+          backHref="/"
+        />
         {filterBar}
         <ErrorState
           title={TEXT.SHARED_SOMETHING_WENT_WRONG}
@@ -311,7 +321,12 @@ export default function ExaminarListScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.EXAMINAR_HEADER_TITLE} backHref="/" />
+      <NavTopBar
+        title={TEXT.EXAMINAR_HEADER_TITLE}
+        subtitle={TEXT.EXAMINAR_HEADER_SUBTITLE}
+        moduleIcon="checkmark.circle.fill"
+        backHref="/"
+      />
       {filterBar}
       <FlatList<ExamTask>
         contentContainerStyle={styles.listContent}

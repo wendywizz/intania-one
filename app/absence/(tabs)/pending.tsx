@@ -213,11 +213,11 @@ export default function PendingScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENCE_TITLE} />
-      <View style={styles.headerSection}>
-        <ThemedText style={styles.pageTitle}>{TEXT.ABSENCE_PENDING_TITLE}</ThemedText>
-        <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_PENDING_SUBTITLE}</ThemedText>
-      </View>
+      <NavTopBar
+        title={TEXT.ABSENCE_TITLE}
+        subtitle={TEXT.ABSENCE_PENDING_TITLE}
+        moduleIcon="calendar-clock"
+      />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );

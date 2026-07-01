@@ -131,7 +131,13 @@ export function NoticeRepairListScreen({ title, description, listType, staffId, 
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.NOTICE_REPAIR__TITLE} backHref="/" rightContent={roleSwitcher} />
+      <NavTopBar
+        title={TEXT.NOTICE_REPAIR__TITLE}
+        subtitle={TEXT.NOTICE_REPAIR_LIST_SUBTITLE}
+        moduleIcon="wrench.fill"
+        backHref="/"
+        rightContent={roleSwitcher}
+      />
 
       {segments ? (
         /* Top-tab bar directly under the nav bar, with an underline on the

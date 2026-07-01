@@ -34,11 +34,16 @@ export function RepairComputerTabContent({ title, description }: RepairComputerT
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} backHref="/" rightContent={roleSwitcher} />
+      <NavTopBar
+        title={TEXT.REPAIR_COMPUTER_TITLE}
+        subtitle={screenTitle}
+        moduleIcon="laptop"
+        backHref="/"
+        rightContent={roleSwitcher}
+      />
 
       <View style={styles.content}>
         <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
-          <ThemedText type="subtitle">{screenTitle}</ThemedText>
           <ThemedText style={styles.description}>{description}</ThemedText>
         </ThemedView>
       </View>
@@ -56,12 +61,11 @@ const styles = StyleSheet.create({
   },
   panel: {
     borderRadius: 8,
-    padding: 0,
+    padding: 16,
   },
   description: {
     color: '#584140',
     fontSize: 14,
     lineHeight: 20,
-    marginTop: 10,
   },
 });

@@ -56,7 +56,12 @@ const absenceMenus: AbsenceMenuItem[] = [
 export default function ChooseAbsenceScreen() {
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENCE_TITLE} backHref="/" />
+      <NavTopBar
+        title={TEXT.ABSENCE_TITLE}
+        subtitle={TEXT.ABSENCE_TAB_APPEAL}
+        moduleIcon="calendar-clock"
+        backHref="/"
+      />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headerSection}>
           <ThemedText style={styles.heading}>{TEXT.ABSENCE_CHOOSE_TITLE}</ThemedText>

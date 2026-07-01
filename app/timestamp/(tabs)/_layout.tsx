@@ -36,21 +36,28 @@ export default function TimestampTabLayout() {
         }}
       />
       <Tabs.Screen
-        name="index"
+        name="forgot-timestamp"
         options={{
-          title: TEXT.TIMESTAMP_TITLE,
+          title: TEXT.TIMESTAMP_FORGOT_TAB,
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="list.bullet" color={color} />
           ),
         }}
       />
       <Tabs.Screen
+        name="index"
+        options={{
+          // Thin redirect to `forgot-timestamp`; keep the /timestamp route working
+          // but hide it from the bottom tab bar.
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="history"
         options={{
-          title: TEXT.SHARED_HISTORY,
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="history" color={color} />
-          ),
+          // History is now a top tab inside `forgot-timestamp`; keep the route as a
+          // redirect but hide it from the bottom tab bar.
+          href: null,
         }}
       />
     </Tabs>

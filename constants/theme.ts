@@ -72,6 +72,7 @@ export const colors = {
   success: '#2f9e44',
   warning: '#f08c00',
   danger: '#c92a2a',
+  iconCircleBorder: '#FFFFFF', // White ring for the nav top-bar module icon circle
 };
 
 /**
@@ -79,7 +80,7 @@ export const colors = {
  * Bold, energetic colors with dark mode support.
  */
 
-// ============ COLOR PALETTE ============
+// ============ COLOR PALETTE ============/
 export const ColorPalette = {
   // Primary - Vibrant Gradient Blue to Purple (Main Action)
   primary: {

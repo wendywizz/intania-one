@@ -46,7 +46,8 @@ export const TEXT = {
   HOME_LOGOUT: 'ออกจากระบบ',
   HOME_MENU_SECTION_DESCRIPTION: 'เลือกเมนูที่ต้องการใช้งาน',
   HOME_MENU_SECTION_TITLE: 'เมนู',
-  HOME_NEWS_SECTION_TITLE: 'ข่าวสาร',
+  HOME_NEWS_SECTION_TITLE: 'ข่าวบุคลากร',
+  HOME_NEWS_SECTION_SUBTITLE: 'ข่าวสารและประกาศล่าสุด',
   HOME_NO_NEWS_MESSAGE: 'ไม่พบข่าวสาร',
   HOME_SEE_ALL_THAI: 'ดูทั้งหมด',
   HOME_SIGNING_OUT_TITLE: 'กำลังออกจากระบบ',
@@ -87,7 +88,7 @@ export const TEXT = {
   ABSENCE_HALF_DAY_NONE: '-',
   ABSENCE_HALF_DAY_PLACEHOLDER: 'เลือกตัวเลือกลาครึ่งวัน',
   ABSENCE_HISTORY_TAB_TITLE: 'ประวัติ',
-  ABSENCE_HISTORY_TITLE: 'ประวัติการลา',
+  ABSENCE_HISTORY_TITLE: 'แสดงประวัติการลา',
   ABSENCE_INIT_LOAD_ERROR_MESSAGE: 'ไม่สามารถโหลดข้อมูลตั้งต้นได้',
   ABSENCE_INITIAL_DATA_LOADED: 'โหลดข้อมูลตั้งต้นเรียบร้อยแล้ว',
   ABSENCE_INVALID_WEEKEND_DATE_MESSAGE: 'กรุณาเลือกวันจันทร์ถึงวันศุกร์',
@@ -158,7 +159,7 @@ export const TEXT = {
 
   // absence - Stats tab
   ABSENCE_STATS_LOADING_TITLE: 'กำลังโหลดสถิติ',
-  ABSENCE_STATS_TITLE: 'สถิติการลา',
+  ABSENCE_STATS_TITLE: 'สถิติการลาในรอบงบประมาณปัจจุบัน',
   ABSENCE_STATS_SUBTITLE: 'แสดงสถิติการลาของคุณในรอบปีงบประมาณปัจจุบัน',
   ABSENCE_STATS_NO_DATA: 'ยังไม่มีข้อมูล',
   ABSENCE_STATS_WORK_AGE_LABEL: 'อายุงาน',
@@ -231,7 +232,7 @@ export const TEXT = {
   NOTICE_REPAIR_TAB_REJECT_CANNOT_REPAIR: 'ซ่อมไม่ได้',
   NOTICE_REPAIR_TAB_ASSIGNED: 'งานที่ได้รับ',
 
-  NOTICE_REPAIR_LIST_SUBTITLE: 'ติดตามและจัดการรายการแจ้งซ่อมสาธารณูปการ',
+  NOTICE_REPAIR_LIST_SUBTITLE: 'ติดตามและจัดการรายการแจ้งซ่อม',
   NOTICE_REPAIR_LOADING: 'กำลังโหลดรายการ',
   NOTICE_REPAIR_LOADING_PRIVILEGE: 'กำลังตรวจสอบสิทธิ์',
   NOTICE_REPAIR_NO_ACCESS_TITLE: 'ไม่มีสิทธิ์เข้าใช้งาน',
@@ -404,14 +405,17 @@ export const TEXT = {
   // Calendar
   CALENDAR_DESCRIPTION: 'หน้านี้คือหน้าปฏิทิน',
   CALENDAR_TITLE: 'ปฏิทิน',
+  CALENDAR_SUBTITLE: 'แสดงกำหนดการต่างๆ ของผู้บริหาร',
 
   // Person Search
   PERSON_SEARCH_DESCRIPTION: 'หน้านี้คือหน้าค้นหาบุคลากร',
   PERSON_SEARCH_TITLE: 'ค้นหาบุคลากร',
+  PERSON_SEARCH_SUBTITLE: 'ค้นหาบุคลากรในคณะฯ',
 
   // Examiner / Examinar
   EXAMINER_MENU_TITLE: 'ตารางคุมสอบ',
   EXAMINAR_HEADER_TITLE: 'ตารางคุมสอบ',
+  EXAMINAR_HEADER_SUBTITLE: 'แสดงตารางคุมสอบของคุณตามรอบ',
   EXAMINAR_DETAIL_HEADER_TITLE: 'รายละเอียดการสอบ',
   EXAMINAR_FILTER_YEAR: 'ปีการศึกษา',
   EXAMINAR_FILTER_TERM: 'ภาคการศึกษา',
@@ -446,12 +450,13 @@ export const TEXT = {
 
   // Timestamp
   TIMESTAMP_DESCRIPTION: 'หน้านี้คือหน้าลืมลงเวลา',
-  TIMESTAMP_TITLE: 'ลืมลงเวลา',
+  TIMESTAMP_TITLE: 'การลงเวลา',
+  TIMESTAMP_FORGOT_TAB: 'ลืมลงเวลา',
+  TIMESTAMP_LIST_SUBTITLE: 'รายการคำขอลืมลงเวลา',
 
   // Timestamp - calendar tab
   TIMESTAMP_CALENDAR_TAB: 'ปฏิทินลงเวลา',
   TIMESTAMP_CALENDAR_TITLE: 'ปฏิทินการลงเวลา',
-  TIMESTAMP_CALENDAR_SUBTITLE: 'เวลาเข้า-ออกงานรายวันของคุณ',
   TIMESTAMP_CALENDAR_IN: 'เวลาเข้า',
   TIMESTAMP_CALENDAR_OUT: 'เวลาออก',
   TIMESTAMP_CALENDAR_LEGEND_PRESENT: 'มาทำงาน',
@@ -459,12 +464,18 @@ export const TEXT = {
   TIMESTAMP_CALENDAR_LEGEND_ABSENT: 'ขาดงาน',
   TIMESTAMP_CALENDAR_LEGEND_LEAVE: 'ลา',
   TIMESTAMP_CALENDAR_LEGEND_HOLIDAY: 'วันหยุด',
+  TIMESTAMP_CALENDAR_LEGEND_LATE: 'มาสาย',
   TIMESTAMP_CALENDAR_NO_DATA: 'ยังไม่มีข้อมูลการลงเวลาในเดือนนี้',
   TIMESTAMP_CALENDAR_SELECTED_NO_DATA: 'ไม่มีข้อมูลการลงเวลาในวันนี้',
   TIMESTAMP_CALENDAR_PRESENT_DESC: 'มาทำงานตามปกติ',
   TIMESTAMP_CALENDAR_HINT: 'แตะที่วันเพื่อดูรายละเอียดการลงเวลา',
   TIMESTAMP_CALENDAR_NO_TIME_DATA: 'ยังไม่มีข้อมูลเวลาเข้า-ออกจากระบบ',
   TIMESTAMP_CALENDAR_MAKE_REQUEST: 'ทำเรื่องลืมลงเวลา',
+  TIMESTAMP_CALENDAR_LATE: 'มาสาย',
+  TIMESTAMP_CALENDAR_LATE_SHORT: 'สาย',
+  TIMESTAMP_CALENDAR_LATE_DESC: 'เข้างานสาย',
+  TIMESTAMP_CALENDAR_LATE_COUNT_LABEL: 'จำนวนมาสาย',
+  TIMESTAMP_CALENDAR_LATE_COUNT_PERIOD: 'ในปีงบประมาณนี้',
 
   // Timestamp - common
   TIMESTAMP_STAMP_IN: 'ลืมลงเวลาเข้า',

@@ -15,6 +15,7 @@ import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
+import { statsData } from '@/services/absenceService';
 import {
   getTimestampCalendar,
   type TimestampCalendarDay,
@@ -25,6 +26,10 @@ moment.locale('th');
 type DayStatus = 'present' | 'incomplete' | 'absent' | 'leave' | 'holiday' | 'none';
 
 const WEEKDAY_LABELS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+
+// Late arrival (ABSENCE.timestamp.flag_in = 2) is orthogonal to day status — a
+// present day can still be flagged late — so it gets its own amber marker.
+const LATE_COLOR = '#EA580C';
 
 const STATUS_STYLE: Record<DayStatus, { bg: string; dot: string }> = {
   present: { bg: '#E6F4EA', dot: '#1E7E34' },
@@ -172,6 +177,25 @@ export default function TimestampCalendarScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
+  // Fiscal-year late-arrival tally, from the same source as /absence/stats
+  // (ABSENCE.timestamp flag_in = 2). Independent of the shown month.
+  const [lateInfo, setLateInfo] = useState<{ used: number; limit: number } | null>(null);
+
+  const loadLateCount = useCallback(async () => {
+    try {
+      const result = (await statsData(staffId)) as Record<string, unknown> | null;
+      if (result && typeof result === 'object') {
+        setLateInfo({
+          used: Number(result.lateUsedCount) || 0,
+          limit: Number(result.lateLimitCount) || 0,
+        });
+      } else {
+        setLateInfo(null);
+      }
+    } catch {
+      setLateInfo(null);
+    }
+  }, [staffId]);
 
   const loadCalendar = useCallback(
     async (showRefreshing = false) => {
@@ -197,7 +221,8 @@ export default function TimestampCalendarScreen() {
   useFocusEffect(
     useCallback(() => {
       loadCalendar();
-    }, [loadCalendar]),
+      loadLateCount();
+    }, [loadCalendar, loadLateCount]),
   );
 
   const byDay = useMemo(() => {
@@ -305,6 +330,13 @@ export default function TimestampCalendarScreen() {
                 ) : (
                   <View style={styles.dayDotPlaceholder} />
                 )}
+                {cell.data?.isLate ? (
+                  <View style={styles.lateBadge}>
+                    <ThemedText style={styles.lateBadgeText}>
+                      {TEXT.TIMESTAMP_CALENDAR_LATE_SHORT}
+                    </ThemedText>
+                  </View>
+                ) : null}
               </View>
             </Pressable>
           );
@@ -344,17 +376,16 @@ export default function TimestampCalendarScreen() {
     const isForgetDay = Boolean(selectedData) && (status === 'incomplete' || status === 'absent');
     const canRequest = Boolean(selectedData?.canRequest);
 
+    const accentColor = statusStyle.dot === 'transparent' ? '#DFBFBD' : statusStyle.dot;
+
     return (
-      <View style={styles.detailCard}>
+      <View style={[styles.detailCard, { borderLeftColor: accentColor }]}>
         <View style={styles.detailHeader}>
           <ThemedText style={styles.detailDate}>{dateLabel}</ThemedText>
           {getStatusLabel(status) ? (
-            <View style={[styles.statusChip, { backgroundColor: statusStyle.bg }]}>
-              <View style={[styles.statusChipDot, { backgroundColor: statusStyle.dot }]} />
-              <ThemedText style={[styles.statusChipText, { color: statusStyle.dot }]}>
-                {getStatusLabel(status)}
-              </ThemedText>
-            </View>
+            <ThemedText style={[styles.detailStatusText, { color: accentColor }]}>
+              {getStatusLabel(status)}
+            </ThemedText>
           ) : null}
         </View>
 
@@ -362,15 +393,21 @@ export default function TimestampCalendarScreen() {
           <>
             <View style={styles.timeRow}>
               <View style={styles.timeBox}>
-                <LogIn size={18} color="#1E7E34" />
+                <LogIn size={22} color="#1E7E34" />
                 <View>
                   <ThemedText style={styles.timeLabel}>{TEXT.TIMESTAMP_CALENDAR_IN}</ThemedText>
                   <ThemedText style={styles.timeValue}>{selectedData?.inTime || '—'}</ThemedText>
+                  {selectedData?.isLate ? (
+                    <View style={styles.lateChip}>
+                      <Clock size={11} color={LATE_COLOR} />
+                      <ThemedText style={styles.lateChipText}>{TEXT.TIMESTAMP_CALENDAR_LATE}</ThemedText>
+                    </View>
+                  ) : null}
                 </View>
               </View>
               <View style={styles.timeDivider} />
               <View style={styles.timeBox}>
-                <LogOut size={18} color="#B45309" />
+                <LogOut size={22} color="#B45309" />
                 <View>
                   <ThemedText style={styles.timeLabel}>{TEXT.TIMESTAMP_CALENDAR_OUT}</ThemedText>
                   <ThemedText style={styles.timeValue}>{selectedData?.outTime || '—'}</ThemedText>
@@ -417,6 +454,10 @@ export default function TimestampCalendarScreen() {
           <ThemedText style={styles.legendText}>{getStatusLabel(status)}</ThemedText>
         </View>
       ))}
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: LATE_COLOR }]} />
+        <ThemedText style={styles.legendText}>{TEXT.TIMESTAMP_CALENDAR_LEGEND_LATE}</ThemedText>
+      </View>
     </View>
   );
 
@@ -438,13 +479,27 @@ export default function TimestampCalendarScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadCalendar(true)} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => {
+              loadCalendar(true);
+              loadLateCount();
+            }}
+          />
         }
       >
-        <View style={styles.intro}>
-          <Clock size={20} color="#922124" />
-          <ThemedText style={styles.introText}>{TEXT.TIMESTAMP_CALENDAR_SUBTITLE}</ThemedText>
-        </View>
+        {lateInfo ? (
+          <View style={styles.lateSummary}>
+            <Clock size={16} color={LATE_COLOR} />
+            <ThemedText style={styles.lateSummaryLabel} numberOfLines={1}>
+              {TEXT.TIMESTAMP_CALENDAR_LATE_COUNT_LABEL}
+            </ThemedText>
+            <ThemedText style={styles.lateSummaryValue}>
+              {lateInfo.used}
+              {lateInfo.limit > 0 ? ` / ${lateInfo.limit}` : ''} {TEXT.ABSENCE_STATS_UNIT_TIMES}
+            </ThemedText>
+          </View>
+        ) : null}
 
         {monthHeader}
         {renderGrid()}
@@ -457,7 +512,12 @@ export default function TimestampCalendarScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.TIMESTAMP_CALENDAR_TITLE} backHref="/" />
+      <NavTopBar
+        title={TEXT.TIMESTAMP_TITLE}
+        subtitle={TEXT.TIMESTAMP_CALENDAR_TAB}
+        moduleIcon="clock.fill"
+        backHref="/"
+      />
       <View style={styles.content}>{renderBody()}</View>
     </ThemedView>
   );
@@ -474,6 +534,32 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     gap: 14,
+  },
+  lateSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFF7F0',
+    borderWidth: 1,
+    borderColor: 'rgba(234,88,12,0.25)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  lateSummaryLabel: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
+    color: '#191C1F',
+    fontFamily: AppFonts.psuBold,
+  },
+  lateSummaryValue: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '700',
+    color: LATE_COLOR,
+    fontFamily: AppFonts.psuBold,
   },
   intro: {
     flexDirection: 'row',
@@ -587,6 +673,21 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
   },
+  lateBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: LATE_COLOR,
+    borderRadius: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  lateBadgeText: {
+    fontSize: 8,
+    lineHeight: 11,
+    color: '#FFFFFF',
+    fontFamily: AppFonts.psuBold,
+  },
   legend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -613,40 +714,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    gap: 12,
+    gap: 14,
     borderWidth: 1,
     borderColor: 'rgba(223,191,189,0.25)',
+    // Status-colored accent bar (color set inline per selected day).
+    borderLeftWidth: 5,
   },
   detailHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     justifyContent: 'space-between',
     gap: 12,
   },
   detailDate: {
     flex: 1,
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: 16,
+    lineHeight: 22,
     fontWeight: '700',
     color: '#191C1F',
     fontFamily: AppFonts.psuBold,
   },
-  statusChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: 9999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusChipDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusChipText: {
-    fontSize: 12,
-    fontWeight: '600',
+  detailStatusText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '700',
     fontFamily: AppFonts.psuBold,
   },
   timeRow: {
@@ -654,13 +745,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F8F9FD',
     borderRadius: 12,
-    padding: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 14,
   },
   timeBox: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   timeDivider: {
     width: 1,
@@ -669,15 +761,32 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   timeLabel: {
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 16,
     color: '#585E6D',
     fontFamily: AppFonts.psuRegular,
   },
   timeValue: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 22,
+    lineHeight: 28,
     color: '#191C1F',
+    fontFamily: AppFonts.psuBold,
+  },
+  lateChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 3,
+    marginTop: 4,
+    backgroundColor: '#FFF1E8',
+    borderRadius: 9999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  lateChipText: {
+    fontSize: 11,
+    lineHeight: 15,
+    color: LATE_COLOR,
     fontFamily: AppFonts.psuBold,
   },
   detailEmpty: {
@@ -697,7 +806,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    minHeight: 48,
+    minHeight: 52,
     borderRadius: 12,
     backgroundColor: '#B33939',
     paddingHorizontal: 16,

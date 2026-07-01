@@ -188,7 +188,12 @@ export default function NewsScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.HOME_NEWS_SECTION_TITLE} showHomeButton />
+      <NavTopBar
+        title={TEXT.HOME_NEWS_SECTION_TITLE}
+        subtitle={TEXT.HOME_NEWS_SECTION_SUBTITLE}
+        moduleIcon="doc.text.fill"
+        showHomeButton
+      />
       <View style={styles.content}>
         {renderContent()}
       </View>

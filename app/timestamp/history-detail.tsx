@@ -1,6 +1,6 @@
 ﻿import type React from 'react';
 import { CalendarDays, CheckCircle, Clock, Fingerprint, type LucideIcon, User, XCircle } from 'lucide-react-native';
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, type Href } from "expo-router";
 import { TEXT } from "@/constants/text";
 import { StatusBar } from "expo-status-bar";
 import { useMemo } from "react";
@@ -154,7 +154,7 @@ export default function TimestampHistoryDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.TIMESTAMP_DETAIL_TITLE} backHref="/timestamp/history" />
+      <NavTopBar title={TEXT.TIMESTAMP_DETAIL_TITLE} backHref={{ pathname: "/timestamp/forgot-timestamp", params: { tab: "history" } } as Href} />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.statusCard}>

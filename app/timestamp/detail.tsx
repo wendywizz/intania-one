@@ -3,7 +3,7 @@
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { Clock, Info } from 'lucide-react-native';
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, type Href } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -496,7 +496,7 @@ export default function TimestampDetailScreen() {
       setToastType("success");
       setToastMessage(result.message || TEXT.SHARED_SUCCESS);
       await new Promise((resolve) => setTimeout(resolve, REDIRECT_DELAY_MS));
-      router.replace("/timestamp" as Parameters<typeof router.replace>[0]);
+      router.replace("/timestamp/forgot-timestamp" as Parameters<typeof router.replace>[0]);
     } catch (error) {
       setToastType("error");
       setToastMessage(
@@ -531,7 +531,7 @@ export default function TimestampDetailScreen() {
       setToastType("success");
       setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
       await new Promise((resolve) => setTimeout(resolve, REDIRECT_DELAY_MS));
-      router.replace("/timestamp");
+      router.replace("/timestamp/forgot-timestamp" as Parameters<typeof router.replace>[0]);
     } catch (error) {
       setToastType("error");
       setToastMessage(
@@ -773,7 +773,7 @@ export default function TimestampDetailScreen() {
       <StatusBar style="light" />
       <NavTopBar
         title={TEXT.TIMESTAMP_TITLE}
-        backHref="/timestamp"
+        backHref={"/timestamp/forgot-timestamp" as Href}
       />
       <ScrollView contentContainerStyle={styles.content}>
         {renderContent()}
