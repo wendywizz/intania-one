@@ -147,6 +147,9 @@ export default function NoticeRepairTabLayout() {
           <Tabs.Screen name="(admin)/admin-in-progress"
             options={{ title: TEXT.NOTICE_REPAIR_TAB_IN_PROGRESS, href: visibleFor(NOTICE_REPAIR_ROLE_ADMIN),
               tabBarIcon: ({ color }) => <IconSymbol size={26} name="wrench.fill" color={color} /> }} />
+          <Tabs.Screen name="(admin)/admin-supply"
+            options={{ title: TEXT.NOTICE_REPAIR_TAB_SUPPLY, href: visibleFor(NOTICE_REPAIR_ROLE_ADMIN),
+              tabBarIcon: ({ color }) => <IconSymbol size={26} name="briefcase.fill" color={color} /> }} />
           <Tabs.Screen name="(admin)/admin-done"
             options={{ title: TEXT.NOTICE_REPAIR_TAB_DONE, href: visibleFor(NOTICE_REPAIR_ROLE_ADMIN),
               tabBarIcon: ({ color }) => <IconSymbol size={26} name="checkmark.circle.fill" color={color} /> }} />

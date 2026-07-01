@@ -60,14 +60,14 @@ export function AgentSelectField({
 
   return (
     <View style={styles.field}>
-      <ThemedText type="defaultSemiBold">{TEXT.absence_DELEGATE_LABEL}</ThemedText>
+      <ThemedText type="defaultSemiBold">{TEXT.ABSENCE_DELEGATE_LABEL}</ThemedText>
       <Pressable
         accessibilityRole="button"
         onPress={handleToggle}
         style={[styles.selectButton, hasError ? styles.inputError : undefined]}
       >
         <ThemedText style={[styles.selectText, styles.placeholder]}>
-          {TEXT.absence_DELEGATE_PLACEHOLDER}
+          {TEXT.ABSENCE_DELEGATE_PLACEHOLDER}
         </ThemedText>
         <ThemedText style={styles.chevron}>⌄</ThemedText>
       </Pressable>
@@ -121,7 +121,7 @@ export function AgentSelectField({
                   type="defaultSemiBold"
                   style={styles.selectModalTitle}
                 >
-                  {TEXT.absence_DELEGATE_LABEL}
+                  {TEXT.ABSENCE_DELEGATE_LABEL}
                 </ThemedText>
                 <Pressable
                   accessibilityRole="button"

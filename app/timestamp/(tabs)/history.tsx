@@ -20,9 +20,9 @@ import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import {
-  getForgotTimestampHistoryData,
-  type ForgotTimestampHistory,
-} from "@/services/forgetTimestampService";
+  getTimestampHistoryData,
+  type TimestampHistory,
+} from "@/services/timestampService";
 import { formatFullDate } from "@/utils/date-format";
 
 const dateFields = new Set([
@@ -62,7 +62,7 @@ function getCurrentYear() {
   return new Date().getFullYear();
 }
 
-function getText(item: ForgotTimestampHistory, fields: string[]) {
+function getText(item: TimestampHistory, fields: string[]) {
   for (const field of fields) {
     const value = item[field];
     if (typeof value === "string" && value.trim()) return value.trim();
@@ -71,46 +71,47 @@ function getText(item: ForgotTimestampHistory, fields: string[]) {
   return "";
 }
 
-function getHistoryKey(item: ForgotTimestampHistory, index: number) {
+function getHistoryKey(item: TimestampHistory, index: number) {
   const id = getText(item, ["id", "forgetId", "forget_id", "timestampId", "timestamp_id"]);
   const date = getText(item, Array.from(dateFields));
-  return `${id || date || "forgot-timestamp-history"}-${index}`;
+  return `${id || date || "timestamp-history"}-${index}`;
 }
 
-function getHistoryDate(item: ForgotTimestampHistory) {
+function getHistoryDate(item: TimestampHistory) {
   return getText(item, Array.from(dateFields));
 }
 
-function getWriteDate(item: ForgotTimestampHistory) {
+function getWriteDate(item: TimestampHistory) {
   return getText(item, writeDateFields) || getHistoryDate(item);
 }
 
-function getHistoryTimestamp(item: ForgotTimestampHistory) {
+function getHistoryTimestamp(item: TimestampHistory) {
   const timestamp = Date.parse(getHistoryDate(item));
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
-function sortHistoryItems(items: ForgotTimestampHistory[]) {
+function sortHistoryItems(items: TimestampHistory[]) {
   return [...items].sort(
     (leftItem, rightItem) =>
       getHistoryTimestamp(rightItem) - getHistoryTimestamp(leftItem),
   );
 }
 
-function getHistoryTitle(item: ForgotTimestampHistory) {
+function getHistoryTitle(item: TimestampHistory) {
   const stampType = getText(item, Array.from(stampTypeFields)).toLowerCase();
-  if (stampType === "in") return TEXT.FORGOT_TIMESTAMP_STAMP_IN;
-  if (stampType === "out") return TEXT.FORGOT_TIMESTAMP_STAMP_OUT;
+  if (stampType === "in") return TEXT.TIMESTAMP_STAMP_IN;
+  if (stampType === "out") return TEXT.TIMESTAMP_STAMP_OUT;
+  if (stampType === "all") return TEXT.TIMESTAMP_STAMP_ALL;
   const date = getHistoryDate(item);
   return date ? formatFullDate(date) : TEXT.SHARED_HISTORY;
 }
 
-function getWriteDateLabel(item: ForgotTimestampHistory) {
+function getWriteDateLabel(item: TimestampHistory) {
   const writeDate = getWriteDate(item);
   return writeDate ? formatFullDate(writeDate) : "-";
 }
 
-function getHistoryItemStatus(item: ForgotTimestampHistory): "approved" | "rejected" | "" {
+function getHistoryItemStatus(item: TimestampHistory): "approved" | "rejected" | "" {
   for (const field of historyStatusFields) {
     const value = String(item[field] ?? "").toLowerCase().trim();
     if (["approved", "true", "1", "yes", "active"].includes(value)) return "approved";
@@ -119,14 +120,14 @@ function getHistoryItemStatus(item: ForgotTimestampHistory): "approved" | "rejec
   return "";
 }
 
-function ForgotTimestampHistoryItem({ item }: { item: ForgotTimestampHistory }) {
+function TimestampHistoryItem({ item }: { item: TimestampHistory }) {
   const status = getHistoryItemStatus(item);
   const stampType = getText(item, Array.from(stampTypeFields)).toLowerCase();
   const StampIcon = stampType === "in" ? LogIn : stampType === "out" ? LogOut : Fingerprint;
 
   const openDetail = () => {
     navPush({
-      pathname: "/forgot-timestamp/history-detail",
+      pathname: "/timestamp/history-detail",
       params: { item: JSON.stringify(item) },
     } as Parameters<typeof navPush>[0]);
   };
@@ -148,11 +149,11 @@ function ForgotTimestampHistoryItem({ item }: { item: ForgotTimestampHistory }) 
         <View style={styles.itemRight}>
           {status === "approved" ? (
             <View style={styles.approvedBadge}>
-              <ThemedText style={styles.approvedBadgeText}>{TEXT.FORGOT_TIMESTAMP_APPROVED_BADGE}</ThemedText>
+              <ThemedText style={styles.approvedBadgeText}>{TEXT.TIMESTAMP_APPROVED_BADGE}</ThemedText>
             </View>
           ) : status === "rejected" ? (
             <View style={styles.rejectedBadge}>
-              <ThemedText style={styles.rejectedBadgeText}>{TEXT.FORGOT_TIMESTAMP_REJECTED_BADGE}</ThemedText>
+              <ThemedText style={styles.rejectedBadgeText}>{TEXT.TIMESTAMP_REJECTED_BADGE}</ThemedText>
             </View>
           ) : null}
           <ChevronRight size={16} color="#8B716F" />
@@ -162,9 +163,9 @@ function ForgotTimestampHistoryItem({ item }: { item: ForgotTimestampHistory }) 
   );
 }
 
-export default function ForgotTimestampHistoryScreen() {
+export default function TimestampHistoryScreen() {
   const { user: authUser } = useAuth();
-  const [items, setItems] = useState<ForgotTimestampHistory[]>([]);
+  const [items, setItems] = useState<TimestampHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -180,7 +181,7 @@ export default function ForgotTimestampHistoryScreen() {
       }
       setError("");
       try {
-        const result = await getForgotTimestampHistoryData(staffId, currentYear);
+        const result = await getTimestampHistoryData(staffId, currentYear);
         setItems(sortHistoryItems(result.data));
       } catch (loadError) {
         setItems([]);
@@ -211,10 +212,10 @@ export default function ForgotTimestampHistoryScreen() {
       <View style={styles.statsCard}>
         <ThemedText style={styles.statsHeading}>{TEXT.SHARED_HISTORY}</ThemedText>
         <ThemedText style={styles.statsSubtitle}>
-          {TEXT.FORGOT_TIMESTAMP_HISTORY_SUBTITLE}
+          {TEXT.TIMESTAMP_HISTORY_SUBTITLE}
         </ThemedText>
 
-        <ThemedText style={styles.cycleLabel}>{TEXT.FORGOT_TIMESTAMP_COMPANY_CYCLE_LABEL}</ThemedText>
+        <ThemedText style={styles.cycleLabel}>{TEXT.TIMESTAMP_COMPANY_CYCLE_LABEL}</ThemedText>
         <ThemedText style={styles.cycleValue}>
           {currentYear - 1} – {currentYear}
         </ThemedText>
@@ -223,12 +224,12 @@ export default function ForgotTimestampHistoryScreen() {
 
         <View style={styles.statsRow}>
           <View style={styles.statCell}>
-            <ThemedText style={styles.statLabel}>{TEXT.FORGOT_TIMESTAMP_TOTAL_APPROVED}</ThemedText>
+            <ThemedText style={styles.statLabel}>{TEXT.TIMESTAMP_TOTAL_APPROVED}</ThemedText>
             <ThemedText style={styles.statCountApproved}>{approvedCount}</ThemedText>
           </View>
           <View style={styles.statsVerticalDivider} />
           <View style={styles.statCell}>
-            <ThemedText style={styles.statLabel}>{TEXT.FORGOT_TIMESTAMP_TOTAL_REJECTED}</ThemedText>
+            <ThemedText style={styles.statLabel}>{TEXT.TIMESTAMP_TOTAL_REJECTED}</ThemedText>
             <ThemedText style={styles.statCountRejected}>{rejectedCount}</ThemedText>
           </View>
         </View>
@@ -278,7 +279,7 @@ export default function ForgotTimestampHistoryScreen() {
             onRefresh={() => loadItems(true)}
           />
         }
-        renderItem={({ item }) => <ForgotTimestampHistoryItem item={item} />}
+        renderItem={({ item }) => <TimestampHistoryItem item={item} />}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={
           <View style={styles.emptyCard}>
@@ -289,7 +290,7 @@ export default function ForgotTimestampHistoryScreen() {
           items.length > 0 ? (
             <View style={styles.listFooter}>
               <View style={styles.footerLine} />
-              <ThemedText style={styles.footerText}>{TEXT.FORGOT_TIMESTAMP_END_OF_HISTORY}</ThemedText>
+              <ThemedText style={styles.footerText}>{TEXT.TIMESTAMP_END_OF_HISTORY}</ThemedText>
               <View style={styles.footerLine} />
             </View>
           ) : null
@@ -301,7 +302,7 @@ export default function ForgotTimestampHistoryScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.FORGOT_TIMESTAMP_TITLE} backHref="/" />
+      <NavTopBar title={TEXT.TIMESTAMP_TITLE} backHref="/" />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );

@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 
+import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -19,12 +20,12 @@ import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import {
-  getForgotTimestampData,
-  type ForgotTimestamp,
-} from "@/services/forgetTimestampService";
+  getTimestampData,
+  type Timestamp,
+} from "@/services/timestampService";
 import { formatFullDate } from "@/utils/date-format";
 
-const APPEAL_DOCUMENT_MESSAGE = TEXT.FORGOT_TIMESTAMP_APPEAL_DOCUMENT;
+const APPEAL_DOCUMENT_MESSAGE = TEXT.TIMESTAMP_APPEAL_DOCUMENT;
 
 const stampTypeFields = new Set(["stampType", "stamp_type"]);
 const statusFields = ["status", "isActive", "is_active"];
@@ -38,7 +39,7 @@ const dateFields = new Set([
   "timestamp_date",
 ]);
 
-function getStampType(item: ForgotTimestamp) {
+function getStampType(item: Timestamp) {
   for (const field of stampTypeFields) {
     const value = item[field];
     if (value !== undefined && value !== null && String(value).trim()) {
@@ -52,12 +53,12 @@ function getCurrentYear() {
   return new Date().getFullYear();
 }
 
-function getItemId(item: ForgotTimestamp, index: number) {
+function getItemId(item: Timestamp, index: number) {
   const id = item.id ?? item.timestampId ?? item.timestamp_id ?? item.date;
   return `${String(id ?? "timestamp")}-${index}`;
 }
 
-function getItemDateValue(item: ForgotTimestamp) {
+function getItemDateValue(item: Timestamp) {
   for (const field of dateFields) {
     const value = item[field];
     if (value !== undefined && value !== null && String(value).trim()) {
@@ -67,32 +68,34 @@ function getItemDateValue(item: ForgotTimestamp) {
   return "";
 }
 
-function getItemTimestamp(item: ForgotTimestamp) {
+function getItemTimestamp(item: Timestamp) {
   const timestamp = Date.parse(getItemDateValue(item));
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
-function sortItemsByDateDesc(items: ForgotTimestamp[]) {
+function sortItemsByDateDesc(items: Timestamp[]) {
   return [...items].sort(
     (leftItem, rightItem) =>
       getItemTimestamp(rightItem) - getItemTimestamp(leftItem),
   );
 }
 
-function getItemTitle(item: ForgotTimestamp) {
+function getItemTitle(item: Timestamp) {
   const stampType = getStampType(item);
-  if (stampType === "in") return TEXT.FORGOT_TIMESTAMP_STAMP_IN;
-  if (stampType === "out") return TEXT.FORGOT_TIMESTAMP_STAMP_OUT;
+  if (stampType === "in") return TEXT.TIMESTAMP_STAMP_IN;
+  if (stampType === "out") return TEXT.TIMESTAMP_STAMP_OUT;
+  // "all" = missing both in and out → absent from work.
+  if (stampType === "all") return TEXT.TIMESTAMP_STAMP_ALL;
   const title =
     item.date ??
     item.workDate ??
     item.work_date ??
     item.timestampDate ??
     item.timestamp_date;
-  return title ? formatFullDate(String(title)) : TEXT.FORGOT_TIMESTAMP_TITLE;
+  return title ? formatFullDate(String(title)) : TEXT.TIMESTAMP_TITLE;
 }
 
-function getItemStatus(item: ForgotTimestamp) {
+function getItemStatus(item: Timestamp) {
   for (const field of statusFields) {
     const value = item[field];
     if (value !== undefined && value !== null && String(value).trim()) {
@@ -102,23 +105,23 @@ function getItemStatus(item: ForgotTimestamp) {
   return "";
 }
 
-function isStatusTrue(item: ForgotTimestamp) {
+function isStatusTrue(item: Timestamp) {
   const status = getItemStatus(item);
   return status === "true" || status === "1" || status === "yes";
 }
 
-function isStatusFalse(item: ForgotTimestamp) {
+function isStatusFalse(item: Timestamp) {
   const status = getItemStatus(item);
   return status === "false" || status === "0" || status === "no";
 }
 
-function isEditableItem(item: ForgotTimestamp) {
+function isEditableItem(item: Timestamp) {
   const value = item.isEdit ?? item.is_edit;
   if (typeof value === "boolean") return value;
   return ["true", "1", "yes"].includes(String(value ?? "").trim().toLowerCase());
 }
 
-function ForgotTimestampItem({ item }: { item: ForgotTimestamp }) {
+function TimestampItem({ item }: { item: Timestamp }) {
   const canOpenDetail = isStatusTrue(item);
   const showAppealDocumentMessage = isStatusFalse(item);
   const isUnavailable = isStatusFalse(item);
@@ -129,7 +132,7 @@ function ForgotTimestampItem({ item }: { item: ForgotTimestamp }) {
   const handlePress = () => {
     if (!canOpenDetail) return;
     router.push({
-      pathname: "/forgot-timestamp/detail",
+      pathname: "/timestamp/detail",
       params: {
         item: JSON.stringify(item),
         isEdit: isEditableItem(item) ? "true" : "false",
@@ -160,7 +163,7 @@ function ForgotTimestampItem({ item }: { item: ForgotTimestamp }) {
           {canOpenDetail ? (
             <View style={styles.itemRight}>
               <View style={styles.actionBadge}>
-                <ThemedText style={styles.actionBadgeText}>{TEXT.FORGOT_TIMESTAMP_ACTION_REQUIRED}</ThemedText>
+                <ThemedText style={styles.actionBadgeText}>{TEXT.TIMESTAMP_ACTION_REQUIRED}</ThemedText>
               </View>
               <ChevronRight size={16} color="#8B716F" />
             </View>
@@ -174,9 +177,9 @@ function ForgotTimestampItem({ item }: { item: ForgotTimestamp }) {
   );
 }
 
-export default function ForgotTimestampScreen() {
+export default function TimestampScreen() {
   const { user: authUser } = useAuth();
-  const [items, setItems] = useState<ForgotTimestamp[]>([]);
+  const [items, setItems] = useState<Timestamp[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -192,7 +195,7 @@ export default function ForgotTimestampScreen() {
       }
       setError("");
       try {
-        const result = await getForgotTimestampData(staffId, currentYear);
+        const result = await getTimestampData(staffId, currentYear);
         setItems(sortItemsByDateDesc(result.data));
       } catch (loadError) {
         setItems([]);
@@ -220,19 +223,19 @@ export default function ForgotTimestampScreen() {
   const listHeader = (
     <View style={styles.listHeader}>
       <View style={styles.welcomeSection}>
-        <ThemedText style={styles.welcomeHeading}>{TEXT.FORGOT_TIMESTAMP_TITLE}</ThemedText>
+        <ThemedText style={styles.welcomeHeading}>{TEXT.TIMESTAMP_TITLE}</ThemedText>
         <ThemedText style={styles.welcomeSubtitle}>
           คุณมี {pendingCount} คำขอที่รอดำเนินการ
         </ThemedText>
         <ThemedText style={styles.cycleText}>
-          {TEXT.FORGOT_TIMESTAMP_COMPANY_CYCLE_LABEL}: {currentYear - 1} – {currentYear}
+          {TEXT.TIMESTAMP_COMPANY_CYCLE_LABEL}: {currentYear - 1} – {currentYear}
         </ThemedText>
       </View>
 
       <View style={styles.noteBox}>
         <Clock size={20} color="#922124" style={styles.noteIcon} />
         <ThemedText style={styles.noteText}>
-          {TEXT.FORGOT_TIMESTAMP_NOTE_TEXT}
+          {TEXT.TIMESTAMP_NOTE_TEXT}
         </ThemedText>
       </View>
     </View>
@@ -252,21 +255,11 @@ export default function ForgotTimestampScreen() {
 
     if (error) {
       return (
-        <View style={styles.stateContainer}>
-          <ThemedText type="subtitle">{TEXT.SHARED_ERROR_TITLE_THAI}</ThemedText>
-          <ThemedText style={[styles.stateMessage, styles.errorText]}>
-            {error}
-          </ThemedText>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => loadItems()}
-            style={styles.retryButton}
-          >
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.SHARED_RETRY_THAI}
-            </ThemedText>
-          </Pressable>
-        </View>
+        <ErrorState
+          title={TEXT.SHARED_ERROR_TITLE_THAI}
+          message={error}
+          onRetry={() => loadItems()}
+        />
       );
     }
 
@@ -282,7 +275,7 @@ export default function ForgotTimestampScreen() {
             onRefresh={() => loadItems(true)}
           />
         }
-        renderItem={({ item }) => <ForgotTimestampItem item={item} />}
+        renderItem={({ item }) => <TimestampItem item={item} />}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={
           <View style={styles.emptyCard}>
@@ -298,7 +291,7 @@ export default function ForgotTimestampScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.FORGOT_TIMESTAMP_TITLE} backHref="/" />
+      <NavTopBar title={TEXT.TIMESTAMP_TITLE} backHref="/" />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );

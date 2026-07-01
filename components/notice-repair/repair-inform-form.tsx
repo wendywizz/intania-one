@@ -1,6 +1,6 @@
-import { AppToast } from '@/components/app-toast';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ConfirmModal } from '@/components/notice-repair/confirm-modal';
+import { useToast } from '@/components/toast-provider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
@@ -8,12 +8,18 @@ import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import type { NoticeRepairReference } from '@/models/types';
 import { createRepair, getDetail, getReference, updateRepair } from '@/services/noticeRepairService';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
-  ActivityIndicator, Modal, Pressable, ScrollView,
+  ActivityIndicator, Modal, Platform, Pressable, ScrollView,
   StyleSheet, TextInput, useWindowDimensions, View,
 } from 'react-native';
+
+// On web a focused TextInput draws the browser's own rectangular outline, which
+// ignores the control's rounded border. Remove it so the focus state can show
+// on the control's own (rounded) border instead. `outlineStyle` is a web-only
+// RN-Web style, hence the loose type.
+const webNoOutline: any = Platform.OS === 'web' ? { outlineStyle: 'none' } : null;
 
 /** Radio group for repair type: แจ้งซ่อม (n) / ติดตั้งเพิ่มเติม (y). */
 const REPAIR_TYPE_OPTIONS = [
@@ -197,17 +203,20 @@ function TextField({
   placeholder?: string; multiline?: boolean; keyboardType?: 'phone-pad' | 'default';
   iconName?: IconSymbolName;
 }) {
+  const [focused, setFocused] = useState(false);
   return (
     <View style={fs.field}>
       <FieldLabel text={label} />
-      <View style={[fs.control, multiline && fs.controlMultiline]}>
+      <View style={[fs.control, multiline && fs.controlMultiline, focused && fs.controlFocused]}>
         {iconName && !multiline ? (
           <IconSymbol name={iconName} size={18} color="#687076" />
         ) : null}
         <TextInput
-          style={[fs.input, multiline && fs.inputMultiline]}
+          style={[fs.input, multiline && fs.inputMultiline, webNoOutline]}
           value={value}
           onChangeText={onChangeText}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           placeholder={placeholder}
           placeholderTextColor="#9CA3AF"
           multiline={multiline}
@@ -230,6 +239,8 @@ export type RepairInformFormProps = {
   heading?: string;
   subtitle?: string;
   rightContent?: ReactNode;
+  /** Where the top-bar back button goes. Defaults to NavTopBar's own behavior. */
+  backHref?: Href;
   showHomeButton?: boolean;
   submitLabel: string;
   /** Optional leading icon on the submit button (e.g. send/paperplane). */
@@ -248,7 +259,7 @@ export type RepairInformFormProps = {
 };
 
 export function RepairInformForm({
-  mode, staffId, repairId, title, heading, subtitle, rightContent, showHomeButton,
+  mode, staffId, repairId, title, heading, subtitle, rightContent, backHref, showHomeButton,
   submitLabel, submitIconName, successMessage, errorMessage, loadErrorMessage,
   confirmBeforeSubmit, confirmTitle, confirmMessage, resetOnFocus, onSuccess,
 }: RepairInformFormProps) {
@@ -270,9 +281,8 @@ export function RepairInformForm({
   const [isLoading, setIsLoading] = useState(mode === 'edit');
   const [loadError, setLoadError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Errors use the AppToast dialog; success uses a lightweight toast banner.
-  const [toast, setToast] = useState('');
-  const [successToast, setSuccessToast] = useState('');
+  // Success/error feedback uses the app-wide slide-down toast.
+  const { showToast } = useToast();
 
   const resetForm = useCallback(() => {
     setSelectedCategory(null);
@@ -344,13 +354,6 @@ export function RepairInformForm({
     if (resetOnFocus) resetForm();
   }, [resetOnFocus, resetForm]));
 
-  // Auto-dismiss the success banner.
-  useEffect(() => {
-    if (!successToast) return undefined;
-    const t = setTimeout(() => setSuccessToast(''), 2500);
-    return () => clearTimeout(t);
-  }, [successToast]);
-
   const doSubmit = async () => {
     if (!selectedCategory) return;
     setIsSubmitting(true);
@@ -371,12 +374,12 @@ export function RepairInformForm({
         await createRepair(staffId, payload);
       }
       setConfirmVisible(false);
-      setSuccessToast(successMessage);
+      showToast(successMessage, 'success');
       if (mode === 'create') resetForm();
       if (onSuccess) setTimeout(onSuccess, 800);
     } catch (e) {
       setConfirmVisible(false);
-      setToast(e instanceof Error ? e.message : errorMessage);
+      showToast(e instanceof Error ? e.message : errorMessage, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -385,7 +388,7 @@ export function RepairInformForm({
   // Validate, then either confirm (edit) or submit straight away (create).
   const handleSave = () => {
     if (!selectedCategory || !place.trim() || !detail.trim()) {
-      setToast(TEXT.NOTICE_REPAIR_FORM_REQUIRED);
+      showToast(TEXT.NOTICE_REPAIR_FORM_REQUIRED, 'error');
       return;
     }
     if (confirmBeforeSubmit) {
@@ -397,7 +400,7 @@ export function RepairInformForm({
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={title} rightContent={rightContent} showHomeButton={showHomeButton} />
+      <NavTopBar title={title} backHref={backHref} rightContent={rightContent} showHomeButton={showHomeButton} />
 
       {isLoading ? (
         <ActivityIndicator style={styles.loader} size="large" color="#922124" />
@@ -492,16 +495,6 @@ export function RepairInformForm({
         onConfirm={doSubmit}
         onCancel={() => setConfirmVisible(false)}
       />
-
-      {!!toast && (
-        <AppToast message={toast} type="error" />
-      )}
-
-      {!!successToast && (
-        <View style={styles.toast} pointerEvents="none">
-          <ThemedText style={styles.toastText}>{successToast}</ThemedText>
-        </View>
-      )}
     </ThemedView>
   );
 }
@@ -551,6 +544,7 @@ const fs = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 14, paddingVertical: 10, minHeight: 44,
   },
+  controlFocused: { borderColor: '#191C1F' },
   controlMultiline: { alignItems: 'flex-start', minHeight: 80 },
   controlText: { flex: 1, fontSize: 14, lineHeight: 20, color: '#191C1F', fontFamily: AppFonts.psuRegular },
   placeholder: { color: '#9CA3AF' },

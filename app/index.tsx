@@ -26,9 +26,16 @@ import { getUnreadNotificationCount } from '@/services/notificationService';
 import { staffNewsFeed } from '@/services/newsService';
 import { getActiveSummary, type ActiveSummaryData } from '@/services/activeSummaryService';
 import { listExamTasks } from '@/services/examinarService';
-import { formatNewsDate } from '@/utils/date-format';
+import { formatDateRange, formatNewsDate } from '@/utils/date-format';
 import { navPush } from '@/utils/navigation';
 import { ENDPOINTS } from '@/constants/endpoints';
+import {
+  TYPE_ABSENCE_BIRTH,
+  TYPE_ABSENCE_BUSINESS,
+  TYPE_ABSENCE_HAJJ,
+  TYPE_ABSENCE_RELAX,
+  TYPE_ABSENCE_SICK,
+} from '@/constants/types';
 
 const D = {
   primary: '#922124',
@@ -47,8 +54,8 @@ const D = {
 type IconName = Parameters<typeof IconSymbol>[0]['name'];
 
 const MENU_ITEMS: ReadonlyArray<{ title: string; href: string; icon: IconName }> = [
-  { title: TEXT.absence_TITLE, href: '/absence', icon: 'calendar-clock' },
-  { title: TEXT.FORGOT_TIMESTAMP_TITLE, href: '/forgot-timestamp', icon: 'clock.fill' },
+  { title: TEXT.ABSENCE_TITLE, href: '/absence', icon: 'calendar-clock' },
+  { title: TEXT.TIMESTAMP_TITLE, href: '/timestamp/calendar', icon: 'clock.fill' },
   { title: TEXT.MEETING_MENU_TITLE, href: '/meeting', icon: 'person.2.fill' },
   { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: '/repair-computer', icon: 'laptop' },
   { title: TEXT.NOTICE_REPAIR__MENU_TITLE, href: '/notice-repair', icon: 'wrench.fill' },
@@ -112,6 +119,48 @@ function isExamUpcoming(task: ExamTask): boolean {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const d = new Date(raw); d.setHours(0, 0, 0, 0);
   return !isNaN(d.getTime()) && d >= today;
+}
+
+// ─── Absence helpers (mirror absence/pending screen) ──────────────────────────
+
+const absenceTypeLabels: Record<string, string> = {
+  [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
+  [TYPE_ABSENCE_BUSINESS]: TEXT.ABSENCE_BUSINESS_TITLE,
+  [TYPE_ABSENCE_BIRTH]: TEXT.ABSENCE_BIRTH_TITLE,
+  [TYPE_ABSENCE_RELAX]: TEXT.ABSENCE_RELAX_TITLE,
+  [TYPE_ABSENCE_HAJJ]: TEXT.ABSENCE_HAJJ_TITLE,
+};
+
+const absenceTypeFields = ['absentType', 'absenceType', 'typeAbsence', 'ABSENCE_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type'];
+const absenceTypeNameFields = ['absentTypeName', 'absenceTypeName', 'ABSENCE_type_name', 'typeName', 'type_name', 'leaveTypeName', 'leave_type_name'];
+const absenceStartDateFields = ['startDate', 'start_date', 'dateStart', 'date_start'];
+const absenceEndDateFields = ['endDate', 'end_date', 'dateEnd', 'date_end'];
+const absenceIdFields = ['id', 'absenceId', 'ABSENCE_id', 'requestId', 'request_id'];
+
+function getAbsenceField(item: Record<string, unknown>, fields: string[]) {
+  for (const field of fields) {
+    const value = item[field];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'number') return String(value);
+  }
+  return '';
+}
+
+function getAbsenceType(item: Record<string, unknown>) {
+  return getAbsenceField(item, absenceTypeFields);
+}
+
+function getAbsenceTypeLabel(item: Record<string, unknown>) {
+  const typeName = getAbsenceField(item, absenceTypeNameFields);
+  const type = getAbsenceType(item);
+  return typeName || absenceTypeLabels[type] || (type ? `${TEXT.ABSENCE_TITLE} ${type}` : TEXT.ABSENCE_TITLE);
+}
+
+function getAbsenceDateRange(item: Record<string, unknown>) {
+  return formatDateRange(
+    getAbsenceField(item, absenceStartDateFields),
+    getAbsenceField(item, absenceEndDateFields),
+  );
 }
 
 // ─── Shift card component ─────────────────────────────────────────────────────
@@ -185,20 +234,49 @@ function UpcomingShiftSection({ data, loading, upcomingExams }: UpcomingShiftSec
       );
     }
 
-    // ── Absence: total count badge → navigate to absence history ────────────
-    if (data.absence.success && data.absence.pending.length > 0) {
-      const count = data.absence.pending.length;
-      cards.push(
-        <ShiftCard
-          key="absence-summary"
-          icon="calendar-clock"
-          iconBg="#FFFBEB"
-          iconColor="#D97706"
-          title="Leave Requests"
-          subtitle={`${count} pending`}
-          onPress={() => navPush('/absence/history' as Parameters<typeof navPush>[0])}
-        />
-      );
+    // ── Absence: single → type/date → detail; multiple → count badge → waiting
+    if (data.absence.success) {
+      const absencePending = [
+        ...(data.absence.pending ?? []),
+        ...(data.absence.cancelled ?? []),
+      ];
+
+      if (absencePending.length === 1) {
+        const absenceItem = absencePending[0];
+        cards.push(
+          <ShiftCard
+            key="absence-summary"
+            icon="calendar-clock"
+            iconBg="#FFFBEB"
+            iconColor="#D97706"
+            title={getAbsenceTypeLabel(absenceItem)}
+            subtitle={getAbsenceDateRange(absenceItem)}
+            onPress={() =>
+              navPush({
+                pathname: '/absence/detail',
+                params: {
+                  id: getAbsenceField(absenceItem, absenceIdFields),
+                  type: getAbsenceType(absenceItem),
+                  item: encodeURIComponent(JSON.stringify(absenceItem)),
+                },
+              } as Parameters<typeof navPush>[0])
+            }
+          />
+        );
+      } else if (absencePending.length > 1) {
+        cards.push(
+          <ShiftCard
+            key="absence-summary"
+            icon="calendar-clock"
+            iconBg="#FFFBEB"
+            iconColor="#D97706"
+            title="Absence Requests"
+            subtitle=""
+            badge={absencePending.length}
+            onPress={() => navPush('/absence/pending' as Parameters<typeof navPush>[0])}
+          />
+        );
+      }
     }
 
     // ── Meeting: total count → navigate to meeting list ────────────────────
@@ -217,19 +295,19 @@ function UpcomingShiftSection({ data, loading, upcomingExams }: UpcomingShiftSec
       );
     }
 
-    // ── Forgot timestamp: total count badge → navigate to forgot-timestamp list
-    if (data.forgotTimestamp.success && data.forgotTimestamp.items.length > 0) {
-      const count = data.forgotTimestamp.items.length;
+    // ── Timestamp: total count badge → navigate to timestamp list
+    if (data.timestamp.success && data.timestamp.items.length > 0) {
+      const count = data.timestamp.items.length;
       cards.push(
         <ShiftCard
           key="forgot-summary"
           icon="clock.fill"
           iconBg="#F5F3FF"
           iconColor="#7C3AED"
-          title="Forgot Timestamp"
+          title="Timestamp"
           subtitle=""
           badge={count}
-          onPress={() => navPush('/forgot-timestamp' as Parameters<typeof navPush>[0])}
+          onPress={() => navPush('/timestamp' as Parameters<typeof navPush>[0])}
         />
       );
     }

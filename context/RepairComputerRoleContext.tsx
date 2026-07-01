@@ -3,7 +3,6 @@ import { REPAIR_COMPUTER_DEFAULT_ROLE, type RepairComputerRole } from '@/constan
 
 type RepairComputerRoleContextValue = {
   currentRole: RepairComputerRole;
-  roleSwitcher?: ReactNode;
 };
 
 const RepairComputerRoleContext = createContext<RepairComputerRoleContextValue>({
@@ -13,14 +12,12 @@ const RepairComputerRoleContext = createContext<RepairComputerRoleContextValue>(
 export function RepairComputerRoleProvider({
   children,
   currentRole,
-  roleSwitcher,
 }: {
   children: ReactNode;
   currentRole: RepairComputerRole;
-  roleSwitcher?: ReactNode;
 }) {
   return (
-    <RepairComputerRoleContext.Provider value={{ currentRole, roleSwitcher }}>
+    <RepairComputerRoleContext.Provider value={{ currentRole }}>
       {children}
     </RepairComputerRoleContext.Provider>
   );

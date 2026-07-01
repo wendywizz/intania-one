@@ -12,30 +12,30 @@ import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import {
-  TYPE_absence_BIRTH,
-  TYPE_absence_BUSINESS,
-  TYPE_absence_HAJJ,
-  TYPE_absence_HELPMATE,
-  TYPE_absence_RELAX,
-  TYPE_absence_SICK,
+  TYPE_ABSENCE_BIRTH,
+  TYPE_ABSENCE_BUSINESS,
+  TYPE_ABSENCE_HAJJ,
+  TYPE_ABSENCE_HELPMATE,
+  TYPE_ABSENCE_RELAX,
+  TYPE_ABSENCE_SICK,
 } from '@/constants/types';
 import type { absence } from '@/models/types';
 import { getabsenceData } from '@/services/absenceService';
 import { formatDateTime } from '@/utils/date-format';
 
 const absenceTypeLabels: Record<string, string> = {
-  [TYPE_absence_SICK]: TEXT.absence_SICK_TITLE,
-  [TYPE_absence_BUSINESS]: TEXT.absence_BUSINESS_TITLE,
-  [TYPE_absence_BIRTH]: TEXT.absence_BIRTH_TITLE,
-  [TYPE_absence_RELAX]: TEXT.absence_RELAX_TITLE,
-  [TYPE_absence_HELPMATE]: TEXT.absence_BIRTH_TITLE,
-  [TYPE_absence_HAJJ]: TEXT.absence_HAJJ_TITLE,
+  [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
+  [TYPE_ABSENCE_BUSINESS]: TEXT.ABSENCE_BUSINESS_TITLE,
+  [TYPE_ABSENCE_BIRTH]: TEXT.ABSENCE_BIRTH_TITLE,
+  [TYPE_ABSENCE_RELAX]: TEXT.ABSENCE_RELAX_TITLE,
+  [TYPE_ABSENCE_HELPMATE]: TEXT.ABSENCE_BIRTH_TITLE,
+  [TYPE_ABSENCE_HAJJ]: TEXT.ABSENCE_HAJJ_TITLE,
 };
 
 const absenceTypeFields = [
   'absentType',
   'absenceType',
-  'absence_type',
+  'ABSENCE_type',
   'typeabsence',
   'type_absence',
   'leaveType',
@@ -45,7 +45,7 @@ const absenceTypeFields = [
 const absenceTypeNameFields = [
   'absentTypeName',
   'absenceTypeName',
-  'absence_type_name',
+  'ABSENCE_type_name',
   'typeName',
   'type_name',
   'leaveTypeName',
@@ -84,12 +84,12 @@ const ICON_MAP: Record<IconName, LucideIcon> = {
 };
 
 const TYPE_ICON: Record<string, IconName> = {
-  [TYPE_absence_SICK]: 'local-hospital',
-  [TYPE_absence_BUSINESS]: 'business-center',
-  [TYPE_absence_RELAX]: 'beach-access',
-  [TYPE_absence_BIRTH]: 'child-care',
-  [TYPE_absence_HELPMATE]: 'child-care',
-  [TYPE_absence_HAJJ]: 'mosque',
+  [TYPE_ABSENCE_SICK]: 'local-hospital',
+  [TYPE_ABSENCE_BUSINESS]: 'business-center',
+  [TYPE_ABSENCE_RELAX]: 'beach-access',
+  [TYPE_ABSENCE_BIRTH]: 'child-care',
+  [TYPE_ABSENCE_HELPMATE]: 'child-care',
+  [TYPE_ABSENCE_HAJJ]: 'mosque',
 };
 
 function getText(item: absence, fields: string[]) {
@@ -127,11 +127,11 @@ function formatDateOnly(value: string) {
 
 function getHalfDayLabel(value: string) {
   switch (value) {
-    case '1': return TEXT.absence_HALF_DAY_FIRST_MORNING;
-    case '2': return TEXT.absence_HALF_DAY_FIRST_AFTERNOON;
-    case '3': return TEXT.absence_HALF_DAY_LAST_MORNING;
-    case '4': return TEXT.absence_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING;
-    case '0': return TEXT.absence_HALF_DAY_NONE;
+    case '1': return TEXT.ABSENCE_HALF_DAY_FIRST_MORNING;
+    case '2': return TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON;
+    case '3': return TEXT.ABSENCE_HALF_DAY_LAST_MORNING;
+    case '4': return TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING;
+    case '0': return TEXT.ABSENCE_HALF_DAY_NONE;
     default: return value;
   }
 }
@@ -258,7 +258,7 @@ function FileField({ fileUrl, onPress }: { fileUrl: string; onPress: () => void 
   if (!fileUrl) return null;
   return (
     <View style={styles.field}>
-      <ThemedText style={styles.fieldLabel}>{TEXT.absence_MEDICAL_CERTIFICATE_LABEL}</ThemedText>
+      <ThemedText style={styles.fieldLabel}>{TEXT.ABSENCE_MEDICAL_CERTIFICATE_LABEL}</ThemedText>
       <Pressable accessibilityRole="link" onPress={onPress} style={styles.fieldValueRow}>
         <Paperclip size={18} color="#B33939" style={styles.fieldIcon} />
         <ThemedText lightColor="#B33939" darkColor="#B33939" style={[styles.fieldValue, styles.fileLinkText]}>
@@ -278,10 +278,10 @@ export default function absenceDetailScreen() {
   const loadedDetailKeyRef = useRef('');
   const loadingDetailKeyRef = useRef('');
   const routeType = Array.isArray(params.type) ? params.type[0] : params.type ?? '';
-  const title = TEXT.absence_HISTORY_TITLE;
+  const title = TEXT.ABSENCE_HISTORY_TITLE;
   const backHref = '/absence/history';
   const routeId = Array.isArray(params.id) ? params.id[0] : params.id ?? '';
-  const requestId = routeId || getText(initialItem, ['id', 'absenceId', 'absence_id', 'requestId', 'request_id']);
+  const requestId = routeId || getText(initialItem, ['id', 'absenceId', 'ABSENCE_id', 'requestId', 'request_id']);
   const requestType = getabsenceType(initialItem, routeType);
   const detailKey = requestId && requestType ? `${requestType}:${requestId}` : '';
 
@@ -291,7 +291,7 @@ export default function absenceDetailScreen() {
 
   const startDate = getText(item, ['startDate', 'start_date', 'dateStart', 'date_start']);
   const endDate = getText(item, ['endDate', 'end_date', 'dateEnd', 'date_end']);
-  const leaveDay = getText(item, ['numDays', 'num_days', 'absenceDays', 'absence_days', 'leaveDay', 'leave_day', 'days', 'day']);
+  const leaveDay = getText(item, ['numDays', 'num_days', 'absenceDays', 'ABSENCE_days', 'leaveDay', 'leave_day', 'days', 'day']);
   const approver = getText(item, ['approverPositionName', 'approver_position_name', 'approverName', 'approver_name', 'approver', 'approverId', 'approver_id']);
   const reason = getText(item, ['reason', 'detail', 'description']);
   const halfDay = getDisplayHalfDay(getText(item, ['partFlag', 'part_flag', 'startpart', 'half_day', 'halfDay']));
@@ -301,8 +301,8 @@ export default function absenceDetailScreen() {
   const fileUploadLink = getText(item, ['fileUploadLink', 'file_upload_link']);
   const status = getText(item, ['status', 'statusName', 'status_name', 'requestStatus', 'request_status', 'approvalStatus', 'approval_status', 'approvalStatusName', 'flowStatus', 'flow_status']);
 
-  const isSick = absType === TYPE_absence_SICK;
-  const isBusiness = absType === TYPE_absence_BUSINESS;
+  const isSick = absType === TYPE_ABSENCE_SICK;
+  const isBusiness = absType === TYPE_ABSENCE_BUSINESS;
   const statusBadge = (status && status !== '0') ? getStatusBadge(status) : null;
 
   const loadDetail = useCallback(async () => {
@@ -406,14 +406,14 @@ export default function absenceDetailScreen() {
 
           <Field
             label="TOTAL DAYS"
-            value={leaveDay ? `${leaveDay} ${TEXT.absence_DAY_UNIT}` : ''}
+            value={leaveDay ? `${leaveDay} ${TEXT.ABSENCE_DAY_UNIT}` : ''}
             icon="date-range"
             bold
           />
 
           {(isSick || isBusiness) && halfDay ? (
             <Field
-              label={TEXT.absence_HALF_DAY_LABEL.toUpperCase()}
+              label={TEXT.ABSENCE_HALF_DAY_LABEL.toUpperCase()}
               value={halfDay}
               icon="schedule"
             />
@@ -427,7 +427,7 @@ export default function absenceDetailScreen() {
 
           {isBusiness ? (
             <Field
-              label={TEXT.absence_TRAVEL_DETAIL_LABEL.toUpperCase()}
+              label={TEXT.ABSENCE_TRAVEL_DETAIL_LABEL.toUpperCase()}
               value={travelDetail}
               icon="flight"
             />

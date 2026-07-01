@@ -16,6 +16,7 @@ import {
   type UploadableFile,
 } from "./api";
 import { ENDPOINTS } from "../constants/endpoints";
+import { TEXT } from "../constants/text";
 
 const DEFAULT_DISPLAY_LENGTH = 10;
 
@@ -96,7 +97,18 @@ export async function initabsenceData(
   const jsonData = await requestJson(url, { method: "GET" });
   ensureSuccess(jsonData);
 
-  return jsonData.data as absence;
+  const data = jsonData.data;
+  // The backend can answer `{ success: true, data: null }` when the staff
+  // member is not allowed to file a new request (e.g. one is already pending).
+  // Surface that as a readable message instead of letting the form crash on
+  // `null.deptId`.
+  if (!data || typeof data !== "object") {
+    throw new Error(
+      String(jsonData.message ?? "").trim() || TEXT.ABSENCE_INIT_LOAD_ERROR_MESSAGE,
+    );
+  }
+
+  return data as absence;
 }
 
 export async function getData(
@@ -170,6 +182,7 @@ export async function addData(
     method: "POST",
     body: JSON.stringify({
       ...data,
+      type: absenceType,
       file_upload: fileName,
     }),
   });
@@ -207,6 +220,7 @@ export async function updateData(
     body: JSON.stringify({
       ...data,
       id,
+      type: absenceType,
       ...(reUpload ? { file_upload: fileName } : {}),
     }),
   });

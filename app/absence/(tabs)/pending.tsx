@@ -2,6 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
+import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -9,11 +10,11 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TEXT } from '@/constants/text';
 import {
-  TYPE_absence_BIRTH,
-  TYPE_absence_BUSINESS,
-  TYPE_absence_HAJJ,
-  TYPE_absence_RELAX,
-  TYPE_absence_SICK,
+  TYPE_ABSENCE_BIRTH,
+  TYPE_ABSENCE_BUSINESS,
+  TYPE_ABSENCE_HAJJ,
+  TYPE_ABSENCE_RELAX,
+  TYPE_ABSENCE_SICK,
 } from '@/constants/types';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
@@ -23,15 +24,15 @@ import { navPush } from '@/utils/navigation';
 import { formatDateRange } from '@/utils/date-format';
 
 const absenceTypeLabels: Record<string, string> = {
-  [TYPE_absence_SICK]: TEXT.absence_SICK_TITLE,
-  [TYPE_absence_BUSINESS]: TEXT.absence_BUSINESS_TITLE,
-  [TYPE_absence_BIRTH]: TEXT.absence_BIRTH_TITLE,
-  [TYPE_absence_RELAX]: TEXT.absence_RELAX_TITLE,
-  [TYPE_absence_HAJJ]: TEXT.absence_HAJJ_TITLE,
+  [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
+  [TYPE_ABSENCE_BUSINESS]: TEXT.ABSENCE_BUSINESS_TITLE,
+  [TYPE_ABSENCE_BIRTH]: TEXT.ABSENCE_BIRTH_TITLE,
+  [TYPE_ABSENCE_RELAX]: TEXT.ABSENCE_RELAX_TITLE,
+  [TYPE_ABSENCE_HAJJ]: TEXT.ABSENCE_HAJJ_TITLE,
 };
 
-const absenceTypeFields = ['absentType', 'absenceType', 'typeAbsence', 'absence_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type'];
-const absenceTypeNameFields = ['absentTypeName', 'absenceTypeName', 'absence_type_name', 'typeName', 'type_name', 'leaveTypeName', 'leave_type_name'];
+const absenceTypeFields = ['absentType', 'absenceType', 'typeAbsence', 'ABSENCE_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type'];
+const absenceTypeNameFields = ['absentTypeName', 'absenceTypeName', 'ABSENCE_type_name', 'typeName', 'type_name', 'leaveTypeName', 'leave_type_name'];
 const startDateFields = ['startDate', 'start_date', 'dateStart', 'date_start'];
 const endDateFields = ['endDate', 'end_date', 'dateEnd', 'date_end'];
 
@@ -45,7 +46,7 @@ function getText(item: absence, fields: string[]) {
 }
 
 function getAbsenceId(item: absence) {
-  return getText(item, ['id', 'absenceId', 'absence_id', 'requestId', 'request_id']);
+  return getText(item, ['id', 'absenceId', 'ABSENCE_id', 'requestId', 'request_id']);
 }
 
 function getAbsenceType(item: absence) {
@@ -67,10 +68,10 @@ function getDateRange(item: absence) {
 
 function getEditPathname(type: string) {
   switch (type) {
-    case TYPE_absence_SICK: return '/absence/sick';
-    case TYPE_absence_BUSINESS: return '/absence/business';
-    case TYPE_absence_RELAX: return '/absence/relax';
-    case TYPE_absence_BIRTH: return '/absence/birth';
+    case TYPE_ABSENCE_SICK: return '/absence/sick';
+    case TYPE_ABSENCE_BUSINESS: return '/absence/business';
+    case TYPE_ABSENCE_RELAX: return '/absence/relax';
+    case TYPE_ABSENCE_BIRTH: return '/absence/birth';
     default: return '/absence/detail';
   }
 }
@@ -79,10 +80,10 @@ type IconName = 'cross.fill' | 'briefcase.fill' | 'sun.max.fill' | 'figure.child
 
 function getTypeIcon(type: string): IconName {
   switch (type) {
-    case TYPE_absence_SICK: return 'cross.fill';
-    case TYPE_absence_BUSINESS: return 'briefcase.fill';
-    case TYPE_absence_RELAX: return 'sun.max.fill';
-    case TYPE_absence_BIRTH: return 'figure.child';
+    case TYPE_ABSENCE_SICK: return 'cross.fill';
+    case TYPE_ABSENCE_BUSINESS: return 'briefcase.fill';
+    case TYPE_ABSENCE_RELAX: return 'sun.max.fill';
+    case TYPE_ABSENCE_BIRTH: return 'figure.child';
     default: return 'doc.text.fill';
   }
 }
@@ -113,7 +114,7 @@ function PendingItem({ item, approvalStep, onPress }: PendingItemProps) {
           <ThemedText style={styles.itemStep}>{approvalStep}</ThemedText>
         </View>
         <View style={styles.pendingBadge}>
-          <ThemedText style={styles.pendingBadgeText}>{TEXT.absence_PENDING_BADGE}</ThemedText>
+          <ThemedText style={styles.pendingBadgeText}>{TEXT.ABSENCE_PENDING_BADGE}</ThemedText>
         </View>
       </View>
     </Pressable>
@@ -173,25 +174,17 @@ export default function PendingScreen() {
 
     if (error) {
       return (
-        <View style={styles.stateBox}>
-          <ThemedText style={styles.stateTitle}>{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
-          <ThemedText style={styles.errorText}>{error}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={() => loadData()} style={styles.retryButton}>
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.SHARED_RETRY}
-            </ThemedText>
-          </Pressable>
-        </View>
+        <ErrorState
+          title={TEXT.SHARED_SOMETHING_WENT_WRONG}
+          message={error}
+          onRetry={() => loadData()}
+        />
       );
     }
 
     const hasItems = items.remain || items.cancel;
     if (!hasItems) {
-      return (
-        <View style={styles.emptyBox}>
-          <ThemedText style={styles.emptyText}>{TEXT.SHARED_NO_HISTORY}</ThemedText>
-        </View>
-      );
+      return <ErrorState variant="empty" title={TEXT.SHARED_NO_HISTORY} />;
     }
 
     return (
@@ -203,14 +196,14 @@ export default function PendingScreen() {
         {items.remain ? (
           <PendingItem
             item={items.remain}
-            approvalStep={TEXT.absence_PENDING_STEP_DEPT_HEAD}
+            approvalStep={TEXT.ABSENCE_PENDING_STEP_DEPT_HEAD}
             onPress={openDetail}
           />
         ) : null}
         {items.cancel ? (
           <PendingItem
             item={items.cancel}
-            approvalStep={TEXT.absence_PENDING_STEP_HR}
+            approvalStep={TEXT.ABSENCE_PENDING_STEP_HR}
             onPress={openDetail}
           />
         ) : null}
@@ -220,10 +213,10 @@ export default function PendingScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.absence_TITLE} />
+      <NavTopBar title={TEXT.ABSENCE_TITLE} />
       <View style={styles.headerSection}>
-        <ThemedText style={styles.pageTitle}>{TEXT.absence_PENDING_TITLE}</ThemedText>
-        <ThemedText style={styles.pageSubtitle}>{TEXT.absence_PENDING_SUBTITLE}</ThemedText>
+        <ThemedText style={styles.pageTitle}>{TEXT.ABSENCE_PENDING_TITLE}</ThemedText>
+        <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_PENDING_SUBTITLE}</ThemedText>
       </View>
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>

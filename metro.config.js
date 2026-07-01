@@ -202,7 +202,7 @@ config.server = {
         try {
           const localUrl = new URL(req.url, LOCAL_URL_BASE);
           const staffId = localUrl.searchParams.get('staff_id') ?? '';
-          const absenceType = localUrl.searchParams.get('absence_type') ?? '';
+          const absenceType = localUrl.searchParams.get('ABSENCE_type') ?? '';
           const suffixUrl = getabsenceRequestUrlSuffix(absenceType);
           const phoenixUrl = new URL(`${suffixUrl}init/`, API_BASE_URL);
 

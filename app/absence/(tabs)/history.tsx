@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -17,12 +18,12 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TEXT } from '@/constants/text';
 import {
-  TYPE_absence_BIRTH,
-  TYPE_absence_BUSINESS,
-  TYPE_absence_HAJJ,
-  TYPE_absence_HELPMATE,
-  TYPE_absence_RELAX,
-  TYPE_absence_SICK,
+  TYPE_ABSENCE_BIRTH,
+  TYPE_ABSENCE_BUSINESS,
+  TYPE_ABSENCE_HAJJ,
+  TYPE_ABSENCE_HELPMATE,
+  TYPE_ABSENCE_RELAX,
+  TYPE_ABSENCE_SICK,
 } from '@/constants/types';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
@@ -40,16 +41,16 @@ function getHasMore(currentCount: number, pageSize: number, totalCount?: number)
 }
 
 const absenceTypeLabels: Record<string, string> = {
-  [TYPE_absence_SICK]: TEXT.absence_SICK_TITLE,
-  [TYPE_absence_BUSINESS]: TEXT.absence_BUSINESS_TITLE,
-  [TYPE_absence_BIRTH]: TEXT.absence_BIRTH_TITLE,
-  [TYPE_absence_HELPMATE]: TEXT.absence_BIRTH_TITLE,
-  [TYPE_absence_RELAX]: TEXT.absence_RELAX_TITLE,
-  [TYPE_absence_HAJJ]: TEXT.absence_HAJJ_TITLE,
+  [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
+  [TYPE_ABSENCE_BUSINESS]: TEXT.ABSENCE_BUSINESS_TITLE,
+  [TYPE_ABSENCE_BIRTH]: TEXT.ABSENCE_BIRTH_TITLE,
+  [TYPE_ABSENCE_HELPMATE]: TEXT.ABSENCE_BIRTH_TITLE,
+  [TYPE_ABSENCE_RELAX]: TEXT.ABSENCE_RELAX_TITLE,
+  [TYPE_ABSENCE_HAJJ]: TEXT.ABSENCE_HAJJ_TITLE,
 };
 
-const absenceTypeFields = ['absentType', 'absenceType', 'absence_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type'];
-const absenceTypeNameFields = ['absentTypeName', 'absenceTypeName', 'absence_type_name', 'typeName', 'type_name', 'leaveTypeName', 'leave_type_name'];
+const absenceTypeFields = ['absentType', 'absenceType', 'ABSENCE_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type'];
+const absenceTypeNameFields = ['absentTypeName', 'absenceTypeName', 'ABSENCE_type_name', 'typeName', 'type_name', 'leaveTypeName', 'leave_type_name'];
 const startDateFields = ['startDate', 'start_date', 'dateStart', 'date_start'];
 const endDateFields = ['endDate', 'end_date', 'dateEnd', 'date_end'];
 
@@ -63,7 +64,7 @@ function getText(item: absence, fields: string[]) {
 }
 
 function getAbsenceId(item: absence) {
-  return getText(item, ['id', 'absenceId', 'absence_id', 'requestId', 'request_id']);
+  return getText(item, ['id', 'absenceId', 'ABSENCE_id', 'requestId', 'request_id']);
 }
 
 function getAbsenceType(item: absence) {
@@ -84,7 +85,7 @@ function getDateRange(item: absence) {
   const startDate = getText(item, startDateFields);
   const endDate = getText(item, endDateFields);
   const formatted = formatDateRange(startDate, endDate);
-  return formatted ? `${TEXT.absence_HISTORY_DATE_PREFIX}${formatted}` : '';
+  return formatted ? `${TEXT.ABSENCE_HISTORY_DATE_PREFIX}${formatted}` : '';
 }
 
 function getAbsenceTimestamp(item: absence) {
@@ -101,11 +102,11 @@ type IconName = 'cross.fill' | 'briefcase.fill' | 'sun.max.fill' | 'figure.child
 type IconStyle = { iconBg: string; iconColor: string; icon: IconName };
 
 const TYPE_ICON_STYLES: Record<string, IconStyle> = {
-  [TYPE_absence_SICK]: { iconBg: '#FFDAD7', iconColor: '#410005', icon: 'cross.fill' },
-  [TYPE_absence_BUSINESS]: { iconBg: '#DDE2F3', iconColor: '#161C28', icon: 'briefcase.fill' },
-  [TYPE_absence_RELAX]: { iconBg: '#DAE3F4', iconColor: '#131C28', icon: 'sun.max.fill' },
-  [TYPE_absence_BIRTH]: { iconBg: '#FFDAD7', iconColor: '#410005', icon: 'figure.child' },
-  [TYPE_absence_HELPMATE]: { iconBg: '#FFDAD7', iconColor: '#410005', icon: 'figure.child' },
+  [TYPE_ABSENCE_SICK]: { iconBg: '#FFDAD7', iconColor: '#410005', icon: 'cross.fill' },
+  [TYPE_ABSENCE_BUSINESS]: { iconBg: '#DDE2F3', iconColor: '#161C28', icon: 'briefcase.fill' },
+  [TYPE_ABSENCE_RELAX]: { iconBg: '#DAE3F4', iconColor: '#131C28', icon: 'sun.max.fill' },
+  [TYPE_ABSENCE_BIRTH]: { iconBg: '#FFDAD7', iconColor: '#410005', icon: 'figure.child' },
+  [TYPE_ABSENCE_HELPMATE]: { iconBg: '#FFDAD7', iconColor: '#410005', icon: 'figure.child' },
 };
 
 const DEFAULT_ICON_STYLE: IconStyle = { iconBg: '#F2F3F7', iconColor: '#444D5B', icon: 'doc.text.fill' };
@@ -225,19 +226,11 @@ export default function HistoryScreen() {
 
     if (error) {
       return (
-        <View style={styles.stateBox}>
-          <ThemedText style={styles.stateTitle}>{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
-          <ThemedText style={styles.errorText}>{error}</ThemedText>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => loadFirstPage(false, true)}
-            style={styles.retryButton}
-          >
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.SHARED_RETRY}
-            </ThemedText>
-          </Pressable>
-        </View>
+        <ErrorState
+          title={TEXT.SHARED_SOMETHING_WENT_WRONG}
+          message={error}
+          onRetry={() => loadFirstPage(false, true)}
+        />
       );
     }
 
@@ -260,21 +253,17 @@ export default function HistoryScreen() {
             </View>
           ) : null
         }
-        ListEmptyComponent={
-          <View style={styles.emptyBox}>
-            <ThemedText style={styles.emptyText}>{TEXT.SHARED_NO_HISTORY}</ThemedText>
-          </View>
-        }
+        ListEmptyComponent={<ErrorState variant="empty" title={TEXT.SHARED_NO_HISTORY} fill={false} />}
       />
     );
   };
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.absence_TITLE} />
+      <NavTopBar title={TEXT.ABSENCE_TITLE} />
       <View style={styles.pageTitleSection}>
-        <ThemedText style={styles.pageTitle}>{TEXT.absence_HISTORY_TITLE}</ThemedText>
-        <ThemedText style={styles.pageSubtitle}>{TEXT.absence_HISTORY_SUBTITLE}</ThemedText>
+        <ThemedText style={styles.pageTitle}>{TEXT.ABSENCE_HISTORY_TITLE}</ThemedText>
+        <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_HISTORY_SUBTITLE}</ThemedText>
       </View>
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>

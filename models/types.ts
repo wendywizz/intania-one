@@ -197,6 +197,7 @@ export type NoticeRepairDetail = NoticeRepairJob & {
   technicians?: { type?: string; staff_id?: string | null; name?: string }[];
   // full_detail / header_detail material lines (requisition_equipment rows).
   requisitions?: {
+    requisition_equipment_id?: number;
     name?: string;
     number?: number;
     unit?: string;

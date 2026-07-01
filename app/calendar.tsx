@@ -13,6 +13,7 @@ import {
 import { Calendar, type DateData } from "react-native-calendars";
 import type { MarkedDates } from "react-native-calendars/src/types";
 
+import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -233,19 +234,11 @@ export default function CalendarScreen() {
       <ThemedView style={styles.container}>
         <StatusBar style="light" />
         <NavTopBar title={TEXT.CALENDAR_TITLE} backHref="/" />
-        <View style={styles.centerError}>
-          <View style={styles.errorBox}>
-            <ThemedText style={[styles.errorTitle, { textAlign: "center" }]}>
-              {TEXT.SHARED_UNABLE_TO_COMPLETE}
-            </ThemedText>
-            <ThemedText style={[styles.errorDetail, { textAlign: "center" }]}>
-              {errorMessage}
-            </ThemedText>
-            <Pressable style={[styles.retryBtn, { alignSelf: "center" }]} onPress={loadSources}>
-              <ThemedText style={styles.retryBtnText}>{TEXT.SHARED_RETRY}</ThemedText>
-            </Pressable>
-          </View>
-        </View>
+        <ErrorState
+          title={TEXT.SHARED_UNABLE_TO_COMPLETE}
+          message={errorMessage}
+          onRetry={loadSources}
+        />
       </ThemedView>
     );
   }

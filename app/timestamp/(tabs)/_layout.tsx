@@ -7,7 +7,7 @@ import { Colors } from "@/constants/theme";
 import { TEXT } from "@/constants/text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-export default function ForgotTimestampTabLayout() {
+export default function TimestampTabLayout() {
   const colorScheme = useColorScheme();
 
   return (
@@ -27,9 +27,18 @@ export default function ForgotTimestampTabLayout() {
       }}
     >
       <Tabs.Screen
+        name="calendar"
+        options={{
+          title: TEXT.TIMESTAMP_CALENDAR_TAB,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="calendar-range" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="index"
         options={{
-          title: TEXT.FORGOT_TIMESTAMP_TITLE,
+          title: TEXT.TIMESTAMP_TITLE,
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="list.bullet" color={color} />
           ),

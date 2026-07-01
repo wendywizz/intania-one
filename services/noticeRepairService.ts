@@ -78,6 +78,18 @@ export async function getList(
     return getRepairListFromUrl(ENDPOINTS.noticeRepairAdminFinished, staffId, start);
   }
 
+  // Admin "จัดหาวัสดุ" (supply material) tab — Infor supply_material endpoint
+  // (status 007, requisition 'c'), returned as a full list in one response.
+  if (type === 'supply_material') {
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairSupplyMaterial, staffId, start);
+  }
+
+  // Admin "หน่วยงานตอบรับการจัดหา" (dept supply response) tab — Infor
+  // dept_supply_response endpoint (status 005, requisition 'y'), full list.
+  if (type === 'dept_supply_response') {
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairDeptSupply, staffId, start);
+  }
+
   // Approver history top-tabs (ซ่อมได้ / ซ่อมไม่ได้) — each backed by its own Infor
   // endpoint, returned as a full list in one response (no pagination).
   if (type === 'approve_history_repairable') {
@@ -373,6 +385,42 @@ export function addRequisition(
     staff_id: staffId,
     repair_id: repairId,
     equipment,
+  });
+}
+
+// ── Procurement request (ใบขอจัดหา) — frm_repair_requisition.php?requisition=2 ──
+
+export interface RequisitionRequester {
+  staff_id: string;
+  name: string;
+}
+
+/** "ผู้ขอให้จัดหา" dropdown options (staff_administration_tb). */
+export async function getRequisitionRequesters(staffId: string): Promise<RequisitionRequester[]> {
+  const url = new URL(ENDPOINTS.noticeRepairRequisitionRequesters);
+  url.searchParams.set('staff_id', staffId);
+  const json = await getJson<{ success: boolean; data: RequisitionRequester[] }>(url.toString());
+  return Array.isArray(json.data) ? json.data : [];
+}
+
+export interface RequisitionSupplyPayload {
+  requisition_date: string;
+  requisition_name: string;
+  requisition_receive_date?: string;
+  /** map of requisition_equipment_id → remark */
+  remarks?: Record<string, string>;
+}
+
+/** Save the procurement request (date, requester, received date, per-item remarks). */
+export function saveRequisitionSupply(
+  repairId: number | string,
+  staffId: string,
+  payload: RequisitionSupplyPayload,
+) {
+  return postRepairAction(ENDPOINTS.noticeRepairRequisitionSave, {
+    staff_id: staffId,
+    repair_id: repairId,
+    ...payload,
   });
 }
 

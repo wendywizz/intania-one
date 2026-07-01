@@ -1,25 +1,25 @@
-export const TYPE_absence_CANCEL = '0';
-export const TYPE_absence_SICK = '1';
-export const TYPE_absence_BUSINESS = '2';
-export const TYPE_absence_BIRTH = '3';
-export const TYPE_absence_RELAX = '4';
-export const TYPE_absence_ORDAIN = '5';
-export const TYPE_absence_HAJJ = '6';
-export const TYPE_absence_SOLDIER = '7';
-export const TYPE_absence_HELPMATE = '9';
-export const TYPE_absence_REHAB = '10';
+export const TYPE_ABSENCE_CANCEL = '0';
+export const TYPE_ABSENCE_SICK = '1';
+export const TYPE_ABSENCE_BUSINESS = '2';
+export const TYPE_ABSENCE_BIRTH = '3';
+export const TYPE_ABSENCE_RELAX = '4';
+export const TYPE_ABSENCE_ORDAIN = '5';
+export const TYPE_ABSENCE_HAJJ = '6';
+export const TYPE_ABSENCE_SOLDIER = '7';
+export const TYPE_ABSENCE_HELPMATE = '9';
+export const TYPE_ABSENCE_REHAB = '10';
 
-export const absence_TYPES = {
-  cancel: TYPE_absence_CANCEL,
-  leave: TYPE_absence_SICK,
-  business: TYPE_absence_BUSINESS,
-  birth: TYPE_absence_BIRTH,
-  relax: TYPE_absence_RELAX,
-  ordain: TYPE_absence_ORDAIN,
-  hajj: TYPE_absence_HAJJ,
-  soldier: TYPE_absence_SOLDIER,
-  helpmate: TYPE_absence_HELPMATE,
-  rehab: TYPE_absence_REHAB,
+export const ABSENCE_TYPES = {
+  cancel: TYPE_ABSENCE_CANCEL,
+  leave: TYPE_ABSENCE_SICK,
+  business: TYPE_ABSENCE_BUSINESS,
+  birth: TYPE_ABSENCE_BIRTH,
+  relax: TYPE_ABSENCE_RELAX,
+  ordain: TYPE_ABSENCE_ORDAIN,
+  hajj: TYPE_ABSENCE_HAJJ,
+  soldier: TYPE_ABSENCE_SOLDIER,
+  helpmate: TYPE_ABSENCE_HELPMATE,
+  rehab: TYPE_ABSENCE_REHAB,
 } as const;
 
 export const TYPE_MEETING_TODAY = 't';

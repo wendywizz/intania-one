@@ -15,12 +15,13 @@ import {
 import { AgentSelectField } from "@/components/agent-select-field";
 import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
+import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { AppFonts } from "@/constants/fonts";
-import { TYPE_absence_BUSINESS } from "@/constants/types";
+import { TYPE_ABSENCE_BUSINESS } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { absence } from "@/models/types";
@@ -191,11 +192,11 @@ function uniqueValues(values: string[]) {
 }
 
 const halfDayOptions: SelectOption[] = [
-  { label: TEXT.absence_HALF_DAY_NONE, value: "0" },
-  { label: TEXT.absence_HALF_DAY_FIRST_MORNING, value: "1" },
-  { label: TEXT.absence_HALF_DAY_FIRST_AFTERNOON, value: "2" },
-  { label: TEXT.absence_HALF_DAY_LAST_MORNING, value: "3" },
-  { label: TEXT.absence_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING, value: "4" },
+  { label: TEXT.ABSENCE_HALF_DAY_NONE, value: "0" },
+  { label: TEXT.ABSENCE_HALF_DAY_FIRST_MORNING, value: "1" },
+  { label: TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON, value: "2" },
+  { label: TEXT.ABSENCE_HALF_DAY_LAST_MORNING, value: "3" },
+  { label: TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING, value: "4" },
 ];
 
 type SelectFieldProps = {
@@ -385,7 +386,7 @@ export default function BusinessScreen() {
     getItemText(routeEditItem, [
       "id",
       "absenceId",
-      "absence_id",
+      "ABSENCE_id",
       "requestId",
       "request_id",
     ]) || (Array.isArray(params.id) ? params.id[0] : params.id ?? "");
@@ -431,7 +432,7 @@ export default function BusinessScreen() {
     getItemText(editItem, [
       "id",
       "absenceId",
-      "absence_id",
+      "ABSENCE_id",
       "requestId",
       "request_id",
     ]) || routeEditId;
@@ -461,25 +462,25 @@ export default function BusinessScreen() {
     setWriteDate("");
 
     try {
-      const data = await initabsenceData(userId, TYPE_absence_BUSINESS);
+      const data = await initabsenceData(userId, TYPE_ABSENCE_BUSINESS);
       setInitialabsenceData(data);
       setDeptId(getabsenceTextValue(data, ["deptId", "dept_id", "departmentId", "department_id"]));
       setStep(getabsenceTextValue(data, ["step"]));
-      setabsenceStatus(getabsenceTextValue(data, ["absenceStatus", "absence_status", "status"]));
-      setabsenceTime(getabsenceTextValue(data, ["absenceTime", "absence_time", "times", "time"]));
+      setabsenceStatus(getabsenceTextValue(data, ["absenceStatus", "ABSENCE_status", "status"]));
+      setabsenceTime(getabsenceTextValue(data, ["absenceTime", "ABSENCE_time", "times", "time"]));
       setWriteDate(getabsenceTextValue(data, ["writeDate", "write_date"]));
     } catch (error) {
       if (!isEditMode) {
         setInitialError(
           error instanceof Error
             ? error.message
-            : TEXT.absence_INIT_LOAD_ERROR_MESSAGE,
+            : TEXT.ABSENCE_INIT_LOAD_ERROR_MESSAGE,
         );
       }
     } finally {
       if (isEditMode && routeEditId) {
         try {
-          const previousData = await getabsenceData(routeEditId, TYPE_absence_BUSINESS);
+          const previousData = await getabsenceData(routeEditId, TYPE_ABSENCE_BUSINESS);
 
           setLoadedEditItem(previousData);
           setInitialabsenceData((currentData) => ({
@@ -599,7 +600,7 @@ export default function BusinessScreen() {
 
   const dateError =
     startDate && endDate && startOfDay(endDate) < startOfDay(startDate)
-      ? TEXT.absence_VALIDATION_END_DATE_AFTER_START
+      ? TEXT.ABSENCE_VALIDATION_END_DATE_AFTER_START
       : "";
   const displayedDateError = dateError || validationErrors.date || "";
   const leaveDayCount = useMemo(() => {
@@ -618,23 +619,23 @@ export default function BusinessScreen() {
     const nextErrors: ValidationErrors = {};
 
     if (!approver) {
-      nextErrors.approver = TEXT.absence_VALIDATION_APPROVER_REQUIRED;
+      nextErrors.approver = TEXT.ABSENCE_VALIDATION_APPROVER_REQUIRED;
     }
 
     if (!reason.trim()) {
-      nextErrors.reason = TEXT.absence_VALIDATION_REASON_REQUIRED;
+      nextErrors.reason = TEXT.ABSENCE_VALIDATION_REASON_REQUIRED;
     }
 
     if (!startDate || !endDate) {
-      nextErrors.date = TEXT.absence_VALIDATION_DATE_REQUIRED;
+      nextErrors.date = TEXT.ABSENCE_VALIDATION_DATE_REQUIRED;
     }
 
     if (!contact.trim()) {
-      nextErrors.contact = TEXT.absence_VALIDATION_CONTACT_REQUIRED;
+      nextErrors.contact = TEXT.ABSENCE_VALIDATION_CONTACT_REQUIRED;
     }
 
     if (!selectedAgents.length) {
-      nextErrors.agent = TEXT.absence_VALIDATION_AGENT_REQUIRED;
+      nextErrors.agent = TEXT.ABSENCE_VALIDATION_AGENT_REQUIRED;
     }
 
     setValidationErrors(nextErrors);
@@ -691,17 +692,17 @@ export default function BusinessScreen() {
       };
       const result =
         isEditMode && editId
-          ? await updateabsenceData(editId, payload, TYPE_absence_BUSINESS)
-          : await addabsenceData(payload, TYPE_absence_BUSINESS);
+          ? await updateabsenceData(editId, payload, TYPE_ABSENCE_BUSINESS)
+          : await addabsenceData(payload, TYPE_ABSENCE_BUSINESS);
 
       setToastType("success");
-      setToastMessage(result.message || TEXT.absence_BUSINESS_SUBMIT_SUCCESS_MESSAGE);
+      setToastMessage(result.message || TEXT.ABSENCE_BUSINESS_SUBMIT_SUCCESS_MESSAGE);
       setTimeout(() => {
         router.replace("/absence/pending");
       }, 1500);
     } catch (error) {
       setToastType("error");
-      setToastMessage(error instanceof Error ? error.message : TEXT.absence_SUBMIT_ERROR_MESSAGE);
+      setToastMessage(error instanceof Error ? error.message : TEXT.ABSENCE_SUBMIT_ERROR_MESSAGE);
     } finally {
       setIsSubmitting(false);
     }
@@ -747,7 +748,7 @@ export default function BusinessScreen() {
     setToastType("");
 
     try {
-      const result = await removeData(editId, TYPE_absence_BUSINESS);
+      const result = await removeData(editId, TYPE_ABSENCE_BUSINESS);
       setToastType("success");
       setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
       setTimeout(() => {
@@ -755,7 +756,7 @@ export default function BusinessScreen() {
       }, 1500);
     } catch (error) {
       setToastType("error");
-      setToastMessage(error instanceof Error ? error.message : TEXT.absence_SUBMIT_ERROR_MESSAGE);
+      setToastMessage(error instanceof Error ? error.message : TEXT.ABSENCE_SUBMIT_ERROR_MESSAGE);
     } finally {
       setIsRemoving(false);
     }
@@ -793,7 +794,7 @@ export default function BusinessScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.absence_BUSINESS_TITLE} backHref={backHref} />
+        <NavTopBar title={TEXT.ABSENCE_BUSINESS_TITLE} backHref={backHref} />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -807,62 +808,35 @@ export default function BusinessScreen() {
 
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.absence_BUSINESS_TITLE} backHref={backHref} />
-        <View style={styles.stateContent}>
-          <ThemedText type="subtitle">
-            {shouldShowRetry ? TEXT.SHARED_ERROR_TITLE_THAI : TEXT.absence_CANNOT_REQUEST_TITLE}
-          </ThemedText>
-          <ThemedText style={[styles.stateMessage, styles.errorText]}>
-            {initialError}
-          </ThemedText>
-          <View style={styles.errorActions}>
-            {shouldShowRetry ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={loadInitialabsenceData}
-                style={styles.secondaryButton}
-              >
-                <ThemedText type="defaultSemiBold">
-                  {TEXT.SHARED_RETRY_THAI}
-                </ThemedText>
-              </Pressable>
-            ) : null}
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => navReplace("/absence")}
-              style={styles.submitButton}
-            >
-              <ThemedText
-                lightColor="#FFFFFF"
-                darkColor="#FFFFFF"
-                type="defaultSemiBold"
-              >
-                {TEXT.SHARED_BACK_THAI}
-              </ThemedText>
-            </Pressable>
-          </View>
-        </View>
+        <NavTopBar title={TEXT.ABSENCE_BUSINESS_TITLE} backHref={backHref} />
+        <ErrorState
+          variant={shouldShowRetry ? "error" : "empty"}
+          title={shouldShowRetry ? TEXT.SHARED_ERROR_TITLE_THAI : TEXT.ABSENCE_CANNOT_REQUEST_TITLE}
+          message={initialError}
+          onRetry={shouldShowRetry ? loadInitialabsenceData : undefined}
+          onBack={() => navReplace("/absence")}
+        />
       </ThemedView>
     );
   }
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.absence_BUSINESS_TITLE} backHref={backHref} />
+      <NavTopBar title={TEXT.ABSENCE_BUSINESS_TITLE} backHref={backHref} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.pageHeader}>
-          <ThemedText style={styles.pageTitle}>{TEXT.absence_BUSINESS_FORM_TITLE}</ThemedText>
-          <ThemedText style={styles.pageSubtitle}>{TEXT.absence_BUSINESS_DESCRIPTION}</ThemedText>
+          <ThemedText style={styles.pageTitle}>{TEXT.ABSENCE_BUSINESS_FORM_TITLE}</ThemedText>
+          <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_BUSINESS_DESCRIPTION}</ThemedText>
         </View>
 
         <View style={styles.formCard}>
           <SelectField
-            label={TEXT.absence_APPROVER_LABEL}
-            placeholder={TEXT.absence_APPROVER_PLACEHOLDER}
+            label={TEXT.ABSENCE_APPROVER_LABEL}
+            placeholder={TEXT.ABSENCE_APPROVER_PLACEHOLDER}
             value={approver}
             options={approverOptions}
             isOpen={openSelect === "approver"}
@@ -881,7 +855,7 @@ export default function BusinessScreen() {
 
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>
-              {TEXT.absence_REASON_LABEL}
+              {TEXT.ABSENCE_REASON_LABEL}
             </ThemedText>
             <TextInput
               multiline
@@ -892,7 +866,7 @@ export default function BusinessScreen() {
                   clearValidationError("reason");
                 }
               }}
-              placeholder={TEXT.absence_REASON_PLACEHOLDER}
+              placeholder={TEXT.ABSENCE_REASON_PLACEHOLDER}
               placeholderTextColor="#9CA3AF"
               style={[
                 styles.textArea,
@@ -910,11 +884,11 @@ export default function BusinessScreen() {
 
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>
-              {TEXT.absence_LEAVE_DATE_LABEL}
+              {TEXT.ABSENCE_LEAVE_DATE_LABEL}
             </ThemedText>
             <View style={styles.dateRow}>
               <DatePickerField
-                label={TEXT.absence_START_DATE_LABEL}
+                label={TEXT.ABSENCE_START_DATE_LABEL}
                 value={startDate}
                 minimumDate={minimumStartDate}
                 onChange={(date) => {
@@ -928,7 +902,7 @@ export default function BusinessScreen() {
                 hasError={Boolean(displayedDateError)}
               />
               <DatePickerField
-                label={TEXT.absence_END_DATE_LABEL}
+                label={TEXT.ABSENCE_END_DATE_LABEL}
                 value={endDate}
                 minimumDate={minimumEndDate}
                 highlightedStartDate={startDate}
@@ -947,22 +921,22 @@ export default function BusinessScreen() {
                 displayedDateError ? styles.errorText : undefined,
               ]}
             >
-              {displayedDateError || TEXT.absence_SELECT_DATE_HINT}
+              {displayedDateError || TEXT.ABSENCE_SELECT_DATE_HINT}
             </ThemedText>
             {leaveDayCount !== null ? (
               <ThemedText
                 type="defaultSemiBold"
                 style={styles.leaveDaySummary}
               >
-                {TEXT.absence_LEAVE_DAY_COUNT_LABEL}
-                {leaveDayCount.toLocaleString("th-TH")} {TEXT.absence_DAY_UNIT}
+                {TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL}
+                {leaveDayCount.toLocaleString("th-TH")} {TEXT.ABSENCE_DAY_UNIT}
               </ThemedText>
             ) : null}
           </View>
 
           <SelectField
-            label={TEXT.absence_HALF_DAY_LABEL}
-            placeholder={TEXT.absence_HALF_DAY_PLACEHOLDER}
+            label={TEXT.ABSENCE_HALF_DAY_LABEL}
+            placeholder={TEXT.ABSENCE_HALF_DAY_PLACEHOLDER}
             value={halfDay}
             options={halfDayOptions}
             isOpen={openSelect === "halfDay"}
@@ -977,7 +951,7 @@ export default function BusinessScreen() {
 
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>
-              {TEXT.absence_CONTACT_CHANNEL_LABEL}
+              {TEXT.ABSENCE_CONTACT_CHANNEL_LABEL}
             </ThemedText>
             <TextInput
               onChangeText={(value) => {
@@ -986,7 +960,7 @@ export default function BusinessScreen() {
                   clearValidationError("contact");
                 }
               }}
-              placeholder={TEXT.absence_CONTACT_CHANNEL_PLACEHOLDER}
+              placeholder={TEXT.ABSENCE_CONTACT_CHANNEL_PLACEHOLDER}
               placeholderTextColor="#9CA3AF"
               style={[
                 styles.input,
@@ -1003,13 +977,13 @@ export default function BusinessScreen() {
 
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>
-              {TEXT.absence_TRAVEL_DETAIL_LABEL}
+              {TEXT.ABSENCE_TRAVEL_DETAIL_LABEL}
             </ThemedText>
             <TextInput
               multiline
               numberOfLines={2}
               onChangeText={setTravelDetail}
-              placeholder={TEXT.absence_TRAVEL_DETAIL_PLACEHOLDER}
+              placeholder={TEXT.ABSENCE_TRAVEL_DETAIL_PLACEHOLDER}
               placeholderTextColor="#9CA3AF"
               style={[styles.textArea]}
               textAlignVertical="top"
@@ -1075,7 +1049,7 @@ export default function BusinessScreen() {
                 darkColor="#FFFFFF"
                 type="defaultSemiBold"
               >
-                {isEditMode ? TEXT.SHARED_UPDATE : TEXT.absence_SUBMIT_REQUEST}
+                {isEditMode ? TEXT.SHARED_UPDATE : TEXT.ABSENCE_SUBMIT_REQUEST}
               </ThemedText>
             </Pressable>
           </View>
@@ -1097,7 +1071,7 @@ export default function BusinessScreen() {
               darkColor="#FFFFFF"
               type="defaultSemiBold"
             >
-              {TEXT.absence_SUBMIT_REQUEST}
+              {TEXT.ABSENCE_SUBMIT_REQUEST}
             </ThemedText>
           </Pressable>
         )}
@@ -1120,10 +1094,10 @@ export default function BusinessScreen() {
               darkColor="#151718"
             >
               <ThemedText type="subtitle">
-                {TEXT.absence_CONFIRM_SUBMIT_TITLE}
+                {TEXT.ABSENCE_CONFIRM_SUBMIT_TITLE}
               </ThemedText>
               <ThemedText style={styles.confirmMessage}>
-                {TEXT.absence_CONFIRM_SUBMIT_MESSAGE}
+                {TEXT.ABSENCE_CONFIRM_SUBMIT_MESSAGE}
               </ThemedText>
               <View style={styles.confirmActions}>
                 <Pressable
@@ -1132,7 +1106,7 @@ export default function BusinessScreen() {
                   style={styles.secondaryButton}
                 >
                   <ThemedText type="defaultSemiBold">
-                    {TEXT.absence_CONFIRM_SUBMIT_CANCEL}
+                    {TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL}
                   </ThemedText>
                 </Pressable>
                 <Pressable
@@ -1152,7 +1126,7 @@ export default function BusinessScreen() {
                     darkColor="#FFFFFF"
                     type="defaultSemiBold"
                   >
-                    {TEXT.absence_CONFIRM_SUBMIT_ACTION}
+                    {TEXT.ABSENCE_CONFIRM_SUBMIT_ACTION}
                   </ThemedText>
                 </Pressable>
               </View>
@@ -1178,10 +1152,10 @@ export default function BusinessScreen() {
               darkColor="#151718"
             >
               <ThemedText type="subtitle">
-                {TEXT.absence_CONFIRM_REMOVE_TITLE}
+                {TEXT.ABSENCE_CONFIRM_REMOVE_TITLE}
               </ThemedText>
               <ThemedText style={styles.confirmMessage}>
-                {TEXT.absence_CONFIRM_REMOVE_MESSAGE}
+                {TEXT.ABSENCE_CONFIRM_REMOVE_MESSAGE}
               </ThemedText>
               <View style={styles.confirmActions}>
                 <Pressable
@@ -1190,7 +1164,7 @@ export default function BusinessScreen() {
                   style={styles.secondaryButton}
                 >
                   <ThemedText type="defaultSemiBold">
-                    {TEXT.absence_CONFIRM_SUBMIT_CANCEL}
+                    {TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL}
                   </ThemedText>
                 </Pressable>
                 <Pressable

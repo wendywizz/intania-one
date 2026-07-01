@@ -2,7 +2,7 @@ import {
   PRIVILEGE_RC_FOREMAN,
   PRIVILEGE_RC_USER,
   PRIVILEGE_RC_WORKER,
-  type RepairComputerRole,
+  typeComputerRole,
 } from '@/constants/types';
 import { TEXT } from '@/constants/text';
 
@@ -13,8 +13,6 @@ export const repairComputerRoleOptions = [
 ] as const;
 
 const privilegeRoleCache = new Map<string, RepairComputerRole>();
-const selectedRoleCache = new Map<string, RepairComputerRole>();
-
 export function getCachedRepairComputerPrivilege(userId: string): RepairComputerRole | undefined {
   return privilegeRoleCache.get(userId);
 }
@@ -52,3 +50,4 @@ export function getRepairComputerSelectedRole(userId: string, privilegeRole: Rep
 export function setRepairComputerSelectedRole(userId: string, role: RepairComputerRole) {
   selectedRoleCache.set(userId, role);
 }
+

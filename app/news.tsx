@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -151,19 +152,11 @@ export default function NewsScreen() {
 
     if (error) {
       return (
-        <View style={styles.stateContainer}>
-          <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
-          <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => loadNews()}
-            style={styles.retryButton}
-          >
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.SHARED_RETRY}
-            </ThemedText>
-          </Pressable>
-        </View>
+        <ErrorState
+          title={TEXT.SHARED_SOMETHING_WENT_WRONG}
+          message={error}
+          onRetry={() => loadNews()}
+        />
       );
     }
 

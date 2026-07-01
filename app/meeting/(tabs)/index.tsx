@@ -11,6 +11,7 @@ import {
     View,
 } from "react-native";
 
+import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -176,15 +177,11 @@ export default function TodayMeetingScreen() {
       <ThemedView style={styles.container}>
         <StatusBar style="light" />
         <NavTopBar title={TEXT.MEETING_HEADER_TITLE} backHref="/" />
-        <View style={styles.errorWrap}>
-          <View style={styles.errorCard}>
-            <ThemedText style={styles.errorTitle}>{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
-            <ThemedText style={styles.errorMessage}>{error}</ThemedText>
-            <Pressable accessibilityRole="button" onPress={() => loadMeetings()} style={styles.retryButton}>
-              <ThemedText style={styles.retryText}>{TEXT.SHARED_RETRY}</ThemedText>
-            </Pressable>
-          </View>
-        </View>
+        <ErrorState
+          title={TEXT.SHARED_SOMETHING_WENT_WRONG}
+          message={error}
+          onRetry={() => loadMeetings()}
+        />
       </ThemedView>
     );
   }

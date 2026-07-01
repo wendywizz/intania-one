@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ModalSelectField, type ModalSelectOption } from '@/components/modal-select-field';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -298,19 +299,11 @@ export default function ExaminarListScreen() {
         <StatusBar style="light" />
         <NavTopBar title={TEXT.EXAMINAR_HEADER_TITLE} backHref="/" />
         {filterBar}
-        <View style={styles.centerWrap}>
-          <View style={styles.errorCard}>
-            <ThemedText style={styles.errorTitle}>{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
-            <ThemedText style={styles.errorMessage}>{error}</ThemedText>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => loadTasks()}
-              style={styles.retryButton}
-            >
-              <ThemedText style={styles.retryText}>{TEXT.SHARED_RETRY}</ThemedText>
-            </Pressable>
-          </View>
-        </View>
+        <ErrorState
+          title={TEXT.SHARED_SOMETHING_WENT_WRONG}
+          message={error}
+          onRetry={() => loadTasks()}
+        />
       </ThemedView>
     );
   }

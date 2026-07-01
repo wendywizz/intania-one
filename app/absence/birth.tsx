@@ -14,12 +14,13 @@ import {
 
 import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
+import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { AppFonts } from "@/constants/fonts";
-import { TYPE_absence_BIRTH } from "@/constants/types";
+import { TYPE_ABSENCE_BIRTH } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { absence } from "@/models/types";
@@ -34,6 +35,7 @@ import {
   formatDateTimeParam,
   getabsenceTextValue,
   getWeekdayLeaveDayCount,
+  isRetryableInitialError,
   startOfDay,
 } from "@/utils/absence-form";
 import { getStaffDisplayLabel } from "@/utils/staff-label";
@@ -246,17 +248,17 @@ export default function BirthScreen() {
     setabsenceStatus("");
 
     try {
-      const data = await initabsenceData(userId, TYPE_absence_BIRTH);
+      const data = await initabsenceData(userId, TYPE_ABSENCE_BIRTH);
       setInitialabsenceData(data);
       setDeptId(getabsenceTextValue(data, ["deptId", "dept_id", "departmentId", "department_id"]));
       setStep(getabsenceTextValue(data, ["step"]));
-      setabsenceStatus(getabsenceTextValue(data, ["absenceStatus", "absence_status", "status"]));
-      setabsenceTime(getabsenceTextValue(data, ["absenceTime", "absence_time", "times", "time"]));
+      setabsenceStatus(getabsenceTextValue(data, ["absenceStatus", "ABSENCE_status", "status"]));
+      setabsenceTime(getabsenceTextValue(data, ["absenceTime", "ABSENCE_time", "times", "time"]));
     } catch (error) {
       setInitialError(
         error instanceof Error
           ? error.message
-          : TEXT.absence_INIT_LOAD_ERROR_MESSAGE,
+          : TEXT.ABSENCE_INIT_LOAD_ERROR_MESSAGE,
       );
     } finally {
       setIsInitialLoading(false);
@@ -286,7 +288,7 @@ export default function BirthScreen() {
   );
   const dateError =
     startDate && endDate && startOfDay(endDate) < startOfDay(startDate)
-      ? TEXT.absence_VALIDATION_END_DATE_AFTER_START
+      ? TEXT.ABSENCE_VALIDATION_END_DATE_AFTER_START
       : "";
   const displayedDateError = dateError || validationErrors.date || "";
   const leaveDayCount = useMemo(() => {
@@ -305,15 +307,15 @@ export default function BirthScreen() {
     const nextErrors: ValidationErrors = {};
 
     if (!approver) {
-      nextErrors.approver = TEXT.absence_VALIDATION_APPROVER_REQUIRED;
+      nextErrors.approver = TEXT.ABSENCE_VALIDATION_APPROVER_REQUIRED;
     }
 
     if (!startDate || !endDate) {
-      nextErrors.date = TEXT.absence_VALIDATION_DATE_REQUIRED;
+      nextErrors.date = TEXT.ABSENCE_VALIDATION_DATE_REQUIRED;
     }
 
     if (!contact.trim()) {
-      nextErrors.contact = TEXT.absence_VALIDATION_CONTACT_REQUIRED;
+      nextErrors.contact = TEXT.ABSENCE_VALIDATION_CONTACT_REQUIRED;
     }
 
     setValidationErrors(nextErrors);
@@ -364,17 +366,17 @@ export default function BirthScreen() {
       };
       const result =
         isEditMode && routeEditId
-          ? await updateabsenceData(routeEditId, payload, TYPE_absence_BIRTH)
-          : await addabsenceData(payload, TYPE_absence_BIRTH);
+          ? await updateabsenceData(routeEditId, payload, TYPE_ABSENCE_BIRTH)
+          : await addabsenceData(payload, TYPE_ABSENCE_BIRTH);
 
       setToastType("success");
-      setToastMessage(result.message || TEXT.absence_BIRTH_SUBMIT_SUCCESS_MESSAGE);
+      setToastMessage(result.message || TEXT.ABSENCE_BIRTH_SUBMIT_SUCCESS_MESSAGE);
       setTimeout(() => {
         router.replace("/absence/pending");
       }, 1500);
     } catch (error) {
       setToastType("error");
-      setToastMessage(error instanceof Error ? error.message : TEXT.absence_SUBMIT_ERROR_MESSAGE);
+      setToastMessage(error instanceof Error ? error.message : TEXT.ABSENCE_SUBMIT_ERROR_MESSAGE);
     } finally {
       setIsSubmitting(false);
     }
@@ -415,7 +417,7 @@ export default function BirthScreen() {
     setToastType("");
 
     try {
-      const result = await removeData(routeEditId, TYPE_absence_BIRTH);
+      const result = await removeData(routeEditId, TYPE_ABSENCE_BIRTH);
       setToastType("success");
       setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
       setTimeout(() => {
@@ -423,7 +425,7 @@ export default function BirthScreen() {
       }, 1500);
     } catch (error) {
       setToastType("error");
-      setToastMessage(error instanceof Error ? error.message : TEXT.absence_SUBMIT_ERROR_MESSAGE);
+      setToastMessage(error instanceof Error ? error.message : TEXT.ABSENCE_SUBMIT_ERROR_MESSAGE);
     } finally {
       setIsRemoving(false);
     }
@@ -432,7 +434,7 @@ export default function BirthScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.absence_BIRTH_TITLE} backHref={backHref} />
+        <NavTopBar title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -444,37 +446,27 @@ export default function BirthScreen() {
   if (initialError) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.absence_BIRTH_TITLE} backHref={backHref} />
-        <View style={styles.stateContent}>
-          <ThemedText type="subtitle">
-            {TEXT.SHARED_ERROR_TITLE_THAI}
-          </ThemedText>
-          <ThemedText style={[styles.stateMessage, styles.errorText]}>
-            {initialError}
-          </ThemedText>
-          <View style={styles.errorActions}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => navReplace("/absence")}
-              style={styles.submitButton}
-            >
-              <ThemedText
-                lightColor="#FFFFFF"
-                darkColor="#FFFFFF"
-                type="defaultSemiBold"
-              >
-                {TEXT.SHARED_BACK_THAI}
-              </ThemedText>
-            </Pressable>
-          </View>
-        </View>
+        <NavTopBar title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} />
+        <ErrorState
+          variant={isRetryableInitialError(initialError) ? "error" : "empty"}
+          title={
+            isRetryableInitialError(initialError)
+              ? TEXT.SHARED_ERROR_TITLE_THAI
+              : TEXT.ABSENCE_CANNOT_REQUEST_TITLE
+          }
+          message={initialError}
+          onRetry={
+            isRetryableInitialError(initialError) ? loadInitialabsenceData : undefined
+          }
+          onBack={() => navReplace("/absence")}
+        />
       </ThemedView>
     );
   }
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.absence_BIRTH_TITLE} backHref={backHref} />
+      <NavTopBar title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} />
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -485,17 +477,17 @@ export default function BirthScreen() {
           lightColor="#FFFFFF"
           darkColor="#1F2B30"
         >
-          <ThemedText type="subtitle">{TEXT.absence_BIRTH_TITLE}</ThemedText>
+          <ThemedText type="subtitle">{TEXT.ABSENCE_BIRTH_TITLE}</ThemedText>
           {initialabsenceData ? (
             <ThemedText style={styles.initialStatus}>
-              {TEXT.absence_INITIAL_DATA_LOADED}
+              {TEXT.ABSENCE_INITIAL_DATA_LOADED}
             </ThemedText>
           ) : null}
 
           <View style={styles.form}>
             <SelectField
-              label={TEXT.absence_APPROVER_LABEL}
-              placeholder={TEXT.absence_APPROVER_PLACEHOLDER}
+              label={TEXT.ABSENCE_APPROVER_LABEL}
+              placeholder={TEXT.ABSENCE_APPROVER_PLACEHOLDER}
               value={approver}
               options={approverOptions}
               isOpen={isApproverOpen}
@@ -512,11 +504,11 @@ export default function BirthScreen() {
 
             <View style={styles.field}>
               <ThemedText type="defaultSemiBold">
-                {TEXT.absence_LEAVE_DATE_LABEL}
+                {TEXT.ABSENCE_LEAVE_DATE_LABEL}
               </ThemedText>
               <View style={styles.dateRow}>
                 <DatePickerField
-                  label={TEXT.absence_START_DATE_LABEL}
+                  label={TEXT.ABSENCE_START_DATE_LABEL}
                   value={startDate}
                   onChange={(date) => {
                     setStartDate(date);
@@ -529,7 +521,7 @@ export default function BirthScreen() {
                   hasError={Boolean(displayedDateError)}
                 />
                 <DatePickerField
-                  label={TEXT.absence_END_DATE_LABEL}
+                  label={TEXT.ABSENCE_END_DATE_LABEL}
                   value={endDate}
                   minimumDate={minimumEndDate}
                   highlightedStartDate={startDate}
@@ -548,13 +540,13 @@ export default function BirthScreen() {
                   displayedDateError ? styles.errorText : undefined,
                 ]}
               >
-                {displayedDateError || TEXT.absence_SELECT_DATE_HINT}
+                {displayedDateError || TEXT.ABSENCE_SELECT_DATE_HINT}
               </ThemedText>
             </View>
 
             <View style={styles.field}>
               <ThemedText type="defaultSemiBold">
-                {TEXT.absence_CONTACT_CHANNEL_LABEL}
+                {TEXT.ABSENCE_CONTACT_CHANNEL_LABEL}
               </ThemedText>
               <TextInput
                 onChangeText={(value) => {
@@ -563,7 +555,7 @@ export default function BirthScreen() {
                     clearValidationError("contact");
                   }
                 }}
-                placeholder={TEXT.absence_CONTACT_CHANNEL_PLACEHOLDER}
+                placeholder={TEXT.ABSENCE_CONTACT_CHANNEL_PLACEHOLDER}
                 placeholderTextColor="#8A969C"
                 style={[
                   styles.input,
@@ -597,7 +589,7 @@ export default function BirthScreen() {
                   darkColor="#FFFFFF"
                   type="defaultSemiBold"
                 >
-                  {isEditMode ? TEXT.SHARED_UPDATE : TEXT.absence_SUBMIT_REQUEST}
+                  {isEditMode ? TEXT.SHARED_UPDATE : TEXT.ABSENCE_SUBMIT_REQUEST}
                 </ThemedText>
               </Pressable>
 
@@ -644,10 +636,10 @@ export default function BirthScreen() {
               darkColor="#151718"
             >
               <ThemedText type="subtitle">
-                {TEXT.absence_CONFIRM_SUBMIT_TITLE}
+                {TEXT.ABSENCE_CONFIRM_SUBMIT_TITLE}
               </ThemedText>
               <ThemedText style={styles.confirmMessage}>
-                {TEXT.absence_CONFIRM_SUBMIT_MESSAGE}
+                {TEXT.ABSENCE_CONFIRM_SUBMIT_MESSAGE}
               </ThemedText>
               <View style={styles.confirmActions}>
                 <Pressable
@@ -656,7 +648,7 @@ export default function BirthScreen() {
                   style={styles.secondaryButton}
                 >
                   <ThemedText type="defaultSemiBold">
-                    {TEXT.absence_CONFIRM_SUBMIT_CANCEL}
+                    {TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL}
                   </ThemedText>
                 </Pressable>
                 <Pressable
@@ -676,7 +668,7 @@ export default function BirthScreen() {
                     darkColor="#FFFFFF"
                     type="defaultSemiBold"
                   >
-                    {TEXT.absence_CONFIRM_SUBMIT_ACTION}
+                    {TEXT.ABSENCE_CONFIRM_SUBMIT_ACTION}
                   </ThemedText>
                 </Pressable>
               </View>
@@ -701,10 +693,10 @@ export default function BirthScreen() {
               darkColor="#151718"
             >
               <ThemedText type="subtitle">
-                {TEXT.absence_CONFIRM_REMOVE_TITLE}
+                {TEXT.ABSENCE_CONFIRM_REMOVE_TITLE}
               </ThemedText>
               <ThemedText style={styles.confirmMessage}>
-                {TEXT.absence_CONFIRM_REMOVE_MESSAGE}
+                {TEXT.ABSENCE_CONFIRM_REMOVE_MESSAGE}
               </ThemedText>
               <View style={styles.confirmActions}>
                 <Pressable
@@ -713,7 +705,7 @@ export default function BirthScreen() {
                   style={styles.secondaryButton}
                 >
                   <ThemedText type="defaultSemiBold">
-                    {TEXT.absence_CONFIRM_SUBMIT_CANCEL}
+                    {TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL}
                   </ThemedText>
                 </Pressable>
                 <Pressable

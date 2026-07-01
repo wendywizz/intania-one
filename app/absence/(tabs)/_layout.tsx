@@ -31,28 +31,28 @@ export default function absenceTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: TEXT.absence_TAB_APPEAL,
+          title: TEXT.ABSENCE_TAB_APPEAL,
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="person.crop.circle.badge.minus" color={color} />,
         }}
       />
       <Tabs.Screen
         name="pending"
         options={{
-          title: TEXT.absence_TAB_WAITING,
+          title: TEXT.ABSENCE_TAB_WAITING,
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="clock.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="stats"
         options={{
-          title: TEXT.absence_TAB_STATS,
+          title: TEXT.ABSENCE_TAB_STATS,
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="chart.bar.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="history"
         options={{
-          title: TEXT.absence_TAB_HISTORY,
+          title: TEXT.ABSENCE_TAB_HISTORY,
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="history" color={color} />,
         }}
       />

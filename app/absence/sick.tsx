@@ -21,12 +21,13 @@ import {
 
 import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
+import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { AppFonts } from "@/constants/fonts";
-import { TYPE_absence_SICK } from "@/constants/types";
+import { TYPE_ABSENCE_SICK } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { absence } from "@/models/types";
@@ -171,26 +172,26 @@ function getHalfDayLabel(value: string) {
 }
 
 const halfDayOptions: SelectOption[] = [
-  { label: TEXT.absence_HALF_DAY_NONE, value: "0" },
-  { label: TEXT.absence_HALF_DAY_FIRST_MORNING, value: "1" },
-  { label: TEXT.absence_HALF_DAY_FIRST_AFTERNOON, value: "2" },
-  { label: TEXT.absence_HALF_DAY_LAST_MORNING, value: "3" },
-  { label: TEXT.absence_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING, value: "4" },
+  { label: TEXT.ABSENCE_HALF_DAY_NONE, value: "0" },
+  { label: TEXT.ABSENCE_HALF_DAY_FIRST_MORNING, value: "1" },
+  { label: TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON, value: "2" },
+  { label: TEXT.ABSENCE_HALF_DAY_LAST_MORNING, value: "3" },
+  { label: TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING, value: "4" },
 ];
 
-const FILE_PICKER_LABEL = TEXT.absence_MEDICAL_CERTIFICATE_LABEL;
-const FILE_PICKER_ACTION = TEXT.absence_MEDICAL_CERTIFICATE_ACTION;
+const FILE_PICKER_LABEL = TEXT.ABSENCE_MEDICAL_CERTIFICATE_LABEL;
+const FILE_PICKER_ACTION = TEXT.ABSENCE_MEDICAL_CERTIFICATE_ACTION;
 const FILE_PICKER_REUPLOAD_ACTION = "Re-upload file";
-const SUBMITTING_LABEL = TEXT.absence_SUBMITTING_LABEL;
-const SUBMIT_SUCCESS_MESSAGE = TEXT.absence_SICK_SUBMIT_SUCCESS_MESSAGE;
-const SUBMIT_ERROR_MESSAGE = TEXT.absence_SICK_SUBMIT_ERROR_MESSAGE;
-const CONFIRM_SUBMIT_TITLE = TEXT.absence_CONFIRM_SUBMIT_TITLE;
-const CONFIRM_SUBMIT_MESSAGE = TEXT.absence_CONFIRM_SUBMIT_MESSAGE;
-const CONFIRM_SUBMIT_CANCEL = TEXT.absence_CONFIRM_SUBMIT_CANCEL;
-const CONFIRM_SUBMIT_ACTION = TEXT.absence_CONFIRM_SUBMIT_ACTION;
-const CONFIRM_REMOVE_TITLE = TEXT.absence_CONFIRM_REMOVE_TITLE;
-const CONFIRM_REMOVE_MESSAGE = TEXT.absence_CONFIRM_REMOVE_MESSAGE;
-const PENDING_APPROVAL_TITLE = TEXT.absence_CANNOT_REQUEST_TITLE;
+const SUBMITTING_LABEL = TEXT.ABSENCE_SUBMITTING_LABEL;
+const SUBMIT_SUCCESS_MESSAGE = TEXT.ABSENCE_SICK_SUBMIT_SUCCESS_MESSAGE;
+const SUBMIT_ERROR_MESSAGE = TEXT.ABSENCE_SICK_SUBMIT_ERROR_MESSAGE;
+const CONFIRM_SUBMIT_TITLE = TEXT.ABSENCE_CONFIRM_SUBMIT_TITLE;
+const CONFIRM_SUBMIT_MESSAGE = TEXT.ABSENCE_CONFIRM_SUBMIT_MESSAGE;
+const CONFIRM_SUBMIT_CANCEL = TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL;
+const CONFIRM_SUBMIT_ACTION = TEXT.ABSENCE_CONFIRM_SUBMIT_ACTION;
+const CONFIRM_REMOVE_TITLE = TEXT.ABSENCE_CONFIRM_REMOVE_TITLE;
+const CONFIRM_REMOVE_MESSAGE = TEXT.ABSENCE_CONFIRM_REMOVE_MESSAGE;
+const PENDING_APPROVAL_TITLE = TEXT.ABSENCE_CANNOT_REQUEST_TITLE;
 
 type SelectFieldProps = {
   label: string;
@@ -355,7 +356,7 @@ export default function SickScreen() {
   const routeEditId = getItemText(routeEditItem, [
     "id",
     "absenceId",
-    "absence_id",
+    "ABSENCE_id",
     "requestId",
     "request_id",
   ]) || (Array.isArray(params.id) ? params.id[0] : params.id ?? "");
@@ -400,7 +401,7 @@ export default function SickScreen() {
   const editId = getItemText(editItem, [
     "id",
     "absenceId",
-    "absence_id",
+    "ABSENCE_id",
     "requestId",
     "request_id",
   ]) || routeEditId;
@@ -446,24 +447,24 @@ export default function SickScreen() {
     setabsenceStatus("");
 
     try {
-      const data = await initabsenceData(userId, TYPE_absence_SICK);
+      const data = await initabsenceData(userId, TYPE_ABSENCE_SICK);
       setInitialabsenceData(data);
       setDeptId(getabsenceTextValue(data, ["deptId", "dept_id", "departmentId", "department_id"]));
       setStep(getabsenceTextValue(data, ["step"]));
-      setabsenceStatus(getabsenceTextValue(data, ["absenceStatus", "absence_status", "status"]));
-      setabsenceTime(getabsenceTextValue(data, ["absenceTime", "absence_time", "times", "time"]));
+      setabsenceStatus(getabsenceTextValue(data, ["absenceStatus", "ABSENCE_status", "status"]));
+      setabsenceTime(getabsenceTextValue(data, ["absenceTime", "ABSENCE_time", "times", "time"]));
     } catch (error) {
       if (!isEditMode) {
         setInitialError(
           error instanceof Error
             ? error.message
-            : TEXT.absence_INIT_LOAD_ERROR_MESSAGE,
+            : TEXT.ABSENCE_INIT_LOAD_ERROR_MESSAGE,
         );
       }
     } finally {
       if (isEditMode && routeEditId) {
         try {
-          const previousData = await getabsenceData(routeEditId, TYPE_absence_SICK);
+          const previousData = await getabsenceData(routeEditId, TYPE_ABSENCE_SICK);
 
           setLoadedEditItem(previousData);
           setInitialabsenceData((currentData) => ({
@@ -547,13 +548,13 @@ export default function SickScreen() {
 
   const startDateError =
     startDate && startOfDay(startDate) > maximumStartDate
-      ? TEXT.absence_VALIDATION_START_DATE_NOT_FUTURE
+      ? TEXT.ABSENCE_VALIDATION_START_DATE_NOT_FUTURE
       : "";
   const dateError =
     startDate && endDate && startOfDay(endDate) < startOfDay(startDate)
-      ? TEXT.absence_VALIDATION_END_DATE_AFTER_START
+      ? TEXT.ABSENCE_VALIDATION_END_DATE_AFTER_START
       : endDate && startOfDay(endDate) > maximumStartDate
-        ? TEXT.absence_VALIDATION_END_DATE_NOT_FUTURE
+        ? TEXT.ABSENCE_VALIDATION_END_DATE_NOT_FUTURE
         : "";
   const displayedDateError =
     startDateError || dateError || validationErrors.date || "";
@@ -624,19 +625,19 @@ export default function SickScreen() {
     const nextErrors: ValidationErrors = {};
 
     if (!approver) {
-      nextErrors.approver = TEXT.absence_VALIDATION_APPROVER_REQUIRED;
+      nextErrors.approver = TEXT.ABSENCE_VALIDATION_APPROVER_REQUIRED;
     }
 
     if (!reason.trim()) {
-      nextErrors.reason = TEXT.absence_VALIDATION_REASON_REQUIRED;
+      nextErrors.reason = TEXT.ABSENCE_VALIDATION_REASON_REQUIRED;
     }
 
     if (!startDate || !endDate) {
-      nextErrors.date = TEXT.absence_VALIDATION_DATE_REQUIRED;
+      nextErrors.date = TEXT.ABSENCE_VALIDATION_DATE_REQUIRED;
     }
 
     if (!contact.trim()) {
-      nextErrors.contact = TEXT.absence_VALIDATION_CONTACT_REQUIRED;
+      nextErrors.contact = TEXT.ABSENCE_VALIDATION_CONTACT_REQUIRED;
     }
 
     setValidationErrors(nextErrors);
@@ -693,8 +694,8 @@ export default function SickScreen() {
         : undefined;
       const result =
         isEditMode && editId
-          ? await updateabsenceData(editId, payload, TYPE_absence_SICK, uploadOptions)
-          : await addabsenceData(payload, TYPE_absence_SICK, uploadOptions);
+          ? await updateabsenceData(editId, payload, TYPE_ABSENCE_SICK, uploadOptions)
+          : await addabsenceData(payload, TYPE_ABSENCE_SICK, uploadOptions);
 
       setToastType("success");
       setToastMessage(result.message || SUBMIT_SUCCESS_MESSAGE);
@@ -749,7 +750,7 @@ export default function SickScreen() {
     setToastType("");
 
     try {
-      const result = await removeData(editId, TYPE_absence_SICK);
+      const result = await removeData(editId, TYPE_ABSENCE_SICK);
       setToastType("success");
       setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
       setTimeout(() => {
@@ -768,7 +769,7 @@ export default function SickScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.absence_SICK_TITLE} backHref={backHref} />
+        <NavTopBar title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -782,62 +783,35 @@ export default function SickScreen() {
 
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.absence_SICK_TITLE} backHref={backHref} />
-        <View style={styles.stateContent}>
-          <ThemedText type="subtitle">
-            {shouldShowRetry ? TEXT.SHARED_ERROR_TITLE_THAI : PENDING_APPROVAL_TITLE}
-          </ThemedText>
-          <ThemedText style={[styles.stateMessage, styles.errorText]}>
-            {initialError}
-          </ThemedText>
-          <View style={styles.errorActions}>
-            {shouldShowRetry ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={loadInitialabsenceData}
-                style={styles.secondaryButton}
-              >
-                <ThemedText type="defaultSemiBold">
-                  {TEXT.SHARED_RETRY_THAI}
-                </ThemedText>
-              </Pressable>
-            ) : null}
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => navReplace("/absence")}
-              style={styles.submitButton}
-            >
-              <ThemedText
-                lightColor="#FFFFFF"
-                darkColor="#FFFFFF"
-                type="defaultSemiBold"
-              >
-                {TEXT.SHARED_BACK_THAI}
-              </ThemedText>
-            </Pressable>
-          </View>
-        </View>
+        <NavTopBar title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} />
+        <ErrorState
+          variant={shouldShowRetry ? "error" : "empty"}
+          title={shouldShowRetry ? TEXT.SHARED_ERROR_TITLE_THAI : PENDING_APPROVAL_TITLE}
+          message={initialError}
+          onRetry={shouldShowRetry ? loadInitialabsenceData : undefined}
+          onBack={() => navReplace("/absence")}
+        />
       </ThemedView>
     );
   }
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.absence_SICK_TITLE} backHref={backHref} />
+      <NavTopBar title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.pageHeader}>
-          <ThemedText style={styles.pageTitle}>{TEXT.absence_SICK_FORM_TITLE}</ThemedText>
-          <ThemedText style={styles.pageSubtitle}>{TEXT.absence_SICK_DESCRIPTION}</ThemedText>
+          <ThemedText style={styles.pageTitle}>{TEXT.ABSENCE_SICK_FORM_TITLE}</ThemedText>
+          <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_SICK_DESCRIPTION}</ThemedText>
         </View>
 
         <View style={styles.formCard}>
           <SelectField
-            label={TEXT.absence_APPROVER_LABEL}
-            placeholder={TEXT.absence_APPROVER_PLACEHOLDER}
+            label={TEXT.ABSENCE_APPROVER_LABEL}
+            placeholder={TEXT.ABSENCE_APPROVER_PLACEHOLDER}
             value={approver}
             options={approverOptions}
             isOpen={openSelect === "approver"}
@@ -856,7 +830,7 @@ export default function SickScreen() {
 
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>
-              {TEXT.absence_REASON_LABEL}
+              {TEXT.ABSENCE_REASON_LABEL}
             </ThemedText>
             <TextInput
               multiline
@@ -867,7 +841,7 @@ export default function SickScreen() {
                   clearValidationError("reason");
                 }
               }}
-              placeholder={TEXT.absence_REASON_PLACEHOLDER}
+              placeholder={TEXT.ABSENCE_REASON_PLACEHOLDER}
               placeholderTextColor="#9CA3AF"
               style={[
                 styles.textArea,
@@ -885,11 +859,11 @@ export default function SickScreen() {
 
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>
-              {TEXT.absence_LEAVE_DATE_LABEL}
+              {TEXT.ABSENCE_LEAVE_DATE_LABEL}
             </ThemedText>
             <View style={styles.dateRow}>
               <DatePickerField
-                label={TEXT.absence_START_DATE_LABEL}
+                label={TEXT.ABSENCE_START_DATE_LABEL}
                 value={startDate}
                 maximumDate={maximumStartDate}
                 onChange={(date) => {
@@ -907,7 +881,7 @@ export default function SickScreen() {
                 hasError={Boolean(displayedDateError)}
               />
               <DatePickerField
-                label={TEXT.absence_END_DATE_LABEL}
+                label={TEXT.ABSENCE_END_DATE_LABEL}
                 value={endDate}
                 minimumDate={minimumEndDate}
                 maximumDate={maximumStartDate}
@@ -927,22 +901,22 @@ export default function SickScreen() {
                 displayedDateError ? styles.errorText : undefined,
               ]}
             >
-              {displayedDateError || TEXT.absence_SELECT_DATE_HINT}
+              {displayedDateError || TEXT.ABSENCE_SELECT_DATE_HINT}
             </ThemedText>
             {leaveDayCount !== null ? (
               <ThemedText
                 type="defaultSemiBold"
                 style={styles.leaveDaySummary}
               >
-                {TEXT.absence_LEAVE_DAY_COUNT_LABEL}
-                {leaveDayCount.toLocaleString("th-TH")} {TEXT.absence_DAY_UNIT}
+                {TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL}
+                {leaveDayCount.toLocaleString("th-TH")} {TEXT.ABSENCE_DAY_UNIT}
               </ThemedText>
             ) : null}
           </View>
 
           <SelectField
-            label={TEXT.absence_HALF_DAY_LABEL}
-            placeholder={TEXT.absence_HALF_DAY_PLACEHOLDER}
+            label={TEXT.ABSENCE_HALF_DAY_LABEL}
+            placeholder={TEXT.ABSENCE_HALF_DAY_PLACEHOLDER}
             value={halfDay}
             options={halfDayOptions}
             isOpen={openSelect === "halfDay"}
@@ -957,7 +931,7 @@ export default function SickScreen() {
 
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>
-              {TEXT.absence_CONTACT_CHANNEL_LABEL}
+              {TEXT.ABSENCE_CONTACT_CHANNEL_LABEL}
             </ThemedText>
             <TextInput
               onChangeText={(value) => {
@@ -966,7 +940,7 @@ export default function SickScreen() {
                   clearValidationError("contact");
                 }
               }}
-              placeholder={TEXT.absence_CONTACT_CHANNEL_PLACEHOLDER}
+              placeholder={TEXT.ABSENCE_CONTACT_CHANNEL_PLACEHOLDER}
               placeholderTextColor="#9CA3AF"
               style={[
                 styles.input,
@@ -984,7 +958,7 @@ export default function SickScreen() {
           <View style={styles.field}>
             <View style={styles.toggleRow}>
               <ThemedText style={styles.fieldLabel}>
-                {TEXT.absence_MEDICAL_CERTIFICATE_TOGGLE}
+                {TEXT.ABSENCE_MEDICAL_CERTIFICATE_TOGGLE}
               </ThemedText>
               <Switch
                 value={hasMedicalCert}
@@ -1067,10 +1041,10 @@ export default function SickScreen() {
             </View>
             <View style={styles.policyBody}>
               <ThemedText style={styles.policyTitle}>
-                {TEXT.absence_POLICY_NOTE_LABEL}
+                {TEXT.ABSENCE_POLICY_NOTE_LABEL}
               </ThemedText>
               <ThemedText style={styles.policyText}>
-                {TEXT.absence_POLICY_NOTE_TEXT}
+                {TEXT.ABSENCE_POLICY_NOTE_TEXT}
               </ThemedText>
             </View>
           </View>
@@ -1142,7 +1116,7 @@ export default function SickScreen() {
               darkColor="#FFFFFF"
               type="defaultSemiBold"
             >
-              {isSubmitting ? SUBMITTING_LABEL : TEXT.absence_SUBMIT_REQUEST}
+              {isSubmitting ? SUBMITTING_LABEL : TEXT.ABSENCE_SUBMIT_REQUEST}
             </ThemedText>
           </Pressable>
         )}

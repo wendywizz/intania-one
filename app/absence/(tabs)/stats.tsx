@@ -2,6 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
+import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -111,8 +112,8 @@ function InfoCard({ servantAge, budgetStartDate, budgetEndDate }: Pick<StatsData
           <IconSymbol name="person.fill" size={20} color="#585E6D" />
         </View>
         <View style={styles.infoText}>
-          <ThemedText style={styles.infoLabel}>{TEXT.absence_STATS_WORK_AGE_LABEL}</ThemedText>
-          <ThemedText style={styles.infoValue}>{servantAge} {TEXT.absence_STATS_WORK_AGE_UNIT}</ThemedText>
+          <ThemedText style={styles.infoLabel}>{TEXT.ABSENCE_STATS_WORK_AGE_LABEL}</ThemedText>
+          <ThemedText style={styles.infoValue}>{servantAge} {TEXT.ABSENCE_STATS_WORK_AGE_UNIT}</ThemedText>
         </View>
       </View>
       <View style={styles.cardDivider} />
@@ -121,7 +122,7 @@ function InfoCard({ servantAge, budgetStartDate, budgetEndDate }: Pick<StatsData
           <IconSymbol name="calendar" size={18} color="#585E6D" />
         </View>
         <View style={styles.infoText}>
-          <ThemedText style={styles.infoLabel}>{TEXT.absence_STATS_CYCLE_DATE_LABEL}</ThemedText>
+          <ThemedText style={styles.infoLabel}>{TEXT.ABSENCE_STATS_CYCLE_DATE_LABEL}</ThemedText>
           <ThemedText style={styles.infoValue}>
             {formatBudgetDateLong(budgetStartDate)} – {formatBudgetDateLong(budgetEndDate)}
           </ThemedText>
@@ -140,8 +141,8 @@ function SummaryCard({ absenceUsedCount, absenceLimitCount, absenceUsedDays, abs
     <View style={styles.card}>
       <View style={styles.summaryHeader}>
         <View style={styles.summaryTitleBlock}>
-          <ThemedText style={styles.summaryTitle}>{TEXT.absence_STATS_ALL_ABSENCES}</ThemedText>
-          <ThemedText style={styles.summarySubtitle}>{TEXT.absence_STATS_USAGE_OVERVIEW}</ThemedText>
+          <ThemedText style={styles.summaryTitle}>{TEXT.ABSENCE_STATS_ALL_ABSENCES}</ThemedText>
+          <ThemedText style={styles.summarySubtitle}>{TEXT.ABSENCE_STATS_USAGE_OVERVIEW}</ThemedText>
         </View>
         <View style={styles.percentCircle}>
           <ThemedText style={styles.percentText}>{pct}%</ThemedText>
@@ -149,7 +150,7 @@ function SummaryCard({ absenceUsedCount, absenceLimitCount, absenceUsedDays, abs
       </View>
       <View style={styles.summaryTiles}>
         <View style={styles.summaryTile}>
-          <ThemedText style={styles.tileLabel}>{TEXT.absence_STATS_OCCURRENCES}</ThemedText>
+          <ThemedText style={styles.tileLabel}>{TEXT.ABSENCE_STATS_OCCURRENCES}</ThemedText>
           <View style={styles.tileValueRow}>
             <ThemedText style={styles.tileValueBig}>{fmt(absenceUsedCount)}</ThemedText>
             <ThemedText style={styles.tileValueDim}> /{fmt(absenceLimitCount)}</ThemedText>
@@ -157,7 +158,7 @@ function SummaryCard({ absenceUsedCount, absenceLimitCount, absenceUsedDays, abs
           <ProgressBar value={countProgress} />
         </View>
         <View style={styles.summaryTile}>
-          <ThemedText style={styles.tileLabel}>{TEXT.absence_STATS_TOTAL_DAYS_LABEL}</ThemedText>
+          <ThemedText style={styles.tileLabel}>{TEXT.ABSENCE_STATS_TOTAL_DAYS_LABEL}</ThemedText>
           <View style={styles.tileValueRow}>
             <ThemedText style={styles.tileValueBig}>{fmt(absenceUsedDays)}</ThemedText>
             <ThemedText style={styles.tileValueDim}> /{fmt(absenceLimitDays)}</ThemedText>
@@ -177,15 +178,15 @@ function DetailGridCard({ sickUsedCount, sickUsedDays, businessUsedCount, busine
           <IconSymbol name="cross.fill" size={20} color="#922124" />
           <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
         </View>
-        <ThemedText style={styles.gridCardTitle}>{TEXT.absence_SICK_TITLE}</ThemedText>
+        <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_SICK_TITLE}</ThemedText>
         <View style={styles.gridStats}>
           <ThemedText style={styles.gridStatValue}>
             <ThemedText style={styles.gridStatBold}>{fmt(sickUsedCount)}</ThemedText>
-            <ThemedText style={styles.gridStatUnit}> {TEXT.absence_STATS_UNIT_TIMES}</ThemedText>
+            <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_TIMES}</ThemedText>
           </ThemedText>
           <ThemedText style={styles.gridStatValue}>
             <ThemedText style={styles.gridStatBold}>{fmt(sickUsedDays)}</ThemedText>
-            <ThemedText style={styles.gridStatUnit}> {TEXT.absence_STATS_UNIT_DAYS}</ThemedText>
+            <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_DAYS}</ThemedText>
           </ThemedText>
         </View>
       </View>
@@ -194,15 +195,15 @@ function DetailGridCard({ sickUsedCount, sickUsedDays, businessUsedCount, busine
           <IconSymbol name="briefcase.fill" size={20} color="#922124" />
           <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
         </View>
-        <ThemedText style={styles.gridCardTitle}>{TEXT.absence_BUSINESS_TITLE}</ThemedText>
+        <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_BUSINESS_TITLE}</ThemedText>
         <View style={styles.gridStats}>
           <ThemedText style={styles.gridStatValue}>
             <ThemedText style={styles.gridStatBold}>{fmt(businessUsedCount)}</ThemedText>
-            <ThemedText style={styles.gridStatUnit}> {TEXT.absence_STATS_UNIT_TIMES}</ThemedText>
+            <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_TIMES}</ThemedText>
           </ThemedText>
           <ThemedText style={styles.gridStatValue}>
             <ThemedText style={styles.gridStatBold}>{fmt(businessUsedDays)}</ThemedText>
-            <ThemedText style={styles.gridStatUnit}> {TEXT.absence_STATS_UNIT_DAYS}</ThemedText>
+            <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_DAYS}</ThemedText>
           </ThemedText>
         </View>
       </View>
@@ -220,31 +221,31 @@ function VacationCard({ relaxUsedDays, relaxTotalYearDays, relaxStoreDays, relax
           <IconSymbol name="sun.max.fill" size={18} color="#922124" />
         </View>
         <View style={styles.vacationTitleBlock}>
-          <ThemedText style={styles.summaryTitle}>{TEXT.absence_RELAX_TITLE}</ThemedText>
-          <ThemedText style={styles.summarySubtitle}>{TEXT.absence_STATS_VACATION_ANNUAL}</ThemedText>
+          <ThemedText style={styles.summaryTitle}>{TEXT.ABSENCE_RELAX_TITLE}</ThemedText>
+          <ThemedText style={styles.summarySubtitle}>{TEXT.ABSENCE_STATS_VACATION_ANNUAL}</ThemedText>
         </View>
       </View>
       <View style={styles.vacationUsage}>
         <View style={styles.vacationBigNum}>
           <ThemedText style={styles.vacationNumBig}>{fmt(relaxUsedDays)} </ThemedText>
-          <ThemedText style={styles.vacationNumDim}>/ {fmt(relaxTotalYearDays)} {TEXT.absence_STATS_UNIT_DAYS}</ThemedText>
+          <ThemedText style={styles.vacationNumDim}>/ {fmt(relaxTotalYearDays)} {TEXT.ABSENCE_STATS_UNIT_DAYS}</ThemedText>
         </View>
         <View style={styles.usedBadge}>
-          <ThemedText style={styles.usedBadgeText}>{TEXT.absence_STATS_USED_THIS_YEAR}</ThemedText>
+          <ThemedText style={styles.usedBadgeText}>{TEXT.ABSENCE_STATS_USED_THIS_YEAR}</ThemedText>
         </View>
       </View>
       <ProgressBar value={progress} />
       <View style={styles.vacationDetails}>
         <View style={styles.vacationDetailRow}>
-          <ThemedText style={styles.vacationDetailLabel}>{TEXT.absence_STATS_DAYS_FROM_PREV_YEAR}</ThemedText>
+          <ThemedText style={styles.vacationDetailLabel}>{TEXT.ABSENCE_STATS_DAYS_FROM_PREV_YEAR}</ThemedText>
           <ThemedText style={styles.vacationDetailValue}>{fmt(relaxStoreDays)}</ThemedText>
         </View>
         <View style={styles.vacationDetailRow}>
-          <ThemedText style={styles.vacationDetailLabel}>{TEXT.absence_STATS_TOTAL_DAYS_THIS_YEAR}</ThemedText>
+          <ThemedText style={styles.vacationDetailLabel}>{TEXT.ABSENCE_STATS_TOTAL_DAYS_THIS_YEAR}</ThemedText>
           <ThemedText style={styles.vacationDetailValue}>{fmt(relaxTotalYearDays)}</ThemedText>
         </View>
         <View style={styles.vacationDetailRow}>
-          <ThemedText style={styles.vacationDetailLabel}>{TEXT.absence_STATS_MAX_ACCUMULATION}</ThemedText>
+          <ThemedText style={styles.vacationDetailLabel}>{TEXT.ABSENCE_STATS_MAX_ACCUMULATION}</ThemedText>
           <ThemedText style={styles.vacationDetailValue}>{fmt(relaxLimitDays)}</ThemedText>
         </View>
       </View>
@@ -262,10 +263,10 @@ function OthersGridCard({ birthUsedCount, lateUsedCount, lateLimitCount }: Pick<
           <IconSymbol name="figure.child" size={20} color="#922124" />
           <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
         </View>
-        <ThemedText style={styles.gridCardTitle}>{TEXT.absence_BIRTH_TITLE}</ThemedText>
+        <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_BIRTH_TITLE}</ThemedText>
         <ThemedText style={styles.gridStatValue}>
           <ThemedText style={styles.gridStatBold}>{fmt(birthUsedCount)}</ThemedText>
-          <ThemedText style={styles.gridStatUnit}> {TEXT.absence_STATS_UNIT_TIMES}</ThemedText>
+          <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_TIMES}</ThemedText>
         </ThemedText>
       </View>
       <View style={[styles.card, styles.gridCard]}>
@@ -273,10 +274,10 @@ function OthersGridCard({ birthUsedCount, lateUsedCount, lateLimitCount }: Pick<
           <IconSymbol name="clock.fill" size={20} color="#922124" />
           <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
         </View>
-        <ThemedText style={styles.gridCardTitle}>{TEXT.absence_STATS_LATE_TITLE}</ThemedText>
+        <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_STATS_LATE_TITLE}</ThemedText>
         <ThemedText style={styles.gridStatValue}>
           <ThemedText style={styles.gridStatBold}>{fmt(lateUsedCount)}</ThemedText>
-          <ThemedText style={styles.gridStatUnit}> / {fmt(lateLimitCount)} {TEXT.absence_STATS_UNIT_TIMES}</ThemedText>
+          <ThemedText style={styles.gridStatUnit}> / {fmt(lateLimitCount)} {TEXT.ABSENCE_STATS_UNIT_TIMES}</ThemedText>
         </ThemedText>
         <ProgressBar value={lateProgress} />
       </View>
@@ -315,22 +316,19 @@ export default function StatsScreen() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <LoadingAnimate title={TEXT.absence_STATS_LOADING_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
+      return <LoadingAnimate title={TEXT.ABSENCE_STATS_LOADING_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
     }
     if (error) {
       return (
-        <View style={styles.stateBox}>
-          <ThemedText style={styles.stateTitle}>{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
-          <ThemedText style={styles.errorText}>{error}</ThemedText>
-        </View>
+        <ErrorState
+          title={TEXT.SHARED_SOMETHING_WENT_WRONG}
+          message={error}
+          onRetry={() => loadStats()}
+        />
       );
     }
     if (!stats) {
-      return (
-        <View style={styles.stateBox}>
-          <ThemedText style={styles.errorText}>{TEXT.absence_STATS_NO_DATA}</ThemedText>
-        </View>
-      );
+      return <ErrorState variant="empty" title={TEXT.ABSENCE_STATS_NO_DATA} />;
     }
 
     return (
@@ -374,10 +372,10 @@ export default function StatsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.absence_TITLE} />
+      <NavTopBar title={TEXT.ABSENCE_TITLE} />
       <View style={styles.pageTitleSection}>
-        <ThemedText style={styles.pageTitle}>{TEXT.absence_STATS_TITLE}</ThemedText>
-        <ThemedText style={styles.pageSubtitle}>{TEXT.absence_STATS_SUBTITLE}</ThemedText>
+        <ThemedText style={styles.pageTitle}>{TEXT.ABSENCE_STATS_TITLE}</ThemedText>
+        <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_STATS_SUBTITLE}</ThemedText>
       </View>
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>

@@ -21,7 +21,7 @@ export type ActiveSummaryMeeting = {
   error?: string;
 };
 
-export type ActiveSummaryForgotTimestamp = {
+export type ActiveSummaryTimestamp = {
   success: boolean;
   items: Record<string, unknown>[];
   year: number;
@@ -32,7 +32,7 @@ export type ActiveSummaryData = {
   repairComputer: ActiveSummaryRepairComputer;
   absence: ActiveSummaryAbsence;
   meeting: ActiveSummaryMeeting;
-  forgotTimestamp: ActiveSummaryForgotTimestamp;
+  timestamp: ActiveSummaryTimestamp;
 };
 
 type ApiResponse = {

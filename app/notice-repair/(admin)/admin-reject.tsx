@@ -2,19 +2,21 @@ import { ConfirmModal } from '@/components/notice-repair/confirm-modal';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useToast } from '@/components/toast-provider';
 import { TEXT } from '@/constants/text';
 import { useAuth } from '@/context/AuthContext';
 import { adminRejectRepair } from '@/services/noticeRepairService';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ActivityIndicator, KeyboardAvoidingView, Platform,
   Pressable, ScrollView, StyleSheet, TextInput, View,
 } from 'react-native';
 
 export default function NoticeRepairAdminRejectScreen() {
   const { repair_id, staff_id: paramStaff } = useLocalSearchParams<{ repair_id: string; staff_id: string }>();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const staffId = paramStaff ?? user?.staffId ?? '';
 
   const [reason, setReason] = useState('');
@@ -43,24 +45,18 @@ export default function NoticeRepairAdminRejectScreen() {
     try {
       await adminRejectRepair(repair_id, staffId, trimmed);
       setConfirmOpen(false);
-      Alert.alert(TEXT.NOTICE_REPAIR_ACTION_SUCCESS, undefined, [
-        {
-          text: TEXT.NOTICE_REPAIR_ACTION_CONFIRM,
-          onPress: () => {
-            // Pop the reject screen + the detail to land back on the list,
-            // which reloads on focus and drops the rejected job.
-            if (router.canDismiss()) router.dismiss(2);
-            else router.back();
-          },
-        },
-      ]);
+      showToast(TEXT.NOTICE_REPAIR_ACTION_SUCCESS, 'success');
+      // Pop the reject screen + the detail to land back on the list,
+      // which reloads on focus and drops the rejected job.
+      if (router.canDismiss()) router.dismiss(2);
+      else router.back();
     } catch (e) {
       setConfirmOpen(false);
-      Alert.alert(TEXT.NOTICE_REPAIR_ACTION_FAILED, e instanceof Error ? e.message : undefined);
+      showToast(e instanceof Error ? e.message : TEXT.NOTICE_REPAIR_ACTION_FAILED, 'error');
     } finally {
       setSubmitting(false);
     }
-  }, [reason, submitting, repair_id, staffId]);
+  }, [reason, submitting, repair_id, staffId, showToast]);
 
   return (
     <ThemedView style={styles.container}>

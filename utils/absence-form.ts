@@ -44,7 +44,11 @@ export function formatDateTimeParam(date: Date) {
   return `${formatDateParam(date)} ${hours}:${minutes}:${seconds}`;
 }
 
-export function getabsenceTextValue(data: absence, keys: string[]) {
+export function getabsenceTextValue(data: absence | null | undefined, keys: string[]) {
+  if (!data || typeof data !== "object") {
+    return "";
+  }
+
   for (const key of keys) {
     const value = data[key];
 

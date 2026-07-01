@@ -10,7 +10,7 @@ import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { AppFonts } from "@/constants/fonts";
-import type { ForgotTimestampHistory } from "@/services/forgetTimestampService";
+import type { TimestampHistory } from "@/services/timestampService";
 import { formatDateAndTime, formatFullDate } from "@/utils/date-format";
 
 const stampTypeFields = new Set(["stampType", "stamp_type", "type"]);
@@ -54,7 +54,7 @@ const historyStatusFields = [
   "is_active",
 ];
 
-function getText(item: ForgotTimestampHistory, fields: Set<string> | string[]) {
+function getText(item: TimestampHistory, fields: Set<string> | string[]) {
   for (const field of fields) {
     const value = item[field];
     if (value !== undefined && value !== null && String(value).trim()) {
@@ -64,20 +64,20 @@ function getText(item: ForgotTimestampHistory, fields: Set<string> | string[]) {
   return "";
 }
 
-function parseItem(value: string | string[] | undefined): ForgotTimestampHistory {
+function parseItem(value: string | string[] | undefined): TimestampHistory {
   const rawValue = Array.isArray(value) ? value[0] : value;
   if (!rawValue) return {};
   try {
     const parsedValue = JSON.parse(rawValue);
     return parsedValue && typeof parsedValue === "object"
-      ? (parsedValue as ForgotTimestampHistory)
+      ? (parsedValue as TimestampHistory)
       : {};
   } catch {
     return {};
   }
 }
 
-function getStampTime(item: ForgotTimestampHistory) {
+function getStampTime(item: TimestampHistory) {
   for (const field of timeFields) {
     const value = item[field];
     const time = String(value ?? "").trim();
@@ -86,7 +86,7 @@ function getStampTime(item: ForgotTimestampHistory) {
   return "";
 }
 
-function getHistoryItemStatus(item: ForgotTimestampHistory): "approved" | "rejected" | "" {
+function getHistoryItemStatus(item: TimestampHistory): "approved" | "rejected" | "" {
   for (const field of historyStatusFields) {
     const value = String(item[field] ?? "").toLowerCase().trim();
     if (["approved", "true", "1", "yes", "active"].includes(value)) return "approved";
@@ -96,8 +96,9 @@ function getHistoryItemStatus(item: ForgotTimestampHistory): "approved" | "rejec
 }
 
 function getStampTypeLabel(stampType: string) {
-  if (stampType === "in") return TEXT.FORGOT_TIMESTAMP_STAMP_IN_TYPE;
-  if (stampType === "out") return TEXT.FORGOT_TIMESTAMP_STAMP_OUT_TYPE;
+  if (stampType === "in") return TEXT.TIMESTAMP_STAMP_IN_TYPE;
+  if (stampType === "out") return TEXT.TIMESTAMP_STAMP_OUT_TYPE;
+  if (stampType === "all") return TEXT.TIMESTAMP_STAMP_ALL;
   return stampType || "—";
 }
 
@@ -129,7 +130,7 @@ function DetailRow({ icon, label, value }: DetailRowProps) {
   );
 }
 
-export default function ForgotTimestampHistoryDetailScreen() {
+export default function TimestampHistoryDetailScreen() {
   const params = useLocalSearchParams<{ item?: string }>();
   const item = useMemo(() => parseItem(params.item), [params.item]);
 
@@ -153,25 +154,25 @@ export default function ForgotTimestampHistoryDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.FORGOT_TIMESTAMP_DETAIL_TITLE} backHref="/forgot-timestamp/history" />
+      <NavTopBar title={TEXT.TIMESTAMP_DETAIL_TITLE} backHref="/timestamp/history" />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.statusCard}>
           {/* Header: stamp type + status badge */}
           <View style={styles.cardHeader}>
             <View style={styles.cardHeaderText}>
-              <ThemedText style={styles.headerTypeLabel}>{TEXT.FORGOT_TIMESTAMP_TYPE_LABEL}</ThemedText>
+              <ThemedText style={styles.headerTypeLabel}>{TEXT.TIMESTAMP_TYPE_LABEL}</ThemedText>
               <ThemedText style={styles.headerTypeValue}>{stampTypeLabel}</ThemedText>
             </View>
             {status === "approved" ? (
               <View style={styles.approvedBadge}>
                 <CheckCircle size={14} color="#1E7E34" />
-                <ThemedText style={styles.approvedBadgeText}>{TEXT.FORGOT_TIMESTAMP_APPROVED_BADGE}</ThemedText>
+                <ThemedText style={styles.approvedBadgeText}>{TEXT.TIMESTAMP_APPROVED_BADGE}</ThemedText>
               </View>
             ) : status === "rejected" ? (
               <View style={styles.rejectedBadge}>
                 <XCircle size={14} color="#991B1B" />
-                <ThemedText style={styles.rejectedBadgeText}>{TEXT.FORGOT_TIMESTAMP_REJECTED_BADGE}</ThemedText>
+                <ThemedText style={styles.rejectedBadgeText}>{TEXT.TIMESTAMP_REJECTED_BADGE}</ThemedText>
               </View>
             ) : null}
           </View>
@@ -182,22 +183,22 @@ export default function ForgotTimestampHistoryDetailScreen() {
           <View style={styles.detailRows}>
             <DetailRow
               icon="event"
-              label={TEXT.FORGOT_TIMESTAMP_APPEAL_DATE}
+              label={TEXT.TIMESTAMP_APPEAL_DATE}
               value={appealDateDisplay}
             />
             <DetailRow
               icon="access-time"
-              label={TEXT.FORGOT_TIMESTAMP_TIMESTAMP_DATETIME}
+              label={TEXT.TIMESTAMP_TIMESTAMP_DATETIME}
               value={datetimeDisplay}
             />
             <DetailRow
               icon="fingerprint"
-              label={TEXT.FORGOT_TIMESTAMP_TIMESTAMP_TYPE}
+              label={TEXT.TIMESTAMP_TIMESTAMP_TYPE}
               value={stampTypeLabel}
             />
             <DetailRow
               icon="person"
-              label={TEXT.absence_APPROVER_LABEL}
+              label={TEXT.ABSENCE_APPROVER_LABEL}
               value={approver}
             />
           </View>
@@ -207,7 +208,7 @@ export default function ForgotTimestampHistoryDetailScreen() {
             <>
               <View style={styles.divider} />
               <View style={styles.reasonSection}>
-                <ThemedText style={styles.reasonSectionLabel}>{TEXT.FORGOT_TIMESTAMP_REASON_LABEL}</ThemedText>
+                <ThemedText style={styles.reasonSectionLabel}>{TEXT.TIMESTAMP_REASON_LABEL}</ThemedText>
                 <View style={styles.reasonBox}>
                   <ThemedText style={styles.reasonText}>{reason}</ThemedText>
                 </View>

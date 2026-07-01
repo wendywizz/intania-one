@@ -1,10 +1,12 @@
 import { ConfirmModal } from '@/components/notice-repair/confirm-modal';
+import { MaterialItemCard } from '@/components/notice-repair/material-item-card';
 import { NavTopBar } from '@/components/nav-top-bar';
+import { useToast } from '@/components/toast-provider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TEXT } from '@/constants/text';
-import { NOTICE_REPAIR_ROLE_APPROVE, NOTICE_REPAIR_ROLE_ADMIN, NOTICE_REPAIR_ROLE_HEADER } from '@/constants/types';
+import { NOTICE_REPAIR_ROLE_APPROVE, NOTICE_REPAIR_ROLE_ADMIN, NOTICE_REPAIR_ROLE_HEADER, NOTICE_REPAIR_ROLE_INFORMER } from '@/constants/types';
 import { useAuth } from '@/context/AuthContext';
 import type { NoticeRepairDetail } from '@/models/types';
 import { addRequisition, adminAcceptRepair, approveRepair, cancelRepair, getFullDetail } from '@/services/noticeRepairService';
@@ -19,7 +21,7 @@ import { formatDateOnly, formatDateRange } from '@/utils/date-format';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 // New job awaiting approval — the only status where the approver's
 // เห็นชอบ / ไม่เห็นชอบ / ยกเลิก actions are valid (see Repair_Controller).
@@ -71,61 +73,6 @@ function DividerRow({ label, value, valueColor }: { label: string; value?: strin
   );
 }
 
-/** Format a number/string as Thai baht: "1,234.56". Falls back to "-". */
-function formatBaht(v: string | number | undefined | null): string {
-  if (v === undefined || v === null || v === '') return '-';
-  const n = typeof v === 'number' ? v : parseFloat(String(v));
-  if (Number.isNaN(n)) return String(v);
-  const [intPart, decPart] = n.toFixed(2).split('.');
-  return `${intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${decPart}`;
-}
-
-/** One label/value line inside a material card. */
-function MatDetailRow({ label, value, emphasize }: { label: string; value: string; emphasize?: boolean }) {
-  return (
-    <View style={styles.matDetailRow}>
-      <ThemedText style={styles.matDetailLabel}>{label}</ThemedText>
-      <ThemedText style={[styles.matDetailValue, emphasize && styles.matDetailValueEmphasis]} numberOfLines={1}>
-        {value}
-      </ThemedText>
-    </View>
-  );
-}
-
-/** A single requisition material shown as a card: name + price/amount/unit/total. */
-function MaterialItemCard({
-  index, name, priceUnit, amount, unit, total, statusLabel, isDraft,
-}: {
-  index: number;
-  name: string;
-  priceUnit?: string | number;
-  amount?: string | number;
-  unit?: string;
-  total?: string | number;
-  statusLabel?: string;
-  isDraft?: boolean;
-}) {
-  const amountText = amount === undefined || amount === null || amount === '' ? '-' : String(amount);
-  return (
-    <View style={[styles.matItem, isDraft && styles.matItemDraft]}>
-      <View style={styles.matItemHead}>
-        <ThemedText style={styles.matItemName} numberOfLines={2}>{`${index}. ${name || '-'}`}</ThemedText>
-        {isDraft ? (
-          <View style={styles.draftTagCell}><ThemedText style={styles.draftTag}>ใหม่</ThemedText></View>
-        ) : statusLabel ? (
-          <View style={styles.matStatusTag}><ThemedText style={styles.matStatusTagText}>{statusLabel}</ThemedText></View>
-        ) : null}
-      </View>
-      <View style={styles.matItemRows}>
-        <MatDetailRow label="ราคา/หน่วย" value={`${formatBaht(priceUnit)} บาท`} />
-        <MatDetailRow label="จำนวน" value={amountText} />
-        <MatDetailRow label="หน่วย" value={unit || '-'} />
-        <MatDetailRow label="ราคารวม" value={`${formatBaht(total)} บาท`} emphasize />
-      </View>
-    </View>
-  );
-}
-
 function RequesterAvatar({ staffId, name, size = 64 }: { staffId: string; name: string; size?: number }) {
   const [failed, setFailed] = useState(false);
   const normalized = normalizeStaffId(staffId);
@@ -154,6 +101,7 @@ export default function NoticeRepairDetailScreen() {
     repair_id: string; staff_id: string; role?: string; source?: string;
   }>();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const staffId = paramStaff ?? user?.staffId ?? '';
 
   const [detail, setDetail] = useState<NoticeRepairDetail | null>(null);
@@ -239,22 +187,31 @@ export default function NoticeRepairDetailScreen() {
   // detail was opened from the admin "รอรับเรื่อง" (admin_pending) list.
   const canAdminReceive = role === NOTICE_REPAIR_ROLE_ADMIN && source === 'admin_pending';
 
+  // Informer may edit their own request while it is still awaiting approval
+  // (status 001) — matches the backend, which lets the owner edit a 001 job.
+  const canInformerEdit =
+    role === NOTICE_REPAIR_ROLE_INFORMER &&
+    source === 'informer_current' &&
+    detail?.repair_status === STATUS_NEW;
+
+  // Admin supply tabs — offer a link to the full requisition/supply list.
+  const canViewSupply = source === 'supply_material' || source === 'dept_supply_response';
+
   const onConfirmPending = useCallback(async () => {
     if (!pending || submitting) return;
     setSubmitting(true);
     try {
       await pending.run();
       setPending(null);
-      Alert.alert(TEXT.NOTICE_REPAIR_ACTION_SUCCESS, undefined, [
-        { text: TEXT.NOTICE_REPAIR_ACTION_CONFIRM, onPress: () => router.back() },
-      ]);
+      showToast(TEXT.NOTICE_REPAIR_ACTION_SUCCESS, 'success');
+      router.back();
     } catch (e) {
       setPending(null);
-      Alert.alert(TEXT.NOTICE_REPAIR_ACTION_FAILED, e instanceof Error ? e.message : undefined);
+      showToast(e instanceof Error ? e.message : TEXT.NOTICE_REPAIR_ACTION_FAILED, 'error');
     } finally {
       setSubmitting(false);
     }
-  }, [pending, submitting]);
+  }, [pending, submitting, showToast]);
 
   const onApprove = useCallback(() => {
     setPending({
@@ -306,32 +263,45 @@ export default function NoticeRepairDetailScreen() {
     } as Parameters<typeof router.push>[0]);
   }, [repair_id, staffId, role, source]);
 
+  // Informer removes (cancels) their own pending request. Reuses the pending
+  // confirm flow, which on success toasts and pops back to the list.
+  const onRemove = useCallback(() => {
+    setPending({
+      title: TEXT.NOTICE_REPAIR_ACTION_DELETE,
+      message: TEXT.NOTICE_REPAIR_ACTION_DELETE_CONFIRM,
+      confirmLabel: TEXT.NOTICE_REPAIR_ACTION_DELETE,
+      destructive: true,
+      run: () => cancelRepair(repair_id, staffId),
+    });
+  }, [repair_id, staffId]);
+
   // Navigate back to the correct list based on role and source.
   // NavTopBar.goBack already holds the nav lock when it calls this, so we must
   // not re-acquire it here (that second attempt fails and aborts the nav).
   const doBack = useCallback(() => {
-    // Determine which tab/path to go back to based on role and source
+    // Determine which tab/path to go back to based on role and source.
+    // Routes must match the real tab screen names (groups stripped).
     if (role === NOTICE_REPAIR_ROLE_HEADER) {
       if (source === 'header_current') {
-        router.replace('/notice-repair/(tabs)/header-current');
+        router.replace('/notice-repair/header-repair-list');
         return;
       }
       if (source === 'header_pending') {
-        router.replace('/notice-repair/(tabs)/header-pending');
+        router.replace('/notice-repair/header-pending');
         return;
       }
     }
 
     if (role === NOTICE_REPAIR_ROLE_ADMIN) {
       if (source === 'admin_pending') {
-        router.replace('/notice-repair/(tabs)/admin-pending');
+        router.replace('/notice-repair/admin-pending-receipt');
         return;
       }
     }
 
     if (role === NOTICE_REPAIR_ROLE_APPROVE) {
       if (source === 'approve_pending') {
-        router.replace('/notice-repair/(tabs)/approve-pending');
+        router.replace('/notice-repair/approve-pending');
         return;
       }
     }
@@ -365,20 +335,20 @@ export default function NoticeRepairDetailScreen() {
       await addRequisition(repair_id, staffId, [...draftMaterials]);
       clearDraftMaterials(repair_id ?? '');
       setMaterialConfirm(null);
+      showToast('บันทึกรายการวัสดุเรียบร้อยแล้ว', 'success');
       if (leaveAfterSave) {
         doBack();
         return;
       }
       const fresh = await getFullDetail(Number(repair_id), staffId);
       setDetail(fresh);
-      Alert.alert(TEXT.NOTICE_REPAIR_ACTION_SUCCESS, 'บันทึกรายการวัสดุเรียบร้อยแล้ว');
     } catch (e) {
       setMaterialConfirm(null);
-      Alert.alert(TEXT.NOTICE_REPAIR_ACTION_FAILED, e instanceof Error ? e.message : undefined);
+      showToast(e instanceof Error ? e.message : TEXT.NOTICE_REPAIR_ACTION_FAILED, 'error');
     } finally {
       setSavingMaterials(false);
     }
-  }, [savingMaterials, draftMaterials, repair_id, staffId, materialConfirm, doBack]);
+  }, [savingMaterials, draftMaterials, repair_id, staffId, materialConfirm, doBack, showToast]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -422,7 +392,7 @@ export default function NoticeRepairDetailScreen() {
     return (
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={[styles.scroll, (canApprove || canAdminReceive || hasDrafts) && styles.scrollWithActions]}
+        contentContainerStyle={[styles.scroll, (canApprove || canAdminReceive || canInformerEdit || canViewSupply || hasDrafts) && styles.scrollWithActions]}
         showsVerticalScrollIndicator={false}>
 
         {/* Content-top anchor for scroll-to-materials (zero-size, no layout impact) */}
@@ -678,6 +648,37 @@ export default function NoticeRepairDetailScreen() {
         </View>
       )}
 
+      {/* Bottom action bar — informer editing/removing their own pending (001) request */}
+      {canInformerEdit && (
+        <View style={styles.actionBar}>
+          <Pressable
+            accessibilityRole="button" disabled={submitting} onPress={onEdit}
+            style={[styles.actionBtn, styles.approveBtn, styles.threeQuarterFlex, submitting && styles.actionBtnDisabled]}>
+            <ThemedText style={styles.approveText}>{TEXT.NOTICE_REPAIR_ACTION_EDIT}</ThemedText>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button" disabled={submitting} onPress={onRemove}
+            style={[styles.actionBtn, styles.rejectBtn, styles.quarterFlex, submitting && styles.actionBtnDisabled]}>
+            <ThemedText style={styles.rejectText} numberOfLines={1}>{TEXT.NOTICE_REPAIR_ACTION_DELETE}</ThemedText>
+          </Pressable>
+        </View>
+      )}
+
+      {/* Bottom action bar — admin supply: open the full requisition list */}
+      {canViewSupply && (
+        <View style={styles.actionBar}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push({
+              pathname: '/notice-repair/requisition',
+              params: { repair_id, staff_id: staffId, role, source },
+            } as Parameters<typeof router.push>[0])}
+            style={[styles.actionBtn, styles.approveBtn, styles.approveFlex]}>
+            <ThemedText style={styles.approveText}>{TEXT.NOTICE_REPAIR_SUPPLY_VIEW_ALL}</ThemedText>
+          </Pressable>
+        </View>
+      )}
+
       {/* Bottom action bar — save staged (unsaved) materials */}
       {draftMaterials.length > 0 && (
         <View style={styles.actionBar}>
@@ -895,6 +896,7 @@ const styles = StyleSheet.create({
   actionBtn: { minHeight: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 8 },
   actionBtnDisabled: { opacity: 0.5 },
   approveFlex: { flex: 2 },
+  threeQuarterFlex: { flex: 3 },
   quarterFlex: { flex: 1 },
   approveBtn: {
     backgroundColor: '#B33939',

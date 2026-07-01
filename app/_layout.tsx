@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
 
+import { ToastProvider } from '@/components/toast-provider';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { registerForegroundNotificationHandler } from '@/services/notificationService';
@@ -33,7 +34,7 @@ function AppStack() {
         <Stack.Screen name="news" options={{ headerShown: false }} />
         <Stack.Screen name="news-detail" options={{ headerShown: false }} />
         <Stack.Screen name="notification" options={{ headerShown: false }} />
-        <Stack.Screen name="forgot-timestamp" options={{ headerShown: false }} />
+        <Stack.Screen name="timestamp" options={{ headerShown: false }} />
         <Stack.Screen name="clear-auth" options={{ headerShown: false }} />
         <Stack.Screen name="login-callback" options={{ headerShown: false }} />
         <Stack.Screen name="openid-webview" options={{ headerShown: false }} />
@@ -78,7 +79,9 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AuthProvider>
           <ThemeProvider>
-            <AppStack />
+            <ToastProvider>
+              <AppStack />
+            </ToastProvider>
           </ThemeProvider>
         </AuthProvider>
       </SafeAreaProvider>

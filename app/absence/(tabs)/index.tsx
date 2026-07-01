@@ -20,32 +20,32 @@ type AbsenceMenuItem = {
 
 const absenceMenus: AbsenceMenuItem[] = [
   {
-    title: TEXT.absence_SICK_TITLE,
-    description: TEXT.absence_SICK_DESCRIPTION,
+    title: TEXT.ABSENCE_SICK_TITLE,
+    description: TEXT.ABSENCE_SICK_DESCRIPTION,
     href: '/absence/sick',
     iconBg: '#FFDAD7',
     iconColor: '#410005',
     icon: 'cross.fill',
   },
   {
-    title: TEXT.absence_BUSINESS_TITLE,
-    description: TEXT.absence_BUSINESS_DESCRIPTION,
+    title: TEXT.ABSENCE_BUSINESS_TITLE,
+    description: TEXT.ABSENCE_BUSINESS_DESCRIPTION,
     href: '/absence/business',
     iconBg: '#DDE2F3',
     iconColor: '#161C28',
     icon: 'briefcase.fill',
   },
   {
-    title: TEXT.absence_RELAX_TITLE,
-    description: TEXT.absence_RELAX_DESCRIPTION,
+    title: TEXT.ABSENCE_RELAX_TITLE,
+    description: TEXT.ABSENCE_RELAX_DESCRIPTION,
     href: '/absence/relax',
     iconBg: '#DAE3F4',
     iconColor: '#131C28',
     icon: 'sun.max.fill',
   },
   {
-    title: TEXT.absence_BIRTH_TITLE,
-    description: TEXT.absence_BIRTH_DESCRIPTION,
+    title: TEXT.ABSENCE_BIRTH_TITLE,
+    description: TEXT.ABSENCE_BIRTH_DESCRIPTION,
     href: '/absence/birth',
     iconBg: '#FFDAD7',
     iconColor: '#410005',
@@ -56,11 +56,11 @@ const absenceMenus: AbsenceMenuItem[] = [
 export default function ChooseAbsenceScreen() {
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.absence_TITLE} backHref="/" />
+      <NavTopBar title={TEXT.ABSENCE_TITLE} backHref="/" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headerSection}>
-          <ThemedText style={styles.heading}>{TEXT.absence_CHOOSE_TITLE}</ThemedText>
-          <ThemedText style={styles.subtitle}>{TEXT.absence_CHOOSE_SUBTITLE}</ThemedText>
+          <ThemedText style={styles.heading}>{TEXT.ABSENCE_CHOOSE_TITLE}</ThemedText>
+          <ThemedText style={styles.subtitle}>{TEXT.ABSENCE_CHOOSE_SUBTITLE}</ThemedText>
         </View>
 
         <View style={styles.cardList}>
@@ -87,8 +87,8 @@ export default function ChooseAbsenceScreen() {
             <IconSymbol name="info.circle.fill" size={20} color="#922124" />
           </View>
           <View style={styles.policyContent}>
-            <ThemedText style={styles.policyLabel}>{TEXT.absence_POLICY_NOTE_LABEL}</ThemedText>
-            <ThemedText style={styles.policyText}>{TEXT.absence_POLICY_NOTE_TEXT}</ThemedText>
+            <ThemedText style={styles.policyLabel}>{TEXT.ABSENCE_POLICY_NOTE_LABEL}</ThemedText>
+            <ThemedText style={styles.policyText}>{TEXT.ABSENCE_POLICY_NOTE_TEXT}</ThemedText>
           </View>
         </View>
       </ScrollView>
