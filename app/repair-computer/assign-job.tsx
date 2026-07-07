@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
     ActivityIndicator,
@@ -31,11 +31,14 @@ import {
     getRepairTypes,
 } from "@/services/repairComputerService";
 import { formatDateTime } from "@/utils/date-format";
+import { getRepairComputerTypeIcon } from "@/utils/category-icon";
 
 type AssignStep = "repairType" | "worker" | "confirm";
 type RepairTypeOption = Record<string, unknown>;
 
 const TEXT_NONE = "-";
+// Shown when a person's photo can't be loaded (or there's no staff id).
+const USER_PLACEHOLDER = require("../../assets/images/user-placeholder.jpg");
 
 // ── Value helpers (identical to original) ────────────────────────────────────
 
@@ -177,11 +180,7 @@ function PersonSummaryCard({
           style={styles.personPhoto}
         />
       ) : (
-        <View style={styles.personPhotoPlaceholder}>
-          <ThemedText type="defaultSemiBold" style={styles.personPhotoInitial}>
-            {fallbackInitial || "?"}
-          </ThemedText>
-        </View>
+        <Image source={USER_PLACEHOLDER} style={styles.personPhoto} />
       )}
       <View style={styles.personText}>
         <ThemedText type="defaultSemiBold" style={styles.personName} numberOfLines={2}>
@@ -232,11 +231,7 @@ function WorkerSelectRow({
           style={styles.workerPhoto}
         />
       ) : (
-        <View style={styles.workerPhotoPlaceholder}>
-          <ThemedText type="defaultSemiBold" style={styles.workerPhotoInitial}>
-            {fallbackInitial}
-          </ThemedText>
-        </View>
+        <Image source={USER_PLACEHOLDER} style={styles.workerPhoto} />
       )}
       <View style={styles.workerText}>
         <ThemedText
@@ -397,7 +392,7 @@ export default function AssignJobScreen() {
   // ── CTA config ──────────────────────────────────────────────────────────────
 
   const ctaLabel =
-    step === "repairType" ? "Next: Select Technician"
+    step === "repairType" ? "Next: Select Worker"
     : step === "worker"   ? "Next: Review"
     : "Confirm Assignment";
 
@@ -451,7 +446,11 @@ export default function AssignJobScreen() {
         ) : null}
         {step === "worker" && selectedRepairType ? (
           <View style={[styles.summaryMetaItem, styles.summaryMetaItemHighlight]}>
-            <IconSymbol name="wrench.fill" size={14} color="#922124" />
+            <IconSymbol
+              name={getRepairComputerTypeIcon(selectedRepairTypeId, getRepairTypeName(selectedRepairType))}
+              size={14}
+              color="#922124"
+            />
             <ThemedText style={[styles.summaryMetaText, styles.summaryMetaTextHighlight]} numberOfLines={1}>
               {getRepairTypeName(selectedRepairType)}
             </ThemedText>
@@ -553,8 +552,12 @@ export default function AssignJobScreen() {
                   onPress={() => setSelectedRepairType(item)}
                   style={[styles.typeRow, isSelected && styles.typeRowSelected]}
                 >
-                  <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
-                    {isSelected && <View style={styles.radioDot} />}
+                  <View style={[styles.typeIconBox, isSelected && styles.typeIconBoxSelected]}>
+                    <IconSymbol
+                      name={getRepairComputerTypeIcon(itemId, getRepairTypeName(item))}
+                      size={20}
+                      color={isSelected ? "#b33939" : "#8A8F9D"}
+                    />
                   </View>
                   <ThemedText
                     type="defaultSemiBold"
@@ -562,6 +565,9 @@ export default function AssignJobScreen() {
                   >
                     {getRepairTypeName(item)}
                   </ThemedText>
+                  <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
+                    {isSelected && <View style={styles.radioDot} />}
+                  </View>
                 </Pressable>
               </View>
             );
@@ -574,7 +580,7 @@ export default function AssignJobScreen() {
   const renderWorkerStep = () => (
     <>
       {workers.length === 0 ? (
-        <ThemedText style={styles.emptyMessage}>No technicians available</ThemedText>
+        <ThemedText style={styles.emptyMessage}>No workers available</ThemedText>
       ) : (
         <View style={styles.listGroup}>
           {workers.map((item, index) => {
@@ -613,10 +619,10 @@ export default function AssignJobScreen() {
       <SectionCard title={TEXT.REPAIR_COMPUTER_ASSIGN_CONFIRM}>
         {selectedWorker ? (
           <PersonSummaryCard
-            fallbackTitle="Technician"
+            fallbackTitle="Worker"
             id={getWorkerPhotoStaffId(selectedWorker) || getWorkerId(selectedWorker)}
             name={getWorkerName(selectedWorker)}
-            role="Technician"
+            role="Worker"
             meta={getWorkerPosition(selectedWorker) || getWorkerDept(selectedWorker) || undefined}
           />
         ) : null}
@@ -638,7 +644,7 @@ export default function AssignJobScreen() {
 
   const pageTitle =
     step === "repairType" ? "Select Job Type"
-    : step === "worker"   ? "Select Technician"
+    : step === "worker"   ? "Select Worker"
     : TEXT.REPAIR_COMPUTER_ASSIGN_CONFIRM;
 
   return (
@@ -652,38 +658,40 @@ export default function AssignJobScreen() {
             {(["repairType", "worker", "confirm"] as AssignStep[]).map((s, i) => {
               const labels: Record<AssignStep, string> = {
                 repairType: "Job Type",
-                worker: "Technician",
+                worker: "Worker",
                 confirm: "Confirm",
               };
               const stepIndex = { repairType: 0, worker: 1, confirm: 2 }[step];
               const isDone    = i < stepIndex;
               const isActive  = s === step;
               return (
-                <View key={s} style={styles.stepItem}>
+                <Fragment key={s}>
                   {i > 0 && (
                     <View style={[styles.stepConnector, isDone && styles.stepConnectorDone]} />
                   )}
-                  <View style={[
-                    styles.stepCircle,
-                    isActive && styles.stepCircleActive,
-                    isDone   && styles.stepCircleDone,
-                  ]}>
-                    <ThemedText style={[
-                      styles.stepNum,
-                      isActive && styles.stepNumActive,
-                      isDone   && styles.stepNumDone,
+                  <View style={styles.stepItem}>
+                    <View style={[
+                      styles.stepCircle,
+                      isActive && styles.stepCircleActive,
+                      isDone   && styles.stepCircleDone,
                     ]}>
-                      {i + 1}
+                      <ThemedText style={[
+                        styles.stepNum,
+                        isActive && styles.stepNumActive,
+                        isDone   && styles.stepNumDone,
+                      ]}>
+                        {i + 1}
+                      </ThemedText>
+                    </View>
+                    <ThemedText style={[
+                      styles.stepLabel,
+                      isActive && styles.stepLabelActive,
+                      isDone   && styles.stepLabelDone,
+                    ]}>
+                      {labels[s]}
                     </ThemedText>
                   </View>
-                  <ThemedText style={[
-                    styles.stepLabel,
-                    isActive && styles.stepLabelActive,
-                    isDone   && styles.stepLabelDone,
-                  ]}>
-                    {labels[s]}
-                  </ThemedText>
-                </View>
+                </Fragment>
               );
             })}
           </View>
@@ -736,7 +744,7 @@ export default function AssignJobScreen() {
             <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
               <ThemedText type="subtitle">Confirm Assignment</ThemedText>
               <ThemedText style={styles.confirmMessage}>
-                Assign this job to the selected technician?
+                Assign this job to the selected worker?
               </ThemedText>
               <View style={styles.confirmActions}>
                 <Pressable
@@ -1034,6 +1042,18 @@ const styles = StyleSheet.create({
   typeRowSelected: {
     backgroundColor: "#FFF3F3",
   },
+  typeIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: "#F2F3F7",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  typeIconBoxSelected: {
+    backgroundColor: "#FFE3E3",
+  },
   typeName: {
     flex: 1,
     fontSize: 14,
@@ -1135,6 +1155,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 16,
+    boxShadow: "0 -2px 10px rgba(0,0,0,0.07)",
+    elevation: 12,
   },
   backButton: {
     minHeight: 50,

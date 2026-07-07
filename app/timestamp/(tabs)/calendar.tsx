@@ -376,16 +376,17 @@ export default function TimestampCalendarScreen() {
     const isForgetDay = Boolean(selectedData) && (status === 'incomplete' || status === 'absent');
     const canRequest = Boolean(selectedData?.canRequest);
 
-    const accentColor = statusStyle.dot === 'transparent' ? '#DFBFBD' : statusStyle.dot;
-
     return (
-      <View style={[styles.detailCard, { borderLeftColor: accentColor }]}>
+      <View style={styles.detailCard}>
         <View style={styles.detailHeader}>
           <ThemedText style={styles.detailDate}>{dateLabel}</ThemedText>
           {getStatusLabel(status) ? (
-            <ThemedText style={[styles.detailStatusText, { color: accentColor }]}>
-              {getStatusLabel(status)}
-            </ThemedText>
+            <View style={[styles.statusChip, { backgroundColor: statusStyle.bg }]}>
+              <View style={[styles.statusChipDot, { backgroundColor: statusStyle.dot }]} />
+              <ThemedText style={[styles.statusChipText, { color: statusStyle.dot }]}>
+                {getStatusLabel(status)}
+              </ThemedText>
+            </View>
           ) : null}
         </View>
 
@@ -393,7 +394,7 @@ export default function TimestampCalendarScreen() {
           <>
             <View style={styles.timeRow}>
               <View style={styles.timeBox}>
-                <LogIn size={22} color="#1E7E34" />
+                <LogIn size={18} color="#1E7E34" />
                 <View>
                   <ThemedText style={styles.timeLabel}>{TEXT.TIMESTAMP_CALENDAR_IN}</ThemedText>
                   <ThemedText style={styles.timeValue}>{selectedData?.inTime || '—'}</ThemedText>
@@ -407,7 +408,7 @@ export default function TimestampCalendarScreen() {
               </View>
               <View style={styles.timeDivider} />
               <View style={styles.timeBox}>
-                <LogOut size={22} color="#B45309" />
+                <LogOut size={18} color="#B45309" />
                 <View>
                   <ThemedText style={styles.timeLabel}>{TEXT.TIMESTAMP_CALENDAR_OUT}</ThemedText>
                   <ThemedText style={styles.timeValue}>{selectedData?.outTime || '—'}</ThemedText>
@@ -447,18 +448,26 @@ export default function TimestampCalendarScreen() {
   };
 
   const legend = (
-    <View style={styles.legend}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.legend}
+    >
       {(['present', 'incomplete', 'absent', 'leave', 'holiday'] as DayStatus[]).map((status) => (
         <View key={status} style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: STATUS_STYLE[status].dot }]} />
-          <ThemedText style={styles.legendText}>{getStatusLabel(status)}</ThemedText>
+          <ThemedText style={styles.legendText} numberOfLines={1}>
+            {getStatusLabel(status)}
+          </ThemedText>
         </View>
       ))}
       <View style={styles.legendItem}>
         <View style={[styles.legendDot, { backgroundColor: LATE_COLOR }]} />
-        <ThemedText style={styles.legendText}>{TEXT.TIMESTAMP_CALENDAR_LEGEND_LATE}</ThemedText>
+        <ThemedText style={styles.legendText} numberOfLines={1}>
+          {TEXT.TIMESTAMP_CALENDAR_LEGEND_LATE}
+        </ThemedText>
       </View>
-    </View>
+    </ScrollView>
   );
 
   const renderBody = () => {
@@ -690,14 +699,16 @@ const styles = StyleSheet.create({
   },
   legend: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 14,
+    alignItems: 'center',
+    gap: 16,
     paddingHorizontal: 4,
+    paddingVertical: 2,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexShrink: 0,
   },
   legendDot: {
     width: 10,
@@ -714,30 +725,40 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    gap: 14,
+    gap: 12,
     borderWidth: 1,
     borderColor: 'rgba(223,191,189,0.25)',
-    // Status-colored accent bar (color set inline per selected day).
-    borderLeftWidth: 5,
   },
   detailHeader: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
   },
   detailDate: {
     flex: 1,
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 21,
     fontWeight: '700',
     color: '#191C1F',
     fontFamily: AppFonts.psuBold,
   },
-  detailStatusText: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '700',
+  statusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 9999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  statusChipDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusChipText: {
+    fontSize: 12,
+    fontWeight: '600',
     fontFamily: AppFonts.psuBold,
   },
   timeRow: {
@@ -745,14 +766,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F8F9FD',
     borderRadius: 12,
-    paddingVertical: 18,
-    paddingHorizontal: 14,
+    padding: 14,
   },
   timeBox: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   timeDivider: {
     width: 1,
@@ -761,14 +781,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   timeLabel: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 15,
     color: '#585E6D',
     fontFamily: AppFonts.psuRegular,
   },
   timeValue: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 16,
+    lineHeight: 22,
     color: '#191C1F',
     fontFamily: AppFonts.psuBold,
   },
@@ -806,7 +826,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    minHeight: 52,
+    minHeight: 48,
     borderRadius: 12,
     backgroundColor: '#B33939',
     paddingHorizontal: 16,

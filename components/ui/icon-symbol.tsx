@@ -10,6 +10,11 @@ import Droplets from 'lucide-react-native/dist/cjs/icons/droplets';
 import Hammer from 'lucide-react-native/dist/cjs/icons/hammer';
 import Lightbulb from 'lucide-react-native/dist/cjs/icons/lightbulb';
 import Monitor from 'lucide-react-native/dist/cjs/icons/monitor';
+import Network from 'lucide-react-native/dist/cjs/icons/network';
+import Ellipsis from 'lucide-react-native/dist/cjs/icons/ellipsis';
+import Projector from 'lucide-react-native/dist/cjs/icons/projector';
+import Replace from 'lucide-react-native/dist/cjs/icons/replace';
+import PackagePlus from 'lucide-react-native/dist/cjs/icons/package-plus';
 import PaintRoller from 'lucide-react-native/dist/cjs/icons/paint-roller';
 import Printer from 'lucide-react-native/dist/cjs/icons/printer';
 import Trees from 'lucide-react-native/dist/cjs/icons/trees';
@@ -46,6 +51,9 @@ import UserRoundSearch from 'lucide-react-native/dist/cjs/icons/user-round-searc
 import User from 'lucide-react-native/dist/cjs/icons/user';
 import Users from 'lucide-react-native/dist/cjs/icons/users';
 import Wrench from 'lucide-react-native/dist/cjs/icons/wrench';
+import RotateCcw from 'lucide-react-native/dist/cjs/icons/rotate-ccw';
+import CircleArrowRight from 'lucide-react-native/dist/cjs/icons/circle-arrow-right';
+import CircleX from 'lucide-react-native/dist/cjs/icons/circle-x';
 import type { LucideIcon } from 'lucide-react-native';
 import { OpaqueColorValue, StyleProp, ViewStyle } from 'react-native';
 
@@ -92,12 +100,21 @@ const MAPPING = {
   'cpu': Cpu,
   'printer.fill': Printer,
   'display': Monitor,
+  'network': Network,
+  'projector': Projector,
+  'package.plus': PackagePlus,
+  'replace': Replace,
+  'ellipsis': Ellipsis,
   'chair': Armchair,
   'hammer.fill': Hammer,
   'paintroller': PaintRoller,
   'tree.fill': Trees,
   // Status
   'checkmark.circle.fill': CircleCheck,
+  // Action icons
+  'arrow.triangle.2.circlepath': RotateCcw,
+  'arrow.right.circle': CircleArrowRight,
+  'xmark.circle': CircleX,
   // Misc
   'chart.bar.fill': ChartBar,
   'cross.fill': Cross,

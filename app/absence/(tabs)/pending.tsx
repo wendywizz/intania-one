@@ -19,7 +19,7 @@ import {
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import type { absence } from '@/models/types';
-import { waitingData } from '@/services/absenceService';
+import { approvingWaitingData, waitingData } from '@/services/absenceService';
 import { navPush } from '@/utils/navigation';
 import { formatDateRange } from '@/utils/date-format';
 
@@ -121,12 +121,46 @@ function PendingItem({ item, approvalStep, onPress }: PendingItemProps) {
   );
 }
 
+function getRequesterName(item: absence) {
+  return getText(item, ['name', 'staffName', 'staff_name', 'fullname', 'fullName']);
+}
+
+// A leave request that this user (as boss) must approve.
+function ApprovingItem({ item }: { item: absence }) {
+  const type = getAbsenceType(item);
+  const typeLabel = getText(item, ['approveName']) || getAbsenceTypeLabel(item);
+  const name = getRequesterName(item);
+  const dateRange = getDateRange(item);
+  const icon = getTypeIcon(type);
+
+  return (
+    <View style={styles.itemCard}>
+      <View style={styles.itemRow}>
+        <View style={styles.itemIconCircle}>
+          <IconSymbol name={icon} size={20} color="#922124" />
+        </View>
+        <View style={styles.itemBody}>
+          {name ? <ThemedText style={styles.itemRequester}>{name}</ThemedText> : null}
+          <ThemedText style={styles.itemTitle}>{typeLabel}</ThemedText>
+          {dateRange ? (
+            <ThemedText style={styles.itemDate}>{dateRange}</ThemedText>
+          ) : null}
+        </View>
+        <View style={styles.pendingBadge}>
+          <ThemedText style={styles.pendingBadgeText}>{TEXT.ABSENCE_PENDING_BADGE}</ThemedText>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export default function PendingScreen() {
   const { user: authUser } = useAuth();
   const [items, setItems] = useState<{ remain: absence | null; cancel: absence | null }>({
     remain: null,
     cancel: null,
   });
+  const [approving, setApproving] = useState<absence[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -137,16 +171,36 @@ export default function PendingScreen() {
       if (showRefreshing) setIsRefreshing(true);
       else setIsLoading(true);
       setError('');
-      try {
-        const result = await waitingData(userId);
-        setItems({ remain: result.remainResult, cancel: result.cancelResult });
-      } catch (err) {
+      // The approval list (boss queue) is best-effort: its absence must not break
+      // the user's own pending list.
+      const [mineResult, approvingResult] = await Promise.allSettled([
+        waitingData(userId),
+        approvingWaitingData(userId),
+      ]);
+
+      if (mineResult.status === 'fulfilled') {
+        setItems({ remain: mineResult.value.remainResult, cancel: mineResult.value.cancelResult });
+      } else {
         setItems({ remain: null, cancel: null });
-        setError(err instanceof Error ? err.message : TEXT.SHARED_UNABLE_TO_LOAD_HISTORY);
-      } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
       }
+
+      if (approvingResult.status === 'fulfilled') {
+        setApproving(approvingResult.value.data);
+      } else {
+        setApproving([]);
+      }
+
+      // Only surface an error if the user's own pending list failed to load.
+      if (mineResult.status === 'rejected') {
+        setError(
+          mineResult.reason instanceof Error
+            ? mineResult.reason.message
+            : TEXT.SHARED_UNABLE_TO_LOAD_HISTORY,
+        );
+      }
+
+      setIsLoading(false);
+      setIsRefreshing(false);
     },
     [userId],
   );
@@ -167,6 +221,43 @@ export default function PendingScreen() {
     } as Parameters<typeof navPush>[0]);
   }, []);
 
+  const renderSectionHeader = (title: string, subtitle: string, count: number) => (
+    <View style={styles.sectionHeader}>
+      <View style={styles.sectionAccent} />
+      <View style={styles.sectionHeaderText}>
+        <ThemedText style={styles.sectionTitle}>{title}</ThemedText>
+        {subtitle ? <ThemedText style={styles.sectionSubtitle}>{subtitle}</ThemedText> : null}
+      </View>
+      <View style={styles.sectionCountChip}>
+        <ThemedText style={styles.sectionCountText}>{count}</ThemedText>
+      </View>
+    </View>
+  );
+
+  const renderMinePending = () => {
+    if (!items.remain && !items.cancel) {
+      return <ThemedText style={styles.emptyText}>{TEXT.SHARED_NO_HISTORY}</ThemedText>;
+    }
+    return (
+      <>
+        {items.remain ? (
+          <PendingItem
+            item={items.remain}
+            approvalStep={TEXT.ABSENCE_PENDING_STEP_DEPT_HEAD}
+            onPress={openDetail}
+          />
+        ) : null}
+        {items.cancel ? (
+          <PendingItem
+            item={items.cancel}
+            approvalStep={TEXT.ABSENCE_PENDING_STEP_HR}
+            onPress={openDetail}
+          />
+        ) : null}
+      </>
+    );
+  };
+
   const renderContent = () => {
     if (isLoading) {
       return <LoadingAnimate title={TEXT.SHARED_LOADING_HISTORY} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
@@ -182,8 +273,12 @@ export default function PendingScreen() {
       );
     }
 
-    const hasItems = items.remain || items.cancel;
-    if (!hasItems) {
+    const mineCount = (items.remain ? 1 : 0) + (items.cancel ? 1 : 0);
+    const hasApprove = approving.length > 0;
+    const hasMine = mineCount > 0;
+
+    // Nothing to show in either section → single empty state.
+    if (!hasApprove && !hasMine) {
       return <ErrorState variant="empty" title={TEXT.SHARED_NO_HISTORY} />;
     }
 
@@ -193,19 +288,33 @@ export default function PendingScreen() {
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadData(true)} />}
       >
-        {items.remain ? (
-          <PendingItem
-            item={items.remain}
-            approvalStep={TEXT.ABSENCE_PENDING_STEP_DEPT_HEAD}
-            onPress={openDetail}
-          />
+        {/* Section 1 — leave requests awaiting the boss's approval (only if any) */}
+        {hasApprove ? (
+          <View style={styles.section}>
+            {renderSectionHeader(
+              TEXT.ABSENCE_APPROVE_TAB,
+              TEXT.ABSENCE_APPROVE_SUBTITLE,
+              approving.length,
+            )}
+            {approving.map((item, index) => (
+              <ApprovingItem key={getAbsenceId(item) || `approve-${index}`} item={item} />
+            ))}
+          </View>
         ) : null}
-        {items.cancel ? (
-          <PendingItem
-            item={items.cancel}
-            approvalStep={TEXT.ABSENCE_PENDING_STEP_HR}
-            onPress={openDetail}
-          />
+
+        {/* Visual break — only when both sections are present */}
+        {hasApprove && hasMine ? <View style={styles.sectionDivider} /> : null}
+
+        {/* Section 2 — the user's own pending leave requests (only if any) */}
+        {hasMine ? (
+          <View style={styles.section}>
+            {renderSectionHeader(
+              TEXT.ABSENCE_MINE_TAB,
+              TEXT.ABSENCE_MINE_SUBTITLE,
+              mineCount,
+            )}
+            {renderMinePending()}
+          </View>
         ) : null}
       </ScrollView>
     );
@@ -247,6 +356,56 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  section: {
+    gap: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 4,
+  },
+  sectionAccent: {
+    width: 4,
+    alignSelf: 'stretch',
+    minHeight: 34,
+    borderRadius: 2,
+    backgroundColor: '#922124',
+  },
+  sectionHeaderText: {
+    flex: 1,
+    gap: 2,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '700',
+    color: '#191C1F',
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#585E6D',
+  },
+  sectionCountChip: {
+    minWidth: 24,
+    height: 24,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(146, 33, 36, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionCountText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#922124',
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 4,
   },
   scrollView: {
     flex: 1,
@@ -290,6 +449,12 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 16,
     lineHeight: 24,
+    color: '#191C1F',
+  },
+  itemRequester: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '700',
     color: '#191C1F',
   },
   itemDate: {

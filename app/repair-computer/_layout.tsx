@@ -12,6 +12,7 @@ export default function RepairComputerLayout() {
       <Stack.Screen name="user-job-detail" />
       <Stack.Screen name="worker-job-detail" />
       <Stack.Screen name="assign-job" />
+      <Stack.Screen name="select-foreman" />
       <Stack.Screen name="reject-job" />
       <Stack.Screen name="worker-reject-job" />
       <Stack.Screen name="operate-job" />

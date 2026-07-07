@@ -10,7 +10,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
   PRIVILEGE_RC_FOREMAN,
   PRIVILEGE_RC_USER,
-  PRIVILEGE_RC_WORKER,
+  PRIVILEGE_RC_TECH,
   REPAIR_COMPUTER_DEFAULT_ROLE,
   type RepairComputerRole,
 } from '@/constants/types';
@@ -26,7 +26,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { checkPrivilege } from '@/services/repairComputerService';
 
 function normalizeRepairComputerRole(privilege?: string): RepairComputerRole {
-  if (privilege === PRIVILEGE_RC_WORKER || privilege === PRIVILEGE_RC_FOREMAN) {
+  if (privilege === PRIVILEGE_RC_TECH || privilege === PRIVILEGE_RC_FOREMAN) {
     return privilege;
   }
 
@@ -34,7 +34,7 @@ function normalizeRepairComputerRole(privilege?: string): RepairComputerRole {
 }
 
 function getDefaultRoute(role: RepairComputerRole) {
-  if (role === PRIVILEGE_RC_WORKER) {
+  if (role === PRIVILEGE_RC_TECH) {
     return '/repair-computer/worker-new-job';
   }
 
@@ -51,13 +51,12 @@ function getRouteRole(pathname: string): RepairComputerRole | null {
     pathname === '/repair-computer/worker-current-job' ||
     pathname === '/repair-computer/worker-history'
   ) {
-    return PRIVILEGE_RC_WORKER;
+    return PRIVILEGE_RC_TECH;
   }
 
   if (
     pathname === '/repair-computer/foreman-new-job' ||
     pathname === '/repair-computer/manage-job' ||
-    pathname === '/repair-computer/approvement' ||
     pathname === '/repair-computer/foreman-history'
   ) {
     return PRIVILEGE_RC_FOREMAN;
@@ -244,7 +243,7 @@ export default function RepairComputerTabLayout() {
             name="(worker)/worker-new-job"
             options={{
               title: TEXT.REPAIR_COMPUTER_NEW_JOB,
-              href: visibleFor(PRIVILEGE_RC_WORKER),
+              href: visibleFor(PRIVILEGE_RC_TECH),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="tray.fill" color={color} />,
             }}
           />
@@ -252,7 +251,7 @@ export default function RepairComputerTabLayout() {
             name="(worker)/worker-current-job"
             options={{
               title: TEXT.REPAIR_COMPUTER_CURRENT_JOB,
-              href: visibleFor(PRIVILEGE_RC_WORKER),
+              href: visibleFor(PRIVILEGE_RC_TECH),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="wrench.fill" color={color} />,
             }}
           />
@@ -260,7 +259,7 @@ export default function RepairComputerTabLayout() {
             name="(worker)/worker-history"
             options={{
               title: TEXT.SHARED_HISTORY,
-              href: visibleFor(PRIVILEGE_RC_WORKER),
+              href: visibleFor(PRIVILEGE_RC_TECH),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="history" color={color} />,
             }}
           />
@@ -280,14 +279,6 @@ export default function RepairComputerTabLayout() {
               title: TEXT.REPAIR_COMPUTER_MANAGE_JOB,
               href: visibleFor(PRIVILEGE_RC_FOREMAN),
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.2.fill" color={color} />,
-            }}
-          />
-          <Tabs.Screen
-            name="(foreman)/approvement"
-            options={{
-              title: TEXT.REPAIR_COMPUTER_APPROVEMENT,
-              href: visibleFor(PRIVILEGE_RC_FOREMAN),
-              tabBarIcon: ({ color }) => <IconSymbol size={28} name="checkmark.circle.fill" color={color} />,
             }}
           />
           <Tabs.Screen

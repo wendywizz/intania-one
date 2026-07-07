@@ -985,7 +985,7 @@ export default function RelaxScreen() {
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => setIsConfirmVisible(false)}
-                  style={styles.secondaryButton}
+                  style={[styles.secondaryButton, styles.confirmActionButton]}
                 >
                   <ThemedText type="defaultSemiBold">
                     {TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL}
@@ -997,6 +997,7 @@ export default function RelaxScreen() {
                   onPress={handleConfirmSubmit}
                   style={[
                     styles.submitButton,
+                    styles.confirmActionButton,
                     isSubmitting ? styles.disabledButton : undefined,
                   ]}
                 >
@@ -1043,7 +1044,7 @@ export default function RelaxScreen() {
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => setIsRemoveConfirmVisible(false)}
-                  style={styles.secondaryButton}
+                  style={[styles.secondaryButton, styles.confirmActionButton]}
                 >
                   <ThemedText type="defaultSemiBold">
                     {TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL}
@@ -1055,6 +1056,7 @@ export default function RelaxScreen() {
                   onPress={handleConfirmRemove}
                   style={[
                     styles.removeConfirmButton,
+                    styles.confirmActionButton,
                     isRemoving ? styles.disabledButton : undefined,
                   ]}
                 >
@@ -1245,6 +1247,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     marginTop: 20,
+  },
+  confirmActionButton: {
+    flex: 1,
+    minWidth: 0,
   },
   selectModalHeader: {
     flexDirection: "row",

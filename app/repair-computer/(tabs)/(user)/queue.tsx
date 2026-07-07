@@ -14,7 +14,6 @@ import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useRepairComputerRole } from "@/context/RepairComputerRoleContext";
 import { workerQueue } from "@/services/repairComputerService";
 
 type WorkerQueueItem = Record<string, unknown>;
@@ -186,7 +185,6 @@ function WorkerQueueListItem({
 }
 
 export default function RepairComputerQueueScreen() {
-  const { roleSwitcher } = useRepairComputerRole();
   const [workers, setWorkers] = useState<WorkerQueueItem[]>([]);
   const [failedPhotoIds, setFailedPhotoIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -347,10 +345,9 @@ export default function RepairComputerQueueScreen() {
     <ThemedView style={styles.container}>
       <NavTopBar
         title={TEXT.REPAIR_COMPUTER_TITLE}
-        subtitle={TEXT.REPAIR_COMPUTER_TECHNICIAN_QUEUE}
+        subtitle={TEXT.REPAIR_COMPUTER_WORKER_QUEUE}
         moduleIcon="laptop"
         backHref="/"
-        rightContent={roleSwitcher}
       />
 
       <View style={styles.content}>

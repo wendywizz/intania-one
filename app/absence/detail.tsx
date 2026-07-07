@@ -1,7 +1,5 @@
-﻿import type React from 'react';
-import { Baby, Briefcase, CalendarCheck, CalendarDays, CalendarRange, Clock, Cross, type LucideIcon, Paperclip, Phone, Plane, User, Users } from 'lucide-react-native';
-import { openBrowserAsync } from 'expo-web-browser';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { openBrowserAsync } from 'expo-web-browser';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -21,7 +19,8 @@ import {
 } from '@/constants/types';
 import type { absence } from '@/models/types';
 import { getabsenceData } from '@/services/absenceService';
-import { formatDateTime } from '@/utils/date-format';
+import { formatFullDate } from '@/utils/date-format';
+import { getStaffDisplayLabel } from '@/utils/staff-label';
 
 const absenceTypeLabels: Record<string, string> = {
   [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
@@ -52,46 +51,6 @@ const absenceTypeNameFields = [
   'leave_type_name',
 ];
 
-type IconName =
-  | 'local-hospital'
-  | 'business-center'
-  | 'beach-access'
-  | 'child-care'
-  | 'mosque'
-  | 'person'
-  | 'notes'
-  | 'date-range'
-  | 'schedule'
-  | 'phone'
-  | 'flight'
-  | 'group'
-  | 'description';
-
-const ICON_MAP: Record<IconName, LucideIcon> = {
-  'local-hospital': Cross,
-  'business-center': Briefcase,
-  'beach-access': CalendarDays,
-  'child-care': Baby,
-  mosque: CalendarDays,
-  person: User,
-  notes: CalendarDays,
-  'date-range': CalendarRange,
-  schedule: Clock,
-  phone: Phone,
-  flight: Plane,
-  group: Users,
-  description: CalendarDays,
-};
-
-const TYPE_ICON: Record<string, IconName> = {
-  [TYPE_ABSENCE_SICK]: 'local-hospital',
-  [TYPE_ABSENCE_BUSINESS]: 'business-center',
-  [TYPE_ABSENCE_RELAX]: 'beach-access',
-  [TYPE_ABSENCE_BIRTH]: 'child-care',
-  [TYPE_ABSENCE_HELPMATE]: 'child-care',
-  [TYPE_ABSENCE_HAJJ]: 'mosque',
-};
-
 function getText(item: absence, fields: string[]) {
   for (const field of fields) {
     const value = item[field];
@@ -119,10 +78,6 @@ function parseItem(value: string | string[] | undefined): absence {
   } catch {
     return {};
   }
-}
-
-function formatDateOnly(value: string) {
-  return formatDateTime(value).split(' ')[0] || value.split(' ')[0] || value;
 }
 
 function getHalfDayLabel(value: string) {
@@ -191,6 +146,47 @@ function formatAgentValue(agent: unknown) {
   return '';
 }
 
+// The server returns the approver as a `mainApprover` object plus an
+// `approverPosition` code + `approverList`, not a ready display string. Resolve
+// it to a readable "position (name)" label, matching how the form shows staff.
+function getApproverText(item: absence) {
+  const record = item as Record<string, unknown>;
+
+  const position = getText(item, [
+    'approverPosition',
+    'approver_position',
+    'approverPositionId',
+    'approver_position_id',
+  ]);
+  const list = Array.isArray(record.approverList) ? (record.approverList as object[]) : [];
+  if (position && list.length) {
+    const matched = list.find(
+      (entry) =>
+        entry &&
+        typeof entry === 'object' &&
+        getText(entry as absence, ['positionId', 'position_id', 'POSITION_ID']) === position,
+    );
+    if (matched) {
+      const label = getStaffDisplayLabel(matched);
+      if (label) return label;
+    }
+  }
+
+  const main = record.mainApprover;
+  if (main && typeof main === 'object' && !Array.isArray(main)) {
+    const label = getStaffDisplayLabel(main as object);
+    if (label) return label;
+  }
+
+  return getText(item, [
+    'approverPositionName',
+    'approver_position_name',
+    'approverName',
+    'approver_name',
+    'approver',
+  ]);
+}
+
 function getStatusBadge(status: string): { bg: string; color: string } {
   const lower = status.toLowerCase();
   if (lower.includes('อนุมัติแล้ว') || lower.includes('approved') || lower.includes('completed') || lower.includes('success')) {
@@ -205,49 +201,34 @@ function getStatusBadge(status: string): { bg: string; color: string } {
   return { bg: '#B33939', color: '#FFFFFF' };
 }
 
-type FieldProps = {
-  label: string;
-  value: string;
-  icon: IconName;
-  bold?: boolean;
-};
-
-function Field({ label, value, icon, bold }: FieldProps) {
+// Read-only field: mirrors the business-form field layout (label + hairline
+// divider) but shows the value as plain text instead of an editable input.
+function ReadonlyField({ label, value }: { label: string; value: string }) {
   if (!value) return null;
-  const IconComponent = ICON_MAP[icon];
   return (
     <View style={styles.field}>
       <ThemedText style={styles.fieldLabel}>{label}</ThemedText>
-      <View style={styles.fieldValueRow}>
-        {IconComponent ? <IconComponent size={18} color="#B33939" style={styles.fieldIcon} /> : null}
-        <ThemedText style={[styles.fieldValue, bold && styles.fieldValueBold]} numberOfLines={0}>
-          {value}
-        </ThemedText>
-      </View>
+      <ThemedText style={styles.fieldValue}>{value}</ThemedText>
     </View>
   );
 }
 
-function DateFields({ startDate, endDate }: { startDate: string; endDate: string }) {
-  if (!startDate && !endDate) return null;
-  const startDisplay = startDate ? formatDateOnly(startDate) : '—';
-  const endDisplay = endDate ? formatDateOnly(endDate) : '—';
+function DateField({ startDate, endDate }: { startDate: string; endDate: string }) {
+  const start = startDate ? formatFullDate(startDate) : '';
+  const end = endDate ? formatFullDate(endDate) : '';
+  if (!start && !end) return null;
 
   return (
-    <View style={styles.dateGroup}>
-      <View style={styles.dateField}>
-        <ThemedText style={styles.fieldLabel}>START DATE</ThemedText>
-        <View style={styles.fieldValueRow}>
-          <CalendarDays size={18} color="#B33939" style={styles.fieldIcon} />
-          <ThemedText style={styles.fieldValue}>{startDisplay}</ThemedText>
+    <View style={styles.field}>
+      <ThemedText style={styles.fieldLabel}>{TEXT.ABSENCE_LEAVE_DATE_LABEL}</ThemedText>
+      <View style={styles.dateRow}>
+        <View style={styles.dateCol}>
+          <ThemedText style={styles.dateSubLabel}>{TEXT.ABSENCE_START_DATE_LABEL}</ThemedText>
+          <ThemedText style={styles.fieldValue}>{start || '—'}</ThemedText>
         </View>
-      </View>
-      <View style={styles.dateDivider} />
-      <View style={styles.dateField}>
-        <ThemedText style={styles.fieldLabel}>END DATE</ThemedText>
-        <View style={styles.fieldValueRow}>
-          <CalendarCheck size={18} color="#B33939" style={styles.fieldIcon} />
-          <ThemedText style={styles.fieldValue}>{endDisplay}</ThemedText>
+        <View style={styles.dateCol}>
+          <ThemedText style={styles.dateSubLabel}>{TEXT.ABSENCE_END_DATE_LABEL}</ThemedText>
+          <ThemedText style={styles.fieldValue}>{end || '—'}</ThemedText>
         </View>
       </View>
     </View>
@@ -259,10 +240,9 @@ function FileField({ fileUrl, onPress }: { fileUrl: string; onPress: () => void 
   return (
     <View style={styles.field}>
       <ThemedText style={styles.fieldLabel}>{TEXT.ABSENCE_MEDICAL_CERTIFICATE_LABEL}</ThemedText>
-      <Pressable accessibilityRole="link" onPress={onPress} style={styles.fieldValueRow}>
-        <Paperclip size={18} color="#B33939" style={styles.fieldIcon} />
-        <ThemedText lightColor="#B33939" darkColor="#B33939" style={[styles.fieldValue, styles.fileLinkText]}>
-          Uploaded file
+      <Pressable accessibilityRole="link" onPress={onPress}>
+        <ThemedText style={[styles.fieldValue, styles.fileLink]}>
+          {TEXT.ABSENCE_VIEW_ATTACHED_FILE}
         </ThemedText>
       </Pressable>
     </View>
@@ -287,23 +267,24 @@ export default function absenceDetailScreen() {
 
   const typeLabel = getabsenceTypeLabel(item, routeType);
   const absType = getabsenceType(item, routeType);
-  const typeIcon: IconName = TYPE_ICON[absType] ?? 'description';
 
   const startDate = getText(item, ['startDate', 'start_date', 'dateStart', 'date_start']);
   const endDate = getText(item, ['endDate', 'end_date', 'dateEnd', 'date_end']);
-  const leaveDay = getText(item, ['numDays', 'num_days', 'absenceDays', 'ABSENCE_days', 'leaveDay', 'leave_day', 'days', 'day']);
-  const approver = getText(item, ['approverPositionName', 'approver_position_name', 'approverName', 'approver_name', 'approver', 'approverId', 'approver_id']);
+  const leaveDay = getText(item, ['numDays', 'num_days', 'absentDays', 'absent_days', 'absenceDays', 'ABSENCE_days', 'leaveDay', 'leave_day', 'days', 'day']);
+  const approver = getApproverText(item);
   const reason = getText(item, ['reason', 'detail', 'description']);
   const halfDay = getDisplayHalfDay(getText(item, ['partFlag', 'part_flag', 'startpart', 'half_day', 'halfDay']));
   const contact = getText(item, ['contact', 'contactChannel', 'contact_channel', 'phone']);
   const travelDetail = getDisplayText(getText(item, ['travelDetail', 'travel_detail']));
   const agents = getAgentText(item);
   const fileUploadLink = getText(item, ['fileUploadLink', 'file_upload_link']);
-  const status = getText(item, ['status', 'statusName', 'status_name', 'requestStatus', 'request_status', 'approvalStatus', 'approval_status', 'approvalStatusName', 'flowStatus', 'flow_status']);
+  // Prefer the human-readable status name; fall back to a non-zero raw code.
+  const statusName = getText(item, ['statusName', 'status_name', 'approvalStatusName', 'requestStatusName', 'flowStatusName']);
+  const statusCode = getText(item, ['status', 'requestStatus', 'request_status', 'approvalStatus', 'approval_status', 'flowStatus', 'flow_status']);
+  const statusLabel = statusName || (statusCode && statusCode !== '0' ? statusCode : '');
 
   const isSick = absType === TYPE_ABSENCE_SICK;
-  const isBusiness = absType === TYPE_ABSENCE_BUSINESS;
-  const statusBadge = (status && status !== '0') ? getStatusBadge(status) : null;
+  const statusBadge = statusLabel ? getStatusBadge(statusLabel) : null;
 
   const loadDetail = useCallback(async () => {
     if (!detailKey) {
@@ -369,79 +350,35 @@ export default function absenceDetailScreen() {
       <NavTopBar title={title} backHref={backHref} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Title section */}
-        <View style={styles.titleSection}>
-          <View style={styles.titleLeft}>
-            <ThemedText style={styles.titleText}>{typeLabel}</ThemedText>
-            <ThemedText style={styles.titleSubtitle}>
-              Review the details of this absence request.
-            </ThemedText>
+        {/* Header: type label + subtitle + status badge */}
+        <View style={styles.pageHeader}>
+          <View style={styles.pageHeaderText}>
+            <ThemedText style={styles.pageTitle}>{typeLabel}</ThemedText>
+            <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_DETAIL_SUBTITLE}</ThemedText>
           </View>
           {statusBadge ? (
             <View style={[styles.statusBadge, { backgroundColor: statusBadge.bg }]}>
               <ThemedText style={[styles.statusText, { color: statusBadge.color }]}>
-                {status.toUpperCase()}
+                {statusLabel}
               </ThemedText>
             </View>
           ) : null}
         </View>
 
-        {/* Fields */}
-        <View style={styles.form}>
-          <Field
-            label="APPROVER"
-            value={approver}
-            icon="person"
-          />
-
-          {isSick || isBusiness ? (
-            <Field
-              label="REASON"
-              value={reason}
-              icon="notes"
-            />
-          ) : null}
-
-          <DateFields startDate={startDate} endDate={endDate} />
-
-          <Field
-            label="TOTAL DAYS"
+        {/* Read-only detail card (business-form look, no editable inputs) */}
+        <View style={styles.formCard}>
+          <ReadonlyField label={TEXT.ABSENCE_APPROVER_LABEL} value={approver} />
+          <ReadonlyField label={TEXT.ABSENCE_REASON_LABEL} value={reason} />
+          <DateField startDate={startDate} endDate={endDate} />
+          <ReadonlyField
+            label={TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL}
             value={leaveDay ? `${leaveDay} ${TEXT.ABSENCE_DAY_UNIT}` : ''}
-            icon="date-range"
-            bold
           />
-
-          {(isSick || isBusiness) && halfDay ? (
-            <Field
-              label={TEXT.ABSENCE_HALF_DAY_LABEL.toUpperCase()}
-              value={halfDay}
-              icon="schedule"
-            />
-          ) : null}
-
-          <Field
-            label="EMERGENCY CONTACT"
-            value={contact}
-            icon="phone"
-          />
-
-          {isBusiness ? (
-            <Field
-              label={TEXT.ABSENCE_TRAVEL_DETAIL_LABEL.toUpperCase()}
-              value={travelDetail}
-              icon="flight"
-            />
-          ) : null}
-
-          <Field
-            label="SUBSTITUTE WORKER"
-            value={agents}
-            icon="group"
-          />
-
-          {isSick ? (
-            <FileField fileUrl={fileUploadLink} onPress={handleOpenUploadedFile} />
-          ) : null}
+          <ReadonlyField label={TEXT.ABSENCE_HALF_DAY_LABEL} value={halfDay} />
+          <ReadonlyField label={TEXT.ABSENCE_CONTACT_CHANNEL_LABEL} value={contact} />
+          <ReadonlyField label={TEXT.ABSENCE_TRAVEL_DETAIL_LABEL} value={travelDetail} />
+          <ReadonlyField label={TEXT.ABSENCE_DELEGATE_LABEL} value={agents} />
+          {isSick ? <FileField fileUrl={fileUploadLink} onPress={handleOpenUploadedFile} /> : null}
         </View>
 
         {error ? (
@@ -452,105 +389,92 @@ export default function absenceDetailScreen() {
   );
 }
 
-const FIELD_ICON_COLOR = '#B33939';
-const LABEL_COLOR = '#8A1A1F';
-const VALUE_COLOR = '#191C1F';
-const BORDER_COLOR = '#DFBFBD';
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FD',
   },
   scrollContent: {
-    paddingBottom: 112,
+    paddingBottom: 40,
   },
-  titleSection: {
+  pageHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
     gap: 12,
   },
-  titleLeft: {
+  pageHeaderText: {
     flex: 1,
     gap: 4,
   },
-  titleText: {
-    fontSize: 20,
-    lineHeight: 28,
+  pageTitle: {
+    fontSize: 22,
+    lineHeight: 30,
     fontWeight: '700',
-    color: VALUE_COLOR,
+    color: '#191C1F',
   },
-  titleSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#584140',
+  pageSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#687076',
   },
   statusBadge: {
     borderRadius: 9999,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     alignSelf: 'flex-start',
   },
   statusText: {
     fontFamily: AppFonts.psuBold,
     fontSize: 12,
     lineHeight: 16,
-    letterSpacing: 0.6,
+    letterSpacing: 0.4,
   },
-  form: {
-    paddingHorizontal: 16,
-    gap: 32,
+  formCard: {
+    marginHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   field: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     gap: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E8ECF0',
   },
   fieldLabel: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 12,
+    fontSize: 11,
     lineHeight: 16,
-    letterSpacing: 0.3,
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    color: '#687076',
     textTransform: 'uppercase',
-    color: LABEL_COLOR,
-  },
-  fieldValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER_COLOR,
-  },
-  fieldIcon: {
-    flexShrink: 0,
   },
   fieldValue: {
-    flex: 1,
     fontFamily: AppFonts.psuRegular,
-    fontSize: 16,
-    lineHeight: 24,
-    color: VALUE_COLOR,
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#191C1F',
   },
-  fieldValueBold: {
-    fontFamily: AppFonts.psuBold,
-    fontWeight: '600',
-  },
-  dateGroup: {
+  dateRow: {
     flexDirection: 'row',
-    gap: 32,
+    gap: 12,
   },
-  dateField: {
+  dateCol: {
     flex: 1,
-    gap: 6,
+    gap: 4,
   },
-  dateDivider: {
-    width: 0,
+  dateSubLabel: {
+    fontSize: 11,
+    lineHeight: 15,
+    color: '#9CA3AF',
   },
-  fileLinkText: {
+  fileLink: {
+    color: '#B33939',
     textDecorationLine: 'underline',
   },
   errorText: {

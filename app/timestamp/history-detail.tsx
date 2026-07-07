@@ -86,13 +86,20 @@ function getStampTime(item: TimestampHistory) {
   return "";
 }
 
-function getHistoryItemStatus(item: TimestampHistory): "approved" | "rejected" | "" {
+// Upstream uses status "1" = approved, "0" = still waiting for approval;
+// any other decided value = rejected.
+function getHistoryItemStatus(
+  item: TimestampHistory,
+): "approved" | "rejected" | "pending" {
   for (const field of historyStatusFields) {
-    const value = String(item[field] ?? "").toLowerCase().trim();
-    if (["approved", "true", "1", "yes", "active"].includes(value)) return "approved";
-    if (["rejected", "false", "0", "no", "denied"].includes(value)) return "rejected";
+    const raw = item[field];
+    if (raw === undefined || raw === null || String(raw).trim() === "") continue;
+    const value = String(raw).toLowerCase().trim();
+    if (["1", "approved", "true", "yes", "active"].includes(value)) return "approved";
+    if (["0", "pending", "waiting", "wait"].includes(value)) return "pending";
+    return "rejected";
   }
-  return "";
+  return "pending";
 }
 
 function getStampTypeLabel(stampType: string) {

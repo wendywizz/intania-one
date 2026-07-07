@@ -339,6 +339,10 @@ export default function StatsScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadStats(true)} />}
       >
+        <View style={styles.pageHeader}>
+          <ThemedText style={styles.pageTitle}>{TEXT.ABSENCE_STATS_TITLE}</ThemedText>
+          <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_STATS_SUBTITLE}</ThemedText>
+        </View>
         <InfoCard
           servantAge={stats.servantAge}
           budgetStartDate={stats.budgetStartDate}
@@ -388,10 +392,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FD',
   },
-  pageTitleSection: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 8,
+  pageHeader: {
     gap: 4,
   },
   pageTitle: {

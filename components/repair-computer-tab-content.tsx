@@ -6,7 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import {
   PRIVILEGE_RC_FOREMAN,
-  PRIVILEGE_RC_WORKER,
+  PRIVILEGE_RC_TECH,
   type RepairComputerRole,
 } from '@/constants/types';
 import { useRepairComputerRole } from '@/context/RepairComputerRoleContext';
@@ -21,7 +21,7 @@ function getRoleTitlePrefix(role: RepairComputerRole) {
     return TEXT.REPAIR_COMPUTER_FOREMAN;
   }
 
-  if (role === PRIVILEGE_RC_WORKER) {
+  if (role === PRIVILEGE_RC_TECH) {
     return TEXT.REPAIR_COMPUTER_WORKER;
   }
 
@@ -29,7 +29,7 @@ function getRoleTitlePrefix(role: RepairComputerRole) {
 }
 
 export function RepairComputerTabContent({ title, description }: RepairComputerTabContentProps) {
-  const { currentRole, roleSwitcher } = useRepairComputerRole();
+  const { currentRole } = useRepairComputerRole();
   const screenTitle = title === TEXT.REPAIR_COMPUTER_NEW_JOB ? `${getRoleTitlePrefix(currentRole)} ${title}` : title;
 
   return (
@@ -39,7 +39,6 @@ export function RepairComputerTabContent({ title, description }: RepairComputerT
         subtitle={screenTitle}
         moduleIcon="laptop"
         backHref="/"
-        rightContent={roleSwitcher}
       />
 
       <View style={styles.content}>

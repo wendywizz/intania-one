@@ -65,23 +65,23 @@ The module meaning the application that work with user to send/recieve request a
 
 - Repair Computer:
     # Module Context
-    This module is one of service of company when Computer or something else broke. User can send request to technician to repairs item
+    This module is one of service of company when Computer or something else broke. User can send request to a worker (ช่าง) to repair the item
     # User Group
     - General User: The informer that send request
-    - Foreman: Categorize job type and assign to the technician
-    - Technician: The worker repair item
+    - Foreman: Categorize job type and assign to the worker
+    - Worker: The staff who repairs the item
     # Functional
     - General User can send inform to ask for help
     - General User can follow status of job
     - General User can see inform history
     - Foreman can accept or reject job    
-    - Foreman can assign job to the technician
+    - Foreman can assign job to the worker
     - Foreman can see all job history
-    - Foreman can approve supply request that technician ask
-    - Technician can accept or reject job that foreman assigned
-    - Technician can record and report of repair detail
-    - Technician can see work history
-    - Technician can ask supply request from the foreman
+    - Foreman can approve supply request that the worker asks
+    - Worker can accept or reject job that foreman assigned
+    - Worker can record and report of repair detail
+    - Worker can see work history
+    - Worker can ask supply request from the foreman
 
 - Meeting:
     # Module Context
@@ -132,4 +132,4 @@ About Push Notification the app can receive notification every environment such 
 # Other
 - Bottom tab navigation: Screens inside a bottom tab menu must load data only when their tab is active. Do not load data for inactive tabs.
 - If the data display as ListItems that have multiple line. The app should not load all data to display in one time. Just display like pagination when scroll down and get more data
-
+- Each of module or menu should have CONTEXT.md and when begin edit code on the module should read CONTEXT.md of module first

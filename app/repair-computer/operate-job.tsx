@@ -10,18 +10,30 @@ import {
 } from "react-native";
 
 import { AppToast } from "@/components/app-toast";
+import { FloatingActionBar } from "@/components/floating-action-bar";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
+import { USER_ID } from "@/constants/user";
+import { useAuth } from "@/context/AuthContext";
 import { workerOperateJob } from "@/services/repairComputerService";
 
 type ValidationErrors = Partial<Record<"jobAudit" | "solveMethod", string>>;
 
 export default function OperateJobScreen() {
-  const params = useLocalSearchParams<{ id?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    id?: string | string[];
+    backHref?: string | string[];
+  }>();
   const jobId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const backHrefParam = Array.isArray(params.backHref)
+    ? params.backHref[0]
+    : params.backHref;
+  const backHref = backHrefParam || "/repair-computer/worker-current-job";
+  const { user: authUser } = useAuth();
+  const staffId = authUser?.staffId || USER_ID;
   const [jobAudit, setJobAudit] = useState("");
   const [solveMethod, setSolveMethod] = useState("");
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
@@ -35,17 +47,17 @@ export default function OperateJobScreen() {
   const handleBackPress = () => {
     if (jobId) {
       router.replace({
-        pathname: "/repair-computer/edit-job",
+        pathname: "/repair-computer/worker-job-detail",
         params: {
           id: jobId,
           readonly: "true",
-          backHref: "/repair-computer/worker-current-job",
+          backHref,
         },
       } as Parameters<typeof router.replace>[0]);
       return;
     }
 
-    router.replace("/repair-computer/worker-current-job");
+    router.replace(backHref as Parameters<typeof router.replace>[0]);
   };
 
   const clearValidationError = (field: keyof ValidationErrors) => {
@@ -60,7 +72,7 @@ export default function OperateJobScreen() {
     const nextErrors: ValidationErrors = {};
 
     if (!jobAudit.trim()) {
-      nextErrors.jobAudit = "Job Audit is required";
+      nextErrors.jobAudit = "Problem detail is required";
     }
 
     if (!solveMethod.trim()) {
@@ -94,6 +106,7 @@ export default function OperateJobScreen() {
         jobId,
         jobAudit.trim(),
         solveMethod.trim(),
+        staffId,
       );
 
       setToastType("success");
@@ -101,7 +114,7 @@ export default function OperateJobScreen() {
         result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE,
       );
       setTimeout(() => {
-        router.replace("/repair-computer/worker-current-job");
+        router.replace(backHref as Parameters<typeof router.replace>[0]);
       }, 1500);
     } catch (error) {
       setToastType("error");
@@ -130,18 +143,24 @@ export default function OperateJobScreen() {
           lightColor="#FFFFFF"
           darkColor="#1F2B30"
         >
-          <ThemedText type="subtitle">Operate Job</ThemedText>
+          <View style={styles.titleBlock}>
+            <ThemedText type="subtitle">Operate Job</ThemedText>
+            <ThemedText style={styles.titleDescription}>
+              Record the problem you found and how you resolved it, then submit to
+              start working on this job.
+            </ThemedText>
+          </View>
 
           <View style={styles.field}>
-            <ThemedText type="defaultSemiBold">Job Audit</ThemedText>
+            <ThemedText type="defaultSemiBold">Problem detail</ThemedText>
             <TextInput
               multiline
-              numberOfLines={2}
+              numberOfLines={3}
               onChangeText={(value) => {
                 setJobAudit(value);
                 clearValidationError("jobAudit");
               }}
-              placeholder="Job Audit"
+              placeholder="Problem detail"
               placeholderTextColor="#8A969C"
               style={[
                 styles.textArea,
@@ -161,7 +180,7 @@ export default function OperateJobScreen() {
             <ThemedText type="defaultSemiBold">Solve method</ThemedText>
             <TextInput
               multiline
-              numberOfLines={2}
+              numberOfLines={3}
               onChangeText={(value) => {
                 setSolveMethod(value);
                 clearValidationError("solveMethod");
@@ -181,29 +200,31 @@ export default function OperateJobScreen() {
               </ThemedText>
             ) : null}
           </View>
-
-          <Pressable
-            accessibilityRole="button"
-            disabled={isSubmitting}
-            onPress={handleOpenConfirm}
-            style={[
-              styles.submitButton,
-              isSubmitting ? styles.disabledButton : undefined,
-            ]}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : null}
-            <ThemedText
-              lightColor="#FFFFFF"
-              darkColor="#FFFFFF"
-              type="defaultSemiBold"
-            >
-              Submit
-            </ThemedText>
-          </Pressable>
         </ThemedView>
       </View>
+
+      <FloatingActionBar disabled={isSubmitting}>
+        <Pressable
+          accessibilityRole="button"
+          disabled={isSubmitting}
+          onPress={handleOpenConfirm}
+          style={[
+            styles.submitButton,
+            isSubmitting ? styles.disabledButton : undefined,
+          ]}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : null}
+          <ThemedText
+            lightColor="#FFFFFF"
+            darkColor="#FFFFFF"
+            type="defaultSemiBold"
+          >
+            Submit
+          </ThemedText>
+        </Pressable>
+      </FloatingActionBar>
 
       <Modal
         transparent
@@ -289,11 +310,20 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  titleBlock: {
+    gap: 10,
+    marginBottom: 10,
+  },
+  titleDescription: {
+    color: "#584140",
+    fontSize: 13,
+    lineHeight: 19,
+  },
   field: {
     gap: 8,
   },
   textArea: {
-    minHeight: 76,
+    minHeight: 96,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "#e1e2e6",
@@ -341,7 +371,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   confirmActions: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     gap: 12,
     marginTop: 18,
   },

@@ -14,6 +14,7 @@ import {
 } from "react-native";
 
 import { AppToast } from "@/components/app-toast";
+import { FloatingActionBar } from "@/components/floating-action-bar";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -29,6 +30,8 @@ import { getRepairStatusBadgeStyle } from "@/utils/repair-computer-status";
 
 const TEXT_NONE = "-";
 const TEXT_RC_NO_SUPPLYCODE = "No supply code";
+// Shown when a person's photo can't be loaded (or there's no staff id).
+const USER_PLACEHOLDER = require("../../assets/images/user-placeholder.jpg");
 
 const detailFields = ["detail", "description", "repairDetail", "repair_detail", "problem"];
 const repairTypeNameFields = ["repairTypeName", "repair_type_name", "problemTypeName", "problem_type_name"];
@@ -117,11 +120,7 @@ function PersonSummaryCard({
           style={styles.personPhoto}
         />
       ) : (
-        <View style={styles.personPhotoPlaceholder}>
-          <ThemedText type="defaultSemiBold" style={styles.personPhotoInitial}>
-            {fallbackInitial || "?"}
-          </ThemedText>
-        </View>
+        <Image source={USER_PLACEHOLDER} style={styles.personPhoto} />
       )}
       <View style={styles.personText}>
         <ThemedText type="defaultSemiBold" style={styles.personName} numberOfLines={2}>
@@ -393,10 +392,10 @@ export default function UserJobDetailScreen() {
           <SectionCard title={TEXT.REPAIR_COMPUTER_ASSIGN_CONFIRM}>
             {(workerName || workerId) ? (
               <PersonSummaryCard
-                fallbackTitle="Technician"
+                fallbackTitle="Worker"
                 id={workerId}
                 name={workerName}
-                role="Technician"
+                role="Worker"
               />
             ) : null}
             {(foremanName || foremanId) ? (
@@ -410,20 +409,29 @@ export default function UserJobDetailScreen() {
           </SectionCard>
         ) : null}
 
-        {isEditable ? (
-          <Pressable
-            accessibilityRole="button"
-            disabled={isUpdating}
-            onPress={() => setIsConfirmOpen(true)}
-            style={[styles.updateButton, isUpdating ? styles.disabledButton : undefined]}
-          >
-            {isUpdating ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {isUpdating ? TEXT.SHARED_UPDATING : TEXT.SHARED_UPDATE}
-            </ThemedText>
-          </Pressable>
-        ) : null}
       </ScrollView>
+    );
+  };
+
+  const renderFooterActions = () => {
+    if (isLoading || error || !isEditable) {
+      return null;
+    }
+
+    return (
+      <FloatingActionBar disabled={isUpdating}>
+        <Pressable
+          accessibilityRole="button"
+          disabled={isUpdating}
+          onPress={() => setIsConfirmOpen(true)}
+          style={[styles.updateButton, isUpdating ? styles.disabledButton : undefined]}
+        >
+          {isUpdating ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+          <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+            {isUpdating ? TEXT.SHARED_UPDATING : TEXT.SHARED_UPDATE}
+          </ThemedText>
+        </Pressable>
+      </FloatingActionBar>
     );
   };
 
@@ -431,6 +439,8 @@ export default function UserJobDetailScreen() {
     <ThemedView style={styles.container}>
       <NavTopBar
         title={TEXT.REPAIR_COMPUTER_TITLE}
+        subtitle={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_ID_LABEL} ${jobId}` : undefined}
+        moduleIcon="laptop"
         onBackPress={handleBackPress}
         showBackButton
       />
@@ -444,6 +454,8 @@ export default function UserJobDetailScreen() {
           {renderContent()}
         </View>
       </View>
+
+      {renderFooterActions()}
 
       <Modal
         transparent

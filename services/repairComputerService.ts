@@ -186,12 +186,35 @@ export function listForemanHistory(foreman: string, start = 0, length = 10) {
   return listRequest<RepairComputer>(url);
 }
 
+export function listForemanSupplyApproveHistory(
+  foreman: string,
+  start = 0,
+  length = 10,
+) {
+  const url = createRepairComputerUrl("/manage/supply_approve_history", {
+    staff_id: foreman,
+    start,
+    length,
+  });
+  return listRequest<RepairComputer>(url);
+}
+
 export function changeWorker(id: string, workerId: string) {
   return updateManageData(id, { worker: workerId }, "change_worker");
 }
 
 export function foremanRejectJob(id: string) {
   return updateManageData(id, {}, "reject");
+}
+
+/** Foreman approves a worker's supply request (job wait-approval → processing 7.1). */
+export function foremanApproveSupply(id: string, detail = "") {
+  return updateManageData(id, { detail }, "approve_supply");
+}
+
+/** Foreman rejects a worker's supply request (job wait-approval → rejected 7.2). */
+export function foremanUnapproveSupply(id: string, detail = "") {
+  return updateManageData(id, { detail }, "unapprove_supply");
 }
 
 export function foremanUnassignJob(id: string) {
@@ -206,8 +229,16 @@ export function foremanForwardWorker(id: string) {
   return updateManageData(id, {}, "forward_worker");
 }
 
-export function foremanForwardForeman(id: string) {
-  return updateManageData(id, {}, "forward_foreman");
+/** Forward a job to another foreman (division). `divisionId` is the target
+ * foreman's division_id from getRepairComputerForemen(). */
+export function foremanForwardForeman(id: string, divisionId: string) {
+  return updateManageData(id, { division_id: divisionId }, "forward_foreman");
+}
+
+/** Receiving foreman rejects a forwarded job — returns it to the foreman who
+ * forwarded it (back to wait-foreman, status 4.2). */
+export function foremanForwardReject(id: string) {
+  return updateManageData(id, {}, "forward_reject");
 }
 
 export function foremanCloseJob(id: string) {
@@ -296,12 +327,15 @@ export function workerOperateJob(
   jobId: string,
   repairDetail: string,
   solveDetail: string,
+  staffId?: string,
 ) {
   return updateOperateData(
     jobId,
     {
       audit: repairDetail,
       result: solveDetail,
+      // Worker attribution for the work log (submit_operate reads it server-side).
+      ...(staffId ? { staff_id: staffId } : {}),
     },
     "operate_job",
   );
@@ -309,6 +343,11 @@ export function workerOperateJob(
 
 export function requestSupply(jobId: string, detail: string) {
   return updateOperateData(jobId, { detail }, "request_supply");
+}
+
+/** Worker reports the procurement result after approval and resumes work (→ working 4). */
+export function workerSupplyResult(jobId: string, detail: string) {
+  return updateOperateData(jobId, { detail }, "supply_result");
 }
 
 export function submitJob(jobId: string, userTip?: string) {
@@ -319,8 +358,29 @@ export function submitJob(jobId: string, userTip?: string) {
   );
 }
 
+/** Worker finishes the job and sends it to the foreman to close (→ wait foreman 4.2). */
+export function workerSendForeman(jobId: string, userTip?: string) {
+  return updateOperateData(
+    jobId,
+    userTip ? { user_tip: userTip } : {},
+    "send_fman",
+  );
+}
+
+/** URL of the requisition (ใบเบิก) PDF for a job — open it to view/print. */
+export function getRequisitionPdfUrl(jobId: string) {
+  return createRepairComputerUrl("/export/pdf", { job_id: jobId });
+}
+
 export function getRepairComputerWorkers(): Promise<ListResponse<Person>> {
   const url = createRepairComputerUrl("/manage/tech_list");
+  return listRequest<Person>(url);
+}
+
+/** Foreman list for the "forward to foreman" flow. Each item is a division
+ * (division_id is the forward value) plus the division head's staff info. */
+export function getRepairComputerForemen(): Promise<ListResponse<Person>> {
+  const url = createRepairComputerUrl("/manage/foreman_list");
   return listRequest<Person>(url);
 }
 

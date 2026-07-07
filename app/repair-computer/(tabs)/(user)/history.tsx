@@ -23,7 +23,6 @@ import { ThemedView } from "@/components/themed-view";
 import { PRIVILEGE_RC_USER } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
-import { useRepairComputerRole } from "@/context/RepairComputerRoleContext";
 import type { RepairComputer } from "@/models/types";
 import type { ListResponse } from "@/services/api";
 import { getUserHistory } from "@/services/repairComputerService";
@@ -58,7 +57,6 @@ function getHasMore(
 export default function RepairComputerHistoryScreen() {
   const { height } = useWindowDimensions();
   const { user: authUser } = useAuth();
-  const { roleSwitcher } = useRepairComputerRole();
   const staffId = authUser?.staffId || USER_ID;
   const pageSize = getPageSize(height);
   const [jobs, setJobs] = useState<RepairComputer[]>([]);
@@ -263,7 +261,6 @@ export default function RepairComputerHistoryScreen() {
               subtitle={TEXT.REPAIR_COMPUTER_REPAIR_HISTORY}
               moduleIcon="laptop"
               backHref="/"
-              rightContent={roleSwitcher}
             />
 
       <View style={styles.content}>

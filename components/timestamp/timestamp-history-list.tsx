@@ -20,7 +20,7 @@ import {
   getTimestampHistoryData,
   type TimestampHistory,
 } from "@/services/timestampService";
-import { formatFullDate } from "@/utils/date-format";
+import { formatDateRange, formatFullDate } from "@/utils/date-format";
 
 const dateFields = new Set([
   "date",
@@ -35,15 +35,14 @@ const dateFields = new Set([
   "createdAt",
   "created_at",
 ]);
-const writeDateFields = [
-  "writeDate",
-  "write_date",
-  "createdAt",
-  "created_at",
-  "requestDate",
-  "request_date",
-  "dateAdd",
-  "date_add",
+// The date the stamp was forgotten (the timestamp itself), not the request date.
+const forgotDateFields = [
+  "workDate",
+  "work_date",
+  "stampDate",
+  "stamp_date",
+  "timestampDate",
+  "timestamp_date",
 ];
 const stampTypeFields = new Set(["stampType", "stamp_type", "type"]);
 const historyStatusFields = [
@@ -78,10 +77,6 @@ function getHistoryDate(item: TimestampHistory) {
   return getText(item, Array.from(dateFields));
 }
 
-function getWriteDate(item: TimestampHistory) {
-  return getText(item, writeDateFields) || getHistoryDate(item);
-}
-
 function getHistoryTimestamp(item: TimestampHistory) {
   const timestamp = Date.parse(getHistoryDate(item));
   return Number.isNaN(timestamp) ? 0 : timestamp;
@@ -103,18 +98,25 @@ function getHistoryTitle(item: TimestampHistory) {
   return date ? formatFullDate(date) : TEXT.SHARED_HISTORY;
 }
 
-function getWriteDateLabel(item: TimestampHistory) {
-  const writeDate = getWriteDate(item);
-  return writeDate ? formatFullDate(writeDate) : "-";
+function getForgotDateLabel(item: TimestampHistory) {
+  const forgotDate = getText(item, forgotDateFields);
+  return forgotDate ? formatFullDate(forgotDate) : "-";
 }
 
-function getHistoryItemStatus(item: TimestampHistory): "approved" | "rejected" | "" {
+// Forget-request approval state. Upstream uses status "1" = approved,
+// "0" = still waiting for approval; any other decided value = rejected.
+function getHistoryItemStatus(
+  item: TimestampHistory,
+): "approved" | "rejected" | "pending" {
   for (const field of historyStatusFields) {
-    const value = String(item[field] ?? "").toLowerCase().trim();
-    if (["approved", "true", "1", "yes", "active"].includes(value)) return "approved";
-    if (["rejected", "false", "0", "no", "denied"].includes(value)) return "rejected";
+    const raw = item[field];
+    if (raw === undefined || raw === null || String(raw).trim() === "") continue;
+    const value = String(raw).toLowerCase().trim();
+    if (["1", "approved", "true", "yes", "active"].includes(value)) return "approved";
+    if (["0", "pending", "waiting", "wait"].includes(value)) return "pending";
+    return "rejected";
   }
-  return "";
+  return "pending";
 }
 
 function TimestampHistoryItem({ item }: { item: TimestampHistory }) {
@@ -141,7 +143,7 @@ function TimestampHistoryItem({ item }: { item: TimestampHistory }) {
         </View>
         <View style={styles.itemInfo}>
           <ThemedText style={styles.itemTitle}>{getHistoryTitle(item)}</ThemedText>
-          <ThemedText style={styles.itemMeta}>{getWriteDateLabel(item)}</ThemedText>
+          <ThemedText style={styles.itemMeta}>{getForgotDateLabel(item)}</ThemedText>
         </View>
         <View style={styles.itemRight}>
           {status === "approved" ? (
@@ -179,7 +181,11 @@ export function TimestampHistoryList() {
       setError("");
       try {
         const result = await getTimestampHistoryData(staffId, currentYear);
-        setItems(sortHistoryItems(result.data));
+        // History shows completed requests only — hide ones still awaiting approval.
+        const completed = result.data.filter(
+          (item) => getHistoryItemStatus(item) !== "pending",
+        );
+        setItems(sortHistoryItems(completed));
       } catch (loadError) {
         setItems([]);
         setError(
@@ -214,7 +220,7 @@ export function TimestampHistoryList() {
 
         <ThemedText style={styles.cycleLabel}>{TEXT.TIMESTAMP_COMPANY_CYCLE_LABEL}</ThemedText>
         <ThemedText style={styles.cycleValue}>
-          {currentYear - 1} – {currentYear}
+          {formatDateRange(`${currentYear - 1}-10-01`, `${currentYear}-09-30`)}
         </ThemedText>
 
         <View style={styles.statsDivider} />

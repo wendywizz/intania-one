@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import { AppToast } from "@/components/app-toast";
+import { FloatingActionBar } from "@/components/floating-action-bar";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -112,22 +113,24 @@ export default function RejectJobScreen() {
               value={rejectDetail}
             />
           </View>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setIsConfirmOpen(true)}
-            style={styles.rejectButton}
-          >
-            <ThemedText
-              lightColor="#FFFFFF"
-              darkColor="#FFFFFF"
-              type="defaultSemiBold"
-            >
-              Submit
-            </ThemedText>
-          </Pressable>
         </ThemedView>
       </View>
+
+      <FloatingActionBar disabled={isSubmitting}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setIsConfirmOpen(true)}
+          style={styles.rejectButton}
+        >
+          <ThemedText
+            lightColor="#FFFFFF"
+            darkColor="#FFFFFF"
+            type="defaultSemiBold"
+          >
+            Submit
+          </ThemedText>
+        </Pressable>
+      </FloatingActionBar>
 
       <Modal
         transparent
@@ -255,7 +258,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   confirmActions: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     gap: 12,
     marginTop: 18,
   },

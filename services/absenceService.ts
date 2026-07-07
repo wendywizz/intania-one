@@ -267,6 +267,20 @@ export async function waitingData(staffId: string) {
   };
 }
 
+/** Leave-approval waiting list — requests this user (as a boss/approver) must
+ * approve. `show` is true when the user is an approver at all. */
+export async function approvingWaitingData(staffId: string) {
+  const url = createabsenceUrl("/approving", { staff_id: staffId });
+  const jsonData = await requestJson(url, { method: "GET" });
+  ensureSuccess(jsonData);
+  const data = Array.isArray(jsonData.data) ? (jsonData.data as absence[]) : [];
+
+  return {
+    data,
+    show: Boolean(jsonData.show) || data.length > 0,
+  };
+}
+
 export async function historyData(
   staffId: string,
   { length = DEFAULT_DISPLAY_LENGTH, start = 0 } = {},

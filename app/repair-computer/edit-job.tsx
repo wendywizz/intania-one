@@ -15,6 +15,7 @@ import {
 } from "react-native";
 
 import { AppToast } from "@/components/app-toast";
+import { FloatingActionBar } from "@/components/floating-action-bar";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -50,6 +51,8 @@ const supplyFields = [
   "code",
 ];
 const phoneFields = ["phone", "tel", "telephone"];
+// Shown when a person's photo can't be loaded (or there's no staff id).
+const USER_PLACEHOLDER = require("../../assets/images/user-placeholder.jpg");
 const statusFields = ["status", "state", "statusId", "status_id"];
 const informDateFields = [
   "informDateTime",
@@ -156,16 +159,7 @@ function PersonDetailCard({
           style={styles.personPhoto}
         />
       ) : (
-        <View style={styles.personPhotoPlaceholder}>
-          <ThemedText
-            lightColor="#b33939"
-            darkColor="#b33939"
-            type="defaultSemiBold"
-            style={styles.personPhotoInitial}
-          >
-            {fallbackInitial || "?"}
-          </ThemedText>
-        </View>
+        <Image source={USER_PLACEHOLDER} style={styles.personPhoto} />
       )}
       <View style={styles.personText}>
         <ThemedText type="defaultSemiBold" style={styles.personName}>
@@ -359,6 +353,14 @@ export default function RepairComputerEditJobScreen() {
   const repairTypeName = jobData ? getJobText(jobData, repairTypeNameFields) : '';
   const informDate = jobData ? formatDateTime(getJobText(jobData, informDateFields)) : '';
 
+  const canUpdate = !isReadOnly && status === "0";
+  const showWorkerNewJobActions = backHref === "/repair-computer/worker-new-job";
+  const showWorkerCurrentJobActions = backHref === "/repair-computer/worker-current-job";
+  const showWorkerOperateButton =
+    showWorkerCurrentJobActions && status === REPAIR_STATUS_WAIT_WORKER;
+  const showWorkerCloseJobButton =
+    showWorkerCurrentJobActions && status === REPAIR_STATUS_WORKING;
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -395,16 +397,7 @@ export default function RepairComputerEditJobScreen() {
       );
     }
 
-    const canUpdate = !isReadOnly && status === "0";
     const showReadOnlyFields = isReadOnly || status !== "0";
-    const showWorkerNewJobActions =
-      backHref === "/repair-computer/worker-new-job";
-    const showWorkerCurrentJobActions =
-      backHref === "/repair-computer/worker-current-job";
-    const showWorkerOperateButton =
-      showWorkerCurrentJobActions && status === REPAIR_STATUS_WAIT_WORKER;
-    const showWorkerCloseJobButton =
-      showWorkerCurrentJobActions && status === REPAIR_STATUS_WORKING;
     const requesterName = jobData
       ? getJobText(jobData, requesterNameFields)
       : "";
@@ -553,6 +546,26 @@ export default function RepairComputerEditJobScreen() {
           </>
         )}
 
+      </ScrollView>
+    );
+  };
+
+  const renderFooterActions = () => {
+    if (isLoading || error) {
+      return null;
+    }
+
+    if (
+      !canUpdate &&
+      !showWorkerNewJobActions &&
+      !showWorkerOperateButton &&
+      !showWorkerCloseJobButton
+    ) {
+      return null;
+    }
+
+    return (
+      <FloatingActionBar disabled={isUpdating || isWorkerActionSubmitting}>
         {canUpdate ? (
           <Pressable
             accessibilityRole="button"
@@ -662,7 +675,7 @@ export default function RepairComputerEditJobScreen() {
             </ThemedText>
           </Pressable>
         ) : null}
-      </ScrollView>
+      </FloatingActionBar>
     );
   };
 
@@ -702,6 +715,8 @@ export default function RepairComputerEditJobScreen() {
           {renderContent()}
         </ThemedView>
       </View>
+
+      {renderFooterActions()}
 
       <AppToast
         message={toastMessage}
@@ -1041,7 +1056,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   confirmActions: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     gap: 12,
     marginTop: 18,
   },

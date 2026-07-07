@@ -20,7 +20,7 @@ import {
   getTimestampData,
   type Timestamp,
 } from "@/services/timestampService";
-import { formatFullDate } from "@/utils/date-format";
+import { formatDateRange, formatFullDate } from "@/utils/date-format";
 
 const APPEAL_DOCUMENT_MESSAGE = TEXT.TIMESTAMP_APPEAL_DOCUMENT;
 
@@ -118,10 +118,26 @@ function isEditableItem(item: Timestamp) {
   return ["true", "1", "yes"].includes(String(value ?? "").trim().toLowerCase());
 }
 
+// A forgot-timestamp day that already carries a forget-request id has been
+// submitted and is awaiting approval (this is the same id the detail screen
+// keys its edit mode on).
+const requestIdFields = ["forgetId", "forget_id", "timestampId", "timestamp_id", "id"];
+
+function hasSubmittedRequest(item: Timestamp) {
+  for (const field of requestIdFields) {
+    const value = item[field];
+    if (value !== undefined && value !== null && String(value).trim()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function TimestampItem({ item }: { item: Timestamp }) {
-  const canOpenDetail = isStatusTrue(item);
-  const showAppealDocumentMessage = isStatusFalse(item);
-  const isUnavailable = isStatusFalse(item);
+  const alreadyRequested = hasSubmittedRequest(item);
+  const canOpenDetail = isStatusTrue(item) || alreadyRequested;
+  const showAppealDocumentMessage = isStatusFalse(item) && !alreadyRequested;
+  const isUnavailable = isStatusFalse(item) && !alreadyRequested;
   const dateValue = getItemDateValue(item);
   const dateLabel = dateValue ? formatFullDate(dateValue) : "";
   const stampType = getStampType(item);
@@ -157,7 +173,14 @@ function TimestampItem({ item }: { item: Timestamp }) {
               <ThemedText style={styles.itemDate}>{dateLabel}</ThemedText>
             ) : null}
           </View>
-          {canOpenDetail ? (
+          {alreadyRequested ? (
+            <View style={styles.itemRight}>
+              <View style={styles.pendingBadge}>
+                <ThemedText style={styles.pendingBadgeText}>{TEXT.TIMESTAMP_PENDING_BADGE}</ThemedText>
+              </View>
+              <ChevronRight size={16} color="#8B716F" />
+            </View>
+          ) : canOpenDetail ? (
             <View style={styles.itemRight}>
               <View style={styles.actionBadge}>
                 <ThemedText style={styles.actionBadgeText}>{TEXT.TIMESTAMP_ACTION_REQUIRED}</ThemedText>
@@ -225,7 +248,7 @@ export function TimestampForgotList() {
           คุณมี {pendingCount} คำขอที่รอดำเนินการ
         </ThemedText>
         <ThemedText style={styles.cycleText}>
-          {TEXT.TIMESTAMP_COMPANY_CYCLE_LABEL}: {currentYear - 1} – {currentYear}
+          {TEXT.TIMESTAMP_COMPANY_CYCLE_LABEL}: {formatDateRange(`${currentYear - 1}-10-01`, `${currentYear}-09-30`)}
         </ThemedText>
       </View>
 
@@ -405,6 +428,18 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "700",
     letterSpacing: 0.5,
+    fontFamily: AppFonts.psuBold,
+  },
+  pendingBadge: {
+    backgroundColor: "#FEF3C7",
+    borderRadius: 9999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  pendingBadgeText: {
+    color: "#92400E",
+    fontSize: 10,
+    fontWeight: "700",
     fontFamily: AppFonts.psuBold,
   },
   appealMessage: {

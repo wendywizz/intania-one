@@ -3,7 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { TEXT } from '@/constants/text';
 import {
   PRIVILEGE_RC_FOREMAN,
-  PRIVILEGE_RC_WORKER,
+  PRIVILEGE_RC_TECH,
   REPAIR_COMPUTER_DEFAULT_ROLE,
   type RepairComputerRole,
 } from '@/constants/types';
@@ -19,14 +19,14 @@ import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 
 function normalizeRepairComputerRole(privilege?: string): RepairComputerRole {
-  if (privilege === PRIVILEGE_RC_WORKER || privilege === PRIVILEGE_RC_FOREMAN) {
+  if (privilege === PRIVILEGE_RC_TECH || privilege === PRIVILEGE_RC_FOREMAN) {
     return privilege;
   }
   return REPAIR_COMPUTER_DEFAULT_ROLE;
 }
 
 function getDefaultRoute(role: RepairComputerRole) {
-  if (role === PRIVILEGE_RC_WORKER) {
+  if (role === PRIVILEGE_RC_TECH) {
     return '/repair-computer/worker-new-job';
   }
   if (role === PRIVILEGE_RC_FOREMAN) {

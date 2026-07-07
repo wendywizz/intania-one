@@ -10,6 +10,9 @@ const RULES: { test: RegExp; icon: IconSymbolName }[] = [
   { test: /เครือข่าย|อินเทอร์เน็ต|network|wi-?fi|internet|lan/i, icon: 'wifi' },
   { test: /ซอ(ร์|ฟ)ฟ?ต?แวร์|โปรแกรม|software|program|applicat/i, icon: 'chevron.left.forwardslash.chevron.right' },
   { test: /ฮาร์ดแวร์|hardware|cpu|เมนบอร์ด|mainboard/i, icon: 'cpu' },
+  { test: /โทรศัพท์|ip\s*phone|phone|tel/i, icon: 'phone.fill' },
+  { test: /โสต|เครื่องเสียง|ลำโพง|โปรเจ(ค|ก)เตอร์|projector|audio|\bav\b|speaker/i, icon: 'projector' },
+  { test: /โยกย้าย|ย้าย|relocate|\bmove\b/i, icon: 'replace' },
   { test: /เครื่องพิมพ์|ปริ้น|พิมพ์|printer|print/i, icon: 'printer.fill' },
   { test: /จอ(ภาพ)?|monitor|display|screen/i, icon: 'display' },
   { test: /คอมพิวเตอร์|computer|laptop|notebook|พีซี|\bpc\b/i, icon: 'laptop' },
@@ -21,6 +24,20 @@ const RULES: { test: RegExp; icon: IconSymbolName }[] = [
 
 const DEFAULT_ICON: IconSymbolName = 'wrench.fill';
 
+// Repair-computer job types are a fixed set with stable ids returned by
+// /manage/repair_type_list. Keying by id is more reliable than matching the
+// free-text (Thai) name, so define the icon per job type here.
+const REPAIR_COMPUTER_TYPE_ICONS: Record<string, IconSymbolName> = {
+  '1': 'cpu', // ฮาร์ดแวร์/เครื่องคอมพิวเตอร์
+  '2': 'chevron.left.forwardslash.chevron.right', // ซอร์ฟแวร์/โปรแกรม
+  '3': 'replace', // โยกย้าย-ติดตั้ง-เครื่องคอมพิวเตอร์
+  '4': 'package.plus', // ติดตั้งโปรแกรม
+  '5': 'network', // ติดตั้งระบบเน็ตเวิร์ค
+  '6': 'ellipsis', // อื่นๆ
+  '7': 'projector', // อุปกรณ์โสตฯ
+  '8': 'phone.fill', // ซ่อมโทรศัพท์ระบบใหม่ (IP Phone)
+};
+
 /** Pick a category-related icon from a free-text category / repair-type name. */
 export function getCategoryIcon(name?: string | null): IconSymbolName {
   if (!name) return DEFAULT_ICON;
@@ -28,4 +45,19 @@ export function getCategoryIcon(name?: string | null): IconSymbolName {
     if (rule.test.test(name)) return rule.icon;
   }
   return DEFAULT_ICON;
+}
+
+/**
+ * Icon for a repair-computer job type. Prefers the stable job-type id; falls
+ * back to matching the name keywords when the id is unknown.
+ */
+export function getRepairComputerTypeIcon(
+  id?: string | number | null,
+  name?: string | null,
+): IconSymbolName {
+  const key = id === undefined || id === null ? '' : String(id).trim();
+  if (key && REPAIR_COMPUTER_TYPE_ICONS[key]) {
+    return REPAIR_COMPUTER_TYPE_ICONS[key];
+  }
+  return getCategoryIcon(name);
 }

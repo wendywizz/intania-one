@@ -658,7 +658,7 @@ export default function TimestampDetailScreen() {
                     placeholder={TEXT.TIMESTAMP_HOUR}
                     title={TEXT.TIMESTAMP_HOUR}
                     value={selectedTime ? formatTime(selectedTime).slice(0, 2) : ""}
-                    width={72}
+                    width={60}
                     onSelect={(value) => setWebTimePart("hour", value)}
                   />
                   <ThemedText style={styles.webTimeSeparator}>:</ThemedText>
@@ -668,7 +668,7 @@ export default function TimestampDetailScreen() {
                     placeholder={TEXT.TIMESTAMP_MINUTE}
                     title={TEXT.TIMESTAMP_MINUTE}
                     value={selectedTime ? formatTime(selectedTime).slice(3, 5) : ""}
-                    width={72}
+                    width={60}
                     onSelect={(value) => setWebTimePart("minute", value)}
                   />
                 </View>
@@ -1146,10 +1146,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   dateField: {
-    width: 170,
+    flex: 1,
+    minWidth: 0,
   },
   timeField: {
-    width: 184,
+    width: 150,
+    flexShrink: 0,
   },
   nativeTimeButton: {
     minWidth: 0,

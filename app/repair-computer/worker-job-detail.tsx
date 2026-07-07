@@ -14,27 +14,35 @@ import {
 } from "react-native";
 
 import { AppToast } from "@/components/app-toast";
+import { FloatingActionBar } from "@/components/floating-action-bar";
+import { PdfViewerModal } from "@/components/pdf-viewer-modal";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import {
-    REPAIR_STATUS_WAIT_WORKER,
+    REPAIR_STATUS_APPROVAL_REJECTED,
+    REPAIR_STATUS_PROCESSING_EQUIPMENT,
+    REPAIR_STATUS_WAIT_APPROVAL,
+    REPAIR_STATUS_WORKER_ACCEPT,
     REPAIR_STATUS_WORKING,
 } from "@/constants/types";
 import type { RepairComputer } from "@/models/types";
 import { getPersonPhoto } from "@/services/personService";
 import {
     getJobDetail,
-    submitJob,
+    getRequisitionPdfUrl,
     workerReceiveJob,
+    workerSendForeman,
 } from "@/services/repairComputerService";
 import { formatDateTime } from "@/utils/date-format";
 import { getRepairStatusBadgeStyle } from "@/utils/repair-computer-status";
 
 const TEXT_NONE = "-";
 const TEXT_RC_NO_SUPPLYCODE = "No supply code";
+// Shown when a person's photo can't be loaded (or there's no staff id).
+const USER_PLACEHOLDER = require("../../assets/images/user-placeholder.jpg");
 
 const detailFields = ["detail", "description", "repairDetail", "repair_detail", "problem"];
 const repairTypeNameFields = ["repairTypeName", "repair_type_name", "problemTypeName", "problem_type_name"];
@@ -78,12 +86,23 @@ function RowDetail({ description, title }: { description: string; title: string 
   );
 }
 
-function SectionCard({ children, title }: { children: ReactNode; title: string }) {
+function SectionCard({
+  children,
+  title,
+  right,
+}: {
+  children: ReactNode;
+  title: string;
+  right?: ReactNode;
+}) {
   return (
     <ThemedView style={styles.sectionCard} lightColor="#FFFFFF" darkColor="#151718">
-      <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-        {title}
-      </ThemedText>
+      <View style={styles.sectionHeader}>
+        <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+          {title}
+        </ThemedText>
+        {right ?? null}
+      </View>
       {children}
     </ThemedView>
   );
@@ -116,11 +135,7 @@ function PersonSummaryCard({
           style={styles.personPhoto}
         />
       ) : (
-        <View style={styles.personPhotoPlaceholder}>
-          <ThemedText type="defaultSemiBold" style={styles.personPhotoInitial}>
-            {fallbackInitial || "?"}
-          </ThemedText>
-        </View>
+        <Image source={USER_PLACEHOLDER} style={styles.personPhoto} />
       )}
       <View style={styles.personText}>
         <ThemedText type="defaultSemiBold" style={styles.personName} numberOfLines={2}>
@@ -152,6 +167,7 @@ export default function WorkerJobDetailScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAcceptConfirmOpen, setIsAcceptConfirmOpen] = useState(false);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
+  const [isPdfOpen, setIsPdfOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "">("");
 
@@ -223,8 +239,30 @@ export default function WorkerJobDetailScreen() {
     if (!jobId) return;
     navPush({
       pathname: "/repair-computer/operate-job",
-      params: { id: jobId },
+      params: { id: jobId, backHref },
     } as Parameters<typeof navPush>[0]);
+  };
+
+  const handleRequestSupply = () => {
+    if (!jobId) return;
+    navPush({
+      pathname: "/repair-computer/request-supply",
+      params: { id: jobId, backHref },
+    } as Parameters<typeof navPush>[0]);
+  };
+
+  const handleSupplyResult = () => {
+    if (!jobId) return;
+    navPush({
+      pathname: "/repair-computer/supply-result",
+      params: { id: jobId, backHref },
+    } as Parameters<typeof navPush>[0]);
+  };
+
+  const handlePrintRequisition = () => {
+    if (!jobId) return;
+    // Show the requisition PDF in an in-app viewer.
+    setIsPdfOpen(true);
   };
 
   const handleCloseJob = async () => {
@@ -233,7 +271,7 @@ export default function WorkerJobDetailScreen() {
     setToastMessage("");
     setToastType("");
     try {
-      const result = await submitJob(jobId);
+      const result = await workerSendForeman(jobId);
       setToastType("success");
       setToastMessage(
         result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE,
@@ -274,11 +312,40 @@ export default function WorkerJobDetailScreen() {
   const foremanId = getJobText(data, foremanIdFields);
   const badgeStyle = getRepairStatusBadgeStyle(statusId);
 
+  // Supply-request / approval detail (surfaces on the wait-approval flow).
+  const requestSupplyDetail = getJobText(data, [
+    "equipmentRequestDetail",
+    "equipment_request_detail",
+    "requestDetail",
+    "request_appv_detail",
+  ]);
+  const requestSupplyDate = getJobText(data, [
+    "equipmentRequestDateTime",
+    "equipment_request_date_time",
+    "requestDate",
+    "request_appv_date",
+  ]);
+  const isWaitApproval = statusId === REPAIR_STATUS_WAIT_APPROVAL;
+  const isApproved = statusId === REPAIR_STATUS_PROCESSING_EQUIPMENT;
+  const isApprovalRejected = statusId === REPAIR_STATUS_APPROVAL_REJECTED;
+  const isSupplyFlow = isWaitApproval || isApproved || isApprovalRejected;
+  // Approval result is only settled once the foreman has responded (7.1 / 7.2).
+  const hasApprovalResult = isApproved || isApprovalRejected;
+  // A supply request already exists for this job (equipment flag set upstream, or
+  // a request detail is present) → the worker can't request supply again.
+  const hasRequestedSupply =
+    Boolean(data?.needEquipment) ||
+    Boolean(data?.need_equipment) ||
+    Boolean(requestSupplyDetail);
+
   const isFromNewJob = backHref === "/repair-computer/worker-new-job";
   const isFromCurrentJob = backHref === "/repair-computer/worker-current-job";
   const showAcceptReject = isFromNewJob && Boolean(jobId);
-  const showOperate = isFromCurrentJob && statusId === REPAIR_STATUS_WAIT_WORKER;
+  // Worker has accepted (status 3) but not yet started → allow "Operate" (start job).
+  const showOperate = isFromCurrentJob && statusId === REPAIR_STATUS_WORKER_ACCEPT;
   const showCloseJob = isFromCurrentJob && statusId === REPAIR_STATUS_WORKING;
+  // Supply request approved (7.1) → worker reports the procurement result and resumes work.
+  const showSupplyResult = isFromCurrentJob && isApproved;
 
   const pageTitle = isFromNewJob
     ? TEXT.REPAIR_COMPUTER_NEW_JOB
@@ -383,6 +450,51 @@ export default function WorkerJobDetailScreen() {
           </View>
         </SectionCard>
 
+        {isSupplyFlow ? (
+          <SectionCard
+            title="Request Supply"
+            right={
+              hasApprovalResult ? (
+                <View
+                  style={[
+                    styles.approvalBadge,
+                    isApproved ? styles.approvalBadgeApproved : styles.approvalBadgeRejected,
+                  ]}
+                >
+                  <ThemedText
+                    lightColor="#FFFFFF"
+                    darkColor="#FFFFFF"
+                    style={styles.approvalBadgeText}
+                  >
+                    {isApproved ? "เห็นชอบ" : "ไม่เห็นชอบ"}
+                  </ThemedText>
+                </View>
+              ) : (
+                <View style={[styles.approvalBadge, styles.approvalBadgePending]}>
+                  <ThemedText style={styles.approvalBadgePendingText}>
+                    รอการอนุมัติ
+                  </ThemedText>
+                </View>
+              )
+            }
+          >
+            {requestSupplyDate ? (
+              <RowDetail
+                title={TEXT.REPAIR_COMPUTER_INFORM_DATE_LABEL}
+                description={formatDateTime(requestSupplyDate)}
+              />
+            ) : null}
+            <View style={styles.descriptionBox}>
+              <ThemedText style={styles.rowTitle}>
+                {TEXT.REPAIR_COMPUTER_DETAIL_LABEL}
+              </ThemedText>
+              <ThemedText style={styles.longDescription}>
+                {requestSupplyDetail || TEXT_NONE}
+              </ThemedText>
+            </View>
+          </SectionCard>
+        ) : null}
+
         {(foremanName || foremanId) ? (
           <SectionCard title={TEXT.REPAIR_COMPUTER_ASSIGN_CONFIRM}>
             <PersonSummaryCard
@@ -393,8 +505,18 @@ export default function WorkerJobDetailScreen() {
             />
           </SectionCard>
         ) : null}
+      </ScrollView>
+    );
+  };
 
-        {showAcceptReject ? (
+  const renderFooterActions = () => {
+    if (isLoading || error) {
+      return null;
+    }
+
+    if (showAcceptReject) {
+      return (
+        <FloatingActionBar disabled={isSubmitting}>
           <View style={styles.actionRow}>
             <Pressable
               accessibilityRole="button"
@@ -418,9 +540,13 @@ export default function WorkerJobDetailScreen() {
               </ThemedText>
             </Pressable>
           </View>
-        ) : null}
+        </FloatingActionBar>
+      );
+    }
 
-        {showOperate ? (
+    if (showOperate) {
+      return (
+        <FloatingActionBar disabled={isSubmitting}>
           <Pressable
             accessibilityRole="button"
             onPress={handleOperate}
@@ -430,9 +556,52 @@ export default function WorkerJobDetailScreen() {
               Operate
             </ThemedText>
           </Pressable>
-        ) : null}
+        </FloatingActionBar>
+      );
+    }
 
-        {showCloseJob ? (
+    if (showSupplyResult) {
+      return (
+        <FloatingActionBar disabled={isSubmitting}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleSupplyResult}
+            style={styles.operateButton}
+          >
+            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+              ผลการจัดหา
+            </ThemedText>
+          </Pressable>
+        </FloatingActionBar>
+      );
+    }
+
+    if (showCloseJob) {
+      return (
+        <FloatingActionBar disabled={isSubmitting}>
+          {hasRequestedSupply ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={handlePrintRequisition}
+              style={[styles.printPdfButton, isSubmitting ? styles.disabledButton : undefined]}
+            >
+              <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                พิมพ์ใบเบิก
+              </ThemedText>
+            </Pressable>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={handleRequestSupply}
+              style={[styles.requestSupplyButton, isSubmitting ? styles.disabledButton : undefined]}
+            >
+              <ThemedText lightColor="#b33939" darkColor="#f0a5a5" type="defaultSemiBold">
+                Request Supply
+              </ThemedText>
+            </Pressable>
+          )}
           <Pressable
             accessibilityRole="button"
             disabled={isSubmitting}
@@ -444,15 +613,19 @@ export default function WorkerJobDetailScreen() {
               Close Job
             </ThemedText>
           </Pressable>
-        ) : null}
-      </ScrollView>
-    );
+        </FloatingActionBar>
+      );
+    }
+
+    return null;
   };
 
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
         title={TEXT.REPAIR_COMPUTER_TITLE}
+        subtitle={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_ID_LABEL} ${jobId}` : undefined}
+        moduleIcon="laptop"
         onBackPress={handleBackPress}
         showBackButton
       />
@@ -466,6 +639,8 @@ export default function WorkerJobDetailScreen() {
           {renderContent()}
         </View>
       </View>
+
+      {renderFooterActions()}
 
       <AppToast
         message={toastMessage}
@@ -555,6 +730,15 @@ export default function WorkerJobDetailScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {isPdfOpen && jobId ? (
+        <PdfViewerModal
+          url={getRequisitionPdfUrl(jobId)}
+          title="ใบเบิก"
+          showPrint={false}
+          onClose={() => setIsPdfOpen(false)}
+        />
+      ) : null}
     </ThemedView>
   );
 }
@@ -668,6 +852,37 @@ const styles = StyleSheet.create({
   descriptionBox: {
     gap: 12,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  approvalBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  approvalBadgeApproved: {
+    backgroundColor: "#2e8b57",
+  },
+  approvalBadgeRejected: {
+    backgroundColor: "#b33939",
+  },
+  approvalBadgePending: {
+    backgroundColor: "#f2e2c4",
+  },
+  approvalBadgeText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "700",
+  },
+  approvalBadgePendingText: {
+    color: "#8a6d1f",
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "700",
+  },
   longDescription: {
     color: "#191c1f",
     fontSize: 14,
@@ -777,6 +992,22 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#b33939",
   },
+  requestSupplyButton: {
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#b33939",
+    backgroundColor: "#FFFFFF",
+  },
+  printPdfButton: {
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "#2f6f9f",
+  },
   closeButton: {
     minHeight: 48,
     flexDirection: "row",
@@ -808,7 +1039,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   confirmActions: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     gap: 12,
     marginTop: 18,
   },

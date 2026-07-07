@@ -6,12 +6,13 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import type { RepairComputer } from '@/models/types';
-import { getCategoryIcon } from '@/utils/category-icon';
+import { getRepairComputerTypeIcon } from '@/utils/category-icon';
 import { formatDateTime } from '@/utils/date-format';
 import { getRepairStatusBadgeStyle } from '@/utils/repair-computer-status';
 
 const titleFields = ['repairTypeName', 'repair_type_name', 'description', 'problemTypeName', 'problem_type_name', 'problemType', 'problem_type', 'name', 'title', 'issueDescription', 'issue_description'];
 const repairTypeTitleFields = ['repairTypeName', 'repair_type_name', 'repairType', 'repair_type'];
+const repairTypeIdFields = ['repairTypeId', 'repair_type_id'];
 const supplyFields = ['supplyCode', 'supply_code', 'assetCode', 'asset_code', 'code'];
 const informDateFields = ['informDateTime', 'inform_date_time', 'informDate', 'inform_date', 'createdAt', 'created_at', 'createDate', 'create_date', 'date'];
 const statusLabelFields = ['statusLabel', 'status_label', 'statusName', 'status_name', 'labelStatus', 'label_status'];
@@ -52,10 +53,12 @@ export function RepairComputerJobListItem({ job, fallbackTitle = TEXT.REPAIR_COM
   const jobTitle = getRepairComputerJobText(job, repairTypeOnly ? repairTypeTitleFields : titleFields) || fallbackTitle || jobId || '-';
   const supplyCode = getRepairComputerJobText(job, supplyFields);
   const repairType = getRepairComputerJobText(job, repairTypeTitleFields);
+  const repairTypeId = getRepairComputerJobText(job, repairTypeIdFields);
   // Only show the repair-type row when it adds info beyond the title (avoids the
   // duplicate "ประเภทงาน" line under a title that already is the repair type).
   const repairTypeName = showRepairType && repairType !== jobTitle ? repairType : '';
-  const categoryIcon = getCategoryIcon(repairType);
+  // Prefer the stable job-type id for an accurate icon; fall back to the name.
+  const categoryIcon = getRepairComputerTypeIcon(repairTypeId, repairType);
   const informDate = formatDateTime(getRepairComputerJobText(job, informDateFields));
   const statusLabel = getRepairComputerJobText(job, statusLabelFields);
   const statusId = getRepairComputerJobText(job, statusIdFields);
@@ -65,12 +68,11 @@ export function RepairComputerJobListItem({ job, fallbackTitle = TEXT.REPAIR_COM
     <Pressable accessibilityRole="button" disabled={!onPress} onPress={() => onPress?.(job)}>
       <ThemedView style={styles.itemCard} lightColor="#FFFFFF" darkColor="#151718">
         <View style={styles.itemRow}>
-          {/* Leading category icon — only when a repair type is defined */}
-          {repairType ? (
-            <View style={styles.iconBox}>
-              <IconSymbol name={categoryIcon} size={22} color="#922124" />
-            </View>
-          ) : null}
+          {/* Leading category icon. When a repair type is defined it uses the
+              branded red style; otherwise a related generic icon in grey. */}
+          <View style={[styles.iconBox, repairType ? undefined : styles.iconBoxMuted]}>
+            <IconSymbol name={categoryIcon} size={22} color={repairType ? '#922124' : '#9CA3AF'} />
+          </View>
 
           <View style={styles.itemBody}>
             <View style={styles.itemHeader}>
@@ -162,6 +164,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FBEAEA',
+  },
+  iconBoxMuted: {
+    backgroundColor: '#F3F4F6',
   },
   itemBody: {
     flex: 1,

@@ -36,14 +36,15 @@ export const RP_APP_ID = 'repairComputer';
 
 export const PRIVILEGE_RC_USER = 'user';
 export const PRIVILEGE_RC_FOREMAN = 'foreman';
-export const PRIVILEGE_RC_WORKER = 'worker';
+// Role word follows the legacy server: technician is 'tech' (not 'worker').
+export const PRIVILEGE_RC_TECH = 'tech';
 
 export const REPAIR_COMPUTER_DEFAULT_ROLE = PRIVILEGE_RC_USER;
 
 export const REPAIR_COMPUTER_PRIVILEGES = {
   user: PRIVILEGE_RC_USER,
   foreman: PRIVILEGE_RC_FOREMAN,
-  worker: PRIVILEGE_RC_WORKER,
+  tech: PRIVILEGE_RC_TECH,
 } as const;
 
 export type RepairComputerRole =

@@ -1,4 +1,4 @@
-import { Bell, ScanFace, LogOut, Moon } from 'lucide-react-native';
+import { Bell, ScanFace, LogOut, Moon, SunMoon } from 'lucide-react-native';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
@@ -31,12 +31,15 @@ const D = {
   iconColorBio: '#EA580C',
   iconBgDark: '#F1F5F9',
   iconColorDark: '#475569',
+  iconBgAuto: '#EFF6FF',
+  iconColorAuto: '#2563EB',
 } as const;
 
 const ICON_MAP: Record<string, React.ComponentType<{ size: number; color: string }>> = {
   notifications: Bell,
   fingerprint: ScanFace,
   'dark-mode': Moon,
+  'auto-theme': SunMoon,
 };
 
 function IconCircle({ bg, color, name }: { bg: string; color: string; name: string }) {
@@ -50,7 +53,7 @@ function IconCircle({ bg, color, name }: { bg: string; color: string; name: stri
 
 export default function SettingsScreen() {
   const { user: authUser, signOut } = useAuth();
-  const { isDarkMode, toggleDarkMode } = useTheme();
+  const { isDarkMode, toggleDarkMode, isAutoTheme, toggleAutoTheme } = useTheme();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
@@ -145,15 +148,32 @@ export default function SettingsScreen() {
               />
             </View>
 
-            <View style={styles.row}>
+            <View style={[styles.row, styles.rowDivider]}>
               <IconCircle bg={D.iconBgDark} color={D.iconColorDark} name="dark-mode" />
               <View style={styles.rowBody}>
                 <ThemedText style={styles.rowTitle}>Dark Appearance</ThemedText>
-                <ThemedText style={styles.rowSub}>Switch to low-light theme</ThemedText>
+                <ThemedText style={styles.rowSub}>
+                  {isAutoTheme ? 'Controlled by Auto Theme' : 'Switch to low-light theme'}
+                </ThemedText>
               </View>
               <Switch
                 value={isDarkMode}
                 onValueChange={toggleDarkMode}
+                disabled={isAutoTheme}
+                trackColor={{ false: '#E1E2E6', true: D.primary }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+
+            <View style={styles.row}>
+              <IconCircle bg={D.iconBgAuto} color={D.iconColorAuto} name="auto-theme" />
+              <View style={styles.rowBody}>
+                <ThemedText style={styles.rowTitle}>Auto Theme</ThemedText>
+                <ThemedText style={styles.rowSub}>Match light or dark to the time of day</ThemedText>
+              </View>
+              <Switch
+                value={isAutoTheme}
+                onValueChange={toggleAutoTheme}
                 trackColor={{ false: '#E1E2E6', true: D.primary }}
                 thumbColor="#FFFFFF"
               />

@@ -1,6 +1,7 @@
 import { TEXT } from "@/constants/text";
 import { useFocusEffect } from "expo-router";
 import { navPush } from "@/utils/navigation";
+import type { ReactNode } from "react";
 import { useCallback, useRef, useState } from "react";
 import {
     ActivityIndicator,
@@ -22,7 +23,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import {
     PRIVILEGE_RC_FOREMAN,
-    PRIVILEGE_RC_WORKER,
+    PRIVILEGE_RC_TECH,
     type RepairComputerRole,
 } from "@/constants/types";
 import { useRepairComputerRole } from "@/context/RepairComputerRoleContext";
@@ -51,6 +52,8 @@ type RepairComputerJobListScreenProps = {
     | "/repair-computer/worker-job-detail";
   itemRepairTypeOnly?: boolean;
   itemShowRepairType?: boolean;
+  /** Optional content rendered between the top bar and the list (e.g. a tab switcher). */
+  headerSlot?: ReactNode;
 };
 
 function getJobKey(job: RepairComputer, index: number) {
@@ -69,7 +72,7 @@ function getRoleTitlePrefix(role: RepairComputerRole) {
     return TEXT.REPAIR_COMPUTER_FOREMAN;
   }
 
-  if (role === PRIVILEGE_RC_WORKER) {
+  if (role === PRIVILEGE_RC_TECH) {
     return TEXT.REPAIR_COMPUTER_WORKER;
   }
 
@@ -100,9 +103,10 @@ export function RepairComputerJobListScreen({
   detailPathname = "/repair-computer/edit-job",
   itemRepairTypeOnly = false,
   itemShowRepairType = false,
+  headerSlot,
 }: RepairComputerJobListScreenProps) {
   const { height } = useWindowDimensions();
-  const { currentRole, roleSwitcher } = useRepairComputerRole();
+  const { currentRole } = useRepairComputerRole();
   const screenTitle =
     title === TEXT.REPAIR_COMPUTER_NEW_JOB
       ? `${getRoleTitlePrefix(currentRole)} ${title}`
@@ -292,10 +296,10 @@ export function RepairComputerJobListScreen({
         subtitle={screenTitle}
         moduleIcon="laptop"
         backHref="/"
-        rightContent={roleSwitcher}
       />
 
       <View style={styles.content}>
+        {headerSlot}
         <View style={styles.listWrapper}>
           {renderContent()}
         </View>

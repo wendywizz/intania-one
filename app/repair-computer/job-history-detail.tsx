@@ -23,6 +23,8 @@ import { getRepairStatusBadgeStyle } from "@/utils/repair-computer-status";
 
 const TEXT_NONE = "-";
 const TEXT_RC_NO_SUPPLYCODE = "No supply code";
+// Shown when a person's photo can't be loaded (or there's no staff id).
+const USER_PLACEHOLDER = require("../../assets/images/user-placeholder.jpg");
 
 const detailFields = ["detail", "description", "repairDetail", "repair_detail", "problem"];
 const repairTypeNameFields = ["repairTypeName", "repair_type_name", "problemTypeName", "problem_type_name"];
@@ -109,11 +111,7 @@ function PersonSummaryCard({
           style={styles.personPhoto}
         />
       ) : (
-        <View style={styles.personPhotoPlaceholder}>
-          <ThemedText type="defaultSemiBold" style={styles.personPhotoInitial}>
-            {fallbackInitial || "?"}
-          </ThemedText>
-        </View>
+        <Image source={USER_PLACEHOLDER} style={styles.personPhoto} />
       )}
       <View style={styles.personText}>
         <ThemedText type="defaultSemiBold" style={styles.personName} numberOfLines={2}>
@@ -295,10 +293,10 @@ export default function JobHistoryDetailScreen() {
           <SectionCard title={TEXT.REPAIR_COMPUTER_ASSIGN_CONFIRM}>
             {(workerName || workerId) ? (
               <PersonSummaryCard
-                fallbackTitle="Technician"
+                fallbackTitle="Worker"
                 id={workerId}
                 name={workerName}
-                role="Technician"
+                role="Worker"
               />
             ) : null}
             {(foremanName || foremanId) ? (
@@ -319,6 +317,8 @@ export default function JobHistoryDetailScreen() {
     <ThemedView style={styles.container}>
       <NavTopBar
         title={TEXT.REPAIR_COMPUTER_TITLE}
+        subtitle={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_ID_LABEL} ${jobId}` : undefined}
+        moduleIcon="laptop"
         onBackPress={handleBackPress}
         showBackButton
       />

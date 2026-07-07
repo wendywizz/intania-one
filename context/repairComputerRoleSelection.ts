@@ -1,18 +1,19 @@
 import {
   PRIVILEGE_RC_FOREMAN,
   PRIVILEGE_RC_USER,
-  PRIVILEGE_RC_WORKER,
-  typeComputerRole,
+  PRIVILEGE_RC_TECH,
+  type RepairComputerRole,
 } from '@/constants/types';
 import { TEXT } from '@/constants/text';
 
 export const repairComputerRoleOptions = [
   { label: 'User', value: PRIVILEGE_RC_USER },
-  { label: TEXT.REPAIR_COMPUTER_WORKER, value: PRIVILEGE_RC_WORKER },
+  { label: TEXT.REPAIR_COMPUTER_WORKER, value: PRIVILEGE_RC_TECH },
   { label: TEXT.REPAIR_COMPUTER_FOREMAN, value: PRIVILEGE_RC_FOREMAN },
 ] as const;
 
 const privilegeRoleCache = new Map<string, RepairComputerRole>();
+const selectedRoleCache = new Map<string, RepairComputerRole>();
 export function getCachedRepairComputerPrivilege(userId: string): RepairComputerRole | undefined {
   return privilegeRoleCache.get(userId);
 }
@@ -26,7 +27,7 @@ export function getAccessibleRepairComputerRoleOptions(role: RepairComputerRole)
     return repairComputerRoleOptions;
   }
 
-  if (role === PRIVILEGE_RC_WORKER) {
+  if (role === PRIVILEGE_RC_TECH) {
     return repairComputerRoleOptions.filter((option) => option.value !== PRIVILEGE_RC_FOREMAN);
   }
 

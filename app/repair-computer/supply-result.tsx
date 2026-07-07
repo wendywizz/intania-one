@@ -16,14 +16,21 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
-import { acceptRejectedFromWorker } from "@/services/repairComputerService";
+import { workerSupplyResult } from "@/services/repairComputerService";
 
-const DEFAULT_REJECT_REASON = "Reject job";
-
-export default function WorkerRejectJobScreen() {
-  const params = useLocalSearchParams<{ id?: string | string[] }>();
+export default function SupplyResultScreen() {
+  const params = useLocalSearchParams<{
+    id?: string | string[];
+    backHref?: string | string[];
+  }>();
   const jobId = Array.isArray(params.id) ? params.id[0] : params.id;
-  const [reason, setReason] = useState(DEFAULT_REJECT_REASON);
+  const backHrefParam = Array.isArray(params.backHref)
+    ? params.backHref[0]
+    : params.backHref;
+  const backHref = backHrefParam || "/repair-computer/worker-current-job";
+
+  const [detail, setDetail] = useState("");
+  const [validationError, setValidationError] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -32,20 +39,32 @@ export default function WorkerRejectJobScreen() {
   const handleBackPress = () => {
     if (jobId) {
       router.replace({
-        pathname: "/repair-computer/edit-job",
-        params: {
-          id: jobId,
-          readonly: "true",
-          backHref: "/repair-computer/worker-new-job",
-        },
+        pathname: "/repair-computer/worker-job-detail",
+        params: { id: jobId, readonly: "true", backHref },
       } as Parameters<typeof router.replace>[0]);
       return;
     }
 
-    router.replace("/repair-computer/worker-new-job");
+    router.replace(backHref as Parameters<typeof router.replace>[0]);
   };
 
-  const handleSubmit = async () => {
+  const handleOpenConfirm = () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    setToastMessage("");
+    setToastType("");
+
+    if (!detail.trim()) {
+      setValidationError("Supply result is required");
+      return;
+    }
+
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
     if (!jobId || isSubmitting) {
       return;
     }
@@ -55,14 +74,14 @@ export default function WorkerRejectJobScreen() {
     setToastType("");
 
     try {
-      const result = await acceptRejectedFromWorker(jobId);
+      const result = await workerSupplyResult(jobId, detail.trim());
 
       setToastType("success");
       setToastMessage(
         result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE,
       );
       setTimeout(() => {
-        router.replace("/repair-computer/worker-new-job");
+        router.replace(backHref as Parameters<typeof router.replace>[0]);
       }, 1500);
     } catch (error) {
       setToastType("error");
@@ -86,27 +105,40 @@ export default function WorkerRejectJobScreen() {
       />
 
       <View style={styles.content}>
-        <ThemedView
-          style={styles.panel}
-          lightColor="#FFFFFF"
-          darkColor="#1F2B30"
-        >
-          <ThemedText type="subtitle">Reject Reason</ThemedText>
+        <ThemedView style={styles.panel} lightColor="#FFFFFF" darkColor="#1F2B30">
+          <View style={styles.titleBlock}>
+            <ThemedText type="subtitle">ผลการจัดหา</ThemedText>
+            <ThemedText style={styles.titleDescription}>
+              บันทึกผลการจัดหา/เบิกครุภัณฑ์ที่ได้รับการอนุมัติ แล้วดำเนินการซ่อมต่อ
+            </ThemedText>
+          </View>
 
           <View style={styles.field}>
             <ThemedText type="defaultSemiBold">
-              {TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL}
+              รายละเอียดผลการจัดหา{" "}
+              <ThemedText style={styles.requiredMark}>*</ThemedText>
             </ThemedText>
             <TextInput
               multiline
-              numberOfLines={2}
-              onChangeText={setReason}
-              placeholder={TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL}
+              numberOfLines={3}
+              onChangeText={(value) => {
+                setDetail(value);
+                if (validationError) {
+                  setValidationError("");
+                }
+              }}
+              placeholder="รายละเอียดผลการจัดหา"
               placeholderTextColor="#8A969C"
-              style={styles.textArea}
+              style={[
+                styles.textArea,
+                validationError ? styles.inputError : undefined,
+              ]}
               textAlignVertical="top"
-              value={reason}
+              value={detail}
             />
+            {validationError ? (
+              <ThemedText style={styles.fieldError}>{validationError}</ThemedText>
+            ) : null}
           </View>
         </ThemedView>
       </View>
@@ -114,15 +146,16 @@ export default function WorkerRejectJobScreen() {
       <FloatingActionBar disabled={isSubmitting}>
         <Pressable
           accessibilityRole="button"
-          onPress={() => setIsConfirmOpen(true)}
-          style={styles.submitButton}
+          disabled={isSubmitting}
+          onPress={handleOpenConfirm}
+          style={[
+            styles.submitButton,
+            isSubmitting ? styles.disabledButton : undefined,
+          ]}
         >
-          <ThemedText
-            lightColor="#FFFFFF"
-            darkColor="#FFFFFF"
-            type="defaultSemiBold"
-          >
-            Confirm
+          {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+          <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+            Submit
           </ThemedText>
         </Pressable>
       </FloatingActionBar>
@@ -133,19 +166,16 @@ export default function WorkerRejectJobScreen() {
         animationType="fade"
         onRequestClose={() => setIsConfirmOpen(false)}
       >
-        <Pressable
-          style={styles.backdrop}
-          onPress={() => setIsConfirmOpen(false)}
-        >
+        <Pressable style={styles.backdrop} onPress={() => setIsConfirmOpen(false)}>
           <Pressable>
             <ThemedView
               style={styles.confirmModal}
               lightColor="#FFFFFF"
               darkColor="#151718"
             >
-              <ThemedText type="subtitle">Confirm Reject</ThemedText>
+              <ThemedText type="subtitle">ยืนยันผลการจัดหา</ThemedText>
               <ThemedText style={styles.confirmMessage}>
-                Do you want to reject this repair computer job?
+                ต้องการบันทึกผลการจัดหาและดำเนินการซ่อมต่อหรือไม่?
               </ThemedText>
               <View style={styles.confirmActions}>
                 <Pressable
@@ -159,7 +189,7 @@ export default function WorkerRejectJobScreen() {
                 <Pressable
                   accessibilityRole="button"
                   disabled={isSubmitting}
-                  onPress={handleSubmit}
+                  onPress={handleConfirm}
                   style={[
                     styles.confirmButton,
                     isSubmitting ? styles.disabledButton : undefined,
@@ -193,7 +223,7 @@ export default function WorkerRejectJobScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: "#F8F9FD",
   },
   content: {
     flex: 1,
@@ -202,20 +232,28 @@ const styles = StyleSheet.create({
   panel: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E1E2E6',
+    borderColor: "#E1E2E6",
     gap: 18,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
+  titleBlock: {
+    gap: 10,
+  },
+  titleDescription: {
+    color: "#584140",
+    fontSize: 13,
+    lineHeight: 19,
+  },
   field: {
     gap: 8,
   },
   textArea: {
-    minHeight: 76,
+    minHeight: 96,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "#e1e2e6",
@@ -226,13 +264,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
+  requiredMark: {
+    color: "#ba1a1a",
+  },
+  inputError: {
+    borderColor: "#ba1a1a",
+  },
+  fieldError: {
+    color: "#ba1a1a",
+    fontSize: 13,
+    lineHeight: 18,
+  },
   submitButton: {
     minHeight: 48,
+    flexDirection: "row",
+    gap: 8,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#ba1a1a",
+    backgroundColor: "#b33939",
     paddingHorizontal: 18,
+  },
+  disabledButton: {
+    opacity: 0.65,
   },
   backdrop: {
     flex: 1,
@@ -275,9 +329,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#ba1a1a",
-  },
-  disabledButton: {
-    opacity: 0.65,
+    backgroundColor: "#b33939",
   },
 });

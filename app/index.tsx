@@ -208,6 +208,79 @@ function ShiftCard({ icon, iconBg, iconColor, title, subtitle, onPress, badge }:
   );
 }
 
+// Repair-computer upcoming-shift task keys (from active-summary) → Thai labels.
+const REPAIR_TASK_LABELS: Record<string, string> = {
+  'user-current-job': TEXT.REPAIR_COMPUTER_SHIFT_CURRENT_JOB,
+  'foreman-new-job': TEXT.REPAIR_COMPUTER_SHIFT_NEW_JOB,
+  'foreman-supply-approve': TEXT.REPAIR_COMPUTER_SHIFT_SUPPLY_APPROVE,
+  'foreman-running': TEXT.REPAIR_COMPUTER_SHIFT_RUNNING,
+  'worker-new-job': TEXT.REPAIR_COMPUTER_SHIFT_WORKER_NEW_JOB,
+  'worker-current-job': TEXT.REPAIR_COMPUTER_SHIFT_WORKER_CURRENT_JOB,
+  'worker-supply-wait': TEXT.REPAIR_COMPUTER_SHIFT_SUPPLY_WAIT,
+};
+
+// One repair-computer card listing the current role's tasks. Multiple tasks are
+// bulleted with a leading hyphen; a single task shows no hyphen. Each task keeps
+// its own count badge on the right.
+function RepairShiftCard({
+  tasks,
+  onPress,
+}: {
+  tasks: { label: string; count: number }[];
+  onPress: () => void;
+}) {
+  const multi = tasks.length > 1;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [shiftStyles.card, pressed && shiftStyles.cardPressed]}>
+      <View style={[shiftStyles.iconCircle, { backgroundColor: '#FFF3F3' }]}>
+        <IconSymbol name="laptop" size={20} color={D.primaryContainer} />
+      </View>
+      <View style={shiftStyles.cardContent}>
+        <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} numberOfLines={1} style={shiftStyles.cardTitle}>
+          {TEXT.REPAIR_COMPUTER_MENU_TITLE}
+        </ThemedText>
+        {multi ? (
+          tasks.map((task) => (
+            <View key={task.label} style={shiftStyles.taskRow}>
+              <ThemedText
+                lightColor={D.onSurfaceVariant}
+                darkColor={D.onSurfaceVariant}
+                numberOfLines={1}
+                style={shiftStyles.taskLabel}>
+                {`- ${task.label}`}
+              </ThemedText>
+              <View style={shiftStyles.taskBadge}>
+                <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={shiftStyles.taskBadgeText}>
+                  {task.count}
+                </ThemedText>
+              </View>
+            </View>
+          ))
+        ) : (
+          <ThemedText
+            lightColor={D.onSurfaceVariant}
+            darkColor={D.onSurfaceVariant}
+            numberOfLines={2}
+            style={shiftStyles.cardSubtitle}>
+            {tasks[0].label}
+          </ThemedText>
+        )}
+      </View>
+      {!multi && (
+        <View style={shiftStyles.badge}>
+          <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={shiftStyles.badgeText}>
+            {tasks[0].count}
+          </ThemedText>
+        </View>
+      )}
+      <IconSymbol name="chevron.right" size={16} color={D.onSurfaceVariant} />
+    </Pressable>
+  );
+}
+
 type UpcomingShiftSectionProps = {
   data: ActiveSummaryData | null;
   loading: boolean;
@@ -218,20 +291,25 @@ function UpcomingShiftSection({ data, loading, upcomingExams }: UpcomingShiftSec
   const cards: React.ReactElement[] = [];
 
   if (data) {
-    // ── Repair computer: total count badge → navigate to repair-computer ────
-    if (data.repairComputer.success && data.repairComputer.items.length > 0) {
-      const count = data.repairComputer.items.length;
-      cards.push(
-        <ShiftCard
-          key="repair-summary"
-          icon="laptop"
-          iconBg="#FFF3F3"
-          iconColor={D.primaryContainer}
-          title="Repair Jobs"
-          subtitle={`${count} active job${count > 1 ? 's' : ''}`}
-          onPress={() => navPush('/repair-computer' as Parameters<typeof navPush>[0])}
-        />
-      );
+    // ── Repair computer: role-based tasks (user/foreman/worker) ─────────────
+    // Zero-count tasks are hidden; the card only appears when something is active.
+    if (data.repairComputer.success) {
+      const repairTasks = (data.repairComputer.tasks ?? [])
+        .filter((task) => task.count > 0)
+        .map((task) => ({
+          label: REPAIR_TASK_LABELS[task.key] ?? task.key,
+          count: task.count,
+        }));
+
+      if (repairTasks.length > 0) {
+        cards.push(
+          <RepairShiftCard
+            key="repair-summary"
+            tasks={repairTasks}
+            onPress={() => navPush('/repair-computer' as Parameters<typeof navPush>[0])}
+          />
+        );
+      }
     }
 
     // ── Absence: single → type/date → detail; multiple → count badge → waiting
@@ -414,7 +492,36 @@ const shiftStyles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: '700',
-    lineHeight: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+  },
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 2,
+  },
+  taskLabel: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  taskBadge: {
+    minWidth: 22,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: D.primaryContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    flexShrink: 0,
+  },
+  taskBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    lineHeight: 15,
   },
   emptyCard: {
     flexDirection: 'row',
@@ -449,6 +556,7 @@ export default function HomeScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [newsItems, setNewsItems] = useState<News[]>([]);
   const [isNewsLoading, setIsNewsLoading] = useState(true);
+  const [isNewsError, setIsNewsError] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [activeSummary, setActiveSummary] = useState<ActiveSummaryData | null>(null);
   const [isActiveSummaryLoading, setIsActiveSummaryLoading] = useState(false);
@@ -503,10 +611,12 @@ export default function HomeScreen() {
       void staffNewsFeed().then((items) => {
         if (!isActive) return;
         setNewsItems(items);
+        setIsNewsError(false);
         setIsNewsLoading(false);
       }).catch(() => {
         if (!isActive) return;
         setNewsItems([]);
+        setIsNewsError(true);
         setIsNewsLoading(false);
       });
 
@@ -549,7 +659,9 @@ export default function HomeScreen() {
     const userId = String(authUser?.userId ?? authUser?.staffId ?? '').trim();
 
     await Promise.allSettled([
-      staffNewsFeed().then(setNewsItems).catch(() => setNewsItems([])),
+      staffNewsFeed()
+        .then((items) => { setNewsItems(items); setIsNewsError(false); })
+        .catch(() => { setNewsItems([]); setIsNewsError(true); }),
       getUnreadNotificationCount().then(setUnreadCount).catch(() => {}),
       staffId
         ? getActiveSummary(staffId, userId).then(setActiveSummary).catch(() => setActiveSummary(null))
@@ -719,11 +831,13 @@ export default function HomeScreen() {
             <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} style={styles.sectionTitle}>
               {TEXT.HOME_NEWS_SECTION_TITLE}
             </ThemedText>
-            <Pressable accessibilityRole="button" onPress={() => navPush('/news')}>
-              <ThemedText lightColor={D.primary} darkColor={D.primary} style={styles.seeAll}>
-                {TEXT.HOME_SEE_ALL_THAI}
-              </ThemedText>
-            </Pressable>
+            {isNewsError ? null : (
+              <Pressable accessibilityRole="button" onPress={() => navPush('/news')}>
+                <ThemedText lightColor={D.primary} darkColor={D.primary} style={styles.seeAll}>
+                  {TEXT.HOME_SEE_ALL_THAI}
+                </ThemedText>
+              </Pressable>
+            )}
           </View>
 
           {/* News cards — horizontal scroll, break out of inner padding */}
@@ -733,7 +847,10 @@ export default function HomeScreen() {
                 <ActivityIndicator color={D.primaryContainer} />
               </View>
             ) : displayedNews.length === 0 ? (
-              <View style={[styles.newsCard, { width: newsCardWidth, alignItems: 'center', justifyContent: 'center' }]}>
+              <View style={[styles.newsEmptyCard, { width: screenWidth - D.pad * 2 }]}>
+                <View style={styles.newsEmptyIcon}>
+                  <IconSymbol name="doc.text.fill" size={22} color={D.primaryContainer} />
+                </View>
                 <ThemedText lightColor={D.onSurfaceVariant} darkColor={D.onSurfaceVariant} style={styles.newsEmpty}>
                   {TEXT.HOME_NO_NEWS_MESSAGE}
                 </ThemedText>
@@ -977,6 +1094,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     marginTop: 2,
+  },
+  newsEmptyCard: {
+    backgroundColor: D.surface,
+    borderRadius: 12,
+    alignSelf: 'center',
+    minHeight: 100,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: D.outlineVariant,
+    borderStyle: 'dashed',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+    elevation: 1,
+  },
+  newsEmptyIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF3F3',
   },
   newsEmpty: {
     fontSize: 14,

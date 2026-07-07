@@ -1,9 +1,17 @@
 import { createApiUrl, requestJson } from './api';
 
+export type RepairComputerRoleKey = 'user' | 'foreman' | 'worker';
+
+export type ActiveSummaryRepairTask = {
+  // Stable task key mapped to a label on the client (see index.tsx REPAIR_TASK_LABELS).
+  key: string;
+  count: number;
+};
+
 export type ActiveSummaryRepairComputer = {
   success: boolean;
-  items: Record<string, unknown>[];
-  totalCount: number;
+  role: RepairComputerRoleKey;
+  tasks: ActiveSummaryRepairTask[];
   error?: string;
 };
 

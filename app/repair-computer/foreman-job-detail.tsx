@@ -14,13 +14,18 @@ import {
 } from "react-native";
 
 import { AppToast } from "@/components/app-toast";
+import { FloatingActionBar } from "@/components/floating-action-bar";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import {
+    REPAIR_STATUS_APPROVAL_REJECTED,
+    REPAIR_STATUS_FORWARD_FOREMAN,
     REPAIR_STATUS_NEW_JOB,
+    REPAIR_STATUS_PROCESSING_EQUIPMENT,
+    REPAIR_STATUS_WAIT_APPROVAL,
     REPAIR_STATUS_WAIT_FOREMAN,
     REPAIR_STATUS_WORKER_REJECT,
 } from "@/constants/types";
@@ -28,8 +33,7 @@ import type { RepairComputer } from "@/models/types";
 import { getPersonPhoto } from "@/services/personService";
 import {
     foremanCloseJob,
-    foremanForwardForeman,
-    foremanForwardWorker,
+    foremanForwardReject,
     getJobDetail,
 } from "@/services/repairComputerService";
 import { formatDateTime } from "@/utils/date-format";
@@ -37,7 +41,9 @@ import { getRepairStatusBadgeStyle } from "@/utils/repair-computer-status";
 
 const TEXT_NONE = "-";
 const TEXT_RC_NO_SUPPLYCODE = "No supply code";
-type ForemanCurrentJobAction = "forwardWorker" | "forwardForeman" | "closeJob";
+// Shown when a person's photo can't be loaded (or there's no staff id).
+const USER_PLACEHOLDER = require("../../assets/images/user-placeholder.jpg");
+type ForemanCurrentJobAction = "closeJob" | "forwardReject";
 
 const detailFields = ["detail", "description", "repairDetail", "repair_detail", "problem"];
 const repairTypeNameFields = ["repairTypeName", "repair_type_name", "problemTypeName", "problem_type_name"];
@@ -134,15 +140,20 @@ function normalizeStaffId(staffId: string) {
 function SectionCard({
   children,
   title,
+  right,
 }: {
   children: ReactNode;
   title: string;
+  right?: ReactNode;
 }) {
   return (
     <ThemedView style={styles.sectionCard} lightColor="#FFFFFF" darkColor="#151718">
-      <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-        {title}
-      </ThemedText>
+      <View style={styles.sectionHeader}>
+        <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+          {title}
+        </ThemedText>
+        {right ?? null}
+      </View>
       {children}
     </ThemedView>
   );
@@ -175,11 +186,7 @@ function PersonSummaryCard({
           style={styles.personPhoto}
         />
       ) : (
-        <View style={styles.personPhotoPlaceholder}>
-          <ThemedText type="defaultSemiBold" style={styles.personPhotoInitial}>
-            {fallbackInitial || "?"}
-          </ThemedText>
-        </View>
+        <Image source={USER_PLACEHOLDER} style={styles.personPhoto} />
       )}
       <View style={styles.personText}>
         <ThemedText type="defaultSemiBold" style={styles.personName} numberOfLines={2}>
@@ -254,7 +261,26 @@ export default function ForemanJobDetailScreen() {
   const showActionButtons = status === REPAIR_STATUS_NEW_JOB && Boolean(jobId);
   const showWaitForemanActionButtons =
     status === REPAIR_STATUS_WAIT_FOREMAN && Boolean(jobId);
+  const showForwardForemanActionButtons =
+    status === REPAIR_STATUS_FORWARD_FOREMAN && Boolean(jobId);
   const showAssignedWorker = true;
+  const isWaitApproval = status === REPAIR_STATUS_WAIT_APPROVAL;
+  const isApproved = status === REPAIR_STATUS_PROCESSING_EQUIPMENT;
+  const isApprovalRejected = status === REPAIR_STATUS_APPROVAL_REJECTED;
+  const isSupplyFlow = isWaitApproval || isApproved || isApprovalRejected;
+  const hasApprovalResult = isApproved || isApprovalRejected;
+  const requestSupplyDetail = getJobText(data, [
+    "equipmentRequestDetail",
+    "equipment_request_detail",
+    "requestDetail",
+    "request_appv_detail",
+  ]);
+  const requestSupplyDate = getJobText(data, [
+    "equipmentRequestDateTime",
+    "equipment_request_date_time",
+    "requestDate",
+    "request_appv_date",
+  ]);
   const informDateTime = getJobText(data, [
     "informDateTime",
     "inform_date_time",
@@ -291,19 +317,11 @@ export default function ForemanJobDetailScreen() {
   };
 
   const getConfirmContent = (action: ForemanCurrentJobAction) => {
-    if (action === "forwardWorker") {
+    if (action === "forwardReject") {
       return {
-        title: "Confirm Forward Worker",
-        message: "Do you want to forward this job back to worker?",
-        submit: () => foremanForwardWorker(jobId || ""),
-      };
-    }
-
-    if (action === "forwardForeman") {
-      return {
-        title: "Confirm Forward Foreman",
-        message: "Do you want to forward this job to foreman?",
-        submit: () => foremanForwardForeman(jobId || ""),
+        title: "Confirm Reject Job",
+        message: "Do you want to reject this forwarded job?",
+        submit: () => foremanForwardReject(jobId || ""),
       };
     }
 
@@ -451,12 +469,13 @@ export default function ForemanJobDetailScreen() {
 
         {status !== REPAIR_STATUS_NEW_JOB && showAssignedWorker ? (
           <SectionCard title={TEXT.REPAIR_COMPUTER_ASSIGN_CONFIRM}>
-            {workerName || workerId ? (
+            {/* A forwarded job (4.3) shows only the foreman who forwarded it. */}
+            {status !== REPAIR_STATUS_FORWARD_FOREMAN && (workerName || workerId) ? (
               <PersonSummaryCard
-                fallbackTitle="Technician"
+                fallbackTitle="Worker"
                 id={workerId}
                 name={workerName}
-                role="Technician"
+                role="Worker"
               />
             ) : null}
             {foremanName || foremanId ? (
@@ -464,7 +483,11 @@ export default function ForemanJobDetailScreen() {
                 fallbackTitle={TEXT.REPAIR_COMPUTER_FOREMAN}
                 id={foremanId}
                 name={foremanName}
-                role={TEXT.REPAIR_COMPUTER_FOREMAN}
+                role={
+                  status === REPAIR_STATUS_FORWARD_FOREMAN
+                    ? "ผู้ส่งต่องาน"
+                    : TEXT.REPAIR_COMPUTER_FOREMAN
+                }
               />
             ) : null}
             {status === REPAIR_STATUS_WORKER_REJECT ? (
@@ -476,7 +499,61 @@ export default function ForemanJobDetailScreen() {
           </SectionCard>
         ) : null}
 
-        {showActionButtons ? (
+        {isSupplyFlow ? (
+          <SectionCard
+            title="Request Supply"
+            right={
+              hasApprovalResult ? (
+                <View
+                  style={[
+                    styles.approvalBadge,
+                    isApproved ? styles.approvalBadgeApproved : styles.approvalBadgeRejected,
+                  ]}
+                >
+                  <ThemedText
+                    lightColor="#FFFFFF"
+                    darkColor="#FFFFFF"
+                    style={styles.approvalBadgeText}
+                  >
+                    {isApproved ? "เห็นชอบ" : "ไม่เห็นชอบ"}
+                  </ThemedText>
+                </View>
+              ) : (
+                <View style={[styles.approvalBadge, styles.approvalBadgePending]}>
+                  <ThemedText style={styles.approvalBadgePendingText}>
+                    รอการอนุมัติ
+                  </ThemedText>
+                </View>
+              )
+            }
+          >
+            {requestSupplyDate ? (
+              <RowDetail
+                title="Request date"
+                description={formatDateTime(requestSupplyDate)}
+              />
+            ) : null}
+            <View style={styles.descriptionBox}>
+              <ThemedText style={styles.rowTitle}>Request detail</ThemedText>
+              <ThemedText style={styles.longDescription}>
+                {requestSupplyDetail || TEXT_NONE}
+              </ThemedText>
+            </View>
+          </SectionCard>
+        ) : null}
+
+      </ScrollView>
+    );
+  };
+
+  const renderFooterActions = () => {
+    if (isLoading || error) {
+      return null;
+    }
+
+    if (showActionButtons) {
+      return (
+        <FloatingActionBar disabled={isSubmitting}>
           <View style={styles.actionRow}>
             <Pressable
               accessibilityRole="button"
@@ -522,45 +599,106 @@ export default function ForemanJobDetailScreen() {
               </ThemedText>
             </Pressable>
           </View>
-        ) : null}
+        </FloatingActionBar>
+      );
+    }
 
-        {showWaitForemanActionButtons ? (
+    if (isWaitApproval) {
+      return (
+        <FloatingActionBar disabled={isSubmitting}>
+          <View style={styles.actionRow}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={() =>
+                navPush({
+                  pathname: "/repair-computer/supply-approval",
+                  params: { id: jobId, action: "approve", backHref },
+                })
+              }
+              style={[styles.approveButton, isSubmitting ? styles.disabledButton : undefined]}
+            >
+              <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                Accept
+              </ThemedText>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={() =>
+                navPush({
+                  pathname: "/repair-computer/supply-approval",
+                  params: { id: jobId, action: "reject", backHref },
+                })
+              }
+              style={[styles.rejectButton, isSubmitting ? styles.disabledButton : undefined]}
+            >
+              <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                Reject
+              </ThemedText>
+            </Pressable>
+          </View>
+        </FloatingActionBar>
+      );
+    }
+
+    if (showWaitForemanActionButtons) {
+      return (
+        <FloatingActionBar disabled={isSubmitting}>
           <View style={styles.actionStack}>
-            <Pressable
-              accessibilityRole="button"
-              disabled={isSubmitting}
-              onPress={() => setConfirmAction("forwardWorker")}
-              style={[
-                styles.forwardButton,
-                isSubmitting ? styles.disabledButton : undefined,
-              ]}
-            >
-              <ThemedText
-                lightColor="#FFFFFF"
-                darkColor="#FFFFFF"
-                type="defaultSemiBold"
+            <View style={styles.actionRow}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSubmitting}
+                onPress={() =>
+                  navPush({
+                    pathname: "/repair-computer/assign-job",
+                    params: {
+                      id: jobId,
+                      backHref: "/repair-computer/foreman-job-detail",
+                    },
+                  })
+                }
+                style={[
+                  styles.forwardButton,
+                  isSubmitting ? styles.disabledButton : undefined,
+                ]}
               >
-                Forward Worker
-              </ThemedText>
-            </Pressable>
+                <ThemedText
+                  lightColor="#FFFFFF"
+                  darkColor="#FFFFFF"
+                  type="defaultSemiBold"
+                  style={styles.actionButtonText}
+                >
+                  Fwd Worker
+                </ThemedText>
+              </Pressable>
 
-            <Pressable
-              accessibilityRole="button"
-              disabled={isSubmitting}
-              onPress={() => setConfirmAction("forwardForeman")}
-              style={[
-                styles.forwardButton,
-                isSubmitting ? styles.disabledButton : undefined,
-              ]}
-            >
-              <ThemedText
-                lightColor="#FFFFFF"
-                darkColor="#FFFFFF"
-                type="defaultSemiBold"
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSubmitting}
+                onPress={() =>
+                  navPush({
+                    pathname: "/repair-computer/select-foreman",
+                    params: { id: jobId, backHref },
+                  })
+                }
+                style={[
+                  styles.forwardButton,
+                  isSubmitting ? styles.disabledButton : undefined,
+                ]}
               >
-                Forward Foreman
-              </ThemedText>
-            </Pressable>
+                <ThemedText
+                  lightColor="#FFFFFF"
+                  darkColor="#FFFFFF"
+                  type="defaultSemiBold"
+                  style={styles.actionButtonText}
+                >
+                  Fwd Foreman
+                </ThemedText>
+              </Pressable>
+            </View>
 
             <Pressable
               accessibilityRole="button"
@@ -575,14 +713,55 @@ export default function ForemanJobDetailScreen() {
                 lightColor="#FFFFFF"
                 darkColor="#FFFFFF"
                 type="defaultSemiBold"
+                style={styles.actionButtonText}
               >
                 Close Job
               </ThemedText>
             </Pressable>
           </View>
-        ) : null}
-      </ScrollView>
-    );
+        </FloatingActionBar>
+      );
+    }
+
+    if (showForwardForemanActionButtons) {
+      return (
+        <FloatingActionBar disabled={isSubmitting}>
+          <View style={styles.actionRow}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={() =>
+                navPush({
+                  pathname: "/repair-computer/assign-job",
+                  params: {
+                    id: jobId,
+                    backHref: "/repair-computer/foreman-job-detail",
+                  },
+                })
+              }
+              style={[styles.acceptButton, isSubmitting ? styles.disabledButton : undefined]}
+            >
+              <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                Assign Job
+              </ThemedText>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={() => setConfirmAction("forwardReject")}
+              style={[styles.rejectButton, isSubmitting ? styles.disabledButton : undefined]}
+            >
+              <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                Reject Job
+              </ThemedText>
+            </Pressable>
+          </View>
+        </FloatingActionBar>
+      );
+    }
+
+    return null;
   };
 
   const confirmContent = confirmAction
@@ -593,6 +772,8 @@ export default function ForemanJobDetailScreen() {
     <ThemedView style={styles.container}>
       <NavTopBar
         title={TEXT.REPAIR_COMPUTER_TITLE}
+        subtitle={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_ID_LABEL} ${jobId}` : undefined}
+        moduleIcon="laptop"
         onBackPress={handleBackPress}
         showBackButton
       />
@@ -607,6 +788,8 @@ export default function ForemanJobDetailScreen() {
           {renderContent()}
         </View>
       </View>
+
+      {renderFooterActions()}
 
       <AppToast
         message={toastMessage}
@@ -759,6 +942,37 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  approvalBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  approvalBadgeApproved: {
+    backgroundColor: "#2e8b57",
+  },
+  approvalBadgeRejected: {
+    backgroundColor: "#b33939",
+  },
+  approvalBadgePending: {
+    backgroundColor: "#f2e2c4",
+  },
+  approvalBadgeText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "700",
+  },
+  approvalBadgePendingText: {
+    color: "#8a6d1f",
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "700",
+  },
   detailGrid: {
     gap: 12,
   },
@@ -863,38 +1077,55 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 8,
     marginTop: 4,
   },
   actionStack: {
     gap: 12,
     marginTop: 4,
   },
+  actionButtonText: {
+    fontSize: 13,
+  },
   acceptButton: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 44,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
     backgroundColor: "#b33939",
   },
-  closeJobButton: {
-    minHeight: 48,
+  approveButton: {
+    flex: 1,
+    minHeight: 44,
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "#2e8b57",
+  },
+  closeJobButton: {
+    flex: 1,
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
     borderRadius: 8,
     backgroundColor: "#191c1f",
   },
   forwardButton: {
-    minHeight: 48,
+    flex: 1,
+    minHeight: 44,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 4,
     borderRadius: 8,
     backgroundColor: "#b33939",
   },
   rejectButton: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 44,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
@@ -922,7 +1153,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   confirmActions: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     gap: 12,
     marginTop: 18,
   },

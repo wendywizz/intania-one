@@ -25,7 +25,6 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
-import { useRepairComputerRole } from "@/context/RepairComputerRoleContext";
 import type { RepairComputer } from "@/models/types";
 import type { ListResponse } from "@/services/api";
 import { getUserCurrentJob, removeJob } from "@/services/repairComputerService";
@@ -94,7 +93,6 @@ function blurActiveWebElement() {
 export default function RepairComputerCurrentJobScreen() {
   const { height } = useWindowDimensions();
   const { user: authUser } = useAuth();
-  const { roleSwitcher } = useRepairComputerRole();
   const staffId = authUser?.staffId || USER_ID;
   const pageSize = getPageSize(height);
   const [jobs, setJobs] = useState<RepairComputer[]>([]);
@@ -348,7 +346,6 @@ export default function RepairComputerCurrentJobScreen() {
         subtitle={TEXT.REPAIR_COMPUTER_CURRENT_JOB}
         moduleIcon="laptop"
         backHref="/"
-        rightContent={roleSwitcher}
       />
 
       <View style={styles.content}>
