@@ -1,3 +1,4 @@
+import { Info } from "lucide-react-native";
 import { TEXT } from "@/constants/text";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { navReplace } from "@/utils/navigation";
@@ -344,7 +345,10 @@ function SelectField({
                       <ThemedText
                         lightColor={value === option.value ? "#FFFFFF" : undefined}
                         darkColor={value === option.value ? "#FFFFFF" : undefined}
-                        style={styles.optionText}
+                        style={[
+                          styles.optionText,
+                          value === option.value ? styles.selectedOptionText : undefined,
+                        ]}
                       >
                         {option.label}
                       </ThemedText>
@@ -467,7 +471,7 @@ export default function BusinessScreen() {
       setDeptId(getabsenceTextValue(data, ["deptId", "dept_id", "departmentId", "department_id"]));
       setStep(getabsenceTextValue(data, ["step"]));
       setabsenceStatus(getabsenceTextValue(data, ["absenceStatus", "ABSENCE_status", "status"]));
-      setabsenceTime(getabsenceTextValue(data, ["absenceTime", "ABSENCE_time", "times", "time"]));
+      setabsenceTime(getabsenceTextValue(data, ["absentTime", "absenceTime", "ABSENCE_time", "times", "time"]));
       setWriteDate(getabsenceTextValue(data, ["writeDate", "write_date"]));
     } catch (error) {
       if (!isEditMode) {
@@ -608,7 +612,7 @@ export default function BusinessScreen() {
       return null;
     }
 
-    return getWeekdayLeaveDayCount(startDate, endDate, halfDay !== "0");
+    return getWeekdayLeaveDayCount(startDate, endDate, Number(halfDay) > 0);
   }, [dateError, endDate, halfDay, startDate]);
 
   const handleSubmit = useCallback(() => {
@@ -794,7 +798,7 @@ export default function BusinessScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_BUSINESS_TITLE} backHref={backHref} />
+        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_BUSINESS_TITLE} moduleIcon="briefcase.fill" backHref={backHref} />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -808,7 +812,7 @@ export default function BusinessScreen() {
 
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_BUSINESS_TITLE} backHref={backHref} />
+        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_BUSINESS_TITLE} moduleIcon="briefcase.fill" backHref={backHref} />
         <ErrorState
           variant={shouldShowRetry ? "error" : "empty"}
           title={shouldShowRetry ? TEXT.SHARED_ERROR_TITLE_THAI : TEXT.ABSENCE_CANNOT_REQUEST_TITLE}
@@ -822,15 +826,24 @@ export default function BusinessScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENCE_BUSINESS_TITLE} backHref={backHref} />
+      <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_BUSINESS_TITLE} moduleIcon="briefcase.fill" backHref={backHref} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.pageHeader}>
-          <ThemedText style={styles.pageTitle}>{TEXT.ABSENCE_BUSINESS_FORM_TITLE}</ThemedText>
-          <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_BUSINESS_DESCRIPTION}</ThemedText>
+        <View style={styles.policyCard}>
+          <View style={styles.policyIconWrap}>
+            <Info size={20} color="#0A6E8A" />
+          </View>
+          <View style={styles.policyBody}>
+            <ThemedText style={styles.policyTitle}>
+              {TEXT.ABSENCE_POLICY_NOTE_LABEL}
+            </ThemedText>
+            <ThemedText style={styles.policyText}>
+              {TEXT.ABSENCE_POLICY_NOTE_TEXT}
+            </ThemedText>
+          </View>
         </View>
 
         <View style={styles.formCard}>
@@ -889,6 +902,7 @@ export default function BusinessScreen() {
             <View style={styles.dateRow}>
               <DatePickerField
                 label={TEXT.ABSENCE_START_DATE_LABEL}
+                hideLabel
                 value={startDate}
                 minimumDate={minimumStartDate}
                 onChange={(date) => {
@@ -901,8 +915,10 @@ export default function BusinessScreen() {
                 }}
                 hasError={Boolean(displayedDateError)}
               />
+              <ThemedText style={styles.dateSeparator}>ถึง</ThemedText>
               <DatePickerField
                 label={TEXT.ABSENCE_END_DATE_LABEL}
+                hideLabel
                 value={endDate}
                 minimumDate={minimumEndDate}
                 highlightedStartDate={startDate}
@@ -938,7 +954,7 @@ export default function BusinessScreen() {
             label={TEXT.ABSENCE_HALF_DAY_LABEL}
             placeholder={TEXT.ABSENCE_HALF_DAY_PLACEHOLDER}
             value={halfDay}
-            options={halfDayOptions}
+            options={halfDayOptions.filter((option) => option.value !== "0")}
             isOpen={openSelect === "halfDay"}
             onToggle={() =>
               setOpenSelect(openSelect === "halfDay" ? null : "halfDay")
@@ -1103,7 +1119,7 @@ export default function BusinessScreen() {
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => setIsConfirmVisible(false)}
-                  style={styles.secondaryButton}
+                  style={[styles.secondaryButton, styles.confirmActionButton]}
                 >
                   <ThemedText type="defaultSemiBold">
                     {TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL}
@@ -1115,6 +1131,7 @@ export default function BusinessScreen() {
                   onPress={handleConfirmSubmit}
                   style={[
                     styles.submitButton,
+                    styles.confirmActionButton,
                     isSubmitting ? styles.disabledButton : undefined,
                   ]}
                 >
@@ -1161,7 +1178,7 @@ export default function BusinessScreen() {
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => setIsRemoveConfirmVisible(false)}
-                  style={styles.secondaryButton}
+                  style={[styles.secondaryButton, styles.confirmActionButton]}
                 >
                   <ThemedText type="defaultSemiBold">
                     {TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL}
@@ -1173,6 +1190,7 @@ export default function BusinessScreen() {
                   onPress={handleConfirmRemove}
                   style={[
                     styles.removeConfirmButton,
+                    styles.confirmActionButton,
                     isRemoving ? styles.disabledButton : undefined,
                   ]}
                 >
@@ -1207,24 +1225,43 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F9FD",
   },
   scrollContent: {
+    paddingTop: 20,
     paddingBottom: 24,
   },
-  pageHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
+  policyCard: {
+    flexDirection: "row",
+    gap: 12,
+    backgroundColor: "#EAF4F8",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#C6E1EA",
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 14,
+    padding: 16,
+  },
+  policyIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#D6EBF2",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  policyBody: {
+    flex: 1,
     gap: 4,
   },
-  pageTitle: {
-    fontSize: 22,
-    lineHeight: 30,
-    fontWeight: "700",
-    color: "#191C1F",
-  },
-  pageSubtitle: {
+  policyTitle: {
     fontSize: 13,
     lineHeight: 18,
-    color: "#687076",
+    fontWeight: "600",
+    color: "#0A6E8A",
+  },
+  policyText: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#33474E",
   },
   formCard: {
     marginHorizontal: 16,
@@ -1260,17 +1297,19 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E8ECF0",
   },
   fieldLabel: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: "600",
     letterSpacing: 0.6,
-    color: "#687076",
+    color: "#000000",
     textTransform: "uppercase",
   },
   input: {
     minHeight: 44,
-    backgroundColor: "#F2F3F7",
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#BFD2DA",
     color: "#191C1F",
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
@@ -1284,8 +1323,10 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 80,
-    backgroundColor: "#F2F3F7",
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#BFD2DA",
     color: "#191C1F",
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
@@ -1295,7 +1336,13 @@ const styles = StyleSheet.create({
   },
   dateRow: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 12,
+  },
+  dateSeparator: {
+    color: "#687076",
+    fontSize: 14,
+    fontWeight: "600",
   },
   hint: {
     fontSize: 12,
@@ -1320,8 +1367,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#F2F3F7",
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#BFD2DA",
     paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 8,
@@ -1376,9 +1425,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   confirmActions: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     gap: 12,
     marginTop: 20,
+  },
+  confirmActionButton: {
+    flex: 1,
+    minWidth: 0,
   },
   selectModalHeader: {
     flexDirection: "row",
@@ -1447,6 +1500,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontFamily: AppFonts.psuRegular,
+  },
+  selectedOptionText: {
+    color: "#FFFFFF",
   },
   optionActionText: {
     fontSize: 13,

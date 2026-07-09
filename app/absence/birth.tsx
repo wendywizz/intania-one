@@ -172,7 +172,10 @@ function SelectField({
                       <ThemedText
                         lightColor={value === option.value ? "#FFFFFF" : undefined}
                         darkColor={value === option.value ? "#FFFFFF" : undefined}
-                        style={styles.optionText}
+                        style={[
+                          styles.optionText,
+                          value === option.value ? styles.selectedOptionText : undefined,
+                        ]}
                       >
                         {option.label}
                       </ThemedText>
@@ -253,7 +256,7 @@ export default function BirthScreen() {
       setDeptId(getabsenceTextValue(data, ["deptId", "dept_id", "departmentId", "department_id"]));
       setStep(getabsenceTextValue(data, ["step"]));
       setabsenceStatus(getabsenceTextValue(data, ["absenceStatus", "ABSENCE_status", "status"]));
-      setabsenceTime(getabsenceTextValue(data, ["absenceTime", "ABSENCE_time", "times", "time"]));
+      setabsenceTime(getabsenceTextValue(data, ["absentTime", "absenceTime", "ABSENCE_time", "times", "time"]));
     } catch (error) {
       setInitialError(
         error instanceof Error
@@ -434,7 +437,7 @@ export default function BirthScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} />
+        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_BIRTH_TITLE} moduleIcon="figure.child" backHref={backHref} />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -446,7 +449,7 @@ export default function BirthScreen() {
   if (initialError) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} />
+        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_BIRTH_TITLE} moduleIcon="figure.child" backHref={backHref} />
         <ErrorState
           variant={isRetryableInitialError(initialError) ? "error" : "empty"}
           title={
@@ -466,7 +469,7 @@ export default function BirthScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} />
+      <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_BIRTH_TITLE} moduleIcon="figure.child" backHref={backHref} />
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -509,6 +512,7 @@ export default function BirthScreen() {
               <View style={styles.dateRow}>
                 <DatePickerField
                   label={TEXT.ABSENCE_START_DATE_LABEL}
+                  hideLabel
                   value={startDate}
                   onChange={(date) => {
                     setStartDate(date);
@@ -522,6 +526,7 @@ export default function BirthScreen() {
                 />
                 <DatePickerField
                   label={TEXT.ABSENCE_END_DATE_LABEL}
+                  hideLabel
                   value={endDate}
                   minimumDate={minimumEndDate}
                   highlightedStartDate={startDate}
@@ -645,7 +650,7 @@ export default function BirthScreen() {
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => setIsConfirmVisible(false)}
-                  style={styles.secondaryButton}
+                  style={[styles.secondaryButton, styles.confirmActionButton]}
                 >
                   <ThemedText type="defaultSemiBold">
                     {TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL}
@@ -657,6 +662,7 @@ export default function BirthScreen() {
                   onPress={handleConfirmSubmit}
                   style={[
                     styles.submitButton,
+                    styles.confirmActionButton,
                     isSubmitting ? styles.disabledButton : undefined,
                   ]}
                 >
@@ -702,7 +708,7 @@ export default function BirthScreen() {
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => setIsRemoveConfirmVisible(false)}
-                  style={styles.secondaryButton}
+                  style={[styles.secondaryButton, styles.confirmActionButton]}
                 >
                   <ThemedText type="defaultSemiBold">
                     {TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL}
@@ -714,6 +720,7 @@ export default function BirthScreen() {
                   onPress={handleConfirmRemove}
                   style={[
                     styles.removeConfirmButton,
+                    styles.confirmActionButton,
                     isRemoving ? styles.disabledButton : undefined,
                   ]}
                 >
@@ -876,9 +883,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   confirmActions: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     gap: 12,
     marginTop: 20,
+  },
+  confirmActionButton: {
+    flex: 1,
+    minWidth: 0,
   },
   selectModalHeader: {
     flexDirection: "row",
@@ -921,6 +932,9 @@ const styles = StyleSheet.create({
   optionText: {
     color: "#11181C",
     lineHeight: 20,
+  },
+  selectedOptionText: {
+    color: "#FFFFFF",
   },
   emptyOption: {
     color: "#687076",

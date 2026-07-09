@@ -7,6 +7,9 @@ import { ThemedView } from '@/components/themed-view';
 
 type DatePickerFieldProps = {
   label: string;
+  /** Hide the text label above the field (the label is still used for the
+   * placeholder "เลือก{label}"). */
+  hideLabel?: boolean;
   value: Date | null;
   minimumDate?: Date;
   maximumDate?: Date;
@@ -67,6 +70,7 @@ function getCalendarDays(monthDate: Date) {
 
 export function DatePickerField({
   label,
+  hideLabel,
   value,
   minimumDate,
   maximumDate,
@@ -97,12 +101,17 @@ export function DatePickerField({
 
   return (
     <View style={styles.container}>
-      <ThemedText type="defaultSemiBold">{label}</ThemedText>
+      {hideLabel ? null : (
+        <ThemedText type="defaultSemiBold">{label}</ThemedText>
+      )}
       <Pressable
         accessibilityRole="button"
         onPress={() => setIsOpen(true)}
         style={[styles.button, hasError ? styles.inputError : undefined]}>
-        <ThemedText style={[styles.buttonText, !value && styles.placeholder]}>
+        <ThemedText
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          style={[styles.buttonText, !value && styles.placeholder]}>
           {value ? formatDisplayDate(value) : `เลือก${label}`}
         </ThemedText>
       </Pressable>
@@ -210,6 +219,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#11181C',
+    fontSize: 13,
   },
   placeholder: {
     color: '#8A969C',

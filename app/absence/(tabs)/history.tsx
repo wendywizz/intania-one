@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   listContent: {
     gap: 12,
     padding: 16,
-    paddingTop: 8,
+    paddingTop: 20,
     paddingBottom: 96,
   },
   itemCard: {

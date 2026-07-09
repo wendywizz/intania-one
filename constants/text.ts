@@ -21,6 +21,7 @@ export const TEXT = {
   SHARED_LOADING_HISTORY: 'กำลังโหลดประวัติ',
   SHARED_MODAL: 'โมดัล',
   SHARED_NO_HISTORY: 'ไม่มีประวัติ',
+  SHARED_NO_ITEMS: 'ไม่มีรายการ',
   SHARED_GO_BACK: 'ย้อนกลับ',
   SHARED_OK: 'ตกลง',
   SHARED_PLEASE_WAIT_A_MOMENT: 'กรุณารอสักครู่',
@@ -96,6 +97,9 @@ export const TEXT = {
   ABSENCE_LEAVE_DATE_LABEL: 'วันที่ลา',
   ABSENCE_LEAVE_DAY_COUNT_LABEL: 'จำนวนวันลา',
   ABSENCE_DETAIL_SUBTITLE: 'รายละเอียดคำขอลา',
+  ABSENCE_DETAIL_TITLE: 'รายละเอียดการลา',
+  ABSENCE_DETAIL_INFO_SECTION: 'ข้อมูลการลา',
+  ABSENCE_DETAIL_ATTACHMENT_SECTION: 'ไฟล์แนบ',
   ABSENCE_VIEW_ATTACHED_FILE: 'ดูไฟล์แนบ',
   ABSENCE_MEDICAL_CERTIFICATE_ACTION: 'เลือกไฟล์',
   ABSENCE_MEDICAL_CERTIFICATE_LABEL: 'ใบรับรองแพทย์',
@@ -150,7 +154,7 @@ export const TEXT = {
   ABSENCE_RELAX_DESCRIPTION: 'ยื่นคำขอลาพักผ่อน',
   ABSENCE_BIRTH_DESCRIPTION: 'ยื่นคำขอลาคลอด',
   ABSENCE_POLICY_NOTE_LABEL: 'นโยบายการลา',
-  ABSENCE_POLICY_NOTE_TEXT: 'การยื่นลาป่วยและลากิจส่วนตัวต้องรวมกันไม่เกิน 18 ครั้งและไม่เกิน 45 วันต่อปีงบประมาณ ลาพักผ่อนต้องรวมกันไม่เกิน 30 วันต่อปีงบประมาณ',
+  ABSENCE_POLICY_NOTE_TEXT: 'การยื่นลาป่วยและลากิจส่วนตัวต้องรวมกันไม่เกิน 18 ครั้งและไม่เกิน 45 วันต่อปีงบประมาณ',
 
   // absence - Pending tab
   ABSENCE_PENDING_TITLE: 'รออนุมัติ',
@@ -158,11 +162,24 @@ export const TEXT = {
   ABSENCE_PENDING_BADGE: 'รออนุมัติ',
   ABSENCE_PENDING_STEP_DEPT_HEAD: 'กำลังรอการอนุมัติจากหัวหน้าแผนก',
   ABSENCE_PENDING_STEP_HR: 'กำลังรอการอนุมัติจากฝ่ายทรัพยากรบุคคล',
-  ABSENCE_APPROVE_TAB: 'รออนุมัติลา',
-  ABSENCE_MINE_TAB: 'อนุมัติผู้ยื่นลา',
+  ABSENCE_APPROVE_TAB: 'อนุมัติการลาของผู้อื่น',
+  ABSENCE_MINE_TAB: 'อนุมัติการลาของฉัน',
   ABSENCE_APPROVE_EMPTY: 'ไม่มีคำขอลาที่รออนุมัติ',
   ABSENCE_APPROVE_SUBTITLE: 'คำขอลาที่รอให้คุณอนุมัติ',
   ABSENCE_MINE_SUBTITLE: 'คำขอลาของคุณที่รอการอนุมัติ',
+
+  // absence - Approval detail / decision
+  ABSENCE_APPROVE_DETAIL_SUBTITLE: 'พิจารณาคำขอลา',
+  ABSENCE_APPROVE_REQUESTER_LABEL: 'ผู้ยื่นลา',
+  ABSENCE_APPROVE_TYPE_LABEL: 'ประเภทการลา',
+  ABSENCE_APPROVE_ACCEPT: 'อนุมัติ',
+  ABSENCE_APPROVE_REJECT: 'ไม่อนุมัติ',
+  ABSENCE_APPROVE_NOTE_LABEL: 'ความเห็น',
+  ABSENCE_APPROVE_NOTE_PLACEHOLDER: 'กรอกความเห็น',
+  ABSENCE_APPROVE_NOTE_REQUIRED: 'กรุณากรอกความเห็น',
+  ABSENCE_APPROVE_SUBMIT: 'บันทึกผลการพิจารณา',
+  ABSENCE_APPROVE_SUBMIT_SUCCESS: 'บันทึกผลการพิจารณาเรียบร้อย',
+  ABSENCE_APPROVE_SUBMIT_ERROR: 'ไม่สามารถบันทึกผลการพิจารณาได้',
 
   // absence - Stats tab
   ABSENCE_STATS_LOADING_TITLE: 'กำลังโหลดสถิติ',

@@ -1,4 +1,5 @@
 import { TEXT } from "@/constants/text";
+import { Info } from "lucide-react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { navReplace } from "@/utils/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -30,6 +31,7 @@ import {
   getabsenceData,
   initabsenceData,
   removeData,
+  statsData,
   updateabsenceData,
 } from "@/services/absenceService";
 import {
@@ -302,7 +304,10 @@ function SelectField({
                       <ThemedText
                         lightColor={value === option.value ? "#FFFFFF" : undefined}
                         darkColor={value === option.value ? "#FFFFFF" : undefined}
-                        style={styles.optionText}
+                        style={[
+                          styles.optionText,
+                          value === option.value ? styles.selectedOptionText : undefined,
+                        ]}
                       >
                         {option.label}
                       </ThemedText>
@@ -378,6 +383,7 @@ export default function RelaxScreen() {
   const [isRemoveConfirmVisible, setIsRemoveConfirmVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "">("");
+  const [maxRelaxDays, setMaxRelaxDays] = useState<number | null>(null);
   const minimumStartDate = useMemo(() => startOfDay(new Date()), []);
   const userId = authUser?.staffId || USER_ID;
   const editItem = loadedEditItem ?? routeEditItem;
@@ -419,7 +425,7 @@ export default function RelaxScreen() {
       setDeptId(getabsenceTextValue(data, ["deptId", "dept_id", "departmentId", "department_id"]));
       setStep(getabsenceTextValue(data, ["step"]));
       setabsenceStatus(getabsenceTextValue(data, ["absenceStatus", "ABSENCE_status", "status"]));
-      setabsenceTime(getabsenceTextValue(data, ["absenceTime", "ABSENCE_time", "times", "time"]));
+      setabsenceTime(getabsenceTextValue(data, ["absentTime", "absenceTime", "ABSENCE_time", "times", "time"]));
     } catch (error) {
       if (!isEditMode) {
         setInitialError(
@@ -455,6 +461,31 @@ export default function RelaxScreen() {
       loadInitialabsenceData();
     }, [loadInitialabsenceData]),
   );
+
+  useEffect(() => {
+    let isActive = true;
+
+    statsData(userId)
+      .then((result) => {
+        if (!isActive) {
+          return;
+        }
+
+        const remainDays = Number(
+          (result as { relaxRemainDays?: unknown } | null)?.relaxRemainDays,
+        );
+        setMaxRelaxDays(Number.isFinite(remainDays) ? remainDays : null);
+      })
+      .catch(() => {
+        if (isActive) {
+          setMaxRelaxDays(null);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [userId]);
 
   const minimumEndDate = useMemo(
     () => (startDate ? startOfDay(startDate) : undefined),
@@ -736,7 +767,7 @@ export default function RelaxScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_RELAX_TITLE} backHref={backHref} />
+        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_RELAX_TITLE} moduleIcon="sun.max.fill" backHref={backHref} />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -750,7 +781,7 @@ export default function RelaxScreen() {
 
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_RELAX_TITLE} backHref={backHref} />
+        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_RELAX_TITLE} moduleIcon="sun.max.fill" backHref={backHref} />
         <ErrorState
           variant={shouldShowRetry ? "error" : "empty"}
           title={shouldShowRetry ? TEXT.SHARED_ERROR_TITLE_THAI : TEXT.ABSENCE_CANNOT_REQUEST_TITLE}
@@ -764,16 +795,27 @@ export default function RelaxScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENCE_RELAX_TITLE} backHref={backHref} />
+      <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_RELAX_TITLE} moduleIcon="sun.max.fill" backHref={backHref} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.pageHeader}>
-          <ThemedText style={styles.pageTitle}>{TEXT.ABSENCE_RELAX_FORM_TITLE}</ThemedText>
-          <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_RELAX_DESCRIPTION}</ThemedText>
-        </View>
+        {maxRelaxDays !== null ? (
+          <View style={styles.policyCard}>
+            <View style={styles.policyIconWrap}>
+              <Info size={20} color="#0A6E8A" />
+            </View>
+            <View style={styles.policyBody}>
+              <ThemedText style={styles.policyTitle}>
+                {TEXT.ABSENCE_POLICY_NOTE_LABEL}
+              </ThemedText>
+              <ThemedText style={styles.policyText}>
+                {`ท่านสามารถยื่นลาพักผ่อนได้จำนวน ${maxRelaxDays.toLocaleString("th-TH")} วัน`}
+              </ThemedText>
+            </View>
+          </View>
+        ) : null}
 
         <View style={styles.formCard}>
           <SelectField
@@ -802,6 +844,7 @@ export default function RelaxScreen() {
             <View style={styles.dateRow}>
               <DatePickerField
                 label={TEXT.ABSENCE_START_DATE_LABEL}
+                hideLabel
                 value={startDate}
                 minimumDate={minimumStartDate}
                 onChange={(date) => {
@@ -816,6 +859,7 @@ export default function RelaxScreen() {
               />
               <DatePickerField
                 label={TEXT.ABSENCE_END_DATE_LABEL}
+                hideLabel
                 value={endDate}
                 minimumDate={minimumEndDate}
                 highlightedStartDate={startDate}
@@ -1091,30 +1135,49 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F9FD",
   },
   scrollContent: {
+    paddingTop: 16,
     paddingBottom: 24,
-  },
-  pageHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-    gap: 4,
-  },
-  pageTitle: {
-    fontSize: 22,
-    lineHeight: 30,
-    fontWeight: "700",
-    color: "#191C1F",
-  },
-  pageSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: "#687076",
   },
   formCard: {
     marginHorizontal: 16,
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     overflow: "hidden",
+  },
+  policyCard: {
+    flexDirection: "row",
+    gap: 12,
+    backgroundColor: "#EAF4F8",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#C6E1EA",
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 14,
+    padding: 16,
+  },
+  policyIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#D6EBF2",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  policyBody: {
+    flex: 1,
+    gap: 4,
+  },
+  policyTitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "600",
+    color: "#0A6E8A",
+  },
+  policyText: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#33474E",
   },
   stateContent: {
     flex: 1,
@@ -1144,17 +1207,19 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E8ECF0",
   },
   fieldLabel: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: "600",
     letterSpacing: 0.6,
-    color: "#687076",
+    color: "#000000",
     textTransform: "uppercase",
   },
   input: {
     minHeight: 44,
-    backgroundColor: "#F2F3F7",
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#BFD2DA",
     color: "#191C1F",
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
@@ -1193,8 +1258,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#F2F3F7",
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#BFD2DA",
     paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 8,
@@ -1244,7 +1311,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   confirmActions: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     gap: 12,
     marginTop: 20,
   },
@@ -1312,6 +1379,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontFamily: AppFonts.psuRegular,
+  },
+  selectedOptionText: {
+    color: "#FFFFFF",
   },
   emptyOption: {
     color: "#687076",

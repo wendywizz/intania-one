@@ -60,7 +60,7 @@ export function AgentSelectField({
 
   return (
     <View style={styles.field}>
-      <ThemedText type="defaultSemiBold">{TEXT.ABSENCE_DELEGATE_LABEL}</ThemedText>
+      <ThemedText style={styles.fieldLabel}>{TEXT.ABSENCE_DELEGATE_LABEL}</ThemedText>
       <Pressable
         accessibilityRole="button"
         onPress={handleToggle}
@@ -183,7 +183,19 @@ export function AgentSelectField({
 
 const styles = StyleSheet.create({
   field: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     gap: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E8ECF0",
+  },
+  fieldLabel: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "600",
+    letterSpacing: 0.6,
+    color: "#000000",
+    textTransform: "uppercase",
   },
   selectButton: {
     minHeight: 48,
@@ -298,7 +310,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   optionScroll: {
-    maxHeight: 420,
+    // Fixed height so filtering the list doesn't resize the modal on every
+    // keystroke — the modal stays a constant size and only the list scrolls.
+    height: 360,
   },
   optionScrollContent: {
     gap: 8,

@@ -1316,12 +1316,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   confirmActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
+    flexDirection: "row-reverse",
     gap: 10,
     marginTop: 18,
   },
   cancelButton: {
+    flex: 1,
     minHeight: 44,
     minWidth: 96,
     alignItems: "center",
@@ -1333,6 +1333,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   confirmButton: {
+    flex: 1,
     minHeight: 44,
     minWidth: 96,
     flexDirection: "row",
@@ -1344,6 +1345,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   removeConfirmButton: {
+    flex: 1,
     minHeight: 44,
     minWidth: 96,
     flexDirection: "row",

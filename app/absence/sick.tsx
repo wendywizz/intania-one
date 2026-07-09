@@ -299,7 +299,10 @@ function SelectField({
                         darkColor={
                           value === option.value ? "#FFFFFF" : undefined
                         }
-                        style={styles.optionText}
+                        style={[
+                          styles.optionText,
+                          value === option.value ? styles.selectedOptionText : undefined,
+                        ]}
                       >
                         {option.label}
                       </ThemedText>
@@ -452,7 +455,7 @@ export default function SickScreen() {
       setDeptId(getabsenceTextValue(data, ["deptId", "dept_id", "departmentId", "department_id"]));
       setStep(getabsenceTextValue(data, ["step"]));
       setabsenceStatus(getabsenceTextValue(data, ["absenceStatus", "ABSENCE_status", "status"]));
-      setabsenceTime(getabsenceTextValue(data, ["absenceTime", "ABSENCE_time", "times", "time"]));
+      setabsenceTime(getabsenceTextValue(data, ["absentTime", "absenceTime", "ABSENCE_time", "times", "time"]));
     } catch (error) {
       if (!isEditMode) {
         setInitialError(
@@ -769,7 +772,7 @@ export default function SickScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} />
+        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_SICK_TITLE} moduleIcon="cross.fill" backHref={backHref} />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -783,7 +786,7 @@ export default function SickScreen() {
 
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} />
+        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_SICK_TITLE} moduleIcon="cross.fill" backHref={backHref} />
         <ErrorState
           variant={shouldShowRetry ? "error" : "empty"}
           title={shouldShowRetry ? TEXT.SHARED_ERROR_TITLE_THAI : PENDING_APPROVAL_TITLE}
@@ -797,15 +800,24 @@ export default function SickScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} />
+      <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_SICK_TITLE} moduleIcon="cross.fill" backHref={backHref} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.pageHeader}>
-          <ThemedText style={styles.pageTitle}>{TEXT.ABSENCE_SICK_FORM_TITLE}</ThemedText>
-          <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_SICK_DESCRIPTION}</ThemedText>
+        <View style={styles.policyCard}>
+          <View style={styles.policyIconWrap}>
+            <Info size={20} color="#0A6E8A" />
+          </View>
+          <View style={styles.policyBody}>
+            <ThemedText style={styles.policyTitle}>
+              {TEXT.ABSENCE_POLICY_NOTE_LABEL}
+            </ThemedText>
+            <ThemedText style={styles.policyText}>
+              {TEXT.ABSENCE_POLICY_NOTE_TEXT}
+            </ThemedText>
+          </View>
         </View>
 
         <View style={styles.formCard}>
@@ -864,6 +876,7 @@ export default function SickScreen() {
             <View style={styles.dateRow}>
               <DatePickerField
                 label={TEXT.ABSENCE_START_DATE_LABEL}
+                hideLabel
                 value={startDate}
                 maximumDate={maximumStartDate}
                 onChange={(date) => {
@@ -882,6 +895,7 @@ export default function SickScreen() {
               />
               <DatePickerField
                 label={TEXT.ABSENCE_END_DATE_LABEL}
+                hideLabel
                 value={endDate}
                 minimumDate={minimumEndDate}
                 maximumDate={maximumStartDate}
@@ -918,7 +932,7 @@ export default function SickScreen() {
             label={TEXT.ABSENCE_HALF_DAY_LABEL}
             placeholder={TEXT.ABSENCE_HALF_DAY_PLACEHOLDER}
             value={halfDay}
-            options={halfDayOptions}
+            options={halfDayOptions.filter((option) => option.value !== "0")}
             isOpen={openSelect === "halfDay"}
             onToggle={() =>
               setOpenSelect(openSelect === "halfDay" ? null : "halfDay")
@@ -955,7 +969,7 @@ export default function SickScreen() {
             ) : null}
           </View>
 
-          <View style={styles.field}>
+          <View style={[styles.field, styles.medicalField]}>
             <View style={styles.toggleRow}>
               <ThemedText style={styles.fieldLabel}>
                 {TEXT.ABSENCE_MEDICAL_CERTIFICATE_TOGGLE}
@@ -1033,20 +1047,6 @@ export default function SickScreen() {
                 ) : null}
               </>
             ) : null}
-          </View>
-
-          <View style={styles.policyCard}>
-            <View style={styles.policyIconWrap}>
-              <Info size={20} color="#B33939" />
-            </View>
-            <View style={styles.policyBody}>
-              <ThemedText style={styles.policyTitle}>
-                {TEXT.ABSENCE_POLICY_NOTE_LABEL}
-              </ThemedText>
-              <ThemedText style={styles.policyText}>
-                {TEXT.ABSENCE_POLICY_NOTE_TEXT}
-              </ThemedText>
-            </View>
           </View>
         </View>
 
@@ -1146,7 +1146,7 @@ export default function SickScreen() {
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => setIsConfirmVisible(false)}
-                  style={styles.secondaryButton}
+                  style={[styles.secondaryButton, styles.confirmActionButton]}
                 >
                   <ThemedText type="defaultSemiBold">
                     {CONFIRM_SUBMIT_CANCEL}
@@ -1203,7 +1203,7 @@ export default function SickScreen() {
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => setIsRemoveConfirmVisible(false)}
-                  style={styles.secondaryButton}
+                  style={[styles.secondaryButton, styles.confirmActionButton]}
                 >
                   <ThemedText type="defaultSemiBold">
                     {CONFIRM_SUBMIT_CANCEL}
@@ -1215,6 +1215,7 @@ export default function SickScreen() {
                   onPress={handleConfirmRemove}
                   style={[
                     styles.removeConfirmButton,
+                    styles.confirmActionButton,
                     isRemoving ? styles.disabledButton : undefined,
                   ]}
                 >
@@ -1296,24 +1297,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F9FD",
   },
   scrollContent: {
+    paddingTop: 16,
     paddingBottom: 24,
-  },
-  pageHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-    gap: 4,
-  },
-  pageTitle: {
-    fontSize: 22,
-    lineHeight: 30,
-    fontWeight: "700",
-    color: "#191C1F",
-  },
-  pageSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: "#687076",
   },
   formCard: {
     marginHorizontal: 16,
@@ -1349,17 +1334,19 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E8ECF0",
   },
   fieldLabel: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: "600",
     letterSpacing: 0.6,
-    color: "#687076",
+    color: "#000000",
     textTransform: "uppercase",
   },
   input: {
     minHeight: 44,
-    backgroundColor: "#F2F3F7",
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#BFD2DA",
     color: "#191C1F",
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
@@ -1373,8 +1360,10 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 80,
-    backgroundColor: "#F2F3F7",
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#BFD2DA",
     color: "#191C1F",
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
@@ -1409,8 +1398,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#F2F3F7",
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#BFD2DA",
     paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 8,
@@ -1460,7 +1451,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   confirmActions: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     gap: 12,
     marginTop: 20,
   },
@@ -1508,6 +1499,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontFamily: AppFonts.psuRegular,
   },
+  selectedOptionText: {
+    color: "#FFFFFF",
+  },
   emptyOption: {
     color: "#687076",
     lineHeight: 20,
@@ -1518,6 +1512,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  medicalField: {
+    paddingTop: 24,
+    paddingBottom: 24,
   },
   uploadZone: {
     borderWidth: 1.5,
@@ -1583,16 +1581,19 @@ const styles = StyleSheet.create({
   policyCard: {
     flexDirection: "row",
     gap: 12,
-    backgroundColor: "#FFF8F8",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#FFD9D9",
+    backgroundColor: "#EAF4F8",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#C6E1EA",
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 14,
     padding: 16,
   },
   policyIconWrap: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#FFE8E8",
+    backgroundColor: "#D6EBF2",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -1605,12 +1606,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontWeight: "600",
-    color: "#B33939",
+    color: "#0A6E8A",
   },
   policyText: {
     fontSize: 12,
     lineHeight: 18,
-    color: "#584140",
+    color: "#33474E",
   },
   bottomSpacer: {
     height: 100,

@@ -43,14 +43,6 @@ const absenceMenus: AbsenceMenuItem[] = [
     iconColor: '#131C28',
     icon: 'sun.max.fill',
   },
-  {
-    title: TEXT.ABSENCE_BIRTH_TITLE,
-    description: TEXT.ABSENCE_BIRTH_DESCRIPTION,
-    href: '/absence/birth',
-    iconBg: '#FFDAD7',
-    iconColor: '#410005',
-    icon: 'figure.child',
-  },
 ];
 
 export default function ChooseAbsenceScreen() {
@@ -85,16 +77,6 @@ export default function ChooseAbsenceScreen() {
               </Pressable>
             </Link>
           ))}
-        </View>
-
-        <View style={styles.policyNote}>
-          <View style={styles.policyIconWrap}>
-            <IconSymbol name="info.circle.fill" size={20} color="#922124" />
-          </View>
-          <View style={styles.policyContent}>
-            <ThemedText style={styles.policyLabel}>{TEXT.ABSENCE_POLICY_NOTE_LABEL}</ThemedText>
-            <ThemedText style={styles.policyText}>{TEXT.ABSENCE_POLICY_NOTE_TEXT}</ThemedText>
-          </View>
         </View>
       </ScrollView>
     </ThemedView>

@@ -236,14 +236,16 @@ export async function removeData(
   id: string,
   absenceType: string
 ): Promise<MutationResponse> {
-  const url = ENDPOINTS.absence;
+  // scooba needs both id and type; a DELETE body is not reliably parsed into
+  // ctx.request.body, so pass them as query params (read via ctx.query).
+  const url = createabsenceUrl("", { id, type: absenceType });
 
   const jsonData = await requestJson(url, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: new URLSearchParams({ id }).toString(),
+    body: new URLSearchParams({ id, type: absenceType }).toString(),
   });
 
   ensureSuccess(jsonData);
@@ -278,6 +280,28 @@ export async function approvingWaitingData(staffId: string) {
   return {
     data,
     show: Boolean(jsonData.show) || data.length > 0,
+  };
+}
+
+/** Save an approval decision for a leave request the current user must approve.
+ * `detail` is the encoded id from the approving list item; `status` is "1"
+ * (approve) or "2" (reject); `reason` is the approver's note. */
+export async function approveSaveData(
+  detail: string,
+  status: "1" | "2",
+  reason: string,
+): Promise<MutationResponse> {
+  const url = createabsenceUrl("/approve-save");
+  const jsonData = await requestJson(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ detail, status, reason }),
+  });
+  ensureSuccess(jsonData);
+
+  return {
+    data: jsonData.data,
+    message: String(jsonData.message ?? ""),
   };
 }
 

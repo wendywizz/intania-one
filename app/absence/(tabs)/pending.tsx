@@ -1,5 +1,6 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { Inbox } from 'lucide-react-native';
+import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ErrorState } from '@/components/error-state';
@@ -88,71 +89,58 @@ function getTypeIcon(type: string): IconName {
   }
 }
 
-type PendingItemProps = {
-  item: absence;
-  approvalStep: string;
-  onPress: (item: absence) => void;
-};
-
-function PendingItem({ item, approvalStep, onPress }: PendingItemProps) {
-  const type = getAbsenceType(item);
-  const typeLabel = getAbsenceTypeLabel(item);
-  const dateRange = getDateRange(item);
-  const icon = getTypeIcon(type);
-
-  return (
-    <Pressable accessibilityRole="button" onPress={() => onPress(item)} style={styles.itemCard}>
-      <View style={styles.itemRow}>
-        <View style={styles.itemIconCircle}>
-          <IconSymbol name={icon} size={20} color="#922124" />
-        </View>
-        <View style={styles.itemBody}>
-          <ThemedText style={styles.itemTitle}>{typeLabel}</ThemedText>
-          {dateRange ? (
-            <ThemedText style={styles.itemDate}>{dateRange}</ThemedText>
-          ) : null}
-          <ThemedText style={styles.itemStep}>{approvalStep}</ThemedText>
-        </View>
-        <View style={styles.pendingBadge}>
-          <ThemedText style={styles.pendingBadgeText}>{TEXT.ABSENCE_PENDING_BADGE}</ThemedText>
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
 function getRequesterName(item: absence) {
   return getText(item, ['name', 'staffName', 'staff_name', 'fullname', 'fullName']);
 }
 
-// A leave request that this user (as boss) must approve.
-function ApprovingItem({ item }: { item: absence }) {
+type RequestCardProps = {
+  item: absence;
+  name: string;
+  onPress?: (item: absence) => void;
+};
+
+// One card shape shared by both "รออนุมัติลา" and "อนุมัติผู้ยื่นลา" so their
+// details render identically: name (bold), leave type, date range and badge.
+function RequestCard({ item, name, onPress }: RequestCardProps) {
   const type = getAbsenceType(item);
   const typeLabel = getText(item, ['approveName']) || getAbsenceTypeLabel(item);
-  const name = getRequesterName(item);
   const dateRange = getDateRange(item);
   const icon = getTypeIcon(type);
 
-  return (
-    <View style={styles.itemCard}>
-      <View style={styles.itemRow}>
-        <View style={styles.itemIconCircle}>
-          <IconSymbol name={icon} size={20} color="#922124" />
-        </View>
-        <View style={styles.itemBody}>
-          {name ? <ThemedText style={styles.itemRequester}>{name}</ThemedText> : null}
-          <ThemedText style={styles.itemTitle}>{typeLabel}</ThemedText>
-          {dateRange ? (
-            <ThemedText style={styles.itemDate}>{dateRange}</ThemedText>
-          ) : null}
-        </View>
-        <View style={styles.pendingBadge}>
-          <ThemedText style={styles.pendingBadgeText}>{TEXT.ABSENCE_PENDING_BADGE}</ThemedText>
-        </View>
+  const body = (
+    <View style={styles.itemRow}>
+      <View style={styles.itemIconCircle}>
+        <IconSymbol name={icon} size={20} color="#922124" />
+      </View>
+      <View style={styles.itemBody}>
+        {name ? (
+          <ThemedText style={styles.itemRequester} numberOfLines={1}>
+            {name}
+          </ThemedText>
+        ) : null}
+        <ThemedText style={styles.itemTitle}>{typeLabel}</ThemedText>
+        {dateRange ? (
+          <ThemedText style={styles.itemDate}>{dateRange}</ThemedText>
+        ) : null}
+      </View>
+      <View style={styles.pendingBadge}>
+        <ThemedText style={styles.pendingBadgeText}>{TEXT.ABSENCE_PENDING_BADGE}</ThemedText>
       </View>
     </View>
   );
+
+  if (onPress) {
+    return (
+      <Pressable accessibilityRole="button" onPress={() => onPress(item)} style={styles.itemCard}>
+        {body}
+      </Pressable>
+    );
+  }
+
+  return <View style={styles.itemCard}>{body}</View>;
 }
+
+type PendingTab = 'approve' | 'mine';
 
 export default function PendingScreen() {
   const { user: authUser } = useAuth();
@@ -161,6 +149,7 @@ export default function PendingScreen() {
     cancel: null,
   });
   const [approving, setApproving] = useState<absence[]>([]);
+  const [activeTab, setActiveTab] = useState<PendingTab>('approve');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -221,42 +210,37 @@ export default function PendingScreen() {
     } as Parameters<typeof navPush>[0]);
   }, []);
 
-  const renderSectionHeader = (title: string, subtitle: string, count: number) => (
-    <View style={styles.sectionHeader}>
-      <View style={styles.sectionAccent} />
-      <View style={styles.sectionHeaderText}>
-        <ThemedText style={styles.sectionTitle}>{title}</ThemedText>
-        {subtitle ? <ThemedText style={styles.sectionSubtitle}>{subtitle}</ThemedText> : null}
-      </View>
-      <View style={styles.sectionCountChip}>
-        <ThemedText style={styles.sectionCountText}>{count}</ThemedText>
-      </View>
-    </View>
+  // Approval-queue card → approval detail screen (with accept/reject).
+  const openApproval = useCallback((item: absence) => {
+    navPush({
+      pathname: '/absence/approve-detail',
+      params: { item: encodeURIComponent(JSON.stringify(item)) },
+    } as Parameters<typeof navPush>[0]);
+  }, []);
+
+  const renderEmpty = () => (
+    <>
+      <Inbox size={40} color="#C7CBD1" strokeWidth={1.5} />
+      <ThemedText style={styles.emptyText}>{TEXT.SHARED_NO_ITEMS}</ThemedText>
+    </>
   );
 
-  const renderMinePending = () => {
-    if (!items.remain && !items.cancel) {
-      return <ThemedText style={styles.emptyText}>{TEXT.SHARED_NO_HISTORY}</ThemedText>;
-    }
-    return (
-      <>
-        {items.remain ? (
-          <PendingItem
-            item={items.remain}
-            approvalStep={TEXT.ABSENCE_PENDING_STEP_DEPT_HEAD}
-            onPress={openDetail}
-          />
-        ) : null}
-        {items.cancel ? (
-          <PendingItem
-            item={items.cancel}
-            approvalStep={TEXT.ABSENCE_PENDING_STEP_HR}
-            onPress={openDetail}
-          />
-        ) : null}
-      </>
-    );
-  };
+  // A scrollable list body that either lists the cards or, when empty, shows the
+  // centered "ไม่มีรายการ" state. `topGap` adds room below the navbar when there
+  // is no tab bar above the list (general-user view).
+  const renderList = (hasItems: boolean, children: ReactNode, topGap = false) => (
+    <ScrollView
+      style={styles.sectionScroll}
+      contentContainerStyle={
+        hasItems
+          ? [styles.sectionListContent, topGap ? styles.sectionListNoHeader : null]
+          : styles.sectionEmptyContent
+      }
+      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadData(true)} />}
+    >
+      {hasItems ? children : renderEmpty()}
+    </ScrollView>
+  );
 
   const renderContent = () => {
     if (isLoading) {
@@ -274,49 +258,72 @@ export default function PendingScreen() {
     }
 
     const mineCount = (items.remain ? 1 : 0) + (items.cancel ? 1 : 0);
-    const hasApprove = approving.length > 0;
-    const hasMine = mineCount > 0;
+    // Having any approval item means this user is a boss → show both tabs.
+    // Otherwise they are a general user → only their own "อนุมัติผู้ยื่นลา".
+    const isBoss = approving.length > 0;
+    const ownName = authUser?.name ?? '';
 
-    // Nothing to show in either section → single empty state.
-    if (!hasApprove && !hasMine) {
-      return <ErrorState variant="empty" title={TEXT.SHARED_NO_HISTORY} />;
+    const mineList = renderList(
+      mineCount > 0,
+      <>
+        {items.remain ? (
+          <RequestCard item={items.remain} name={ownName} onPress={openDetail} />
+        ) : null}
+        {items.cancel ? (
+          <RequestCard item={items.cancel} name={ownName} onPress={openDetail} />
+        ) : null}
+      </>,
+      !isBoss,
+    );
+
+    // General user → just their own requests, no tab bar.
+    if (!isBoss) {
+      return mineList;
     }
 
+    const approveList = renderList(
+      approving.length > 0,
+      approving.map((item, index) => (
+        <RequestCard
+          key={getAbsenceId(item) || `approve-${index}`}
+          item={item}
+          name={getRequesterName(item)}
+          onPress={openApproval}
+        />
+      )),
+    );
+
+    const tabs: { key: PendingTab; label: string }[] = [
+      { key: 'approve', label: TEXT.ABSENCE_APPROVE_TAB },
+      { key: 'mine', label: TEXT.ABSENCE_MINE_TAB },
+    ];
+
+    // Boss → two top tabs to switch between the approval queue and own requests.
     return (
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadData(true)} />}
-      >
-        {/* Section 1 — leave requests awaiting the boss's approval (only if any) */}
-        {hasApprove ? (
-          <View style={styles.section}>
-            {renderSectionHeader(
-              TEXT.ABSENCE_APPROVE_TAB,
-              TEXT.ABSENCE_APPROVE_SUBTITLE,
-              approving.length,
-            )}
-            {approving.map((item, index) => (
-              <ApprovingItem key={getAbsenceId(item) || `approve-${index}`} item={item} />
-            ))}
-          </View>
-        ) : null}
-
-        {/* Visual break — only when both sections are present */}
-        {hasApprove && hasMine ? <View style={styles.sectionDivider} /> : null}
-
-        {/* Section 2 — the user's own pending leave requests (only if any) */}
-        {hasMine ? (
-          <View style={styles.section}>
-            {renderSectionHeader(
-              TEXT.ABSENCE_MINE_TAB,
-              TEXT.ABSENCE_MINE_SUBTITLE,
-              mineCount,
-            )}
-            {renderMinePending()}
-          </View>
-        ) : null}
-      </ScrollView>
+      <>
+        <View style={styles.topTabBar}>
+          {tabs.map((tab) => {
+            const active = tab.key === activeTab;
+            return (
+              <Pressable
+                key={tab.key}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                style={styles.topTab}
+                onPress={() => setActiveTab(tab.key)}
+              >
+                <ThemedText style={[styles.topTabText, active && styles.topTabTextActive]}>
+                  {tab.label}
+                </ThemedText>
+                <View style={[styles.topTabIndicator, active && styles.topTabIndicatorActive]} />
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={styles.tabContent}>
+          {activeTab === 'approve' ? approveList : mineList}
+        </View>
+      </>
     );
   };
 
@@ -357,14 +364,52 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  topTabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
+  },
+  topTab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingTop: 14,
+    gap: 8,
+  },
+  topTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  topTabTextActive: {
+    color: '#922124',
+  },
+  topTabIndicator: {
+    height: 3,
+    width: 40,
+    borderRadius: 2,
+    backgroundColor: 'transparent',
+  },
+  topTabIndicatorActive: {
+    backgroundColor: '#922124',
+  },
+  tabContent: {
+    flex: 1,
+  },
+  sectionsWrap: {
+    flex: 1,
+  },
   section: {
-    gap: 12,
+    flex: 1,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 8,
   },
   sectionAccent: {
     width: 4,
@@ -407,14 +452,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
     marginVertical: 4,
   },
-  scrollView: {
+  sectionScroll: {
     flex: 1,
   },
-  listContent: {
+  sectionListContent: {
     gap: 12,
-    padding: 16,
-    paddingTop: 8,
-    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
+  // General-user view has no section header, so give the first card room below
+  // the navbar.
+  sectionListNoHeader: {
+    paddingTop: 20,
+  },
+  sectionEmptyContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    padding: 24,
   },
   itemCard: {
     backgroundColor: '#FFFFFF',

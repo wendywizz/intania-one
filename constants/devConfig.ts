@@ -8,7 +8,7 @@
 //export const DEV_STAFF_ID: string = '0030514'; // พี่ตา อาคาร
 
 // Repair Computer
-//export const DEV_STAFF_ID: string = ''; // Foreman ฉัน
+//export const DEV_STAFF_ID: string = '0024028'; // Foreman ฉัน
 //export const DEV_STAFF_ID: string = '0000335'; // Foreman พี่ปิ
 //export const DEV_STAFF_ID: string = '0000340'; // Foreman พี่หนี
 //export const DEV_STAFF_ID: string = '0047773'; // Technician โบ้

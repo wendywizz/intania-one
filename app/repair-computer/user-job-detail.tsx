@@ -749,7 +749,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   confirmActions: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     gap: 12,
     marginTop: 20,
   },

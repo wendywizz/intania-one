@@ -84,7 +84,9 @@ function formatBudgetDateLong(value: string) {
   const [year, month, day] = value.split('-');
   if (!year || !month || !day) return value || '-';
   const monthName = MONTH_NAMES_TH[parseInt(month, 10) - 1] ?? month;
-  const yearBuddhist = parseInt(year, 10) + 543;
+  const parsedYear = parseInt(year, 10);
+  // Backend may already send the Buddhist year — only convert CE (<= 2500).
+  const yearBuddhist = parsedYear > 2500 ? parsedYear : parsedYear + 543;
   return `${parseInt(day, 10)} ${monthName} ${yearBuddhist}`;
 }
 
@@ -177,14 +179,15 @@ function DetailGridCard({ sickUsedCount, sickUsedDays, businessUsedCount, busine
       <View style={[styles.card, styles.gridCard]}>
         <View style={styles.gridCardTop}>
           <IconSymbol name="cross.fill" size={18} color="#922124" />
+          <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_SICK_TITLE}</ThemedText>
           <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
         </View>
-        <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_SICK_TITLE}</ThemedText>
         <View style={styles.gridStats}>
           <ThemedText style={styles.gridStatValue}>
             <ThemedText style={styles.gridStatBold}>{fmt(sickUsedCount)}</ThemedText>
             <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_TIMES}</ThemedText>
           </ThemedText>
+          <ThemedText style={styles.gridStatSeparator}>·</ThemedText>
           <ThemedText style={styles.gridStatValue}>
             <ThemedText style={styles.gridStatBold}>{fmt(sickUsedDays)}</ThemedText>
             <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_DAYS}</ThemedText>
@@ -194,14 +197,15 @@ function DetailGridCard({ sickUsedCount, sickUsedDays, businessUsedCount, busine
       <View style={[styles.card, styles.gridCard]}>
         <View style={styles.gridCardTop}>
           <IconSymbol name="briefcase.fill" size={18} color="#922124" />
+          <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_BUSINESS_TITLE}</ThemedText>
           <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
         </View>
-        <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_BUSINESS_TITLE}</ThemedText>
         <View style={styles.gridStats}>
           <ThemedText style={styles.gridStatValue}>
             <ThemedText style={styles.gridStatBold}>{fmt(businessUsedCount)}</ThemedText>
             <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_TIMES}</ThemedText>
           </ThemedText>
+          <ThemedText style={styles.gridStatSeparator}>·</ThemedText>
           <ThemedText style={styles.gridStatValue}>
             <ThemedText style={styles.gridStatBold}>{fmt(businessUsedDays)}</ThemedText>
             <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_DAYS}</ThemedText>
@@ -339,10 +343,6 @@ export default function StatsScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadStats(true)} />}
       >
-        <View style={styles.pageHeader}>
-          <ThemedText style={styles.pageTitle}>{TEXT.ABSENCE_STATS_TITLE}</ThemedText>
-          <ThemedText style={styles.pageSubtitle}>{TEXT.ABSENCE_STATS_SUBTITLE}</ThemedText>
-        </View>
         <InfoCard
           servantAge={stats.servantAge}
           budgetStartDate={stats.budgetStartDate}
@@ -392,20 +392,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FD',
   },
-  pageHeader: {
-    gap: 4,
-  },
-  pageTitle: {
-    fontSize: 20,
-    lineHeight: 28,
-    fontWeight: '600',
-    color: '#191C1F',
-  },
-  pageSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#584140',
-  },
   content: {
     flex: 1,
   },
@@ -414,7 +400,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingTop: 8,
+    paddingTop: 24,
     gap: 16,
     paddingBottom: 96,
   },
@@ -561,19 +547,27 @@ const styles = StyleSheet.create({
   },
   gridCardTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    gap: 8,
+    marginBottom: 8,
   },
   gridCardTitle: {
+    flex: 1,
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '600',
     color: '#191C1F',
   },
   gridStats: {
-    gap: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginTop: 4,
+  },
+  gridStatSeparator: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#C7CBD1',
   },
   gridStatValue: {
     fontSize: 14,
