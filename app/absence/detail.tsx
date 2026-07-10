@@ -8,6 +8,7 @@ import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
+import { UserAvatar } from '@/components/user-avatar';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import {
@@ -169,7 +170,12 @@ function getStaffPosition(staff: object): string {
   return getText(staff as absence, ['positionName', 'position_name', 'POSITION_NAME', 'position']);
 }
 
-type StaffEntry = { name: string; position: string };
+// Profile photos are keyed by UNI_STAFF_ID, not the internal STAFF_ID.
+function getStaffId(staff: object): string {
+  return getText(staff as absence, ['uniStaffId', 'uni_staff_id', 'UNI_STAFF_ID']);
+}
+
+type StaffEntry = { name: string; position: string; staffId?: string };
 
 // The server returns the approver as a `mainApprover` object plus an
 // `approverPosition` code + `approverList`, not a ready display string.
@@ -201,7 +207,7 @@ function getApproverInfo(item: absence): StaffEntry {
     }
   }
   if (staff) {
-    return { name: getStaffName(staff), position: getStaffPosition(staff) };
+    return { name: getStaffName(staff), position: getStaffPosition(staff), staffId: getStaffId(staff) };
   }
 
   const posName = getText(item, ['approverPositionName', 'approver_position_name']);
@@ -226,7 +232,7 @@ function getAgentEntries(item: absence): StaffEntry[] {
     }
     if (agent && typeof agent === 'object') {
       const name = getStaffName(agent);
-      if (name) return { name, position: getStaffPosition(agent) };
+      if (name) return { name, position: getStaffPosition(agent), staffId: getStaffId(agent) };
     }
     return null;
   };
@@ -301,12 +307,10 @@ function InfoRow({ label, value, icon }: { label: string; value: string; icon?: 
 }
 
 // Avatar + name + position row used by both the approver and delegate cards.
-function PersonRow({ name, position }: StaffEntry) {
+function PersonRow({ name, position, staffId }: StaffEntry) {
   return (
     <View style={styles.personRow}>
-      <View style={styles.avatar}>
-        <IconSymbol name="person.fill" size={22} color="#B33939" />
-      </View>
+      <UserAvatar staffId={staffId} size={44} />
       <View style={styles.personText}>
         <ThemedText style={styles.personName}>{name}</ThemedText>
         {position ? <ThemedText style={styles.personPosition}>{position}</ThemedText> : null}
@@ -467,7 +471,7 @@ export default function absenceDetailScreen() {
         {approver.name ? (
           <View style={styles.card}>
             <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_APPROVER_LABEL}</ThemedText>
-            <PersonRow name={approver.name} position={approver.position} />
+            <PersonRow name={approver.name} position={approver.position} staffId={approver.staffId} />
           </View>
         ) : null}
 
@@ -476,7 +480,7 @@ export default function absenceDetailScreen() {
           <View style={styles.card}>
             <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_DELEGATE_LABEL}</ThemedText>
             {agentEntries.map((agent, index) => (
-              <PersonRow key={`${agent.name}-${index}`} name={agent.name} position={agent.position} />
+              <PersonRow key={`${agent.name}-${index}`} name={agent.name} position={agent.position} staffId={agent.staffId} />
             ))}
           </View>
         ) : null}

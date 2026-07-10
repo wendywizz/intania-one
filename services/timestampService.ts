@@ -258,3 +258,166 @@ export async function removeTimestamp(id: string) {
     message: String(jsonData.message ?? ""),
   };
 }
+
+// A single miss-timestamp request awaiting the boss's approval (boss inbox row).
+export type TimestampApproval = {
+  id: string;
+  forgetId?: string | number;
+  staffId?: string | number;
+  uniStaffId?: string | number;
+  name?: string;
+  approveName?: string;
+  writeDate?: string;
+  stampDate?: string;
+  inTime?: string | null;
+  outTime?: string | null;
+  type?: string;
+  [key: string]: unknown;
+};
+
+export type TimestampApprovalWaiting = {
+  show: boolean;
+  data: TimestampApproval[];
+  message: string;
+};
+
+export type TimestampApproveDetail = {
+  forgetId?: string | number;
+  approveId?: string | number;
+  name?: string;
+  fullname?: string;
+  deptName?: string;
+  positionName?: string;
+  approverPositionName?: string;
+  approveName?: string;
+  stampType?: string;
+  stampDate?: string;
+  writeDate?: string;
+  inTime?: string;
+  outTime?: string;
+  reason?: string;
+  [key: string]: unknown;
+};
+
+export type SubmitTimestampApproveData = {
+  forget_id: string;
+  approve_id: string;
+  status: "1" | "2";
+  reason?: string;
+  intime?: string;
+  outtime?: string;
+  // Requester's staff_id, forwarded so the server can notify them of the result.
+  request_staff_id?: string;
+};
+
+// Miss-timestamp requests awaiting THIS user's approval. `show` = true means the
+// user is a boss/approver and the client should reveal the approval bottom tab.
+export async function getForgetApprovalWaiting(
+  staffId: string,
+): Promise<TimestampApprovalWaiting> {
+  const url = createTimestampUrl("/waiting", { staff_id: staffId });
+  const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
+  ensureSuccess(jsonData);
+
+  return {
+    show: jsonData.show === true,
+    data: Array.isArray(jsonData.data)
+      ? (jsonData.data as TimestampApproval[])
+      : [],
+    message: String(jsonData.message ?? ""),
+  };
+}
+
+// A miss-timestamp request the boss has already decided (approved/rejected).
+export type TimestampApproved = {
+  id: string;
+  forgetId?: string | number;
+  staffId?: string | number;
+  uniStaffId?: string | number;
+  name?: string;
+  approveName?: string;
+  stampDate?: string;
+  decisionDate?: string;
+  inTime?: string | null;
+  outTime?: string | null;
+  status?: string;
+  statusName?: string;
+  reason?: string;
+  type?: string;
+  [key: string]: unknown;
+};
+
+// History of miss-timestamp requests THIS user already decided.
+export async function getForgetApprovedHistory(
+  staffId: string,
+): Promise<TimestampApproved[]> {
+  const url = createTimestampUrl("/approved", { staff_id: staffId });
+  const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
+  ensureSuccess(jsonData);
+
+  return Array.isArray(jsonData.data)
+    ? (jsonData.data as TimestampApproved[])
+    : [];
+}
+
+// Read-only full detail of one miss-timestamp request (any status), incl. the
+// approver's decision. Used by the approval-history detail screen.
+export type TimestampRecordDetail = {
+  forgetId?: string | number;
+  approveId?: string | number;
+  staffId?: string | number;
+  uniStaffId?: string | number;
+  name?: string;
+  fullname?: string;
+  positionName?: string;
+  deptName?: string;
+  approverName?: string | null;
+  approverUniStaffId?: string | number;
+  approverPositionName?: string;
+  approveName?: string;
+  stampType?: string;
+  stampDate?: string;
+  writeDate?: string;
+  inTime?: string | null;
+  outTime?: string | null;
+  reason?: string;
+  status?: string;
+  statusName?: string;
+  decisionDate?: string | null;
+  decisionReason?: string | null;
+  [key: string]: unknown;
+};
+
+export async function getForgetRecordDetail(
+  forgetId: string,
+): Promise<TimestampRecordDetail> {
+  const url = createTimestampUrl("/detail", { forget_id: forgetId });
+  const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
+  ensureSuccess(jsonData);
+
+  return (jsonData.data ?? {}) as TimestampRecordDetail;
+}
+
+export async function getForgetApproveDetail(
+  forgetId: string,
+): Promise<TimestampApproveDetail> {
+  const url = createTimestampUrl("/approve-view", { forget_id: forgetId });
+  const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
+  ensureSuccess(jsonData);
+
+  return (jsonData.data ?? {}) as TimestampApproveDetail;
+}
+
+export async function submitForgetApprove(data: SubmitTimestampApproveData) {
+  const url = createTimestampUrl("/approve-submit");
+  const jsonData = await requestJson<JsonMap>(url, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  ensureSuccess(jsonData);
+
+  return {
+    data: jsonData.data,
+    message: String(jsonData.message ?? ""),
+  };
+}

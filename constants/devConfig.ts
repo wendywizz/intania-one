@@ -15,4 +15,6 @@
 //export const DEV_STAFF_ID: string = '0024025'; // Technician พี่วัช
 //export const DEV_STAFF_ID: string = '0047785'; // User บี
 //export const DEV_STAFF_ID: string = '0024022'; // User ป๋าวัน
-
+//export const DEV_STAFF_ID: string = '0000297'; // User มนตรี
+//export const DEV_STAFF_ID: string = '0008284'; // User นิคม
+export const DEV_STAFF_ID: string = '0000301'; // User พี่อ้อ
