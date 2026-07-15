@@ -41,9 +41,18 @@ const extra = publicKeys.reduce((acc, key) => {
 
 const appJson = require('./app.json');
 
+// EAS project link. `eas init` can't write this into a dynamic config, and the
+// computed `extra` above replaces app.json's `extra`, so the projectId must be
+// added here or the push-token code (getExpoPushTokenAsync) sees no projectId.
+extra.eas = {
+  ...(appJson.expo?.extra?.eas || {}),
+  projectId: 'e80523a6-8198-45eb-945a-62a7bb15943f',
+};
+
 module.exports = {
   expo: {
     ...appJson.expo,
+    owner: 'faculty-of-engineer',
     extra,
   },
 };

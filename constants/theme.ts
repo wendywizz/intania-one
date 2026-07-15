@@ -12,7 +12,7 @@ import { useContext, useMemo } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { ThemeContext } from '@/context/ThemeContext';
+import { ThemeContext } from '@/context/theme-context';
 
 const tintColorLight = '#b33939';
 const tintColorDark = '#E06B6B';

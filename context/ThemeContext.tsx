@@ -1,6 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { SemanticColors } from '@/constants/theme';
+import { ThemeContext } from '@/context/theme-context';
+
+// Re-exported so existing `@/context/ThemeContext` imports keep working.
+export { ThemeContext };
 
 const DARK_MODE_KEY = '@app_dark_mode';
 const AUTO_THEME_KEY = '@app_auto_theme';
@@ -14,16 +18,6 @@ function isNightTime(date = new Date()) {
   const hour = date.getHours();
   return hour >= NIGHT_START_HOUR || hour < DAY_START_HOUR;
 }
-
-interface ThemeContextType {
-  isDarkMode: boolean;
-  isAutoTheme: boolean;
-  colors: typeof SemanticColors.light;
-  toggleDarkMode: () => void;
-  toggleAutoTheme: () => void;
-}
-
-export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [manualDarkMode, setManualDarkMode] = useState(false);
