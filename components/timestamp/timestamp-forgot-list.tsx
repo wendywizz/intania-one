@@ -1,4 +1,4 @@
-import { ChevronRight, Clock, Inbox, LogIn, LogOut } from 'lucide-react-native';
+import { ChevronRight, Clock, Inbox, Info, LogIn, LogOut } from 'lucide-react-native';
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -257,7 +257,6 @@ export function TimestampForgotList() {
   const listHeader = (
     <View style={styles.listHeader}>
       <View style={styles.welcomeSection}>
-        <ThemedText style={styles.welcomeHeading}>{TEXT.TIMESTAMP_TITLE}</ThemedText>
         <ThemedText style={styles.welcomeSubtitle}>
           คุณมี {pendingCount} คำขอที่รอดำเนินการ
         </ThemedText>
@@ -267,10 +266,17 @@ export function TimestampForgotList() {
       </View>
 
       <View style={styles.noteBox}>
-        <Clock size={20} color={c.primary} style={styles.noteIcon} />
-        <ThemedText style={styles.noteText}>
-          {TEXT.TIMESTAMP_NOTE_TEXT}
-        </ThemedText>
+        <View style={styles.noteIconWrap}>
+          <Info size={20} color={c.info} />
+        </View>
+        <View style={styles.noteBody}>
+          <ThemedText style={styles.noteTitle}>
+            {TEXT.TIMESTAMP_NOTE_LABEL}
+          </ThemedText>
+          <ThemedText style={styles.noteText}>
+            {TEXT.TIMESTAMP_NOTE_TEXT}
+          </ThemedText>
+        </View>
       </View>
     </View>
   );
@@ -331,13 +337,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   welcomeSection: {
     gap: 4,
   },
-  welcomeHeading: {
-    fontSize: 20,
-    lineHeight: 28,
-    fontWeight: "700",
-    color: c.primary,
-    fontFamily: AppFonts.psuBold,
-  },
   welcomeSubtitle: {
     fontSize: 14,
     lineHeight: 20,
@@ -352,20 +351,36 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   noteBox: {
     flexDirection: "row",
-    gap: 10,
-    backgroundColor: c.surfaceMuted,
-    borderLeftWidth: 4,
-    borderLeftColor: c.primary,
+    gap: 12,
+    backgroundColor: c.infoSoft,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
     borderRadius: 12,
-    padding: 14,
+    padding: 16,
   },
-  noteIcon: {
-    marginTop: 1,
+  noteIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: c.infoSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  noteBody: {
+    flex: 1,
+    gap: 4,
+  },
+  noteTitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "600",
+    color: c.info,
+    fontFamily: AppFonts.psuBold,
   },
   noteText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 18,
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },

@@ -202,6 +202,7 @@ export const TEXT = {
   ABSENCE_STATS_TITLE: 'สถิติการลาในรอบงบประมาณปัจจุบัน',
   ABSENCE_STATS_SUBTITLE: 'แสดงสถิติการลาของคุณในรอบปีงบประมาณปัจจุบัน',
   ABSENCE_STATS_NO_DATA: 'ยังไม่มีข้อมูล',
+  ABSENCE_STATS_GENERAL_SECTION: 'ข้อมูลทั่วไป',
   ABSENCE_STATS_WORK_AGE_LABEL: 'อายุงาน',
   ABSENCE_STATS_WORK_AGE_UNIT: 'ปี',
   ABSENCE_STATS_CYCLE_DATE_LABEL: 'รอบปีงบประมาณ',
@@ -575,6 +576,7 @@ export const TEXT = {
 
   // Timestamp - index screen
   TIMESTAMP_APPEAL_DOCUMENT: 'กรุณาไปที่พอร์ทัล HR เพื่อยื่นอุทธรณ์พร้อมเอกสารประกอบ',
+  TIMESTAMP_NOTE_LABEL: 'คำแนะนำ',
   TIMESTAMP_NOTE_TEXT: 'หากคุณลืมลงเวลาเข้างานหรือออกงาน คุณสามารถกรอกแบบฟอร์มคำขอลืมลงเวลาภายใน 3 วันหลังจากวันที่ลืมลงเวลาได้ที่หน้านี้',
   TIMESTAMP_COMPANY_CYCLE_LABEL: 'ในรอบปีงบประมาณ',
 

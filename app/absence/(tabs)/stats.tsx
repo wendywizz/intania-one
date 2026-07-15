@@ -117,6 +117,7 @@ function InfoCard({ servantAge, budgetStartDate, budgetEndDate }: Pick<StatsData
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.card}>
+      <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_STATS_GENERAL_SECTION}</ThemedText>
       <View style={styles.infoRow}>
         <View style={styles.infoIconWrap}>
           <IconSymbol name="person.fill" size={20} color={c.textMuted} />
@@ -189,7 +190,9 @@ function DetailGridCard({ sickUsedCount, sickUsedDays, businessUsedCount, busine
     <View style={styles.gridRow}>
       <View style={[styles.card, styles.gridCard]}>
         <View style={styles.gridCardTop}>
-          <IconSymbol name="cross.fill" size={18} color={c.primary} />
+          <View style={styles.vacationIconBg}>
+            <IconSymbol name="cross.fill" size={18} color={c.primary} />
+          </View>
           <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_SICK_TITLE}</ThemedText>
           <IconSymbol name="chevron.right" size={12} color={c.textMuted} style={{ opacity: 0.4 }} />
         </View>
@@ -207,7 +210,9 @@ function DetailGridCard({ sickUsedCount, sickUsedDays, businessUsedCount, busine
       </View>
       <View style={[styles.card, styles.gridCard]}>
         <View style={styles.gridCardTop}>
-          <IconSymbol name="briefcase.fill" size={18} color={c.primary} />
+          <View style={styles.vacationIconBg}>
+            <IconSymbol name="briefcase.fill" size={18} color={c.primary} />
+          </View>
           <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_BUSINESS_TITLE}</ThemedText>
           <IconSymbol name="chevron.right" size={12} color={c.textMuted} style={{ opacity: 0.4 }} />
         </View>
@@ -271,36 +276,25 @@ function VacationCard({ relaxUsedDays, relaxTotalYearDays, relaxStoreDays, relax
   );
 }
 
-function OthersGridCard({ birthUsedCount, lateUsedCount, lateLimitCount }: Pick<StatsData, 'birthUsedCount' | 'lateUsedCount' | 'lateLimitCount'>) {
+function LateCard({ lateUsedCount, lateLimitCount }: Pick<StatsData, 'lateUsedCount' | 'lateLimitCount'>) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const lateProgress = getProgress(lateUsedCount, lateLimitCount);
 
   return (
-    <View style={styles.gridRow}>
-      <View style={[styles.card, styles.gridCard]}>
-        <View style={styles.gridCardTop}>
-          <IconSymbol name="figure.child" size={18} color={c.primary} />
-          <IconSymbol name="chevron.right" size={12} color={c.textMuted} style={{ opacity: 0.4 }} />
-        </View>
-        <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_BIRTH_TITLE}</ThemedText>
-        <ThemedText style={styles.gridStatValue}>
-          <ThemedText style={styles.gridStatBold}>{fmt(birthUsedCount)}</ThemedText>
-          <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_TIMES}</ThemedText>
-        </ThemedText>
-      </View>
-      <View style={[styles.card, styles.gridCard]}>
-        <View style={styles.gridCardTop}>
+    <View style={styles.card}>
+      <View style={styles.gridCardTop}>
+        <View style={styles.vacationIconBg}>
           <IconSymbol name="clock.fill" size={18} color={c.primary} />
-          <IconSymbol name="chevron.right" size={12} color={c.textMuted} style={{ opacity: 0.4 }} />
         </View>
         <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_STATS_LATE_TITLE}</ThemedText>
-        <ThemedText style={styles.gridStatValue}>
-          <ThemedText style={styles.gridStatBold}>{fmt(lateUsedCount)}</ThemedText>
-          <ThemedText style={styles.gridStatUnit}> / {fmt(lateLimitCount)} {TEXT.ABSENCE_STATS_UNIT_TIMES}</ThemedText>
-        </ThemedText>
-        <ProgressBar value={lateProgress} />
+        <IconSymbol name="chevron.right" size={12} color={c.textMuted} style={{ opacity: 0.4 }} />
       </View>
+      <ThemedText style={styles.gridStatValue}>
+        <ThemedText style={styles.gridStatBold}>{fmt(lateUsedCount)}</ThemedText>
+        <ThemedText style={styles.gridStatUnit}> / {fmt(lateLimitCount)} {TEXT.ABSENCE_STATS_UNIT_TIMES}</ThemedText>
+      </ThemedText>
+      <ProgressBar value={lateProgress} />
     </View>
   );
 }
@@ -383,8 +377,7 @@ export default function StatsScreen() {
           relaxStoreDays={stats.relaxStoreDays}
           relaxLimitDays={stats.relaxLimitDays}
         />
-        <OthersGridCard
-          birthUsedCount={stats.birthUsedCount}
+        <LateCard
           lateUsedCount={stats.lateUsedCount}
           lateLimitCount={stats.lateLimitCount}
         />
@@ -398,6 +391,7 @@ export default function StatsScreen() {
         title={TEXT.ABSENCE_TITLE}
         subtitle={TEXT.ABSENCE_STATS_TITLE}
         moduleIcon="chart.bar.fill"
+        backHref="/"
       />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
@@ -420,6 +414,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingTop: 24,
     gap: 16,
     paddingBottom: 96,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '700',
+    color: c.text,
   },
 
   // shared card
@@ -603,7 +603,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   // vacation card
   vacationHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
   },
   vacationIconBg: {

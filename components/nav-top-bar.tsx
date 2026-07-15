@@ -69,7 +69,7 @@ export function NavTopBar({
             accessibilityRole="button"
             onPress={goBack}
             style={styles.iconButton}>
-            <IconSymbol name="arrow.left" size={24} color={barContent} />
+            <IconSymbol name="arrow.left" size={22} color={barContent} />
           </Pressable>
         ) : (
           <View style={styles.iconButtonSpacer} />
@@ -79,7 +79,7 @@ export function NavTopBar({
       <View style={styles.titleContainer}>
           {moduleIcon ? (
           <View style={[styles.iconCircle, { backgroundColor: `${barContent}20`, borderColor: `${barContent}40`, borderWidth: 2 }]}>
-          <IconSymbol name={moduleIcon} size={28} color={barContent} />
+          <IconSymbol name={moduleIcon} size={20} color={barContent} />
           </View>
         ) : null}
         <View style={styles.textContainer}>
@@ -97,8 +97,15 @@ export function NavTopBar({
       <View style={[styles.rightActions, rightContent ? styles.customRightActions : undefined]}>
         {rightContent}
         {showHomeButton ? (
-          <Pressable accessibilityLabel={TEXT.NAV_HOME_ACCESSIBILITY_LABEL} accessibilityRole="button" onPress={() => navReplace('/')} style={styles.iconButton}>
-            <IconSymbol name="house.fill" size={23} color={barContent} />
+          <Pressable
+            accessibilityLabel={TEXT.NAV_HOME_ACCESSIBILITY_LABEL}
+            accessibilityRole="button"
+            onPress={() => navReplace('/')}
+            style={({ pressed }) => [
+              styles.iconButton,
+              pressed ? styles.homeButtonPressed : undefined,
+            ]}>
+            <IconSymbol name="house.fill" size={22} color={barContent} />
           </Pressable>
         ) : rightContent ? null : (
           <View style={styles.iconButtonSpacer} />
@@ -156,19 +163,22 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
   },
+  homeButtonPressed: {
+    opacity: 0.6,
+  },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     opacity: 0.9,
-    lineHeight: 18,
+    lineHeight: 17,
   },
   iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
