@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { TEXT } from '@/constants/text';
 
 import { ThemedText } from '@/components/themed-text';
@@ -78,6 +79,8 @@ export function DatePickerField({
   hasError,
   onChange,
 }: DatePickerFieldProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [isOpen, setIsOpen] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(value ?? minimumDate ?? new Date());
   const minimumDay = minimumDate ? startOfDay(minimumDate) : null;
@@ -200,7 +203,7 @@ export function DatePickerField({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
     gap: 8,
@@ -210,19 +213,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#BFD2DA',
-    backgroundColor: '#FFFFFF',
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 14,
   },
   inputError: {
-    borderColor: '#B42318',
+    borderColor: c.danger,
   },
   buttonText: {
-    color: '#11181C',
+    color: c.text,
     fontSize: 13,
   },
   placeholder: {
-    color: '#8A969C',
+    color: c.textFaint,
   },
   backdrop: {
     flex: 1,
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#E4F0F6',
+    backgroundColor: c.infoSoft,
   },
   monthTitle: {
     flex: 1,
@@ -263,7 +266,7 @@ const styles = StyleSheet.create({
   weekLabel: {
     width: `${100 / 7}%`,
     textAlign: 'center',
-    color: '#687076',
+    color: c.textMuted,
     fontSize: 12,
   },
   dayGrid: {
@@ -278,7 +281,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   selectedDayButton: {
-    backgroundColor: '#0A6E8A',
+    backgroundColor: c.info,
   },
   weekendDayButton: {
     backgroundColor: '#EEF1F3',
@@ -293,12 +296,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   weekendDayText: {
-    color: '#687076',
+    color: c.textMuted,
   },
   highlightedDayText: {
-    color: '#075E73',
+    color: c.info,
   },
   disabledDayText: {
-    color: '#8A969C',
+    color: c.textFaint,
   },
 });

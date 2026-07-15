@@ -10,7 +10,9 @@ import {
     StyleSheet,
     View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
+import { EmptyState } from "@/components/empty-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -79,6 +81,8 @@ function groupByDate(meetings: Meeting[], ascending: boolean): ListRow[] {
 }
 
 function MeetingCard({ meeting }: { meeting: Meeting }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const title = getText(meeting, titleFields) || "Meeting";
   const date = getText(meeting, dateFields);
   const time = getText(meeting, timeFields);
@@ -114,7 +118,7 @@ function MeetingCard({ meeting }: { meeting: Meeting }) {
           <ThemedText style={styles.itemTitle} numberOfLines={2}>{title}</ThemedText>
           {place ? (
             <View style={styles.metaRow}>
-              <MapPin size={13} color="#585E6D" />
+              <MapPin size={13} color={c.textMuted} />
               <ThemedText style={styles.metaText} numberOfLines={1}>{place}</ThemedText>
             </View>
           ) : null}
@@ -126,6 +130,8 @@ function MeetingCard({ meeting }: { meeting: Meeting }) {
 }
 
 export default function MeetingHistoryScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -172,7 +178,7 @@ export default function MeetingHistoryScreen() {
         <NavTopBar
           title={TEXT.MEETING_HEADER_TITLE}
           subtitle={TEXT.SHARED_HISTORY}
-          moduleIcon="person.2.fill"
+          moduleIcon="history"
           backHref="/"
         />
         <LoadingAnimate title={TEXT.MEETING_LOADING_MEETINGS} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
@@ -187,7 +193,7 @@ export default function MeetingHistoryScreen() {
         <NavTopBar
           title={TEXT.MEETING_HEADER_TITLE}
           subtitle={TEXT.SHARED_HISTORY}
-          moduleIcon="person.2.fill"
+          moduleIcon="history"
           backHref="/"
         />
         <View style={styles.errorWrap}>
@@ -209,7 +215,7 @@ export default function MeetingHistoryScreen() {
       <NavTopBar
         title={TEXT.MEETING_HEADER_TITLE}
         subtitle={TEXT.SHARED_HISTORY}
-        moduleIcon="person.2.fill"
+        moduleIcon="history"
         backHref="/"
       />
       <FlatList<ListRow>
@@ -238,30 +244,23 @@ export default function MeetingHistoryScreen() {
           leadingItem.type === "date-header" ? null : <View style={styles.separator} />
         }
         ListFooterComponent={listFooter}
-        ListEmptyComponent={
-          <View style={styles.emptyWrap}>
-            <History size={40} color="#DADFF0" />
-            <ThemedText style={styles.emptyTitle} type="defaultSemiBold">
-              {TEXT.MEETING_NO_HISTORY}
-            </ThemedText>
-          </View>
-        }
+        ListEmptyComponent={<EmptyState icon={History} message={TEXT.MEETING_NO_HISTORY} />}
       />
     </ThemedView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F9FD" },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   listContent: { padding: 16, paddingBottom: 32 },
   headerCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E1E2E6",
+    borderColor: c.border,
     padding: 16,
     marginBottom: 16,
-    shadowColor: "#000",
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -272,22 +271,22 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 28,
     fontFamily: AppFonts.psuBold,
-    color: "#922124",
+    color: c.primary,
   },
-  headerDivider: { height: 1, backgroundColor: "#E1E2E6" },
+  headerDivider: { height: 1, backgroundColor: c.surfaceMuted },
   statRow: { flexDirection: "row", gap: 16 },
   statItem: { alignItems: "center", gap: 2 },
   statValue: {
     fontSize: 22,
     lineHeight: 28,
     fontFamily: AppFonts.psuBold,
-    color: "#191C1F",
+    color: c.text,
   },
   statLabel: {
     fontSize: 11,
     lineHeight: 14,
     fontFamily: AppFonts.psuRegular,
-    color: "#585E6D",
+    color: c.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -299,16 +298,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     fontFamily: AppFonts.psuBold,
-    color: "#191C1F",
+    color: c.text,
   },
   separator: { height: 10 },
   itemCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E1E2E6",
+    borderColor: c.border,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -324,12 +323,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  timeBoxHasTime: { backgroundColor: "#F5E8E8" },
-  timeBoxNoTime: { backgroundColor: "#DADFF0" },
+  timeBoxHasTime: { backgroundColor: c.primarySoft },
+  timeBoxNoTime: { backgroundColor: c.surfaceMuted },
   timeText: {
     fontFamily: AppFonts.psuBold,
     fontSize: 15,
-    color: "#922124",
+    color: c.primary,
     textAlign: "center",
   },
   itemBody: { flex: 1, gap: 6 },
@@ -337,7 +336,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     fontFamily: AppFonts.psuBold,
-    color: "#191C1F",
+    color: c.text,
   },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   metaText: {
@@ -345,7 +344,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontFamily: AppFonts.psuRegular,
-    color: "#585E6D",
+    color: c.textMuted,
   },
   footerRow: {
     flexDirection: "row",
@@ -354,37 +353,37 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 8,
   },
-  footerLine: { flex: 1, height: 1, backgroundColor: "#E1E2E6" },
+  footerLine: { flex: 1, height: 1, backgroundColor: c.surfaceMuted },
   footerText: {
     fontSize: 12,
     fontFamily: AppFonts.psuRegular,
-    color: "#8B716F",
+    color: c.textMuted,
   },
   emptyWrap: { alignItems: "center", paddingTop: 48, gap: 12 },
-  emptyTitle: { color: "#585E6D", fontSize: 15, textAlign: "center" },
+  emptyTitle: { color: c.textMuted, fontSize: 15, textAlign: "center" },
   errorWrap: { flex: 1, padding: 16, justifyContent: "center" },
   errorCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E1E2E6",
+    borderColor: c.border,
     padding: 20,
     gap: 8,
-    shadowColor: "#000",
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
-  errorTitle: { fontFamily: AppFonts.psuBold, fontSize: 15, color: "#B33939" },
-  errorMessage: { fontFamily: AppFonts.psuRegular, fontSize: 14, lineHeight: 20, color: "#584140" },
+  errorTitle: { fontFamily: AppFonts.psuBold, fontSize: 15, color: c.primary },
+  errorMessage: { fontFamily: AppFonts.psuRegular, fontSize: 14, lineHeight: 20, color: c.textMuted },
   retryButton: {
     alignSelf: "flex-start",
     marginTop: 8,
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
-    backgroundColor: "#B33939",
+    backgroundColor: c.primary,
   },
-  retryText: { color: "#FFFFFF", fontFamily: AppFonts.psuBold, fontSize: 14 },
+  retryText: { color: c.textOnPrimary, fontFamily: AppFonts.psuBold, fontSize: 14 },
 });

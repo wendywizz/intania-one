@@ -2,7 +2,7 @@ import { HapticTab } from '@/components/haptic-tab';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
+import { useColors } from '@/constants/theme';
 import { TEXT } from '@/constants/text';
 import {
   NOTICE_REPAIR_ROLE_APPROVE, NOTICE_REPAIR_ROLE_ADMIN, NOTICE_REPAIR_ROLE_HEADER,
@@ -15,7 +15,6 @@ import {
 } from '@/context/noticeRepairRoleSelection';
 import { getPrivilege } from '@/services/noticeRepairService';
 import { useNoticeRepairStaffId } from '@/hooks/useNoticeRepairStaffId';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Tabs, router, usePathname } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -31,7 +30,7 @@ function getRoleRoute(pathname: string): NoticeRepairRole | null {
 }
 
 export default function NoticeRepairTabLayout() {
-  const colorScheme = useColorScheme();
+  const c = useColors();
   const pathname = usePathname();
   const staffId = useNoticeRepairStaffId();
 
@@ -108,7 +107,7 @@ export default function NoticeRepairTabLayout() {
 
   const visibleFor = (role: NoticeRepairRole) => (currentRole === role ? undefined : null);
 
-  const tint = Colors[colorScheme ?? 'light'].tint;
+  const tint = c.primary;
   const isRedirecting = !isChecking && Boolean(getRoleRoute(pathname)) && getRoleRoute(pathname) !== currentRole;
 
   return (

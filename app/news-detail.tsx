@@ -3,6 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -72,6 +73,8 @@ function sameNewsItem(news: News, selected: News) {
 }
 
 export default function NewsDetailScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{
     title?: string;
     link?: string;
@@ -134,7 +137,7 @@ export default function NewsDetailScreen() {
           <View style={styles.card}>
             {/* Date / category meta row */}
             <View style={styles.metaRow}>
-              <Calendar size={14} color="#585E6D" />
+              <Calendar size={14} color={c.textMuted} />
               <ThemedText style={styles.metaText}>{metaItems.join(' • ')}</ThemedText>
             </View>
 
@@ -163,10 +166,10 @@ export default function NewsDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   loadingContainer: {
     flex: 1,
@@ -178,13 +181,13 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E1E2E6',
+    borderColor: c.border,
     padding: 20,
     gap: 16,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -198,30 +201,30 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 12,
     lineHeight: 16,
-    color: '#585E6D',
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   title: {
     fontSize: 22,
     lineHeight: 30,
     fontWeight: '700',
-    color: '#191C1F',
+    color: c.text,
     fontFamily: AppFonts.psuBold,
   },
   accentLine: {
     height: 4,
     width: 48,
     borderRadius: 9999,
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
   },
   paragraph: {
     fontSize: 15,
     lineHeight: 24,
-    color: '#584140',
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   emptyText: {
-    color: '#687076',
+    color: c.textMuted,
     fontSize: 15,
     lineHeight: 22,
     fontFamily: AppFonts.psuRegular,

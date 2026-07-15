@@ -8,6 +8,7 @@ import {
     TextInput,
     View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { FloatingActionBar } from "@/components/floating-action-bar";
@@ -21,6 +22,8 @@ import { foremanRejectJob } from "@/services/repairComputerService";
 const DEFAULT_REJECT_DETAIL = "Reject job because not our duty";
 
 export default function RejectJobScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{
     backHref?: string | string[];
     id?: string | string[];
@@ -195,10 +198,10 @@ export default function RejectJobScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   content: {
     flex: 1,
@@ -207,10 +210,10 @@ const styles = StyleSheet.create({
   panel: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E1E2E6',
+    borderColor: c.border,
     padding: 16,
     gap: 18,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -223,9 +226,9 @@ const styles = StyleSheet.create({
     minHeight: 76,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#e1e2e6",
-    backgroundColor: "#FFFFFF",
-    color: "#191c1f",
+    borderColor: c.border,
+    backgroundColor: c.surface,
+    color: c.text,
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     paddingHorizontal: 14,
@@ -236,7 +239,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#ba1a1a",
+    backgroundColor: c.primary,
     paddingHorizontal: 18,
   },
   backdrop: {
@@ -253,7 +256,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   confirmMessage: {
-    color: "#584140",
+    color: c.textMuted,
     lineHeight: 20,
     marginTop: 10,
   },
@@ -269,8 +272,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#e1e2e6",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
   confirmRejectButton: {
     minHeight: 46,
@@ -280,7 +283,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#ba1a1a",
+    backgroundColor: c.primary,
   },
   disabledButton: {
     opacity: 0.65,

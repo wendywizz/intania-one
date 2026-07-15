@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Platform, StyleSheet, View } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ThemedView } from "@/components/themed-view";
 
@@ -19,6 +20,8 @@ type FloatingActionBarProps = {
  * container, after the scroll/content area.
  */
 export function FloatingActionBar({ children, disabled = false }: FloatingActionBarProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <ThemedView style={styles.bar} lightColor="#FFFFFF" darkColor="#151718">
       <View
@@ -31,10 +34,10 @@ export function FloatingActionBar({ children, disabled = false }: FloatingAction
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   bar: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#e1e2e6",
+    borderTopColor: c.border,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: Platform.OS === "ios" ? 28 : 16,

@@ -4,6 +4,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ThemedText } from '@/components/themed-text';
 import { TEXT } from '@/constants/text';
@@ -40,6 +41,8 @@ export function DatePickerField({
   hasError,
   onChange,
 }: DatePickerFieldProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const displayValue = value ? formatDisplayDate(value) : '';
 
@@ -105,7 +108,7 @@ export function DatePickerField({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
     gap: 8,
@@ -115,17 +118,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#BFD2DA',
-    backgroundColor: '#FFFFFF',
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 14,
   },
   inputError: {
-    borderColor: '#B42318',
+    borderColor: c.danger,
   },
   buttonText: {
-    color: '#11181C',
+    color: c.text,
   },
   placeholder: {
-    color: '#8A969C',
+    color: c.textFaint,
   },
 });

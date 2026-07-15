@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { TEXT } from "@/constants/text";
 import { ThemedText } from "./themed-text";
@@ -29,6 +30,8 @@ export function ModalSelectField({
   width,
   onSelect,
 }: ModalSelectFieldProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const selectedOption = options.find((option) => option.value === value);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -107,28 +110,28 @@ export function ModalSelectField({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   button: {
     minHeight: 48,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 8,
   },
   inputError: {
-    borderColor: "#B42318",
+    borderColor: c.danger,
   },
   buttonText: {
-    color: "#11181C",
+    color: c.text,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
   },
   placeholder: {
-    color: "#8A969C",
+    color: c.textFaint,
   },
   backdrop: {
     flex: 1,
@@ -162,7 +165,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#E4F0F6",
+    backgroundColor: c.infoSoft,
     paddingHorizontal: 14,
   },
   optionScroll: {
@@ -176,18 +179,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   optionText: {
-    color: "#11181C",
+    color: c.text,
     lineHeight: 20,
     textAlign: "center",
   },
   emptyOption: {
-    color: "#687076",
+    color: c.textMuted,
     lineHeight: 20,
     paddingVertical: 16,
     textAlign: "center",

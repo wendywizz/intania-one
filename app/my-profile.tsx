@@ -14,6 +14,7 @@ import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { ENDPOINTS } from '@/constants/endpoints';
 import { TEXT } from '@/constants/text';
 import { useAuth } from '@/context/AuthContext';
@@ -97,6 +98,8 @@ function IconCircle({
   name: string;
   size?: number;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const IconComponent = ICON_CIRCLE_MAP[name];
   return (
     <View style={[styles.iconCircle, { backgroundColor: bg }]}>
@@ -106,6 +109,8 @@ function IconCircle({
 }
 
 export default function MyProfileScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const staffId = String(authUser?.staffId || '').trim();
 
@@ -223,10 +228,13 @@ export default function MyProfileScreen() {
   const email = person ? getEmail(person) : (authUser?.email ? String(authUser.email) : '');
 
   return (
-    <ThemedView style={styles.container} lightColor={D.bg}>
+    <ThemedView style={styles.container} lightColor={c.background} darkColor={c.background}>
       <StatusBar style="light" />
       <NavTopBar
-        title="Profile"
+        title={TEXT.PROFILE_TITLE}
+        subtitle={TEXT.PROFILE_SUBTITLE}
+        moduleIcon="person.circle.fill"
+        backHref="/"
         rightContent={
           <Pressable
             accessibilityRole="button"
@@ -234,7 +242,7 @@ export default function MyProfileScreen() {
             onPress={() => router.push('/notification')}
             style={styles.bellBtn}
           >
-            <Bell size={22} color="#FFFFFF" />
+            <Bell size={22} color={c.navBarText} />
             {unreadCount > 0 ? <View style={styles.bellBadge} /> : null}
           </Pressable>
         }
@@ -246,7 +254,7 @@ export default function MyProfileScreen() {
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadPerson(true)} tintColor={D.primary} />}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadPerson(true)} tintColor={c.primary} />}
         >
 
           {/* ── Avatar ─────────────────────────────────────────────────────── */}
@@ -301,7 +309,7 @@ export default function MyProfileScreen() {
                   accessibilityRole="button"
                 >
                   <View style={styles.menuItemIcon}>
-                    <Camera size={20} color={D.primary} />
+                    <Camera size={20} color={c.primary} />
                   </View>
                   <ThemedText style={styles.menuItemText}>Take Photo</ThemedText>
                 </Pressable>
@@ -314,7 +322,7 @@ export default function MyProfileScreen() {
                   accessibilityRole="button"
                 >
                   <View style={styles.menuItemIcon}>
-                    <Images size={20} color={D.primary} />
+                    <Images size={20} color={c.primary} />
                   </View>
                   <ThemedText style={styles.menuItemText}>Choose from Library</ThemedText>
                 </Pressable>
@@ -419,7 +427,7 @@ export default function MyProfileScreen() {
                       <ThemedText style={styles.infoLabel}>PHONE NUMBER</ThemedText>
                       <ThemedText style={styles.infoValue}>{phone}</ThemedText>
                     </View>
-                    <ChevronRight size={20} color={D.mutedText} />
+                    <ChevronRight size={20} color={c.textMuted} />
                   </Pressable>
                 </>
               ) : null}
@@ -437,7 +445,7 @@ export default function MyProfileScreen() {
                       <ThemedText style={styles.infoLabel}>EMAIL ADDRESS</ThemedText>
                       <ThemedText style={styles.infoValue} numberOfLines={1}>{email}</ThemedText>
                     </View>
-                    <ChevronRight size={20} color={D.mutedText} />
+                    <ChevronRight size={20} color={c.textMuted} />
                   </Pressable>
                 </>
               ) : null}
@@ -457,7 +465,7 @@ export default function MyProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 48, gap: 24 },
 
@@ -475,9 +483,9 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#BA1A1A',
+    backgroundColor: c.primary,
     borderWidth: 1.5,
-    borderColor: D.primary,
+    borderColor: c.navBar,
   },
 
   // ── Avatar ──────────────────────────────────────────────────────────────────
@@ -513,11 +521,11 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: D.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: c.textOnPrimary,
   },
 
   // ── Photo context menu ───────────────────────────────────────────────────────
@@ -527,7 +535,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   menuSheet: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 16,
@@ -538,7 +546,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D1D5DB',
+    backgroundColor: c.borderStrong,
     alignSelf: 'center',
     marginBottom: 16,
   },
@@ -546,7 +554,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontFamily: AppFonts.psuBold,
-    color: '#9CA3AF',
+    color: c.textFaint,
     textAlign: 'center',
     marginBottom: 12,
     letterSpacing: 0.4,
@@ -562,7 +570,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#F5F6FA',
+    backgroundColor: c.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -570,31 +578,31 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     fontFamily: AppFonts.psuRegular,
-    color: '#191C1F',
+    color: c.text,
   },
-  menuItemDestructive: { color: '#DC2626' },
+  menuItemDestructive: { color: c.danger },
   menuDivider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: c.border,
   },
   menuCancelBtn: {
     marginTop: 12,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#F5F6FA',
+    backgroundColor: c.surfaceAlt,
     alignItems: 'center',
   },
   menuCancelText: {
     fontSize: 15,
     lineHeight: 22,
     fontFamily: AppFonts.psuBold,
-    color: '#6B7280',
+    color: c.textMuted,
   },
   heroName: {
     fontSize: 20,
     lineHeight: 28,
     fontFamily: AppFonts.psuBold,
-    color: '#191C1F',
+    color: c.text,
     textAlign: 'center',
   },
   heroPosition: {
@@ -608,7 +616,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     fontFamily: AppFonts.psuRegular,
-    color: '#9CA3AF',
+    color: c.textFaint,
     textAlign: 'center',
   },
 
@@ -618,17 +626,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     fontFamily: AppFonts.psuBold,
-    color: '#191C1F',
+    color: c.text,
   },
 
   // ── Info card ───────────────────────────────────────────────────────────────
   infoCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: D.border,
+    borderColor: c.border,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -642,11 +650,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   infoRowPressed: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: c.surfaceAlt,
   },
   infoDivider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: c.border,
     marginHorizontal: 16,
   },
   iconCircle: {
@@ -662,14 +670,14 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 14,
     fontFamily: AppFonts.psuBold,
-    color: '#9CA3AF',
+    color: c.textFaint,
     letterSpacing: 0.6,
   },
   infoValue: {
     fontSize: 14,
     lineHeight: 20,
     fontFamily: AppFonts.psuRegular,
-    color: '#191C1F',
+    color: c.text,
   },
 emptyRow: {
     paddingHorizontal: 16,
@@ -679,7 +687,7 @@ emptyRow: {
   emptyText: {
     fontSize: 14,
     fontFamily: AppFonts.psuRegular,
-    color: D.mutedText,
+    color: c.textMuted,
   },
 
   // ── Photo confirm modal ──────────────────────────────────────────────────────
@@ -693,7 +701,7 @@ emptyRow: {
   confirmPhotoSheet: {
     width: '100%',
     maxWidth: 340,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
@@ -703,7 +711,7 @@ emptyRow: {
     fontSize: 18,
     lineHeight: 26,
     fontFamily: AppFonts.psuBold,
-    color: '#191C1F',
+    color: c.text,
   },
   confirmPhotoPreviewRing: {
     width: 140,
@@ -721,7 +729,7 @@ emptyRow: {
     fontSize: 13,
     lineHeight: 19,
     fontFamily: AppFonts.psuRegular,
-    color: '#6B7280',
+    color: c.textMuted,
     textAlign: 'center',
   },
   confirmPhotoActions: {
@@ -737,14 +745,14 @@ emptyRow: {
     justifyContent: 'center',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    borderColor: c.border,
+    backgroundColor: c.surfaceAlt,
   },
   confirmPhotoCancelText: {
     fontSize: 15,
     lineHeight: 22,
     fontFamily: AppFonts.psuBold,
-    color: '#6B7280',
+    color: c.textMuted,
   },
   confirmPhotoConfirmBtn: {
     flex: 1,
@@ -752,12 +760,12 @@ emptyRow: {
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
-    backgroundColor: D.primary,
+    backgroundColor: c.primary,
   },
   confirmPhotoConfirmText: {
     fontSize: 15,
     lineHeight: 22,
     fontFamily: AppFonts.psuBold,
-    color: '#FFFFFF',
+    color: c.textOnPrimary,
   },
 });

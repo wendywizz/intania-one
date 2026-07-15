@@ -1,4 +1,4 @@
-﻿import { ChevronDown, MapPin } from 'lucide-react-native';
+﻿import { ChevronDown, MapPin, CalendarX } from 'lucide-react-native';
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -10,10 +10,12 @@ import {
     StyleSheet,
     View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { Calendar, type DateData } from "react-native-calendars";
 import type { MarkedDates } from "react-native-calendars/src/types";
 
 import { ErrorState } from "@/components/error-state";
+import { EmptyState } from "@/components/empty-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -56,6 +58,8 @@ function getEventColor(isAllDay: boolean, index: number): string {
 }
 
 export default function CalendarScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [sources, setSources] = useState<CalendarSource[]>([]);
   const [selectedSource, setSelectedSource] = useState<CalendarSource>();
   const [selectedDate, setSelectedDate] = useState(todayKey);
@@ -203,7 +207,7 @@ export default function CalendarScreen() {
             </ThemedText>
             {item.location ? (
               <View style={styles.locationRow}>
-                <MapPin size={12} color="#584140" />
+                <MapPin size={12} color={c.textMuted} />
                 <ThemedText style={styles.locationText} numberOfLines={2}>
                   {item.location}
                 </ThemedText>
@@ -279,7 +283,7 @@ export default function CalendarScreen() {
           >
             {selectedSource?.name || "Select calendar"}
           </ThemedText>
-          <ChevronDown size={24} color="#922124" />
+          <ChevronDown size={24} color={c.primary} />
         </Pressable>
 
         {/* Source picker modal */}
@@ -396,14 +400,7 @@ export default function CalendarScreen() {
               </Pressable>
             </View>
           ) : (
-            <View style={styles.emptyWrap}>
-              <ThemedText style={styles.emptyTitle} type="defaultSemiBold">
-                {TEXT.SHARED_EMPTY_DATA}
-              </ThemedText>
-              <ThemedText style={styles.emptyMessage}>
-                No schedule for this date
-              </ThemedText>
-            </View>
+            <EmptyState icon={CalendarX} message={TEXT.SHARED_EMPTY_DATA} />
           )
         }
       />
@@ -432,15 +429,15 @@ const calendarTheme = {
   textDayHeaderFontSize: 12,
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FD",
+    backgroundColor: c.background,
   },
 
   // ─── Calendar pane ───────────────────────────────────────────────
   calendarPane: {
-    backgroundColor: "#F8F9FD",
+    backgroundColor: c.background,
     paddingHorizontal: 16,
     paddingTop: 16,
     gap: 12,
@@ -452,9 +449,9 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
-    shadowColor: "#000",
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -464,17 +461,17 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     lineHeight: 22,
-    color: "#191C1F",
+    color: c.text,
     fontFamily: AppFonts.psuBold,
   },
   sourcePlaceholder: {
-    color: "#8A969C",
+    color: c.textFaint,
   },
   calendarCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -486,7 +483,7 @@ const styles = StyleSheet.create({
   dateHeaderText: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#584140",
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
 
@@ -495,6 +492,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eventListContent: {
+    flexGrow: 1,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 32,
@@ -503,10 +501,10 @@ const styles = StyleSheet.create({
     height: 12,
   },
   eventCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderLeftWidth: 4,
-    shadowColor: "#000",
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -526,7 +524,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     fontFamily: AppFonts.psuBold,
-    color: "#922124",
+    color: c.primary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -534,7 +532,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     fontFamily: AppFonts.psuBold,
-    color: "#585E6D",
+    color: c.textMuted,
   },
   endTime: {
     marginTop: 2,
@@ -551,7 +549,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     fontFamily: AppFonts.psuBold,
-    color: "#191C1F",
+    color: c.text,
   },
   locationRow: {
     flexDirection: "row",
@@ -562,7 +560,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     lineHeight: 20,
-    color: "#584140",
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
 
@@ -574,11 +572,11 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     textAlign: "center",
-    color: "#584140",
+    color: c.textMuted,
   },
   emptyMessage: {
     marginTop: 4,
-    color: "#8B716F",
+    color: c.textMuted,
     textAlign: "center",
     fontSize: 13,
     lineHeight: 18,
@@ -588,19 +586,19 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#F0C9CE",
-    backgroundColor: "#FFF8F8",
+    borderColor: c.border,
+    backgroundColor: c.primarySoft,
     padding: 16,
     gap: 6,
   },
   errorTitle: {
-    color: "#C44D58",
+    color: c.primary,
     fontFamily: AppFonts.psuBold,
     fontSize: 14,
     lineHeight: 20,
   },
   errorDetail: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -610,10 +608,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 8,
-    backgroundColor: "#922124",
+    backgroundColor: c.primary,
   },
   retryBtnText: {
-    color: "#FFFFFF",
+    color: c.textOnPrimary,
     fontFamily: AppFonts.psuBold,
     fontSize: 14,
     lineHeight: 20,
@@ -639,9 +637,9 @@ const styles = StyleSheet.create({
     width: "100%",
     maxHeight: 520,
     borderRadius: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
@@ -657,17 +655,17 @@ const styles = StyleSheet.create({
   modalTitle: {
     flex: 1,
     fontSize: 16,
-    color: "#191C1F",
+    color: c.text,
   },
   closeBtn: {
     height: 36,
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#F2F3F7",
+    backgroundColor: c.surfaceMuted,
     paddingHorizontal: 12,
   },
   closeBtnText: {
-    color: "#584140",
+    color: c.textMuted,
   },
   optionScroll: {
     maxHeight: 360,
@@ -680,23 +678,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#EDEEF2",
+    borderColor: c.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   optionActive: {
-    borderColor: "#922124",
-    backgroundColor: "#922124",
+    borderColor: c.primary,
+    backgroundColor: c.primary,
   },
   optionText: {
-    color: "#191C1F",
+    color: c.text,
     lineHeight: 20,
   },
   optionActiveText: {
-    color: "#FFFFFF",
+    color: c.textOnPrimary,
   },
   optionEmpty: {
-    color: "#584140",
+    color: c.textMuted,
     lineHeight: 20,
     paddingVertical: 16,
     textAlign: "center",

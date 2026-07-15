@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppToast } from '@/components/app-toast';
@@ -45,6 +46,8 @@ const FIELD_CONFIG: Record<Field, {
 };
 
 export default function EditProfileFieldScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ field?: string; value?: string; staffId?: string }>();
   const field = (params.field === 'email' ? 'email' : 'phone') as Field;
@@ -140,7 +143,7 @@ export default function EditProfileFieldScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1, justifyContent: 'space-between' },
 
@@ -153,7 +156,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     fontFamily: AppFonts.psuRegular,
-    color: '#6B7280',
+    color: c.textMuted,
   },
 
   fieldGroup: {
@@ -163,23 +166,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontFamily: AppFonts.psuBold,
-    color: '#374151',
+    color: c.textMuted,
   },
   inputBox: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    borderColor: c.border,
     paddingHorizontal: 14,
   },
   inputBoxFocused: {
-    borderColor: '#B33939',
+    borderColor: c.primary,
   },
   input: {
     fontFamily: AppFonts.psuRegular,
     fontSize: 15,
     lineHeight: 22,
-    color: '#191C1F',
+    color: c.text,
     paddingVertical: 13,
     outlineStyle: 'none',
   },
@@ -187,10 +190,10 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    backgroundColor: '#F5F6FA',
+    backgroundColor: c.surfaceAlt,
   },
   saveButton: {
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
     borderRadius: 12,
     paddingVertical: 15,
     flexDirection: 'row',
@@ -199,7 +202,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   saveButtonDisabled: {
-    backgroundColor: '#D1D5DB',
+    backgroundColor: c.borderStrong,
   },
   saveButtonPressed: {
     opacity: 0.85,
@@ -208,6 +211,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     fontFamily: AppFonts.psuBold,
-    color: '#FFFFFF',
+    color: c.textOnPrimary,
   },
 });

@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { TEXT } from '@/constants/text';
 
@@ -49,6 +50,8 @@ type RepairComputerJobListItemProps = {
 };
 
 export function RepairComputerJobListItem({ job, fallbackTitle = TEXT.REPAIR_COMPUTER_PENDING_JOB_TYPE, repairTypeOnly = false, showRepairType = false, onDelete, onPress }: RepairComputerJobListItemProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const jobId = getRepairComputerJobId(job);
   const jobTitle = getRepairComputerJobText(job, repairTypeOnly ? repairTypeTitleFields : titleFields) || fallbackTitle || jobId || '-';
   const supplyCode = getRepairComputerJobText(job, supplyFields);
@@ -108,7 +111,7 @@ export function RepairComputerJobListItem({ job, fallbackTitle = TEXT.REPAIR_COM
 
             {informDate ? (
               <View style={styles.dateRow}>
-                <IconSymbol name="calendar" size={13} color="#584140" />
+                <IconSymbol name="calendar" size={13} color={c.textMuted} />
                 <ThemedText style={styles.itemMeta}>{informDate}</ThemedText>
               </View>
             ) : null}
@@ -116,7 +119,7 @@ export function RepairComputerJobListItem({ job, fallbackTitle = TEXT.REPAIR_COM
 
           {/* Navigable indicator */}
           {onPress ? (
-            <IconSymbol name="chevron.right" size={18} color="#9CA3AF" style={styles.chevron} />
+            <IconSymbol name="chevron.right" size={18} color={c.textFaint} style={styles.chevron} />
           ) : null}
         </View>
       </ThemedView>
@@ -142,15 +145,18 @@ export function RepairComputerJobListItem({ job, fallbackTitle = TEXT.REPAIR_COM
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   itemCard: {
     borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e1e2e6',
+    borderWidth: 1,
+    borderColor: 'rgba(223, 191, 189, 0.3)',
     padding: 16,
     gap: 8,
-    boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-    elevation: 1,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   itemRow: {
     flexDirection: 'row',
@@ -163,10 +169,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FBEAEA',
+    backgroundColor: c.primarySoft,
   },
   iconBoxMuted: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: c.border,
   },
   itemBody: {
     flex: 1,
@@ -205,18 +211,18 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   codeLabel: {
-    color: '#584140',
+    color: c.textMuted,
     fontSize: 13,
     lineHeight: 18,
   },
   codeValue: {
-    color: '#b33939',
+    color: c.primary,
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '600',
   },
   repairTypeValue: {
-    color: '#584140',
+    color: c.textMuted,
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '500',
@@ -227,7 +233,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   itemMeta: {
-    color: '#584140',
+    color: c.textMuted,
     fontSize: 13,
     lineHeight: 18,
   },
@@ -236,7 +242,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
-    backgroundColor: '#ba1a1a',
+    backgroundColor: c.primary,
     marginLeft: 8,
   },
 });

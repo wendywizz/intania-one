@@ -1,6 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
@@ -53,12 +54,14 @@ function InfoCell({
   icon?: IconSymbolName;
   wide?: boolean;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   if (!value) return null;
   return (
     <View style={[styles.cell, wide ? styles.cellWide : styles.cellHalf]}>
       <ThemedText style={styles.cellLabel}>{label}</ThemedText>
       <View style={styles.cellValueRow}>
-        {icon ? <IconSymbol name={icon} size={16} color="#B33939" /> : null}
+        {icon ? <IconSymbol name={icon} size={16} color={c.primary} /> : null}
         <ThemedText style={styles.cellValue} numberOfLines={2}>
           {value}
         </ThemedText>
@@ -76,6 +79,8 @@ function PersonRow({
   position: string;
   staffId?: string | number | null;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   if (!name && !position) return null;
   return (
     <View style={styles.personRow}>
@@ -89,6 +94,8 @@ function PersonRow({
 }
 
 export default function TimestampApproveDetailScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ forgetId?: string; item?: string }>();
   const forgetId = firstParam(params.forgetId);
   const fallback = useMemo(() => parseItemParam(params.item), [params.item]);
@@ -185,7 +192,7 @@ export default function TimestampApproveDetailScreen() {
 
               <View style={styles.infoHeader}>
                 <View style={styles.typeIconCircle}>
-                  <IconSymbol name="clock.fill" size={22} color="#B33939" />
+                  <IconSymbol name="clock.fill" size={22} color={c.primary} />
                 </View>
                 <ThemedText style={styles.infoType} numberOfLines={2}>
                   {typeLabel}
@@ -193,7 +200,7 @@ export default function TimestampApproveDetailScreen() {
               </View>
 
               <View style={styles.infoGrid}>
-                <InfoCell label={TEXT.TIMESTAMP_APPROVE_STAMP_DATE_LABEL} value={stampDate} icon="calendar" />
+                <InfoCell label={TEXT.TIMESTAMP_APPROVE_STAMP_DATE_LABEL} value={stampDate} icon="calendar" wide />
                 <InfoCell label={TEXT.TIMESTAMP_APPROVE_IN_TIME_LABEL} value={inTime} icon="clock.fill" />
                 <InfoCell label={TEXT.TIMESTAMP_APPROVE_OUT_TIME_LABEL} value={outTime} icon="clock.fill" />
                 <InfoCell label={TEXT.TIMESTAMP_APPROVE_REASON_LABEL} value={reason} wide />
@@ -256,10 +263,10 @@ export default function TimestampApproveDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FD",
+    backgroundColor: c.background,
   },
   scrollContent: {
     paddingTop: 16,
@@ -268,7 +275,7 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 16,
@@ -278,7 +285,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontWeight: "600",
-    color: "#687076",
+    color: c.textMuted,
   },
   infoHeader: {
     flexDirection: "row",
@@ -291,14 +298,14 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FBEAEA",
+    backgroundColor: c.primarySoft,
   },
   infoType: {
     flex: 1,
     fontFamily: AppFonts.psuBold,
     fontSize: 17,
     lineHeight: 24,
-    color: "#191C1F",
+    color: c.text,
   },
   infoGrid: {
     flexDirection: "row",
@@ -306,10 +313,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   cell: {
-    backgroundColor: "#F5F6FA",
+    backgroundColor: c.surfaceAlt,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#E8ECF0",
+    borderColor: c.border,
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 4,
@@ -324,7 +331,7 @@ const styles = StyleSheet.create({
   cellLabel: {
     fontSize: 12,
     lineHeight: 16,
-    color: "#9CA3AF",
+    color: c.textFaint,
   },
   cellValueRow: {
     flexDirection: "row",
@@ -336,7 +343,7 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuRegular,
     fontSize: 15,
     lineHeight: 22,
-    color: "#191C1F",
+    color: c.text,
   },
   personRow: {
     flexDirection: "row",
@@ -351,19 +358,19 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuBold,
     fontSize: 15,
     lineHeight: 21,
-    color: "#191C1F",
+    color: c.text,
   },
   personPosition: {
     fontSize: 13,
     lineHeight: 18,
-    color: "#687076",
+    color: c.textMuted,
   },
   bottomBar: {
     flexDirection: "row",
     gap: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#E8ECF0",
+    borderTopColor: c.border,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 28,
@@ -376,9 +383,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   acceptButton: {
-    backgroundColor: "#12805C",
+    backgroundColor: c.success,
   },
   rejectButton: {
-    backgroundColor: "#B42318",
+    backgroundColor: c.danger,
   },
 });

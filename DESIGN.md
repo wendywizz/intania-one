@@ -154,6 +154,7 @@ A **Rounded (0.5rem)** logic is applied to balance professional structure with m
 - **Chips:** Used for "Status" (e.g., Pending, Approved). Backgrounds should be highly desaturated versions of the status color with high-contrast text.
 - **Lists:** Clean rows with 16px vertical padding, separated by 1px dividers (`#eee`). Use "Chevron-right" icons for all tappable list items to signify navigation.
 - **Progress Bars:** For onboarding or performance tracks, use the Primary Red for the fill and a light gray for the track.
+- All components should support dark theme
 
 ## Config file
 The color and font size should keep in file "constants/theme.ts" don't create another file

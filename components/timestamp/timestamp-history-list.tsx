@@ -1,4 +1,4 @@
-import { ChevronRight, Fingerprint, LogIn, LogOut } from 'lucide-react-native';
+import { ChevronRight, Clock, Inbox, LogIn, LogOut } from 'lucide-react-native';
 import { useFocusEffect } from "expo-router";
 import { navPush } from "@/utils/navigation";
 import { useCallback, useState } from "react";
@@ -9,8 +9,10 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { LoadingAnimate } from "@/components/loading-animate";
+import { EmptyState } from "@/components/empty-state";
 import { ThemedText } from "@/components/themed-text";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
@@ -119,10 +121,20 @@ function getHistoryItemStatus(
   return "pending";
 }
 
+// Icon + colour that convey the miss-timestamp type — kept in sync with the
+// approve screens: forgot check-in (green), check-out (amber), both (red).
+function getTypeIcon(stampType: string) {
+  if (stampType === "in") return { Icon: LogIn, color: "#12805C", bg: "#E7F5EF" };
+  if (stampType === "out") return { Icon: LogOut, color: "#B54708", bg: "#FDF3E7" };
+  return { Icon: Clock, color: "#B33939", bg: "#FBEAEA" };
+}
+
 function TimestampHistoryItem({ item }: { item: TimestampHistory }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const status = getHistoryItemStatus(item);
   const stampType = getText(item, Array.from(stampTypeFields)).toLowerCase();
-  const StampIcon = stampType === "in" ? LogIn : stampType === "out" ? LogOut : Fingerprint;
+  const { Icon: TypeIcon, color: typeColor, bg: typeBg } = getTypeIcon(stampType);
 
   const openDetail = () => {
     navPush({
@@ -138,8 +150,8 @@ function TimestampHistoryItem({ item }: { item: TimestampHistory }) {
       style={({ pressed }) => (pressed ? styles.itemPressed : undefined)}
     >
       <View style={styles.itemCard}>
-        <View style={styles.iconCircle}>
-          <StampIcon size={18} color="#5D6371" />
+        <View style={[styles.iconCircle, { backgroundColor: typeBg }]}>
+          <TypeIcon size={18} color={typeColor} />
         </View>
         <View style={styles.itemInfo}>
           <ThemedText style={styles.itemTitle}>{getHistoryTitle(item)}</ThemedText>
@@ -163,6 +175,8 @@ function TimestampHistoryItem({ item }: { item: TimestampHistory }) {
 }
 
 export function TimestampHistoryList() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const [items, setItems] = useState<TimestampHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -283,11 +297,7 @@ export function TimestampHistoryList() {
       }
       renderItem={({ item }) => <TimestampHistoryItem item={item} />}
       ListHeaderComponent={listHeader}
-      ListEmptyComponent={
-        <View style={styles.emptyCard}>
-          <ThemedText style={styles.emptyMessage}>{TEXT.SHARED_NO_HISTORY}</ThemedText>
-        </View>
-      }
+      ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.SHARED_NO_HISTORY} />}
       ListFooterComponent={
         items.length > 0 ? (
           <View style={styles.listFooter}>
@@ -301,11 +311,12 @@ export function TimestampHistoryList() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   flatList: {
     flex: 1,
   },
   listContent: {
+    flexGrow: 1,
     padding: 16,
     gap: 12,
   },
@@ -313,13 +324,13 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   statsCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E1E2E6",
+    borderColor: c.border,
     padding: 16,
     gap: 4,
-    shadowColor: "#000",
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -329,14 +340,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
     fontWeight: "700",
-    color: "#922124",
+    color: c.primary,
     fontFamily: AppFonts.psuBold,
     marginBottom: 2,
   },
   statsSubtitle: {
     fontSize: 13,
     lineHeight: 19,
-    color: "#584140",
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
     marginBottom: 10,
   },
@@ -344,20 +355,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 0.8,
-    color: "#585E6D",
+    color: c.textMuted,
     fontFamily: AppFonts.psuBold,
   },
   cycleValue: {
     fontSize: 14,
     lineHeight: 20,
     fontWeight: "600",
-    color: "#191C1F",
+    color: c.text,
     fontFamily: AppFonts.psuBold,
     marginBottom: 4,
   },
   statsDivider: {
     height: 1,
-    backgroundColor: "#E1E2E6",
+    backgroundColor: c.surfaceMuted,
     marginVertical: 12,
   },
   statsRow: {
@@ -372,31 +383,31 @@ const styles = StyleSheet.create({
   statsVerticalDivider: {
     width: 1,
     height: 40,
-    backgroundColor: "#E1E2E6",
+    backgroundColor: c.surfaceMuted,
   },
   statLabel: {
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 0.6,
-    color: "#585E6D",
+    color: c.textMuted,
     fontFamily: AppFonts.psuBold,
   },
   statCountApproved: {
     fontSize: 24,
     lineHeight: 30,
     fontWeight: "700",
-    color: "#922124",
+    color: c.primary,
     fontFamily: AppFonts.psuBold,
   },
   statCountRejected: {
     fontSize: 24,
     lineHeight: 30,
     fontWeight: "700",
-    color: "#585E6D",
+    color: c.textMuted,
     fontFamily: AppFonts.psuBold,
   },
   itemCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(223,191,189,0.3)",
@@ -404,7 +415,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    shadowColor: "#000",
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 4,
@@ -416,8 +427,8 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 40,
     height: 40,
-    borderRadius: 8,
-    backgroundColor: "#DADFF0",
+    borderRadius: 20,
+    backgroundColor: c.primarySoft,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -430,13 +441,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
     fontWeight: "600",
-    color: "#191C1F",
+    color: c.text,
     fontFamily: AppFonts.psuBold,
   },
   itemMeta: {
     fontSize: 12,
     lineHeight: 16,
-    color: "#585E6D",
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   itemRight: {
@@ -446,7 +457,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   approvedBadge: {
-    backgroundColor: "#DCFCE7",
+    backgroundColor: c.successSoft,
     borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -458,7 +469,7 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuBold,
   },
   rejectedBadge: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: c.dangerSoft,
     borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -478,11 +489,11 @@ const styles = StyleSheet.create({
   footerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E1E2E6",
+    backgroundColor: c.surfaceMuted,
   },
   footerText: {
     fontSize: 12,
-    color: "#585E6D",
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   stateContainer: {
@@ -498,7 +509,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   errorText: {
-    color: "#B42318",
+    color: c.danger,
   },
   retryButton: {
     minHeight: 48,
@@ -506,11 +517,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#B33939",
+    backgroundColor: c.primary,
     marginTop: 24,
   },
   emptyCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
@@ -520,7 +531,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(223,191,189,0.2)",
   },
   emptyMessage: {
-    color: "#687076",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",

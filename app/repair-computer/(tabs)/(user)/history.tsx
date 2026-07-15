@@ -11,7 +11,10 @@ import {
     useWindowDimensions,
     View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
+import { Inbox } from 'lucide-react-native';
+import { EmptyState } from "@/components/empty-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import {
@@ -55,6 +58,8 @@ function getHasMore(
 }
 
 export default function RepairComputerHistoryScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { height } = useWindowDimensions();
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
@@ -235,21 +240,11 @@ export default function RepairComputerHistoryScreen() {
         ListFooterComponent={
           isLoadingMore ? (
             <View style={styles.footerLoader}>
-              <ActivityIndicator color="#b33939" size="small" />
+              <ActivityIndicator color={c.primary} size="small" />
             </View>
           ) : null
         }
-        ListEmptyComponent={
-          <ThemedView
-            style={styles.emptyCard}
-            lightColor="#FFFFFF"
-            darkColor="#151718"
-          >
-            <ThemedText style={styles.emptyMessage}>
-              {TEXT.SHARED_NO_HISTORY}
-            </ThemedText>
-          </ThemedView>
-        }
+        ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.SHARED_NO_HISTORY} />}
       />
     );
   };
@@ -259,7 +254,7 @@ export default function RepairComputerHistoryScreen() {
             <NavTopBar
               title={TEXT.REPAIR_COMPUTER_TITLE}
               subtitle={TEXT.REPAIR_COMPUTER_REPAIR_HISTORY}
-              moduleIcon="laptop"
+              moduleIcon="history"
               backHref="/"
             />
 
@@ -272,10 +267,10 @@ export default function RepairComputerHistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   content: {
     flex: 1,
@@ -284,9 +279,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
+    flexGrow: 1,
     gap: 10,
     paddingHorizontal: 16,
-    paddingTop: 4,
+    paddingTop: 20,
     paddingBottom: 16,
   },
   stateContent: {
@@ -296,14 +292,14 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   stateMessage: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
     textAlign: "center",
   },
   errorText: {
-    color: "#ba1a1a",
+    color: c.primary,
   },
   retryButton: {
     minHeight: 48,
@@ -311,7 +307,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
     marginTop: 24,
   },
   emptyCard: {
@@ -319,11 +315,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#e1e2e6",
+    borderColor: c.border,
     padding: 16,
   },
   emptyMessage: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",

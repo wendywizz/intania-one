@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { navReplace } from '@/utils/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -10,6 +11,8 @@ import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/context/AuthContext';
 
 export default function LoginCallbackScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{
     code?: string;
     error?: string;
@@ -85,7 +88,7 @@ export default function LoginCallbackScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -96,19 +99,19 @@ const styles = StyleSheet.create({
   },
   message: {
     marginTop: 10,
-    color: '#687076',
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },
   errorText: {
-    color: '#B42318',
+    color: c.danger,
   },
   button: {
     minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#0A6E8A',
+    backgroundColor: c.info,
     marginTop: 24,
     paddingHorizontal: 16,
   },

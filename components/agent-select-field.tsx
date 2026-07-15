@@ -7,6 +7,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
@@ -34,6 +35,8 @@ export function AgentSelectField({
   onSelect,
   onRemove,
 }: AgentSelectFieldProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [searchText, setSearchText] = useState("");
   const filteredOptions = useMemo(() => {
     const keyword = searchText.trim().toLowerCase();
@@ -181,20 +184,20 @@ export function AgentSelectField({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   field: {
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E8ECF0",
+    borderBottomColor: c.border,
   },
   fieldLabel: {
     fontSize: 13,
     lineHeight: 18,
     fontWeight: "600",
     letterSpacing: 0.6,
-    color: "#000000",
+    color: c.text,
     textTransform: "uppercase",
   },
   selectButton: {
@@ -204,28 +207,28 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 14,
   },
   inputError: {
-    borderColor: "#B42318",
+    borderColor: c.danger,
   },
   selectText: {
     flex: 1,
-    color: "#11181C",
+    color: c.text,
   },
   placeholder: {
-    color: "#8A969C",
+    color: c.textFaint,
   },
   chevron: {
-    color: "#0A6E8A",
+    color: c.info,
     fontSize: 16,
     lineHeight: 20,
     marginLeft: 8,
   },
   fieldError: {
-    color: "#B42318",
+    color: c.danger,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -240,14 +243,14 @@ const styles = StyleSheet.create({
     gap: 12,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
   agentListText: {
     flex: 1,
-    color: "#11181C",
+    color: c.text,
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     lineHeight: 20,
@@ -257,8 +260,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#F0B4AE",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 12,
   },
   backdrop: {
@@ -293,16 +296,16 @@ const styles = StyleSheet.create({
     minHeight: 40,
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#E4F0F6",
+    backgroundColor: c.infoSoft,
     paddingHorizontal: 14,
   },
   searchInput: {
     minHeight: 44,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
-    color: "#11181C",
+    borderColor: c.border,
+    backgroundColor: c.surface,
+    color: c.text,
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     marginBottom: 12,
@@ -325,21 +328,21 @@ const styles = StyleSheet.create({
     gap: 12,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   optionText: {
     flex: 1,
-    color: "#11181C",
+    color: c.text,
     lineHeight: 20,
   },
   optionActionText: {
     fontSize: 13,
   },
   emptyOption: {
-    color: "#687076",
+    color: c.textMuted,
     lineHeight: 20,
     paddingVertical: 16,
     textAlign: "center",

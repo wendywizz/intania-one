@@ -9,8 +9,10 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ErrorState } from '@/components/error-state';
+import { EmptyState } from '@/components/empty-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ModalSelectField, type ModalSelectOption } from '@/components/modal-select-field';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -90,6 +92,8 @@ function FilterBar({
   onTermChange: (v: string) => void;
   onPeriodChange: (v: string) => void;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.filterSection}>
       <View style={styles.filterRow}>
@@ -127,6 +131,8 @@ function FilterDropdown({
   title: string;
   onSelect: (v: string) => void;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const selected = options.find((o) => o.value === value);
   return (
     <View style={styles.filterItem}>
@@ -143,6 +149,8 @@ function FilterDropdown({
 }
 
 function TaskCount({ count }: { count: number }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.taskCount}>
       <View style={styles.taskCountAccent} />
@@ -163,6 +171,8 @@ function ExamCard({
   term: string;
   period: string;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const roomName = getRoomName(task);
   const roomId = getRoomId(task);
   const dateLabel = getField(task, 'date_label', 'date', 'exam_date');
@@ -233,6 +243,8 @@ function ExamCard({
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ExaminarListScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId ?? '';
 
@@ -345,12 +357,7 @@ export default function ExaminarListScreen() {
         renderItem={({ item }) => (
           <ExamCard task={item} year={year} term={term} period={period} />
         )}
-        ListEmptyComponent={
-          <View style={styles.emptyWrap}>
-            <ClipboardX size={40} color="#DFBFBD" />
-            <ThemedText style={styles.emptyText}>{TEXT.EXAMINAR_NO_EXAMS}</ThemedText>
-          </View>
-        }
+        ListEmptyComponent={<EmptyState icon={ClipboardX} message={TEXT.EXAMINAR_NO_EXAMS} />}
       />
     </ThemedView>
   );
@@ -358,14 +365,14 @@ export default function ExaminarListScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FD' },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
 
   // Filter section
   filterSection: {
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#DFBFBD',
+    borderBottomColor: c.border,
     boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -376,12 +383,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     fontFamily: AppFonts.psuBold,
-    color: '#584140',
+    color: c.textMuted,
     letterSpacing: 0.5,
   },
 
   // List
-  listContent: { padding: 16, paddingBottom: 32 },
+  listContent: { flexGrow: 1, padding: 16, paddingBottom: 32 },
   separator: { height: 12 },
 
   // Task count
@@ -395,7 +402,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 28,
     borderRadius: 2,
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
     alignSelf: 'center',
     marginRight: 2,
   },
@@ -403,17 +410,17 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuBold,
     fontSize: 28,
     lineHeight: 32,
-    color: '#B33939',
+    color: c.primary,
   },
   taskCountLabel: {
     fontFamily: AppFonts.psuBold,
     fontSize: 15,
-    color: '#584140',
+    color: c.textMuted,
   },
 
   // Exam card
   examCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(223, 191, 189, 0.2)',
@@ -421,7 +428,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   examCardPast: {
-    backgroundColor: '#EDEEF2',
+    backgroundColor: c.border,
     opacity: 0.85,
   },
   examCardBody: { padding: 16, gap: 10 },
@@ -435,7 +442,7 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuBold,
     fontSize: 18,
     lineHeight: 24,
-    color: '#191C1F',
+    color: c.text,
     flex: 1,
   },
   statusBadge: {
@@ -443,13 +450,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  statusBadgeIncoming: { backgroundColor: '#B33939' },
-  statusBadgeToday: { backgroundColor: '#059669' },
-  statusBadgePast: { backgroundColor: '#585E6D' },
+  statusBadgeIncoming: { backgroundColor: c.primary },
+  statusBadgeToday: { backgroundColor: c.success },
+  statusBadgePast: { backgroundColor: c.surfaceMuted },
   statusBadgeText: {
     fontFamily: AppFonts.psuBold,
     fontSize: 11,
-    color: '#FFFFFF',
+    color: c.textOnPrimary,
   },
 
   examMeta: { gap: 6 },
@@ -458,7 +465,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: '#E7E8EC',
+    backgroundColor: c.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -466,13 +473,13 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     lineHeight: 20,
-    color: '#191C1F',
+    color: c.text,
   },
 
   // Past (grey) overrides
-  textPast: { color: '#9AA0B0' },
-  metaIconBoxPast: { backgroundColor: '#EBEBEE' },
-  viewDetailsButtonPast: { borderTopColor: '#DCDDE3' },
+  textPast: { color: c.textFaint },
+  metaIconBoxPast: { backgroundColor: c.surfaceMuted },
+  viewDetailsButtonPast: { borderTopColor: c.border },
 
   // View Details button
   viewDetailsButton: {
@@ -481,14 +488,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
     paddingVertical: 12,
-    backgroundColor: '#F2F3F7',
+    backgroundColor: c.surfaceMuted,
     borderTopWidth: 1,
-    borderTopColor: '#DFBFBD',
+    borderTopColor: c.border,
   },
   viewDetailsText: {
     fontFamily: AppFonts.psuBold,
     fontSize: 14,
-    color: '#922124',
+    color: c.primary,
   },
 
   // Empty / Error
@@ -496,12 +503,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
-    color: '#584140',
+    color: c.textMuted,
     textAlign: 'center',
   },
   centerWrap: { flex: 1, padding: 16, justifyContent: 'center' },
   errorCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(223, 191, 189, 0.3)',
@@ -509,12 +516,12 @@ const styles = StyleSheet.create({
     gap: 8,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.04)',
   },
-  errorTitle: { fontFamily: AppFonts.psuBold, fontSize: 15, color: '#B33939' },
+  errorTitle: { fontFamily: AppFonts.psuBold, fontSize: 15, color: c.primary },
   errorMessage: {
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     lineHeight: 20,
-    color: '#584140',
+    color: c.textMuted,
   },
   retryButton: {
     alignSelf: 'flex-start',
@@ -522,7 +529,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
   },
-  retryText: { color: '#FFFFFF', fontFamily: AppFonts.psuBold, fontSize: 14 },
+  retryText: { color: c.textOnPrimary, fontFamily: AppFonts.psuBold, fontSize: 14 },
 });

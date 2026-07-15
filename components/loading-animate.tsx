@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { useColors } from '@/constants/theme';
 
 type LoadingAnimateProps = {
   title?: string;
@@ -16,6 +17,7 @@ export function LoadingAnimate({
   fill = true,
   style,
 }: LoadingAnimateProps) {
+  const c = useColors();
   const pulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -60,7 +62,7 @@ export function LoadingAnimate({
       <ThemedText type="subtitle" style={styles.title}>
         {title}
       </ThemedText>
-      {desc ? <ThemedText style={styles.message}>{desc}</ThemedText> : null}
+      {desc ? <ThemedText style={[styles.message, { color: c.textMuted }]}>{desc}</ThemedText> : null}
     </View>
   );
 }

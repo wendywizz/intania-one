@@ -12,8 +12,11 @@ import {
   ActivityIndicator, KeyboardAvoidingView, Platform,
   Pressable, ScrollView, StyleSheet, TextInput, View,
 } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 export default function NoticeRepairNotAgreeScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { repair_id, staff_id: paramStaff } = useLocalSearchParams<{ repair_id: string; staff_id: string }>();
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -108,37 +111,37 @@ export default function NoticeRepairNotAgreeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
   scroll: { padding: 16, gap: 8 },
-  label: { fontSize: 14, fontWeight: '700', color: '#922124' },
+  label: { fontSize: 14, fontWeight: '700', color: c.primary },
   input: {
     minHeight: 64,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#D1D5DB',
+    borderColor: c.border,
     padding: 12,
     fontSize: 14,
-    color: '#111827',
+    color: c.text,
     textAlignVertical: 'top',
-    backgroundColor: '#fff',
+    backgroundColor: c.surface,
   },
-  inputError: { borderColor: '#DC2626', borderWidth: 1 },
-  errorText: { fontSize: 13, color: '#DC2626' },
+  inputError: { borderColor: c.danger, borderWidth: 1 },
+  errorText: { fontSize: 13, color: c.danger },
   footer: {
     padding: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: '#fff',
+    borderTopColor: c.border,
+    backgroundColor: c.surface,
   },
   submitBtn: {
     minHeight: 48,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#b33939',
+    backgroundColor: c.primary,
   },
   submitBtnDisabled: { opacity: 0.6 },
-  submitBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  submitBtnText: { fontSize: 15, fontWeight: '700', color: c.textOnPrimary },
 });

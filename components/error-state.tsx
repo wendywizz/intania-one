@@ -17,6 +17,7 @@ import {
 
 import { ThemedText } from '@/components/themed-text';
 import { TEXT } from '@/constants/text';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 export type ErrorStateVariant = 'error' | 'empty' | 'offline';
 
@@ -34,11 +35,13 @@ type VariantStyle = {
   circleColor: string;
 };
 
-const VARIANTS: Record<ErrorStateVariant, VariantStyle> = {
-  error: { icon: CircleAlert, iconColor: '#B33939', circleColor: '#FCEBEB' },
-  empty: { icon: Inbox, iconColor: '#687076', circleColor: '#EEF1F6' },
-  offline: { icon: WifiOff, iconColor: '#B45309', circleColor: '#FEF3E2' },
-};
+function getVariants(c: AppColors): Record<ErrorStateVariant, VariantStyle> {
+  return {
+    error: { icon: CircleAlert, iconColor: c.primary, circleColor: c.primarySoft },
+    empty: { icon: Inbox, iconColor: c.textMuted, circleColor: c.surfaceAlt },
+    offline: { icon: WifiOff, iconColor: c.warning, circleColor: c.warningSoft },
+  };
+}
 
 type ErrorStateProps = {
   variant?: ErrorStateVariant;
@@ -59,9 +62,11 @@ type ErrorStateProps = {
 };
 
 function ActionButton({ action }: { action: ErrorStateAction }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const isPrimary = (action.variant ?? 'primary') === 'primary';
   const IconComponent = action.icon;
-  const tint = isPrimary ? '#FFFFFF' : '#374151';
+  const tint = isPrimary ? c.textOnPrimary : c.text;
 
   return (
     <Pressable
@@ -101,7 +106,9 @@ export function ErrorState({
   style,
   children,
 }: ErrorStateProps) {
-  const variantStyle = VARIANTS[variant];
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  const variantStyle = getVariants(c)[variant];
   const IconComponent = variantStyle.icon;
 
   const resolvedTitle =
@@ -155,7 +162,7 @@ export function ErrorState({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -181,7 +188,7 @@ const styles = StyleSheet.create({
   message: {
     marginTop: 8,
     maxWidth: 320,
-    color: '#687076',
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
@@ -207,12 +214,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   buttonPrimary: {
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
   },
   buttonSecondary: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: '#D8DCE3',
+    borderColor: c.borderStrong,
   },
   buttonPressed: {
     opacity: 0.85,

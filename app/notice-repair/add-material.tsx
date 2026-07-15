@@ -15,8 +15,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 export default function AddMaterialScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { repair_id, staff_id, role, source } = useLocalSearchParams<{
     repair_id: string;
     staff_id: string;
@@ -172,15 +175,15 @@ export default function AddMaterialScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F1F5F9' },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.surfaceAlt },
   flex: { flex: 1 },
   scroll: { padding: 20, gap: 20 },
 
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 24,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
@@ -193,22 +196,22 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: c.textMuted,
   },
 
   input: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: c.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: c.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#111827',
+    color: c.text,
   },
 
   readOnlyBox: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: c.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -216,16 +219,16 @@ const styles = StyleSheet.create({
 
   readOnlyText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: c.textMuted,
   },
 
   submitBtn: {
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#B33939',
+    shadowColor: c.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -235,6 +238,6 @@ const styles = StyleSheet.create({
   submitBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: c.textOnPrimary,
   },
 });

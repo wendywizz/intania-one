@@ -53,6 +53,8 @@ export const TEXT = {
   HOME_SEE_ALL_THAI: 'ดูทั้งหมด',
   HOME_SIGNING_OUT_TITLE: 'กำลังออกจากระบบ',
   HOME_TITLE: 'หน้าหลัก',
+  PROFILE_TITLE: 'โปรไฟล์',
+  PROFILE_SUBTITLE: 'ข้อมูลส่วนตัว',
   HOME_WELCOME_DESCRIPTION: 'ระบบสำหรับบุคลากรมหาวิทยาลัยสงขลานครินทร์',
 
   // Auth
@@ -62,6 +64,7 @@ export const TEXT = {
 
   // absence
   ABSENCE_APPROVER_LABEL: 'ผู้อนุมัติ',
+  ABSENCE_REQUESTER_LABEL: 'ผู้ยื่นคำขอ',
   ABSENCE_APPROVER_PLACEHOLDER: 'เลือกผู้อนุมัติ',
   ABSENCE_BIRTH_TITLE: 'ลาคลอด',
   ABSENCE_BUSINESS_FORM_TITLE: 'แบบฟอร์มไปราชการ',
@@ -135,7 +138,7 @@ export const TEXT = {
   ABSENCE_VALIDATION_REASON_REQUIRED: 'กรุณากรอกเหตุผล',
   ABSENCE_VALIDATION_START_DATE_NOT_FUTURE: 'วันที่เริ่มต้นต้องไม่เกินวันนี้',
   ABSENCE_VALIDATION_START_DATE_NOT_PAST: 'วันที่เริ่มต้นต้องเป็นวันนี้หรือวันถัดไป',
-  ABSENCE_WAITING_TITLE: 'รออนุมัติ',
+  ABSENCE_WAITING_TITLE: 'รออนุมัติการลา',
 
   // absence - type labels
   ABSENCE_HAJJ_TITLE: 'ลาฮัจย์',
@@ -145,6 +148,16 @@ export const TEXT = {
   ABSENCE_TAB_WAITING: 'รออนุมัติ',
   ABSENCE_TAB_STATS: 'สถิติกาลา',
   ABSENCE_TAB_HISTORY: 'ประวัติการลา',
+  // absence - boss bottom tabs + top tabs
+  ABSENCE_MY_LEAVE_TAB: 'การลาของฉัน',
+  ABSENCE_APPROVE_LEAVE_TAB: 'อนุมัติลา',
+  ABSENCE_MY_LEAVE_PENDING_TAB: 'รออนุมัติ',
+  ABSENCE_MY_LEAVE_HISTORY_TAB: 'ประวัติ',
+  ABSENCE_APPROVE_PENDING_TAB: 'อนุมัติการลา',
+  ABSENCE_APPROVE_HISTORY_TAB: 'ประวัติการอนุมัติ',
+  ABSENCE_APPROVE_HISTORY_EMPTY: 'ไม่มีประวัติการอนุมัติ',
+  ABSENCE_APPROVE_STATUS_APPROVED: 'อนุมัติแล้ว',
+  ABSENCE_APPROVE_STATUS_REJECTED: 'ไม่อนุมัติ',
 
   // absence - Choose Absence (index tab)
   ABSENCE_CHOOSE_TITLE: 'เลือกประเภทการลา',
@@ -180,6 +193,9 @@ export const TEXT = {
   ABSENCE_APPROVE_SUBMIT: 'บันทึกผลการพิจารณา',
   ABSENCE_APPROVE_SUBMIT_SUCCESS: 'บันทึกผลการพิจารณาเรียบร้อย',
   ABSENCE_APPROVE_SUBMIT_ERROR: 'ไม่สามารถบันทึกผลการพิจารณาได้',
+  ABSENCE_APPROVE_CONFIRM_TITLE: 'ยืนยันการบันทึก',
+  ABSENCE_APPROVE_CONFIRM_MESSAGE: 'คุณต้องการบันทึกผลการพิจารณานี้ใช่หรือไม่?',
+  ABSENCE_APPROVE_CONFIRM_ACTION: 'ยืนยัน',
 
   // absence - Stats tab
   ABSENCE_STATS_LOADING_TITLE: 'กำลังโหลดสถิติ',
@@ -485,6 +501,7 @@ export const TEXT = {
   TIMESTAMP_TITLE: 'การลงเวลา',
   TIMESTAMP_FORGOT_TAB: 'ลืมลงเวลา',
   TIMESTAMP_LIST_SUBTITLE: 'รายการคำขอลืมลงเวลา',
+  TIMESTAMP_FORGOT_HISTORY_SUBTITLE: 'ประวัติการลืมลงเวลา',
 
   // Timestamp - approval (boss inbox)
   TIMESTAMP_APPROVE_TAB: 'รับรอง',
@@ -502,6 +519,7 @@ export const TEXT = {
   TIMESTAMP_APPROVE_COMMENT_LABEL: 'ความเห็นผู้อนุมัติ',
   TIMESTAMP_RECORD_INFO_SECTION: 'ข้อมูลการลืมลงเวลา',
   TIMESTAMP_APPROVE_ACCEPT: 'รับรอง',
+  TIMESTAMP_APPROVE_ACCEPT_REASON: 'รับรองการลงเวลา',
   TIMESTAMP_APPROVE_REJECT: 'ไม่รับรอง',
   TIMESTAMP_APPROVE_REQUESTER_LABEL: 'ผู้ยื่นคำขอ',
   TIMESTAMP_APPROVE_POSITION_LABEL: 'ตำแหน่ง',
@@ -518,6 +536,9 @@ export const TEXT = {
   TIMESTAMP_APPROVE_SUBMIT: 'บันทึกผลการพิจารณา',
   TIMESTAMP_APPROVE_SUBMIT_SUCCESS: 'บันทึกผลการพิจารณาเรียบร้อย',
   TIMESTAMP_APPROVE_SUBMIT_ERROR: 'บันทึกผลการพิจารณาล้มเหลว',
+  TIMESTAMP_APPROVE_CONFIRM_TITLE: 'ยืนยันการบันทึก',
+  TIMESTAMP_APPROVE_CONFIRM_MESSAGE: 'คุณต้องการบันทึกผลการพิจารณานี้ใช่หรือไม่?',
+  TIMESTAMP_APPROVE_CONFIRM_ACTION: 'ยืนยัน',
 
   // Timestamp - calendar tab
   TIMESTAMP_CALENDAR_TAB: 'ปฏิทินลงเวลา',
@@ -555,7 +576,7 @@ export const TEXT = {
   // Timestamp - index screen
   TIMESTAMP_APPEAL_DOCUMENT: 'กรุณาไปที่พอร์ทัล HR เพื่อยื่นอุทธรณ์พร้อมเอกสารประกอบ',
   TIMESTAMP_NOTE_TEXT: 'หากคุณลืมลงเวลาเข้างานหรือออกงาน คุณสามารถกรอกแบบฟอร์มคำขอลืมลงเวลาภายใน 3 วันหลังจากวันที่ลืมลงเวลาได้ที่หน้านี้',
-  TIMESTAMP_COMPANY_CYCLE_LABEL: 'รอบบริษัท',
+  TIMESTAMP_COMPANY_CYCLE_LABEL: 'ในรอบปีงบประมาณ',
 
   // Timestamp - detail screen
   TIMESTAMP_CONTEXT_IN_TITLE: 'ลืมลงเวลาเข้างาน?',
@@ -597,8 +618,8 @@ export const TEXT = {
   // Timestamp - history detail screen
   TIMESTAMP_DETAIL_TITLE: 'รายละเอียดการลงเวลา',
   TIMESTAMP_TYPE_LABEL: 'ประเภท',
-  TIMESTAMP_STAMP_IN_TYPE: 'ลงเวลาเข้า',
-  TIMESTAMP_STAMP_OUT_TYPE: 'ลงเวลาออก',
+  TIMESTAMP_STAMP_IN_TYPE: 'ลืมลงเวลาเข้างาน',
+  TIMESTAMP_STAMP_OUT_TYPE: 'ลืมลงเวลาเลิกงาน',
   TIMESTAMP_APPEAL_DATE: 'วันที่ยื่น',
   TIMESTAMP_TIMESTAMP_DATETIME: 'วันและเวลาลงเวลา',
   TIMESTAMP_TIMESTAMP_TYPE: 'ประเภทการลงเวลา',

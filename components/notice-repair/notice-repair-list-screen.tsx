@@ -1,3 +1,5 @@
+import { Inbox } from 'lucide-react-native';
+import { EmptyState } from '@/components/empty-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { NoticeRepairJobCard } from '@/components/notice-repair/notice-repair-job-card';
@@ -11,6 +13,7 @@ import { navPush } from '@/utils/navigation';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 const ITEM_HEIGHT = 120;
 const CHROME_HEIGHT = 200;
@@ -51,6 +54,8 @@ function getPageSize(height: number) {
 }
 
 export function NoticeRepairListScreen({ title, description, listType, staffId, segments, onAddPress, addLabel, detailPathname, workCategory }: Props) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { roleSwitcher, currentRole } = useNoticeRepairRole();
   const { height } = useWindowDimensions();
   const pageSize = getPageSize(height);
@@ -190,11 +195,7 @@ export function NoticeRepairListScreen({ title, description, listType, staffId, 
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.3}
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <ThemedText style={styles.emptyText}>{TEXT.NOTICE_REPAIR_NO_ITEMS}</ThemedText>
-            </View>
-          }
+          ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.NOTICE_REPAIR_NO_ITEMS} />}
           ListFooterComponent={isLoadingMore ? <ActivityIndicator style={styles.footer} /> : null}
         />
       )}
@@ -212,8 +213,8 @@ export function NoticeRepairListScreen({ title, description, listType, staffId, 
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FD' },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   panelHeader: {
     paddingTop: 16,
     paddingHorizontal: 16,
@@ -221,15 +222,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   panelDescription: {
-    color: '#584140',
+    color: c.textMuted,
     fontSize: 13,
     lineHeight: 19,
   },
   topTabBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: c.border,
   },
   topTab: {
     flex: 1,
@@ -238,21 +239,21 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     gap: 8,
   },
-  topTabText: { fontSize: 14, fontWeight: '600', color: '#9CA3AF' },
-  topTabTextActive: { color: '#751A1D' },
+  topTabText: { fontSize: 14, fontWeight: '600', color: c.textFaint },
+  topTabTextActive: { color: c.primary },
   topTabIndicator: { height: 3, width: 28, borderRadius: 2, backgroundColor: 'transparent' },
-  topTabIndicatorActive: { backgroundColor: '#751A1D' },
+  topTabIndicatorActive: { backgroundColor: c.primary },
   list: { paddingVertical: 6 },
   emptyContainer: { flexGrow: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  emptyText: { fontSize: 15, color: '#9CA3AF', textAlign: 'center' },
-  errorText: { fontSize: 15, color: '#EF4444', textAlign: 'center' },
+  emptyText: { fontSize: 15, color: c.textFaint, textAlign: 'center' },
+  errorText: { fontSize: 15, color: c.danger, textAlign: 'center' },
   footer: { paddingVertical: 16 },
   fab: {
     position: 'absolute', bottom: 24, right: 20,
     width: 56, height: 56, borderRadius: 28,
-    backgroundColor: '#b33939', alignItems: 'center', justifyContent: 'center',
-    elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center',
+    elevation: 4, shadowColor: c.shadow, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25, shadowRadius: 4,
   },
   fabIcon: { fontSize: 30, lineHeight: 34, fontWeight: '300', marginTop: -2 },

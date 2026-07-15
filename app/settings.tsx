@@ -7,6 +7,7 @@ import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import {
@@ -43,6 +44,8 @@ const ICON_MAP: Record<string, React.ComponentType<{ size: number; color: string
 };
 
 function IconCircle({ bg, color, name }: { bg: string; color: string; name: string }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const Icon = ICON_MAP[name];
   return (
     <View style={[styles.iconCircle, { backgroundColor: bg }]}>
@@ -52,6 +55,8 @@ function IconCircle({ bg, color, name }: { bg: string; color: string; name: stri
 }
 
 export default function SettingsScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser, signOut } = useAuth();
   const { isDarkMode, toggleDarkMode, isAutoTheme, toggleAutoTheme } = useTheme();
 
@@ -110,7 +115,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ThemedView style={styles.container} lightColor={D.bg}>
+    <ThemedView style={styles.container} lightColor={c.background} darkColor={c.background}>
       <StatusBar style="light" />
       <NavTopBar title="Settings" />
 
@@ -129,12 +134,12 @@ export default function SettingsScreen() {
                 value={notificationsEnabled}
                 onValueChange={handleNotificationsToggle}
                 disabled={notificationsLoading}
-                trackColor={{ false: '#E1E2E6', true: D.primary }}
+                trackColor={{ false: c.borderStrong, true: c.primary }}
                 thumbColor="#FFFFFF"
               />
             </View>
 
-            <View style={[styles.row, styles.rowDivider]}>
+            <View style={styles.row}>
               <IconCircle bg={D.iconBgBio} color={D.iconColorBio} name="fingerprint" />
               <View style={styles.rowBody}>
                 <ThemedText style={styles.rowTitle}>Biometric Login</ThemedText>
@@ -143,24 +148,36 @@ export default function SettingsScreen() {
               <Switch
                 value={biometricEnabled}
                 onValueChange={setBiometricEnabled}
-                trackColor={{ false: '#E1E2E6', true: D.primary }}
+                trackColor={{ false: c.borderStrong, true: c.primary }}
                 thumbColor="#FFFFFF"
               />
             </View>
+          </View>
+        </View>
 
+        {/* ── Appearance / Theme control ─────────────────────────────────── */}
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Appearance</ThemedText>
+          <ThemedText style={styles.sectionCaption}>
+            {isAutoTheme
+              ? 'Theme follows the time of day'
+              : isDarkMode
+                ? 'Dark theme is on'
+                : 'Light theme is on'}
+          </ThemedText>
+          <View style={styles.card}>
             <View style={[styles.row, styles.rowDivider]}>
               <IconCircle bg={D.iconBgDark} color={D.iconColorDark} name="dark-mode" />
               <View style={styles.rowBody}>
                 <ThemedText style={styles.rowTitle}>Dark Appearance</ThemedText>
                 <ThemedText style={styles.rowSub}>
-                  {isAutoTheme ? 'Controlled by Auto Theme' : 'Switch to low-light theme'}
+                  {isAutoTheme ? 'Turning on will switch off Auto Theme' : 'Switch to low-light theme'}
                 </ThemedText>
               </View>
               <Switch
                 value={isDarkMode}
                 onValueChange={toggleDarkMode}
-                disabled={isAutoTheme}
-                trackColor={{ false: '#E1E2E6', true: D.primary }}
+                trackColor={{ false: c.borderStrong, true: c.primary }}
                 thumbColor="#FFFFFF"
               />
             </View>
@@ -174,7 +191,7 @@ export default function SettingsScreen() {
               <Switch
                 value={isAutoTheme}
                 onValueChange={toggleAutoTheme}
-                trackColor={{ false: '#E1E2E6', true: D.primary }}
+                trackColor={{ false: c.borderStrong, true: c.primary }}
                 thumbColor="#FFFFFF"
               />
             </View>
@@ -187,7 +204,7 @@ export default function SettingsScreen() {
             onPress={handleLogout}
             accessibilityRole="button"
           >
-            <LogOut size={20} color={D.primary} />
+            <LogOut size={20} color={c.primary} />
             <ThemedText style={styles.logoutText}>ออกจากระบบ</ThemedText>
           </Pressable>
           <ThemedText style={styles.versionText}>App Version 2.4.0 (Build 892)</ThemedText>
@@ -198,7 +215,7 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 48, gap: 24 },
 
@@ -207,16 +224,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     fontFamily: AppFonts.psuBold,
-    color: '#191C1F',
+    color: c.text,
+  },
+  sectionCaption: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: AppFonts.psuRegular,
+    color: c.textMuted,
+    marginTop: -4,
   },
 
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: c.border,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -231,20 +255,20 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: c.border,
   },
   rowBody: { flex: 1, gap: 2 },
   rowTitle: {
     fontSize: 14,
     lineHeight: 20,
     fontFamily: AppFonts.psuBold,
-    color: '#191C1F',
+    color: c.text,
   },
   rowSub: {
     fontSize: 12,
     lineHeight: 16,
     fontFamily: AppFonts.psuRegular,
-    color: '#6B7280',
+    color: c.textMuted,
   },
   iconCircle: {
     width: 36,
@@ -256,33 +280,33 @@ const styles = StyleSheet.create({
   },
 
   logoutBtn: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: c.border,
     paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 1,
   },
-  logoutBtnPressed: { backgroundColor: '#FFF5F5' },
+  logoutBtnPressed: { backgroundColor: c.primarySoft },
   logoutText: {
     fontSize: 15,
     lineHeight: 22,
     fontFamily: AppFonts.psuBold,
-    color: '#B33939',
+    color: c.primary,
   },
   versionText: {
     fontSize: 12,
     lineHeight: 16,
     fontFamily: AppFonts.psuRegular,
-    color: '#9CA3AF',
+    color: c.textFaint,
     textAlign: 'center',
     marginTop: 4,
   },

@@ -14,7 +14,7 @@ import {
   REPAIR_COMPUTER_DEFAULT_ROLE,
   type RepairComputerRole,
 } from '@/constants/types';
-import { Colors } from '@/constants/theme';
+import { useColors } from '@/constants/theme';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { RepairComputerRoleProvider } from '@/context/RepairComputerRoleContext';
@@ -22,7 +22,6 @@ import {
   getCachedRepairComputerPrivilege,
   setCachedRepairComputerPrivilege,
 } from '@/context/repairComputerRoleSelection';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { checkPrivilege } from '@/services/repairComputerService';
 
 function normalizeRepairComputerRole(privilege?: string): RepairComputerRole {
@@ -87,7 +86,7 @@ function blurActiveWebElement() {
 }
 
 export default function RepairComputerTabLayout() {
-  const colorScheme = useColorScheme();
+  const c = useColors();
   const pathname = usePathname();
   const { user: authUser } = useAuth();
   const userId = authUser?.staffId || USER_ID;
@@ -191,7 +190,7 @@ export default function RepairComputerTabLayout() {
       <View style={styles.container}>
         <Tabs
           screenOptions={{
-            tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+            tabBarActiveTintColor: c.primary,
             headerShown: false,
             tabBarButton: HapticTab,
             tabBarStyle: {

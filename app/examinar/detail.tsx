@@ -16,6 +16,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -95,6 +96,8 @@ function HeroSection({
   term: string;
   period: string;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const roomName = getField(detail as Record<string, unknown>, 'room_name', 'room', 'room_id') || TEXT.SHARED_EMPTY_DATA;
   const date = getField(detail as Record<string, unknown>, 'date_label', 'date', 'exam_date');
   const timeFrom = getField(detail as Record<string, unknown>, 'time_from_label', 'time_from', 'timeFrom', 'start_time');
@@ -111,7 +114,7 @@ function HeroSection({
     <View style={styles.hero}>
       <View style={styles.heroVenueLabelRow}>
         <View style={styles.heroIconBox}>
-          <Building2 size={18} color="#922124" />
+          <Building2 size={18} color={c.primary} />
         </View>
         <ThemedText style={styles.heroVenueLabel}>{TEXT.EXAMINAR_VENUE_LABEL}</ThemedText>
       </View>
@@ -122,7 +125,7 @@ function HeroSection({
         {date || timeRange ? (
           <View style={styles.heroMetaRow}>
             <View style={styles.heroMetaIconBox}>
-              <CalendarDays size={16} color="#922124" />
+              <CalendarDays size={16} color={c.primary} />
             </View>
             <View style={styles.heroMetaTexts}>
               {date ? <ThemedText style={styles.heroMetaMain}>{date}</ThemedText> : null}
@@ -137,7 +140,7 @@ function HeroSection({
 
         <View style={[styles.heroMetaRow, styles.heroMetaRowBordered]}>
           <View style={styles.heroMetaIconBox}>
-            <Clock size={16} color="#922124" />
+            <Clock size={16} color={c.primary} />
           </View>
           <View style={styles.heroMetaTexts}>
             <ThemedText style={styles.heroMetaMain}>{`${yearValue} | ${termLabel}`}</ThemedText>
@@ -150,6 +153,8 @@ function HeroSection({
 }
 
 function SubjectItem({ subject, isFirst }: { subject: ExamSubject; isFirst: boolean }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const obj = subject as Record<string, unknown>;
   const subjectId = getField(obj, 'subject_id', 'subjectid', 'subject_code', 'course_id', 'courseid', 'code');
   const subjectName = getField(obj, 'subject_name', 'subjectname', 'course_name', 'coursename', 'name', 'title');
@@ -172,13 +177,13 @@ function SubjectItem({ subject, isFirst }: { subject: ExamSubject; isFirst: bool
       <View style={styles.subjectMeta}>
         {studentCount !== undefined ? (
           <View style={styles.subjectMetaItem}>
-            <Users size={13} color="#584140" />
+            <Users size={13} color={c.textMuted} />
             <ThemedText style={styles.subjectMetaText}>{studentCount}{TEXT.EXAMINAR_STUDENTS_SUFFIX}</ThemedText>
           </View>
         ) : null}
         {section ? (
           <View style={styles.subjectMetaItem}>
-            <Hash size={13} color="#584140" />
+            <Hash size={13} color={c.textMuted} />
             <ThemedText style={styles.subjectMetaText}>{TEXT.EXAMINAR_SECTION_PREFIX}{section}</ThemedText>
           </View>
         ) : null}
@@ -188,6 +193,8 @@ function SubjectItem({ subject, isFirst }: { subject: ExamSubject; isFirst: bool
 }
 
 function StaffItem({ staff, isFirst }: { staff: ExamStaff; isFirst: boolean }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const obj = staff as Record<string, unknown>;
   const firstName = getField(obj, 'fname', 'firstname', 'first_name', 'fname_th');
   const lastName = getField(obj, 'lname', 'lastname', 'last_name', 'lname_th');
@@ -223,6 +230,8 @@ function StaffItem({ staff, isFirst }: { staff: ExamStaff; isFirst: boolean }) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ExaminarDetailScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{
     year: string;
     term: string;
@@ -349,15 +358,15 @@ export default function ExaminarDetailScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FD' },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   scrollContent: { paddingBottom: 40 },
 
   // Hero
   hero: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#DFBFBD',
+    borderBottomColor: c.border,
     padding: 20,
     paddingTop: 16,
     gap: 8,
@@ -368,7 +377,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: '#E7E8EC',
+    backgroundColor: c.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -376,13 +385,13 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuBold,
     fontSize: 12,
     letterSpacing: 1.2,
-    color: '#584140',
+    color: c.textMuted,
   },
   heroRoomName: {
     fontFamily: AppFonts.psuBold,
     fontSize: 28,
     lineHeight: 36,
-    color: '#191C1F',
+    color: c.text,
   },
   heroMetaContainer: { gap: 0 },
   heroMetaRow: {
@@ -393,13 +402,13 @@ const styles = StyleSheet.create({
   },
   heroMetaRowBordered: {
     borderTopWidth: 1,
-    borderTopColor: '#DFBFBD',
+    borderTopColor: c.border,
   },
   heroMetaIconBox: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#E7E8EC',
+    backgroundColor: c.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
@@ -409,13 +418,13 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuBold,
     fontSize: 16,
     lineHeight: 22,
-    color: '#191C1F',
+    color: c.text,
   },
   heroMetaSub: {
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     lineHeight: 20,
-    color: '#584140',
+    color: c.textMuted,
   },
 
   // Section
@@ -428,10 +437,10 @@ const styles = StyleSheet.create({
   sectionHeading: {
     fontFamily: AppFonts.psuBold,
     fontSize: 16,
-    color: '#191C1F',
+    color: c.text,
   },
   countBadge: {
-    backgroundColor: '#E7E8EC',
+    backgroundColor: c.surfaceMuted,
     borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -439,22 +448,22 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontFamily: AppFonts.psuBold,
     fontSize: 12,
-    color: '#584140',
+    color: c.textMuted,
   },
 
   // Card
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#DFBFBD',
+    borderColor: c.border,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.04)',
     overflow: 'hidden',
   },
 
   // Subject item
   subjectItem: { padding: 16, gap: 8 },
-  subjectItemBordered: { borderTopWidth: 1, borderTopColor: '#DFBFBD' },
+  subjectItemBordered: { borderTopWidth: 1, borderTopColor: c.border },
   subjectTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -464,20 +473,20 @@ const styles = StyleSheet.create({
   subjectId: {
     fontFamily: AppFonts.psuBold,
     fontSize: 12,
-    color: '#922124',
+    color: c.primary,
   },
   subjectName: {
     fontFamily: AppFonts.psuBold,
     fontSize: 15,
     lineHeight: 20,
-    color: '#191C1F',
+    color: c.text,
   },
   subjectMeta: { flexDirection: 'row', gap: 16, flexWrap: 'wrap' },
   subjectMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   subjectMetaText: {
     fontFamily: AppFonts.psuRegular,
     fontSize: 13,
-    color: '#584140',
+    color: c.textMuted,
   },
 
   // Staff item
@@ -487,12 +496,12 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
   },
-  staffItemBordered: { borderTopWidth: 1, borderTopColor: '#DFBFBD' },
+  staffItemBordered: { borderTopWidth: 1, borderTopColor: c.border },
   staffAvatar: {
     width: 44,
     height: 44,
     borderRadius: 9999,
-    backgroundColor: '#E7E8EC',
+    backgroundColor: c.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -506,32 +515,32 @@ const styles = StyleSheet.create({
   staffInitials: {
     fontFamily: AppFonts.psuBold,
     fontSize: 16,
-    color: '#922124',
+    color: c.primary,
   },
   staffInfo: { flex: 1, gap: 2 },
   staffName: {
     fontFamily: AppFonts.psuBold,
     fontSize: 15,
     lineHeight: 20,
-    color: '#191C1F',
+    color: c.text,
   },
   staffDept: {
     fontFamily: AppFonts.psuRegular,
     fontSize: 13,
-    color: '#584140',
+    color: c.textMuted,
   },
 
   // Empty / Error
   emptySection: {
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
-    color: '#584140',
+    color: c.textMuted,
     textAlign: 'center',
     paddingVertical: 20,
   },
   centerWrap: { flex: 1, padding: 16, justifyContent: 'center' },
   errorCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(223, 191, 189, 0.3)',
@@ -539,12 +548,12 @@ const styles = StyleSheet.create({
     gap: 8,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.04)',
   },
-  errorTitle: { fontFamily: AppFonts.psuBold, fontSize: 15, color: '#B33939' },
+  errorTitle: { fontFamily: AppFonts.psuBold, fontSize: 15, color: c.primary },
   errorMessage: {
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     lineHeight: 20,
-    color: '#584140',
+    color: c.textMuted,
   },
   retryButton: {
     alignSelf: 'flex-start',
@@ -552,7 +561,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
   },
-  retryText: { color: '#FFFFFF', fontFamily: AppFonts.psuBold, fontSize: 14 },
+  retryText: { color: c.textOnPrimary, fontFamily: AppFonts.psuBold, fontSize: 14 },
 });

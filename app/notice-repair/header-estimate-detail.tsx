@@ -15,6 +15,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 const STATUS_COLORS: Record<string, string> = {
   '001': '#2563EB', '002': '#16A34A', '003': '#D97706',
@@ -33,6 +34,8 @@ function normalizeStaffId(id: string) {
 
 /** White rounded card with soft shadow (matches detail.tsx). */
 function Card({ children }: { children: ReactNode }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <ThemedView style={styles.card} lightColor="#FFFFFF" darkColor="#151718">
       {children}
@@ -41,6 +44,8 @@ function Card({ children }: { children: ReactNode }) {
 }
 
 function InfoTile({ label, value }: { label: string; value?: string | null }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   if (!value) return null;
   return (
     <View style={styles.infoTile}>
@@ -51,6 +56,8 @@ function InfoTile({ label, value }: { label: string; value?: string | null }) {
 }
 
 function DividerRow({ label, value, valueColor }: { label: string; value?: string | null; valueColor?: string }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   if (!value) return null;
   return (
     <View style={styles.dividerRow}>
@@ -61,6 +68,8 @@ function DividerRow({ label, value, valueColor }: { label: string; value?: strin
 }
 
 function RequesterAvatar({ staffId, name, size = 64 }: { staffId: string; name: string; size?: number }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [failed, setFailed] = useState(false);
   const normalized = normalizeStaffId(staffId);
   const showPhoto = Boolean(normalized) && !failed;
@@ -84,6 +93,8 @@ function RequesterAvatar({ staffId, name, size = 64 }: { staffId: string; name: 
 }
 
 function RadioOption({ selected, label, onPress }: { selected: boolean; label: string; onPress: () => void }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable accessibilityRole="radio" accessibilityState={{ selected }} onPress={onPress} style={styles.radioOption}>
       <View style={[styles.radioOuter, selected && styles.radioOuterActive]}>
@@ -95,6 +106,8 @@ function RadioOption({ selected, label, onPress }: { selected: boolean; label: s
 }
 
 export default function HeaderEstimateDetailScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { repair_id, staff_id: paramStaff } = useLocalSearchParams<{
     repair_id: string; staff_id: string; role?: string; source?: string;
   }>();
@@ -166,7 +179,7 @@ export default function HeaderEstimateDetailScreen() {
   };
 
   const renderContent = () => {
-    if (isLoading) return <ActivityIndicator style={styles.loader} size="large" color="#922124" />;
+    if (isLoading) return <ActivityIndicator style={styles.loader} size="large" color={c.primary} />;
     if (error) {
       return (
         <View style={styles.stateContent}>
@@ -220,7 +233,7 @@ export default function HeaderEstimateDetailScreen() {
                   <ThemedText style={styles.kicker}>{TEXT.NOTICE_REPAIR_DETAIL_CATEGORY}</ThemedText>
                   <View style={styles.kickerValueRow}>
                     <View style={styles.kickerIconBox}>
-                      <IconSymbol name={getCategoryIcon(detail.work_category_name)} size={20} color="#922124" />
+                      <IconSymbol name={getCategoryIcon(detail.work_category_name)} size={20} color={c.primary} />
                     </View>
                     <ThemedText style={styles.kickerValue}>{detail.work_category_name}</ThemedText>
                   </View>
@@ -229,7 +242,7 @@ export default function HeaderEstimateDetailScreen() {
 
               {!!dateText && (
                 <View style={styles.dateBox}>
-                  <IconSymbol name="calendar" size={20} color="#B33939" />
+                  <IconSymbol name="calendar" size={20} color={c.primary} />
                   <ThemedText style={styles.dateText}>{dateText}</ThemedText>
                 </View>
               )}
@@ -380,18 +393,18 @@ export default function HeaderEstimateDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F1F5F9' },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.surfaceAlt },
   loader: { flex: 1 },
   stateContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  errorText: { color: '#ba1a1a', fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  errorText: { color: c.primary, fontSize: 14, lineHeight: 20, textAlign: 'center' },
 
   scroll: { padding: 20, gap: 24 },
   scrollWithActions: { paddingBottom: 128 },
 
   card: {
     borderRadius: 24,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
@@ -402,93 +415,93 @@ const styles = StyleSheet.create({
 
   summaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   summaryTitleBlock: { flex: 1, gap: 4 },
-  summaryTitle: { fontSize: 20, fontWeight: '700', lineHeight: 26, color: '#111827' },
-  requestNo: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+  summaryTitle: { fontSize: 20, fontWeight: '700', lineHeight: 26, color: c.text },
+  requestNo: { fontSize: 14, color: c.textMuted, lineHeight: 20 },
   statusBadge: { borderRadius: 9999, paddingHorizontal: 12, paddingVertical: 6, maxWidth: '42%' },
   statusText: { fontSize: 12, fontWeight: '600', lineHeight: 16 },
   summaryBody: { gap: 16 },
   kvBlock: { gap: 4 },
-  kicker: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, color: '#B33939' },
+  kicker: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, color: c.primary },
   kickerValueRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   kickerIconBox: {
     width: 38, height: 38, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: '#FBEAEA',
+    alignItems: 'center', justifyContent: 'center', backgroundColor: c.primarySoft,
   },
-  kickerValue: { flex: 1, fontSize: 18, fontWeight: '600', lineHeight: 26, color: '#111827' },
+  kickerValue: { flex: 1, fontSize: 18, fontWeight: '600', lineHeight: 26, color: c.text },
   dateBox: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderRadius: 16, borderWidth: 1, borderColor: '#F3F4F6',
-    backgroundColor: '#F9FAFB', paddingHorizontal: 14, paddingVertical: 14,
+    borderRadius: 16, borderWidth: 1, borderColor: c.border,
+    backgroundColor: c.surfaceAlt, paddingHorizontal: 14, paddingVertical: 14,
   },
-  dateText: { fontSize: 16, fontWeight: '500', lineHeight: 24, color: '#374151' },
+  dateText: { fontSize: 16, fontWeight: '500', lineHeight: 24, color: c.textMuted },
 
-  sectionHeading: { fontSize: 18, fontWeight: '600', lineHeight: 28, color: '#111827' },
+  sectionHeading: { fontSize: 18, fontWeight: '600', lineHeight: 28, color: c.text },
 
   profileRow: {
     flexDirection: 'row', alignItems: 'center', gap: 16,
-    borderRadius: 16, borderWidth: 1, borderColor: '#F1F5F9',
-    backgroundColor: '#F8FAFC', padding: 16,
+    borderRadius: 16, borderWidth: 1, borderColor: c.border,
+    backgroundColor: c.background, padding: 16,
   },
   avatarWrap: { width: 64, height: 64 },
-  avatar: { width: 64, height: 64, borderRadius: 9999, borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: '#EDEEF2' },
+  avatar: { width: 64, height: 64, borderRadius: 9999, borderWidth: 2, borderColor: c.textOnPrimary, backgroundColor: c.border },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { fontSize: 22, fontWeight: '700', color: '#922124' },
+  avatarInitial: { fontSize: 22, fontWeight: '700', color: c.primary },
   profileTextBlock: { flex: 1, gap: 3 },
-  profileName: { fontSize: 18, fontWeight: '700', lineHeight: 23, color: '#111827' },
-  profileRole: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+  profileName: { fontSize: 18, fontWeight: '700', lineHeight: 23, color: c.text },
+  profileRole: { fontSize: 14, color: c.textMuted, lineHeight: 20 },
 
   dividerRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12,
-    paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#F1F5F9',
+    paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border,
   },
-  rowLabel: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
-  rowValue: { flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '600', lineHeight: 20, color: '#1F2937' },
+  rowLabel: { fontSize: 14, color: c.textMuted, lineHeight: 20 },
+  rowValue: { flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '600', lineHeight: 20, color: c.text },
 
   tileGroup: { gap: 16 },
-  infoTile: { borderRadius: 16, backgroundColor: '#F9FAFB', padding: 12, gap: 4 },
-  tileLabel: { fontSize: 10, fontWeight: '600', letterSpacing: 0.5, color: '#9CA3AF', textTransform: 'uppercase' },
-  tileValue: { fontSize: 14, fontWeight: '600', lineHeight: 20, color: '#1F2937' },
+  infoTile: { borderRadius: 16, backgroundColor: c.surfaceAlt, padding: 12, gap: 4 },
+  tileLabel: { fontSize: 10, fontWeight: '600', letterSpacing: 0.5, color: c.textFaint, textTransform: 'uppercase' },
+  tileValue: { fontSize: 14, fontWeight: '600', lineHeight: 20, color: c.text },
   damageBlock: { gap: 8 },
   damageBox: {
-    borderRadius: 16, borderWidth: 1, borderColor: '#F1F5F9',
-    backgroundColor: '#F8FAFC', padding: 16,
+    borderRadius: 16, borderWidth: 1, borderColor: c.border,
+    backgroundColor: c.background, padding: 16,
   },
-  damageText: { fontSize: 16, lineHeight: 26, color: '#374151' },
+  damageText: { fontSize: 16, lineHeight: 26, color: c.textMuted },
 
   // Assessment fields
   fieldBlock: { gap: 8 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: '#6B7280', lineHeight: 20 },
-  fieldValue: { fontSize: 15, color: '#1F2937', lineHeight: 22 },
+  fieldLabel: { fontSize: 13, fontWeight: '600', color: c.textMuted, lineHeight: 20 },
+  fieldValue: { fontSize: 15, color: c.text, lineHeight: 22 },
   techRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  techName: { flex: 1, fontSize: 15, color: '#1F2937', lineHeight: 22 },
+  techName: { flex: 1, fontSize: 15, color: c.text, lineHeight: 22 },
   radioGroup: { gap: 12 },
   radioOption: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   radioOuter: {
-    width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#9CA3AF',
+    width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: c.textFaint,
     alignItems: 'center', justifyContent: 'center',
   },
-  radioOuterActive: { borderColor: '#B33939' },
-  radioInner: { width: 11, height: 11, borderRadius: 6, backgroundColor: '#B33939' },
-  radioLabel: { fontSize: 15, color: '#1F2937' },
+  radioOuterActive: { borderColor: c.primary },
+  radioInner: { width: 11, height: 11, borderRadius: 6, backgroundColor: c.primary },
+  radioLabel: { fontSize: 15, color: c.text },
 
   actionBar: {
     position: 'absolute', left: 0, right: 0, bottom: 0,
     flexDirection: 'row', gap: 12,
     paddingHorizontal: 20, paddingTop: 16, paddingBottom: 18,
     backgroundColor: 'rgba(255,255,255,0.96)',
-    borderTopWidth: 1, borderTopColor: '#F3F4F6',
+    borderTopWidth: 1, borderTopColor: c.border,
   },
   actionBtn: { minHeight: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 8 },
   actionBtnDisabled: { opacity: 0.5 },
   approveFlex: { flex: 2 },
   quarterFlex: { flex: 1 },
   approveBtn: {
-    backgroundColor: '#B33939',
-    shadowColor: '#B33939', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 3,
+    backgroundColor: c.primary,
+    shadowColor: c.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 3,
   },
-  approveText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
-  cancelBtn: { borderWidth: 1, borderColor: '#F3F4F6' },
-  cancelText: { fontSize: 14, fontWeight: '600', color: '#374151' },
+  approveText: { fontSize: 14, fontWeight: '700', color: c.textOnPrimary },
+  cancelBtn: { borderWidth: 1, borderColor: c.border },
+  cancelText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
 
   successToast: {
     position: 'absolute', left: 16, right: 16, bottom: 88,
@@ -496,5 +509,5 @@ const styles = StyleSheet.create({
     paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center',
     boxShadow: '0 6px 16px rgba(17, 24, 28, 0.18)',
   },
-  successToastText: { color: '#fff', fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  successToastText: { color: c.textOnPrimary, fontSize: 14, fontWeight: '600', textAlign: 'center' },
 });

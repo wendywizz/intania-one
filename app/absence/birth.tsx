@@ -11,6 +11,7 @@ import {
     TextInput,
     View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
@@ -98,6 +99,8 @@ function SelectField({
   onToggle,
   onSelect,
 }: SelectFieldProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const normalizedOptions = options.map((option) =>
     typeof option === "string" ? { label: option, value: option } : option,
   );
@@ -196,6 +199,8 @@ function SelectField({
 }
 
 export default function BirthScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const params = useLocalSearchParams<{ id?: string; mode?: string }>();
   const routeEditId = Array.isArray(params.id) ? params.id[0] : params.id ?? "";
@@ -748,10 +753,10 @@ export default function BirthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   content: {
     padding: 16,
@@ -779,9 +784,9 @@ const styles = StyleSheet.create({
   panel: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E1E2E6',
+    borderColor: c.border,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -789,7 +794,7 @@ const styles = StyleSheet.create({
   },
   initialStatus: {
     marginTop: 8,
-    color: "#687076",
+    color: c.textMuted,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -804,31 +809,31 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
-    color: "#11181C",
+    borderColor: c.border,
+    backgroundColor: c.surface,
+    color: c.text,
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   inputError: {
-    borderColor: "#B42318",
+    borderColor: c.danger,
   },
   dateRow: {
     flexDirection: "row",
     gap: 14,
   },
   hint: {
-    color: "#687076",
+    color: c.textMuted,
     fontSize: 12,
     lineHeight: 18,
   },
   errorText: {
-    color: "#B42318",
+    color: c.danger,
   },
   fieldError: {
-    color: "#B42318",
+    color: c.danger,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -839,19 +844,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 14,
   },
   selectText: {
     flex: 1,
-    color: "#11181C",
+    color: c.text,
   },
   placeholder: {
-    color: "#8A969C",
+    color: c.textFaint,
   },
   chevron: {
-    color: "#0A6E8A",
+    color: c.info,
     fontSize: 16,
     lineHeight: 20,
     marginLeft: 8,
@@ -878,7 +883,7 @@ const styles = StyleSheet.create({
   },
   confirmMessage: {
     marginTop: 10,
-    color: "#687076",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -906,7 +911,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#E4F0F6",
+    backgroundColor: c.infoSoft,
     paddingHorizontal: 14,
   },
   optionScroll: {
@@ -920,24 +925,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   selectedOption: {
-    borderColor: "#0A6E8A",
-    backgroundColor: "#0A6E8A",
+    borderColor: c.info,
+    backgroundColor: c.info,
   },
   optionText: {
-    color: "#11181C",
+    color: c.text,
     lineHeight: 20,
   },
   selectedOptionText: {
-    color: "#FFFFFF",
+    color: c.textOnPrimary,
   },
   emptyOption: {
-    color: "#687076",
+    color: c.textMuted,
     lineHeight: 20,
     paddingVertical: 16,
     textAlign: "center",
@@ -949,8 +954,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
   actionRow: {
     flexDirection: "row",
@@ -970,7 +975,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: c.info,
     marginTop: 6,
   },
   removeRequestButton: {
@@ -982,7 +987,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#B42318",
+    backgroundColor: c.danger,
   },
   removeConfirmButton: {
     minHeight: 48,
@@ -993,7 +998,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#B42318",
+    backgroundColor: c.danger,
   },
   disabledButton: {
     opacity: 0.65,

@@ -18,6 +18,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
@@ -216,6 +217,8 @@ function SelectField({
   onToggle,
   onSelect,
 }: SelectFieldProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const normalizedOptions = options.map((option) =>
     typeof option === "string" ? { label: option, value: option } : option,
   );
@@ -323,6 +326,8 @@ function SelectField({
 }
 
 function getUploadFileName(asset: DocumentPicker.DocumentPickerAsset) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return asset.name || `medical-certificate.${asset.mimeType?.split("/")[1] || "jpg"}`;
 }
 
@@ -349,6 +354,8 @@ function createUploadFile(asset: DocumentPicker.DocumentPickerAsset): Uploadable
 }
 
 export default function SickScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const params = useLocalSearchParams<{
     id?: string;
@@ -989,7 +996,7 @@ export default function SickScreen() {
               <>
                 {selectedFile ? (
                   <View style={styles.selectedFileCard}>
-                    <Paperclip size={18} color="#B33939" />
+                    <Paperclip size={18} color={c.primary} />
                     <ThemedText style={styles.selectedFileName} numberOfLines={1}>
                       {getUploadFileName(selectedFile)}
                     </ThemedText>
@@ -1000,7 +1007,7 @@ export default function SickScreen() {
                           onPress={handleViewFile}
                           style={styles.fileActionBtn}
                         >
-                          <Eye size={20} color="#687076" />
+                          <Eye size={20} color={c.textMuted} />
                         </Pressable>
                       ) : null}
                       <Pressable
@@ -1018,7 +1025,7 @@ export default function SickScreen() {
                     onPress={handlePickFile}
                     style={styles.uploadZone}
                   >
-                    <CloudUpload size={30} color="#B33939" />
+                    <CloudUpload size={30} color={c.primary} />
                     <ThemedText style={styles.uploadZoneText}>
                       {isEditMode && hasUploadedFile
                         ? FILE_PICKER_REUPLOAD_ACTION
@@ -1291,10 +1298,10 @@ export default function SickScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FD",
+    backgroundColor: c.background,
   },
   scrollContent: {
     paddingTop: 16,
@@ -1302,7 +1309,7 @@ const styles = StyleSheet.create({
   },
   formCard: {
     marginHorizontal: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 16,
     overflow: "hidden",
   },
@@ -1331,23 +1338,23 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E8ECF0",
+    borderBottomColor: c.border,
   },
   fieldLabel: {
     fontSize: 13,
     lineHeight: 18,
     fontWeight: "600",
     letterSpacing: 0.6,
-    color: "#000000",
+    color: c.text,
     textTransform: "uppercase",
   },
   input: {
     minHeight: 44,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    color: "#191C1F",
+    borderColor: c.border,
+    color: c.text,
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     lineHeight: 20,
@@ -1356,15 +1363,15 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderWidth: 1,
-    borderColor: "#B42318",
+    borderColor: c.danger,
   },
   textArea: {
     minHeight: 80,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    color: "#191C1F",
+    borderColor: c.border,
+    color: c.text,
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     lineHeight: 20,
@@ -1378,45 +1385,45 @@ const styles = StyleSheet.create({
   hint: {
     fontSize: 12,
     lineHeight: 17,
-    color: "#687076",
+    color: c.textMuted,
   },
   leaveDaySummary: {
     fontSize: 13,
     lineHeight: 18,
-    color: "#0A6E8A",
+    color: c.info,
   },
   errorText: {
-    color: "#B42318",
+    color: c.danger,
   },
   fieldError: {
     fontSize: 12,
     lineHeight: 17,
-    color: "#B42318",
+    color: c.danger,
   },
   selectButton: {
     minHeight: 44,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
+    borderColor: c.border,
     paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 8,
   },
   selectText: {
     flex: 1,
-    color: "#191C1F",
+    color: c.text,
     fontSize: 14,
     fontFamily: AppFonts.psuRegular,
   },
   placeholder: {
-    color: "#9CA3AF",
+    color: c.textFaint,
   },
   chevron: {
-    color: "#687076",
+    color: c.textMuted,
     fontSize: 18,
     lineHeight: 22,
   },
@@ -1446,7 +1453,7 @@ const styles = StyleSheet.create({
   },
   confirmMessage: {
     marginTop: 10,
-    color: "#687076",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -1470,7 +1477,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#F2F3F7",
+    backgroundColor: c.surfaceMuted,
     paddingHorizontal: 14,
   },
   optionScroll: {
@@ -1484,26 +1491,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#E8ECF0",
-    backgroundColor: "#F8F9FD",
+    borderColor: c.border,
+    backgroundColor: c.background,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   selectedOption: {
-    borderColor: "#B33939",
-    backgroundColor: "#B33939",
+    borderColor: c.primary,
+    backgroundColor: c.primary,
   },
   optionText: {
-    color: "#191C1F",
+    color: c.text,
     fontSize: 14,
     lineHeight: 20,
     fontFamily: AppFonts.psuRegular,
   },
   selectedOptionText: {
-    color: "#FFFFFF",
+    color: c.textOnPrimary,
   },
   emptyOption: {
-    color: "#687076",
+    color: c.textMuted,
     lineHeight: 20,
     paddingVertical: 16,
     textAlign: "center",
@@ -1519,7 +1526,7 @@ const styles = StyleSheet.create({
   },
   uploadZone: {
     borderWidth: 1.5,
-    borderColor: "#D1D5DB",
+    borderColor: c.border,
     borderStyle: "dashed",
     borderRadius: 12,
     minHeight: 100,
@@ -1532,21 +1539,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontWeight: "600",
-    color: "#B33939",
+    color: c.primary,
   },
   uploadZoneHint: {
     fontSize: 12,
     lineHeight: 17,
-    color: "#9CA3AF",
+    color: c.textFaint,
   },
   selectedFileCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#FFF5F5",
+    backgroundColor: c.dangerSoft,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#FFD9D9",
+    borderColor: c.danger,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -1554,7 +1561,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     lineHeight: 18,
-    color: "#191C1F",
+    color: c.text,
   },
   fileActions: {
     flexDirection: "row",
@@ -1581,9 +1588,9 @@ const styles = StyleSheet.create({
   policyCard: {
     flexDirection: "row",
     gap: 12,
-    backgroundColor: "#EAF4F8",
+    backgroundColor: c.infoSoft,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#C6E1EA",
+    borderColor: c.border,
     borderRadius: 12,
     marginHorizontal: 16,
     marginBottom: 14,
@@ -1593,7 +1600,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#D6EBF2",
+    backgroundColor: c.infoSoft,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -1606,12 +1613,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontWeight: "600",
-    color: "#0A6E8A",
+    color: c.info,
   },
   policyText: {
     fontSize: 12,
     lineHeight: 18,
-    color: "#33474E",
+    color: c.textMuted,
   },
   bottomSpacer: {
     height: 100,
@@ -1621,9 +1628,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#E8ECF0",
+    borderTopColor: c.border,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 28,
@@ -1642,7 +1649,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
-    backgroundColor: "#B33939",
+    backgroundColor: c.primary,
   },
   deleteButton: {
     minHeight: 52,
@@ -1651,7 +1658,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
-    backgroundColor: "#B42318",
+    backgroundColor: c.danger,
     paddingHorizontal: 20,
   },
   removeConfirmButton: {
@@ -1663,7 +1670,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#B42318",
+    backgroundColor: c.danger,
   },
   confirmActionButton: {
     flex: 1,
@@ -1677,8 +1684,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D1D5DB",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 16,
   },
   disabledButton: {

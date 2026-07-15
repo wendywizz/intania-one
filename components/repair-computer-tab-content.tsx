@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { TEXT } from '@/constants/text';
 
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -29,6 +30,8 @@ function getRoleTitlePrefix(role: RepairComputerRole) {
 }
 
 export function RepairComputerTabContent({ title, description }: RepairComputerTabContentProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { currentRole } = useRepairComputerRole();
   const screenTitle = title === TEXT.REPAIR_COMPUTER_NEW_JOB ? `${getRoleTitlePrefix(currentRole)} ${title}` : title;
 
@@ -50,7 +53,7 @@ export function RepairComputerTabContent({ title, description }: RepairComputerT
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -63,7 +66,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   description: {
-    color: '#584140',
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },

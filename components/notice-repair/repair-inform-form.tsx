@@ -14,6 +14,7 @@ import {
   ActivityIndicator, Modal, Platform, Pressable, ScrollView,
   StyleSheet, TextInput, useWindowDimensions, View,
 } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 // On web a focused TextInput draws the browser's own rectangular outline, which
 // ignores the control's rounded border. Remove it so the focus state can show
@@ -37,6 +38,11 @@ function RadioGroup({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  const fs = useThemedStyles(makeFs);
+  const ms = useThemedStyles(makeMs);
+  const rs = useThemedStyles(makeRs);
   return (
     <View style={fs.field}>
       <FieldLabel text={label} />
@@ -126,6 +132,11 @@ function isSameRef(a: RefItem | null | undefined, b: RefItem) {
 
 /** Renders the label, colouring a trailing "*" (required marker) red. */
 function FieldLabel({ text }: { text: string }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  const fs = useThemedStyles(makeFs);
+  const ms = useThemedStyles(makeMs);
+  const rs = useThemedStyles(makeRs);
   const trimmed = text.trimEnd();
   const required = trimmed.endsWith('*');
   const base = required ? trimmed.slice(0, -1).trimEnd() : trimmed;
@@ -143,6 +154,11 @@ function PickerModal({
   visible: boolean; title: string; items: RefItem[]; selected?: RefItem | null;
   onSelect: (item: RefItem) => void; onClose: () => void;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  const fs = useThemedStyles(makeFs);
+  const ms = useThemedStyles(makeMs);
+  const rs = useThemedStyles(makeRs);
   const { width } = useWindowDimensions();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -183,6 +199,11 @@ function SelectField({
 }: {
   label: string; value: string; placeholder: string; onPress: () => void;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  const fs = useThemedStyles(makeFs);
+  const ms = useThemedStyles(makeMs);
+  const rs = useThemedStyles(makeRs);
   return (
     <View style={fs.field}>
       <FieldLabel text={label} />
@@ -190,7 +211,7 @@ function SelectField({
         <ThemedText style={[fs.controlText, !value && fs.placeholder]} numberOfLines={1}>
           {value || placeholder}
         </ThemedText>
-        <IconSymbol name="chevron.down" size={18} color="#687076" />
+        <IconSymbol name="chevron.down" size={18} color={c.textMuted} />
       </Pressable>
     </View>
   );
@@ -203,13 +224,18 @@ function TextField({
   placeholder?: string; multiline?: boolean; keyboardType?: 'phone-pad' | 'default';
   iconName?: IconSymbolName;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  const fs = useThemedStyles(makeFs);
+  const ms = useThemedStyles(makeMs);
+  const rs = useThemedStyles(makeRs);
   const [focused, setFocused] = useState(false);
   return (
     <View style={fs.field}>
       <FieldLabel text={label} />
       <View style={[fs.control, multiline && fs.controlMultiline, focused && fs.controlFocused]}>
         {iconName && !multiline ? (
-          <IconSymbol name={iconName} size={18} color="#687076" />
+          <IconSymbol name={iconName} size={18} color={c.textMuted} />
         ) : null}
         <TextInput
           style={[fs.input, multiline && fs.inputMultiline, webNoOutline]}
@@ -263,6 +289,11 @@ export function RepairInformForm({
   submitLabel, submitIconName, successMessage, errorMessage, loadErrorMessage,
   confirmBeforeSubmit, confirmTitle, confirmMessage, resetOnFocus, onSuccess,
 }: RepairInformFormProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  const fs = useThemedStyles(makeFs);
+  const ms = useThemedStyles(makeMs);
+  const rs = useThemedStyles(makeRs);
   const [categories, setCategories] = useState<RefItem[]>([]);
   const [buildings, setBuildings] = useState<RefItem[]>([]);
   const [workTypes, setWorkTypes] = useState<RefItem[]>([]);
@@ -403,7 +434,7 @@ export function RepairInformForm({
       <NavTopBar title={title} backHref={backHref} rightContent={rightContent} showHomeButton={showHomeButton} />
 
       {isLoading ? (
-        <ActivityIndicator style={styles.loader} size="large" color="#922124" />
+        <ActivityIndicator style={styles.loader} size="large" color={c.primary} />
       ) : loadError ? (
         <View style={styles.center}>
           <ThemedText style={styles.errorText}>{loadError}</ThemedText>
@@ -499,119 +530,119 @@ export function RepairInformForm({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1 },
   loader: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  errorText: { fontSize: 15, color: '#DC2626', textAlign: 'center' },
+  errorText: { fontSize: 15, color: c.danger, textAlign: 'center' },
   scroll: { padding: 16, paddingBottom: 24 },
-  heading: { fontSize: 20, fontWeight: '700', color: '#1F2937', marginBottom: 4 },
-  subtitle: { fontSize: 13, color: '#6B7280', lineHeight: 20, marginBottom: 16 },
+  heading: { fontSize: 20, fontWeight: '700', color: c.text, marginBottom: 4 },
+  subtitle: { fontSize: 13, color: c.textMuted, lineHeight: 20, marginBottom: 16 },
   card: {
-    backgroundColor: '#fff', borderWidth: 1, borderColor: '#EAE3E3',
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.border,
     borderRadius: 12, padding: 16, gap: 14,
     boxShadow: '0 1px 3px rgba(17, 24, 28, 0.04)',
   },
   footer: {
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 20,
-    backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#F1EDED',
+    backgroundColor: c.surface, borderTopWidth: 1, borderTopColor: c.border,
   },
-  submitBtn: { backgroundColor: '#b33939', borderRadius: 10, height: 52, alignItems: 'center', justifyContent: 'center' },
+  submitBtn: { backgroundColor: c.primary, borderRadius: 10, height: 52, alignItems: 'center', justifyContent: 'center' },
   submitInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   submitDisabled: { opacity: 0.6 },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  submitText: { color: c.textOnPrimary, fontSize: 16, fontWeight: '700' },
   toast: {
     position: 'absolute', left: 16, right: 16, bottom: 90,
-    backgroundColor: '#166534', borderRadius: 10,
+    backgroundColor: c.success, borderRadius: 10,
     paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center',
     boxShadow: '0 6px 16px rgba(17, 24, 28, 0.18)',
   },
-  toastText: { color: '#fff', fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  toastText: { color: c.textOnPrimary, fontSize: 14, fontWeight: '600', textAlign: 'center' },
 });
 
-const fs = StyleSheet.create({
+const makeFs = (c: AppColors) => StyleSheet.create({
   field: { gap: 8 },
   label: {
     fontSize: 11, lineHeight: 16, fontWeight: '600', letterSpacing: 0.6,
-    color: '#687076', textTransform: 'uppercase',
+    color: c.textMuted, textTransform: 'uppercase',
   },
-  required: { color: '#B42318', fontWeight: '700' },
+  required: { color: c.danger, fontWeight: '700' },
   control: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#F2F3F7',
+    backgroundColor: c.surfaceMuted,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: c.border,
     borderRadius: 8,
     paddingHorizontal: 14, paddingVertical: 10, minHeight: 44,
   },
-  controlFocused: { borderColor: '#191C1F' },
+  controlFocused: { borderColor: c.text },
   controlMultiline: { alignItems: 'flex-start', minHeight: 80 },
-  controlText: { flex: 1, fontSize: 14, lineHeight: 20, color: '#191C1F', fontFamily: AppFonts.psuRegular },
-  placeholder: { color: '#9CA3AF' },
-  input: { flex: 1, fontSize: 14, lineHeight: 20, color: '#191C1F', fontFamily: AppFonts.psuRegular, paddingVertical: 0 },
+  controlText: { flex: 1, fontSize: 14, lineHeight: 20, color: c.text, fontFamily: AppFonts.psuRegular },
+  placeholder: { color: c.textFaint },
+  input: { flex: 1, fontSize: 14, lineHeight: 20, color: c.text, fontFamily: AppFonts.psuRegular, paddingVertical: 0 },
   inputMultiline: { minHeight: 60, textAlignVertical: 'top' },
 });
 
-const ms = StyleSheet.create({
+const makeMs = (c: AppColors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  modal: { backgroundColor: '#fff', borderRadius: 12, padding: 16, width: '100%', maxWidth: 420 },
+  modal: { backgroundColor: c.surface, borderRadius: 12, padding: 16, width: '100%', maxWidth: 420 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   title: { fontSize: 15, fontWeight: '700', flex: 1 },
-  closeBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: '#F3F4F6' },
+  closeBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: c.surfaceMuted },
   option: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8,
     paddingVertical: 12, paddingHorizontal: 8, borderRadius: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#F3F4F6',
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border,
   },
-  optionActive: { backgroundColor: '#FBEAEA' },
-  optionText: { flex: 1, fontSize: 14, color: '#111827' },
-  optionTextActive: { color: '#922124', fontWeight: '700' },
-  optionCheck: { fontSize: 15, fontWeight: '700', color: '#922124' },
+  optionActive: { backgroundColor: c.primarySoft },
+  optionText: { flex: 1, fontSize: 14, color: c.text },
+  optionTextActive: { color: c.primary, fontWeight: '700' },
+  optionCheck: { fontSize: 15, fontWeight: '700', color: c.primary },
 });
 
-const rs = StyleSheet.create({
+const makeRs = (c: AppColors) => StyleSheet.create({
   row: { flexDirection: 'row', gap: 12 },
   option: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: c.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: c.border,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 12,
   },
   optionActive: {
-    backgroundColor: '#FBEAEA',
-    borderColor: '#B33939',
+    backgroundColor: c.primarySoft,
+    borderColor: c.primary,
   },
   radio: {
     width: 18,
     height: 18,
     borderRadius: 9,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   radioActive: {
-    borderColor: '#B33939',
+    borderColor: c.primary,
   },
   radioDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
   },
   radioLabel: {
     fontSize: 14,
-    color: '#374151',
+    color: c.textMuted,
     flex: 1,
   },
   radioLabelActive: {
-    color: '#B33939',
+    color: c.primary,
     fontWeight: '600',
   },
 });

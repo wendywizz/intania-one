@@ -9,7 +9,10 @@ import {
     StyleSheet,
     View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
+import { Inbox } from 'lucide-react-native';
+import { EmptyState } from "@/components/empty-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -48,6 +51,9 @@ const queueCountFields = [
   "jobCount",
   "count",
 ];
+
+// "Active Jobs: " -> "Active Jobs" (used as the muted subtitle under the name).
+const ACTIVE_JOBS_LABEL = TEXT.REPAIR_COMPUTER_ACTIVE_JOBS_PREFIX.replace(/:\s*$/, "").trim();
 
 function getText(item: WorkerQueueItem, fields: string[]) {
   for (const field of fields) {
@@ -97,10 +103,6 @@ function sortWorkersByNameAsc(items: WorkerQueueItem[]) {
   });
 }
 
-function computeTotalJobs(items: WorkerQueueItem[]) {
-  return items.reduce((sum, item) => sum + getQueueCount(item), 0);
-}
-
 function getResponsePhoto(item: WorkerQueueItem) {
   const photo = item.photo;
 
@@ -140,6 +142,8 @@ function WorkerQueueListItem({
   item,
   onPhotoError,
 }: WorkerQueueListItemProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const workerId = getWorkerId(item);
   const fullName = getWorkerFullName(item);
   const queueCount = getQueueCount(item);
@@ -173,11 +177,18 @@ function WorkerQueueListItem({
       )}
 
       <View style={styles.workerInfo}>
-        <ThemedText type="defaultSemiBold" style={styles.workerName}>
+        <ThemedText type="defaultSemiBold" style={styles.workerName} numberOfLines={2}>
           {fullName}
         </ThemedText>
-        <ThemedText style={styles.workerMeta}>
-          {TEXT.REPAIR_COMPUTER_ACTIVE_JOBS_PREFIX}{queueCount}
+        <ThemedText style={styles.workerMeta}>{ACTIVE_JOBS_LABEL}</ThemedText>
+      </View>
+
+      <View style={styles.countBadge}>
+        <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" style={styles.countValue}>
+          {queueCount}
+        </ThemedText>
+        <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" style={styles.countUnit}>
+          {TEXT.REPAIR_COMPUTER_ACTIVE_LABEL}
         </ThemedText>
       </View>
     </ThemedView>
@@ -185,6 +196,8 @@ function WorkerQueueListItem({
 }
 
 export default function RepairComputerQueueScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [workers, setWorkers] = useState<WorkerQueueItem[]>([]);
   const [failedPhotoIds, setFailedPhotoIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -239,8 +252,6 @@ export default function RepairComputerQueueScreen() {
     });
   };
 
-  const totalJobs = computeTotalJobs(workers);
-
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -288,37 +299,6 @@ export default function RepairComputerQueueScreen() {
             onRefresh={() => loadQueue(true)}
           />
         }
-        ListHeaderComponent={
-          <View style={styles.listHeader}>
-            <ThemedView style={styles.statsCard} lightColor="#FFFFFF" darkColor="#151718">
-              <ThemedText type="defaultSemiBold" style={styles.statsLabel}>
-                {TEXT.REPAIR_COMPUTER_TOTAL_JOBS}
-              </ThemedText>
-              <View style={styles.statsBadge}>
-                <ThemedText
-                  lightColor="#FFFFFF"
-                  darkColor="#FFFFFF"
-                  style={styles.statsCount}
-                >
-                  {totalJobs}
-                </ThemedText>
-                <ThemedText
-                  lightColor="#FFFFFF"
-                  darkColor="#FFFFFF"
-                  style={styles.statsActive}
-                >
-                  {TEXT.REPAIR_COMPUTER_ACTIVE_LABEL}
-                </ThemedText>
-              </View>
-            </ThemedView>
-
-            {workers.length > 0 ? (
-              <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-                Active Jobs
-              </ThemedText>
-            ) : null}
-          </View>
-        }
         renderItem={({ item }) => (
           <WorkerQueueListItem
             failedPhotoIds={failedPhotoIds}
@@ -326,17 +306,7 @@ export default function RepairComputerQueueScreen() {
             onPhotoError={handlePhotoError}
           />
         )}
-        ListEmptyComponent={
-          <ThemedView
-            style={styles.emptyCard}
-            lightColor="#FFFFFF"
-            darkColor="#151718"
-          >
-            <ThemedText style={styles.emptyMessage}>
-              {TEXT.REPAIR_COMPUTER_NO_WORKER_QUEUE}
-            </ThemedText>
-          </ThemedView>
-        }
+        ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.REPAIR_COMPUTER_NO_WORKER_QUEUE} />}
       />
     );
   };
@@ -346,7 +316,7 @@ export default function RepairComputerQueueScreen() {
       <NavTopBar
         title={TEXT.REPAIR_COMPUTER_TITLE}
         subtitle={TEXT.REPAIR_COMPUTER_WORKER_QUEUE}
-        moduleIcon="laptop"
+        moduleIcon="tray.fill"
         backHref="/"
       />
 
@@ -359,10 +329,10 @@ export default function RepairComputerQueueScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   content: {
     flex: 1,
@@ -371,67 +341,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
+    flexGrow: 1,
     gap: 10,
     paddingHorizontal: 16,
+    paddingTop: 20,
     paddingBottom: 16,
-  },
-  listHeader: {
-    gap: 14,
-    paddingTop: 4,
-    paddingBottom: 4,
-  },
-  statsCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e1e2e6',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  statsLabel: {
-    fontSize: 15,
-    lineHeight: 21,
-  },
-  statsBadge: {
-    minWidth: 64,
-    alignItems: 'center',
-    borderRadius: 10,
-    backgroundColor: '#b33939',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  statsCount: {
-    fontSize: 20,
-    lineHeight: 24,
-    fontWeight: '700',
-  },
-  statsActive: {
-    fontSize: 11,
-    lineHeight: 15,
-    fontWeight: '500',
-    opacity: 0.9,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#191c1f',
   },
   itemCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e1e2e6',
-    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(223, 191, 189, 0.3)',
+    padding: 16,
     gap: 14,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   workerPhoto: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#edeef2',
+    backgroundColor: c.surfaceMuted,
   },
   photoPlaceholder: {
     width: 52,
@@ -439,7 +373,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 26,
-    backgroundColor: '#edeef2',
+    backgroundColor: c.surfaceMuted,
   },
   placeholderText: {
     fontSize: 20,
@@ -454,9 +388,29 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   workerMeta: {
-    color: '#584140',
+    color: c.textMuted,
     fontSize: 13,
     lineHeight: 18,
+  },
+  countBadge: {
+    minWidth: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    backgroundColor: c.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  countValue: {
+    fontSize: 20,
+    lineHeight: 24,
+    fontWeight: '700',
+  },
+  countUnit: {
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '500',
+    opacity: 0.9,
   },
   stateContent: {
     flex: 1,
@@ -465,14 +419,14 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   stateMessage: {
-    color: '#584140',
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
     textAlign: 'center',
   },
   errorText: {
-    color: '#ba1a1a',
+    color: c.primary,
   },
   retryButton: {
     minHeight: 48,
@@ -480,7 +434,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#b33939',
+    backgroundColor: c.primary,
     marginTop: 24,
   },
   emptyCard: {
@@ -488,11 +442,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e1e2e6',
+    borderColor: c.border,
     padding: 16,
   },
   emptyMessage: {
-    color: '#584140',
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',

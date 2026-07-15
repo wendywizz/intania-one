@@ -1,5 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
 import { StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 /** Format a number/string as Thai baht: "1,234.56". Falls back to "-". */
 export function formatBaht(v: string | number | undefined | null): string {
@@ -16,6 +17,8 @@ function hasValue(v: string | number | undefined | null): boolean {
 
 /** One label/value line inside a material card. */
 function MatDetailRow({ label, value, emphasize }: { label: string; value: string; emphasize?: boolean }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.matDetailRow}>
       <ThemedText style={styles.matDetailLabel}>{label}</ThemedText>
@@ -43,6 +46,8 @@ export function MaterialItemCard({
   statusLabel?: string;
   isDraft?: boolean;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const amountText = hasValue(amount) ? String(amount) : '-';
   const showPriceUnit = hasValue(priceUnit);
   const showTotal = hasValue(total);
@@ -66,31 +71,31 @@ export function MaterialItemCard({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   matItem: {
-    borderWidth: 1, borderColor: '#EEF2F7', borderRadius: 14,
-    backgroundColor: '#FFFFFF', padding: 12, gap: 10,
+    borderWidth: 1, borderColor: c.border, borderRadius: 14,
+    backgroundColor: c.surface, padding: 12, gap: 10,
   },
-  matItemDraft: { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' },
+  matItemDraft: { backgroundColor: c.warningSoft, borderColor: c.warning },
   matItemHead: {
     flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8,
   },
-  matItemName: { flex: 1, fontSize: 15, fontWeight: '700', color: '#111827', lineHeight: 20 },
+  matItemName: { flex: 1, fontSize: 15, fontWeight: '700', color: c.text, lineHeight: 20 },
   matStatusTag: {
-    backgroundColor: '#ECFDF5', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2,
+    backgroundColor: c.successSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2,
   },
-  matStatusTagText: { fontSize: 11, fontWeight: '700', color: '#15803D' },
+  matStatusTagText: { fontSize: 11, fontWeight: '700', color: c.success },
   matItemRows: {
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E5E7EB', paddingTop: 8, gap: 6,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border, paddingTop: 8, gap: 6,
   },
   matDetailRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  matDetailLabel: { fontSize: 13, color: '#6B7280' },
-  matDetailValue: { flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '600', color: '#1F2937' },
-  matDetailValueEmphasis: { fontSize: 15, fontWeight: '700', color: '#B33939' },
+  matDetailLabel: { fontSize: 13, color: c.textMuted },
+  matDetailValue: { flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '600', color: c.text },
+  matDetailValueEmphasis: { fontSize: 15, fontWeight: '700', color: c.primary },
   draftTagCell: { alignItems: 'center', justifyContent: 'center' },
   draftTag: {
-    fontSize: 11, fontWeight: '700', color: '#C2410C',
-    backgroundColor: '#FFEDD5', borderRadius: 999,
+    fontSize: 11, fontWeight: '700', color: c.warning,
+    backgroundColor: c.warningSoft, borderRadius: 999,
     paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden',
   },
 });

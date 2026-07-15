@@ -3,8 +3,11 @@ import { StatusBar } from 'expo-status-bar';
 import moment from 'moment';
 import { useCallback, useState } from 'react';
 import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { NavTopBar } from '@/components/nav-top-bar';
+import { BellOff } from 'lucide-react-native';
+import { EmptyState } from '@/components/empty-state';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
@@ -39,6 +42,8 @@ function getTargetUrl(item: PushNotificationHistoryItem) {
 }
 
 function NotificationItem({ item, onPress }: { item: PushNotificationHistoryItem; onPress: () => void }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const isUnread = item.status === 'unread';
 
   return (
@@ -70,6 +75,8 @@ function NotificationItem({ item, onPress }: { item: PushNotificationHistoryItem
 }
 
 export default function NotificationScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [items, setItems] = useState<PushNotificationHistoryItem[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -121,7 +128,7 @@ export default function NotificationScreen() {
   };
 
   return (
-    <ThemedView style={styles.container} lightColor={D.bg}>
+    <ThemedView style={styles.container} lightColor={c.surface}>
       <StatusBar style="light" />
       <NavTopBar
         title="Notifications"
@@ -144,14 +151,9 @@ export default function NotificationScreen() {
         data={items}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={D.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={c.primary} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={
-          <View style={styles.emptyWrap}>
-            <ThemedText style={styles.emptyTitle}>No notifications</ThemedText>
-            <ThemedText style={styles.emptySubtitle}>New notifications will appear here</ThemedText>
-          </View>
-        }
+        ListEmptyComponent={<EmptyState icon={BellOff} message="No notifications" />}
         renderItem={({ item }) => (
           <NotificationItem item={item} onPress={() => openNotification(item)} />
         )}
@@ -160,42 +162,42 @@ export default function NotificationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1 },
-  listContent: { paddingVertical: 8, paddingBottom: 40 },
+  listContent: { flexGrow: 1, paddingVertical: 8, paddingBottom: 40 },
 
   clearBtn: { paddingHorizontal: 10, paddingVertical: 4 },
   clearBtnPressed: { opacity: 0.6 },
   clearBtnText: {
     fontSize: 13,
     fontFamily: AppFonts.psuRegular,
-    color: '#FFFFFF',
+    color: c.textOnPrimary,
   },
 
   separator: {
     height: 1,
-    backgroundColor: D.border,
+    backgroundColor: c.border,
     marginHorizontal: 24,
     marginVertical: 4,
   },
 
   itemPressable: {},
-  itemPressed: { backgroundColor: '#F9FAFB' },
+  itemPressed: { backgroundColor: c.surfaceAlt },
 
   itemCard: {
     flexDirection: 'row',
-    backgroundColor: D.surface,
+    backgroundColor: c.surface,
     paddingHorizontal: 24,
     paddingVertical: 20,
   },
   itemCardUnread: {
-    backgroundColor: D.unreadBg,
+    backgroundColor: c.primarySoft,
   },
 
   unreadIndicator: {
     width: 3,
     borderRadius: 2,
-    backgroundColor: D.primary,
+    backgroundColor: c.primary,
     marginRight: 12,
     alignSelf: 'stretch',
   },
@@ -212,16 +214,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
     fontFamily: AppFonts.psuBold,
-    color: D.text,
+    color: c.text,
   },
   itemTitleUnread: {
-    color: D.text,
+    color: c.text,
   },
   itemTimestamp: {
     fontSize: 12,
     lineHeight: 18,
     fontFamily: AppFonts.psuRegular,
-    color: D.mutedText,
+    color: c.textMuted,
     flexShrink: 0,
     marginTop: 2,
   },
@@ -230,7 +232,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     fontFamily: AppFonts.psuRegular,
-    color: D.mutedText,
+    color: c.textMuted,
   },
 
   emptyWrap: {
@@ -242,13 +244,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     fontFamily: AppFonts.psuBold,
-    color: D.text,
+    color: c.text,
   },
   emptySubtitle: {
     fontSize: 13,
     lineHeight: 18,
     fontFamily: AppFonts.psuRegular,
-    color: D.mutedText,
+    color: c.textMuted,
     textAlign: 'center',
   },
 });

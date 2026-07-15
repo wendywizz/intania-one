@@ -13,8 +13,11 @@ import { getPrivilege } from '@/services/noticeRepairService';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 export default function NoticeRepairIndexScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const staffId = useNoticeRepairStaffId();
   const [noAccess, setNoAccess] = useState(false);
 
@@ -85,9 +88,9 @@ export default function NoticeRepairIndexScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 10 },
-  noAccessTitle: { fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center' },
-  noAccessMessage: { fontSize: 14, color: '#6B7280', lineHeight: 22, textAlign: 'center' },
+  noAccessTitle: { fontSize: 18, fontWeight: '700', color: c.text, textAlign: 'center' },
+  noAccessMessage: { fontSize: 14, color: c.textMuted, lineHeight: 22, textAlign: 'center' },
 });

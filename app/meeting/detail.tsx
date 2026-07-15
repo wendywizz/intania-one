@@ -24,9 +24,11 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
+import { EmptyState } from '@/components/empty-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -88,6 +90,8 @@ function buildPdfViewerHtml(base64: string): string {
 }
 
 function PdfViewerModal({ url, onClose }: { url: string; onClose: () => void }) {
+  const c = useColors();
+  const pdfStyles = useThemedStyles(makePdfStyles);
   const insets = useSafeAreaInsets();
   const [webSource, setWebSource] = useState<
     { uri: string } | { html: string } | null
@@ -136,7 +140,7 @@ function PdfViewerModal({ url, onClose }: { url: string; onClose: () => void }) 
         <View style={pdfStyles.header}>
           <ThemedText style={pdfStyles.headerTitle} numberOfLines={1}>เอกสาร PDF</ThemedText>
           <Pressable onPress={onClose} style={pdfStyles.closeBtn} hitSlop={10}>
-            <X size={18} color="#584140" />
+            <X size={18} color={c.textMuted} />
           </Pressable>
         </View>
         <View style={pdfStyles.progressTrack}>
@@ -179,6 +183,8 @@ function getPdfFilename(url: string): string {
 // ─── Shared Components ────────────────────────────────────────────────────────
 
 function NumberBadge({ label, dim }: { label: string; dim?: boolean }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={[styles.numberBadge, dim && styles.numberBadgeDim]}>
       <ThemedText style={[styles.numberBadgeText, dim && styles.numberBadgeTextDim]}>{label}</ThemedText>
@@ -203,6 +209,8 @@ function PdfCard({
   expanded?: boolean;
   onPress: () => void;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const filename = getPdfFilename(pdfUrl);
   return (
     <Pressable style={styles.pdfCard} onPress={onPress} accessibilityRole="button">
@@ -233,6 +241,8 @@ function AgendaItemRow({
   item: MeetingAgendaItem;
   onOpenPdf: (url: string) => void;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const hasPdf = !!(item.has_pdf && item.pdf_url);
 
   if (hasPdf) {
@@ -266,6 +276,8 @@ function SubtopicRow({
   sub: MeetingSubtopic;
   onOpenPdf: (url: string) => void;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [open, setOpen] = useState(false);
   const items = sub.items ?? [];
   const hasItems = items.length > 0;
@@ -327,6 +339,8 @@ function TopicRow({
   isFirst: boolean;
   onOpenPdf: (url: string) => void;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [open, setOpen] = useState(false);
   const subtopics = topic.subtopics ?? [];
   const hasChildren = subtopics.length > 0;
@@ -367,6 +381,8 @@ function TopicRow({
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function MeetingDetailScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { m_id = '', main_id = '', name = '', date = '', room = '', meeting_no = '' } =
     useLocalSearchParams<{
       m_id: string;
@@ -455,13 +471,13 @@ export default function MeetingDetailScreen() {
                   return (
                     <>
                       <View style={styles.heroMetaRow}>
-                        <CalendarDays size={14} color="#922124" />
+                        <CalendarDays size={14} color={c.primary} />
                         <ThemedText style={styles.heroMetaLabel}>วันที่</ThemedText>
                         <ThemedText style={styles.heroMetaValue}>{datePart}</ThemedText>
                       </View>
                       {timePart ? (
                         <View style={styles.heroMetaRow}>
-                          <Clock size={14} color="#922124" />
+                          <Clock size={14} color={c.primary} />
                           <ThemedText style={styles.heroMetaLabel}>เวลา</ThemedText>
                           <ThemedText style={styles.heroMetaValue}>{timePart}</ThemedText>
                         </View>
@@ -471,7 +487,7 @@ export default function MeetingDetailScreen() {
                 })() : null}
                 {room ? (
                   <View style={styles.heroMetaRow}>
-                    <MapPin size={14} color="#922124" />
+                    <MapPin size={14} color={c.primary} />
                     <ThemedText style={styles.heroMetaLabel}>สถานที่</ThemedText>
                     <ThemedText style={styles.heroMetaValue}>{room}</ThemedText>
                   </View>
@@ -511,10 +527,7 @@ export default function MeetingDetailScreen() {
               ))}
             </View>
           ) : (
-            <View style={styles.emptyWrap}>
-              <BookOpen size={36} color="#DADFF0" />
-              <ThemedText style={styles.emptyText}>{TEXT.MEETING_NO_AGENDA}</ThemedText>
-            </View>
+            <EmptyState icon={BookOpen} message={TEXT.MEETING_NO_AGENDA} style={styles.agendaEmpty} />
           )}
         </View>
       </ScrollView>
@@ -528,16 +541,16 @@ export default function MeetingDetailScreen() {
 
 // ─── PDF Modal Styles ─────────────────────────────────────────────────────────
 
-const pdfStyles = StyleSheet.create({
+const makePdfStyles = (c: AppColors) => StyleSheet.create({
   sheet: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
   },
   handle: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D1D5DB',
+    backgroundColor: c.borderStrong,
     alignSelf: 'center',
     marginTop: 8,
     marginBottom: 4,
@@ -548,30 +561,30 @@ const pdfStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: c.border,
   },
   headerTitle: {
     flex: 1,
     fontFamily: AppFonts.psuBold,
     fontSize: 16,
-    color: '#191C1F',
+    color: c.text,
     marginRight: 12,
   },
   closeBtn: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   progressTrack: {
     height: 2,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: c.border,
   },
   progressFill: {
     height: 2,
-    backgroundColor: '#922124',
+    backgroundColor: c.primary,
   },
   webview: {
     flex: 1,
@@ -580,20 +593,20 @@ const pdfStyles = StyleSheet.create({
 
 // ─── Screen Styles ────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FD' },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
   scrollContent: { paddingBottom: 48 },
 
   // ── Hero card ─────────────────────────────────────────────────────────────
   heroCard: {
     marginHorizontal: 16,
     marginTop: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#DFBFBD',
+    borderColor: c.border,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -605,7 +618,7 @@ const styles = StyleSheet.create({
   },
   meetingNoChip: {
     alignSelf: 'flex-start',
-    backgroundColor: '#F5E8E8',
+    backgroundColor: c.primarySoft,
     borderRadius: 9999,
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -613,17 +626,17 @@ const styles = StyleSheet.create({
   meetingNoText: {
     fontFamily: AppFonts.psuBold,
     fontSize: 12,
-    color: '#922124',
+    color: c.primary,
   },
   heroTitle: {
     fontFamily: AppFonts.psuBold,
     fontSize: 20,
     lineHeight: 28,
-    color: '#191C1F',
+    color: c.text,
   },
   heroMeta: {
     borderTopWidth: 1,
-    borderTopColor: '#F5E8E8',
+    borderTopColor: c.border,
     paddingTop: 12,
     gap: 8,
   },
@@ -636,7 +649,7 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuBold,
     fontSize: 13,
     lineHeight: 20,
-    color: '#584140',
+    color: c.textMuted,
     width: 76,
     flexShrink: 0,
   },
@@ -644,7 +657,7 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuRegular,
     fontSize: 13,
     lineHeight: 20,
-    color: '#191C1F',
+    color: c.text,
     flex: 1,
   },
 
@@ -658,10 +671,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: AppFonts.psuBold,
     fontSize: 16,
-    color: '#191C1F',
+    color: c.text,
   },
   countBadge: {
-    backgroundColor: '#E7E8EC',
+    backgroundColor: c.surfaceMuted,
     borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -669,15 +682,15 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontFamily: AppFonts.psuBold,
     fontSize: 12,
-    color: '#584140',
+    color: c.textMuted,
   },
 
   // ── Card container ────────────────────────────────────────────────────────
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#DFBFBD',
+    borderColor: c.border,
     overflow: 'hidden',
   },
 
@@ -692,24 +705,24 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   numberBadgeDim: {
-    backgroundColor: '#D1D5DB',
+    backgroundColor: c.borderStrong,
   },
   numberBadgeText: {
     fontFamily: AppFonts.psuBold,
     fontSize: 12,
-    color: '#FFFFFF',
+    color: c.textOnPrimary,
     lineHeight: 16,
   },
   numberBadgeTextDim: {
-    color: '#9CA3AF',
+    color: c.textFaint,
   },
 
   // ── Topic row (level 1) ───────────────────────────────────────────────────
-  topicBorder: { borderTopWidth: 1, borderTopColor: '#DFBFBD' },
+  topicBorder: { borderTopWidth: 1, borderTopColor: c.border },
   topicRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     paddingVertical: 14,
     paddingHorizontal: 16,
     gap: 12,
@@ -717,15 +730,15 @@ const styles = StyleSheet.create({
   topicText: {
     fontFamily: AppFonts.psuBold,
     fontSize: 15,
-    color: '#191C1F',
+    color: c.text,
   },
   topicTextDim: {
-    color: '#9CA3AF',
+    color: c.textFaint,
   },
   viewDocText: {
     fontFamily: AppFonts.psuBold,
     fontSize: 12,
-    color: '#922124',
+    color: c.primary,
     flexShrink: 0,
   },
 
@@ -733,15 +746,15 @@ const styles = StyleSheet.create({
   pdfCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: c.surfaceAlt,
     borderTopWidth: 1,
-    borderTopColor: '#E1E2E6',
+    borderTopColor: c.border,
     paddingVertical: 12,
     paddingHorizontal: 16,
     gap: 12,
   },
   pdfBadge: {
-    backgroundColor: '#922124',
+    backgroundColor: c.primary,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 6,
@@ -753,7 +766,7 @@ const styles = StyleSheet.create({
   pdfBadgeText: {
     fontFamily: AppFonts.psuBold,
     fontSize: 11,
-    color: '#FFFFFF',
+    color: c.textOnPrimary,
   },
   pdfCardBody: {
     flex: 1,
@@ -762,22 +775,22 @@ const styles = StyleSheet.create({
   pdfCardTitle: {
     fontFamily: AppFonts.psuBold,
     fontSize: 14,
-    color: '#191C1F',
+    color: c.text,
     lineHeight: 20,
   },
   pdfCardMeta: {
     fontFamily: AppFonts.psuRegular,
     fontSize: 12,
-    color: '#8B716F',
+    color: c.textMuted,
   },
 
   // ── Subtopic row without PDF (level 2) ────────────────────────────────────
   subtopicRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: c.surfaceAlt,
     borderTopWidth: 1,
-    borderTopColor: '#E1E2E6',
+    borderTopColor: c.border,
     paddingVertical: 12,
     paddingHorizontal: 16,
     gap: 10,
@@ -785,16 +798,16 @@ const styles = StyleSheet.create({
   subtopicText: {
     fontFamily: AppFonts.psuBold,
     fontSize: 14,
-    color: '#3D4048',
+    color: c.textMuted,
   },
 
   // ── Agenda item row without PDF (level 3) ─────────────────────────────────
   itemRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: c.border,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: c.border,
     paddingVertical: 10,
     paddingHorizontal: 16,
     paddingLeft: 28,
@@ -803,7 +816,7 @@ const styles = StyleSheet.create({
   itemText: {
     fontFamily: AppFonts.psuRegular,
     fontSize: 13,
-    color: '#585E6D',
+    color: c.textMuted,
     lineHeight: 20,
   },
 
@@ -812,26 +825,27 @@ const styles = StyleSheet.create({
 
   // ── Empty / Error ─────────────────────────────────────────────────────────
   emptyWrap: { alignItems: 'center', paddingVertical: 40, gap: 10 },
+  agendaEmpty: { paddingVertical: 24 },
   emptyText: {
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
-    color: '#585E6D',
+    color: c.textMuted,
   },
   centerWrap: { flex: 1, padding: 16, justifyContent: 'center' },
   errorCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(223,191,189,0.4)',
     padding: 20,
     gap: 8,
   },
-  errorTitle: { fontFamily: AppFonts.psuBold, fontSize: 15, color: '#B33939' },
+  errorTitle: { fontFamily: AppFonts.psuBold, fontSize: 15, color: c.primary },
   errorMessage: {
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     lineHeight: 20,
-    color: '#584140',
+    color: c.textMuted,
   },
   retryButton: {
     alignSelf: 'flex-start',
@@ -839,7 +853,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
   },
-  retryText: { color: '#FFFFFF', fontFamily: AppFonts.psuBold, fontSize: 14 },
+  retryText: { color: c.textOnPrimary, fontFamily: AppFonts.psuBold, fontSize: 14 },
 });

@@ -13,7 +13,10 @@ import {
     useWindowDimensions,
     View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
+import { Inbox } from 'lucide-react-native';
+import { EmptyState } from "@/components/empty-state";
 import { AppToast } from "@/components/app-toast";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
@@ -91,6 +94,8 @@ function blurActiveWebElement() {
 }
 
 export default function RepairComputerCurrentJobScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { height } = useWindowDimensions();
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
@@ -320,21 +325,11 @@ export default function RepairComputerCurrentJobScreen() {
         ListFooterComponent={
           isLoadingMore ? (
             <View style={styles.footerLoader}>
-              <ActivityIndicator color="#b33939" size="small" />
+              <ActivityIndicator color={c.primary} size="small" />
             </View>
           ) : null
         }
-        ListEmptyComponent={
-          <ThemedView
-            style={styles.emptyCard}
-            lightColor="#FFFFFF"
-            darkColor="#151718"
-          >
-            <ThemedText style={styles.emptyMessage}>
-              {TEXT.REPAIR_COMPUTER_NO_CURRENT_JOBS}
-            </ThemedText>
-          </ThemedView>
-        }
+        ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.REPAIR_COMPUTER_NO_CURRENT_JOBS} />}
       />
     );
   };
@@ -344,7 +339,7 @@ export default function RepairComputerCurrentJobScreen() {
                         <NavTopBar
         title={TEXT.REPAIR_COMPUTER_TITLE}
         subtitle={TEXT.REPAIR_COMPUTER_CURRENT_JOB}
-        moduleIcon="laptop"
+        moduleIcon="wrench.fill"
         backHref="/"
       />
 
@@ -434,10 +429,10 @@ export default function RepairComputerCurrentJobScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   content: {
     flex: 1,
@@ -452,11 +447,11 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#b33939',
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -468,9 +463,10 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
   listContent: {
+    flexGrow: 1,
     gap: 10,
     paddingHorizontal: 16,
-    paddingTop: 4,
+    paddingTop: 20,
     paddingBottom: 80,
   },
   stateContent: {
@@ -480,14 +476,14 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   stateMessage: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
     textAlign: "center",
   },
   errorText: {
-    color: "#ba1a1a",
+    color: c.primary,
   },
   retryButton: {
     minHeight: 48,
@@ -495,7 +491,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
     marginTop: 24,
   },
   emptyCard: {
@@ -503,11 +499,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#e1e2e6",
+    borderColor: c.border,
     padding: 16,
   },
   emptyMessage: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
@@ -530,7 +526,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   confirmMessage: {
-    color: "#584140",
+    color: c.textMuted,
     lineHeight: 20,
     marginTop: 10,
   },
@@ -546,8 +542,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#e1e2e6",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
   confirmDeleteButton: {
     minHeight: 46,
@@ -557,7 +553,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#ba1a1a",
+    backgroundColor: c.primary,
   },
   disabledButton: {
     opacity: 0.65,

@@ -1,6 +1,6 @@
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, type Href } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -10,6 +10,7 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { UserAvatar } from '@/components/user-avatar';
 import { AppFonts } from '@/constants/fonts';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { TEXT } from '@/constants/text';
 import {
   TYPE_ABSENCE_BIRTH,
@@ -21,7 +22,7 @@ import {
 } from '@/constants/types';
 import type { absence } from '@/models/types';
 import { getabsenceData } from '@/services/absenceService';
-import { formatFullDate } from '@/utils/date-format';
+import { formatDateRange } from '@/utils/date-format';
 
 const absenceTypeLabels: Record<string, string> = {
   [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
@@ -216,6 +217,22 @@ function getApproverInfo(item: absence): StaffEntry {
   return { name: posName, position: '' };
 }
 
+// The person who filed the leave — the server returns a serialized `requester`
+// object (name + position + uni staff id for the photo); fall back to the
+// top-level name when it is absent.
+function getRequesterInfo(item: absence): StaffEntry {
+  const record = item as Record<string, unknown>;
+  const req = record.requester;
+  if (req && typeof req === 'object' && !Array.isArray(req)) {
+    return { name: getStaffName(req), position: getStaffPosition(req), staffId: getStaffId(req) };
+  }
+  return {
+    name: getText(item, ['name', 'fullname', 'staffName', 'staff_name']),
+    position: '',
+    staffId: getText(item, ['uniStaffId', 'uni_staff_id']),
+  };
+}
+
 function getAgentEntries(item: absence): StaffEntry[] {
   const rawValue =
     item.selectedAgents ??
@@ -270,13 +287,6 @@ function getAgentEntries(item: absence): StaffEntry[] {
   return [];
 }
 
-function formatDateText(startDate: string, endDate: string) {
-  const start = startDate ? formatFullDate(startDate) : '';
-  const end = endDate ? formatFullDate(endDate) : '';
-  if (start && end) return start === end ? start : `${start} - ${end}`;
-  return start || end;
-}
-
 function getStatusBadge(status: string): { bg: string; color: string } {
   const lower = status.toLowerCase();
   if (lower.includes('อนุมัติแล้ว') || lower.includes('approved') || lower.includes('completed') || lower.includes('success')) {
@@ -294,12 +304,14 @@ function getStatusBadge(status: string): { bg: string; color: string } {
 // A stacked "label above value" row inside the leave-info card. Hidden when the
 // value is empty so records with fewer fields still look clean.
 function InfoRow({ label, value, icon }: { label: string; value: string; icon?: IconSymbolName }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   if (!value) return null;
   return (
     <View style={styles.infoRow}>
       <ThemedText style={styles.infoLabel}>{label}</ThemedText>
       <View style={styles.infoValueRow}>
-        {icon ? <IconSymbol name={icon} size={16} color="#B33939" /> : null}
+        {icon ? <IconSymbol name={icon} size={16} color={c.primary} /> : null}
         <ThemedText style={styles.infoValue}>{value}</ThemedText>
       </View>
     </View>
@@ -308,6 +320,7 @@ function InfoRow({ label, value, icon }: { label: string; value: string; icon?: 
 
 // Avatar + name + position row used by both the approver and delegate cards.
 function PersonRow({ name, position, staffId }: StaffEntry) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.personRow}>
       <UserAvatar staffId={staffId} size={44} />
@@ -320,7 +333,9 @@ function PersonRow({ name, position, staffId }: StaffEntry) {
 }
 
 export default function absenceDetailScreen() {
-  const params = useLocalSearchParams<{ id?: string; item?: string; type?: string }>();
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  const params = useLocalSearchParams<{ id?: string; item?: string; type?: string; backHref?: string }>();
   const initialItem = useMemo(() => parseItem(params.item), [params.item]);
   const [item, setItem] = useState<absence>(initialItem);
   const [isLoading, setIsLoading] = useState(true);
@@ -328,7 +343,8 @@ export default function absenceDetailScreen() {
   const loadedDetailKeyRef = useRef('');
   const loadingDetailKeyRef = useRef('');
   const routeType = Array.isArray(params.type) ? params.type[0] : params.type ?? '';
-  const backHref = '/absence/history';
+  const backHrefParam = Array.isArray(params.backHref) ? params.backHref[0] : params.backHref;
+  const backHref = (backHrefParam || '/absence/history') as Href;
   const routeId = Array.isArray(params.id) ? params.id[0] : params.id ?? '';
   const requestId = routeId || getText(initialItem, ['id', 'absenceId', 'ABSENCE_id', 'requestId', 'request_id']);
   const requestType = getabsenceType(initialItem, routeType);
@@ -340,9 +356,9 @@ export default function absenceDetailScreen() {
 
   const startDate = getText(item, ['startDate', 'start_date', 'dateStart', 'date_start']);
   const endDate = getText(item, ['endDate', 'end_date', 'dateEnd', 'date_end']);
-  const dateText = formatDateText(startDate, endDate);
+  const dateText = formatDateRange(startDate, endDate);
   const leaveDay = getText(item, ['numDays', 'num_days', 'absentDays', 'absent_days', 'absenceDays', 'ABSENCE_days', 'leaveDay', 'leave_day', 'days', 'day']);
-  const approver = getApproverInfo(item);
+  const requester = getRequesterInfo(item);
   const agentEntries = getAgentEntries(item);
   const reason = getText(item, ['reason', 'detail', 'description']);
   const halfDay = getDisplayHalfDay(getText(item, ['partFlag', 'part_flag', 'startpart', 'half_day', 'halfDay']));
@@ -433,13 +449,13 @@ export default function absenceDetailScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Leave-info card */}
+        {/* Leave-info card — leads with the requester, then the leave type */}
         <View style={styles.card}>
           <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_DETAIL_INFO_SECTION}</ThemedText>
 
-          <View style={styles.infoHeader}>
+          <View style={styles.typeRow}>
             <View style={styles.typeIconCircle}>
-              <IconSymbol name={typeIcon} size={22} color="#B33939" />
+              <IconSymbol name={typeIcon} size={20} color={c.primary} />
             </View>
             <ThemedText style={styles.infoType} numberOfLines={2}>
               {typeLabel}
@@ -467,11 +483,11 @@ export default function absenceDetailScreen() {
           </View>
         </View>
 
-        {/* Approver card */}
-        {approver.name ? (
+        {/* Requester card (shows the person who filed the leave) */}
+        {requester.name ? (
           <View style={styles.card}>
-            <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_APPROVER_LABEL}</ThemedText>
-            <PersonRow name={approver.name} position={approver.position} staffId={approver.staffId} />
+            <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_REQUESTER_LABEL}</ThemedText>
+            <PersonRow name={requester.name} position={requester.position} staffId={requester.staffId} />
           </View>
         ) : null}
 
@@ -480,7 +496,10 @@ export default function absenceDetailScreen() {
           <View style={styles.card}>
             <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_DELEGATE_LABEL}</ThemedText>
             {agentEntries.map((agent, index) => (
-              <PersonRow key={`${agent.name}-${index}`} name={agent.name} position={agent.position} staffId={agent.staffId} />
+              <Fragment key={`${agent.name}-${index}`}>
+                {index > 0 ? <View style={styles.agentDivider} /> : null}
+                <PersonRow name={agent.name} position={agent.position} staffId={agent.staffId} />
+              </Fragment>
             ))}
           </View>
         ) : null}
@@ -495,7 +514,7 @@ export default function absenceDetailScreen() {
               style={styles.fileRow}
             >
               <View style={styles.fileIcon}>
-                <IconSymbol name="doc.text.fill" size={20} color="#B33939" />
+                <IconSymbol name="doc.text.fill" size={20} color={c.primary} />
               </View>
               <View style={styles.fileText}>
                 <ThemedText style={styles.fileName} numberOfLines={1}>
@@ -503,7 +522,7 @@ export default function absenceDetailScreen() {
                 </ThemedText>
                 <ThemedText style={styles.fileLink}>{TEXT.ABSENCE_VIEW_ATTACHED_FILE}</ThemedText>
               </View>
-              <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
+              <IconSymbol name="chevron.right" size={18} color={c.textFaint} />
             </Pressable>
           </View>
         ) : null}
@@ -514,10 +533,10 @@ export default function absenceDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   scrollContent: {
     paddingTop: 16,
@@ -526,7 +545,7 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 16,
@@ -536,9 +555,34 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '600',
-    color: '#687076',
+    color: c.textMuted,
   },
   infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  requesterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  requesterText: {
+    flex: 1,
+    gap: 2,
+  },
+  requesterName: {
+    fontFamily: AppFonts.psuBold,
+    fontSize: 16,
+    lineHeight: 22,
+    color: c.text,
+  },
+  requesterPosition: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: c.textMuted,
+  },
+  typeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -549,14 +593,14 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FBEAEA',
+    backgroundColor: c.primarySoft,
   },
   infoType: {
     flex: 1,
     fontFamily: AppFonts.psuBold,
     fontSize: 17,
     lineHeight: 24,
-    color: '#191C1F',
+    color: c.text,
   },
   statusBadge: {
     borderRadius: 9999,
@@ -570,20 +614,21 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   infoBody: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E8ECF0',
-    paddingTop: 4,
+    gap: 10,
   },
   infoRow: {
+    backgroundColor: c.surfaceAlt,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#F0F2F5',
   },
   infoLabel: {
     fontSize: 12,
     lineHeight: 16,
-    color: '#9CA3AF',
+    color: c.textFaint,
   },
   infoValueRow: {
     flexDirection: 'row',
@@ -595,12 +640,16 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuRegular,
     fontSize: 15,
     lineHeight: 22,
-    color: '#191C1F',
+    color: c.text,
   },
   personRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  agentDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: c.border,
   },
   avatar: {
     width: 44,
@@ -608,7 +657,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FBEAEA',
+    backgroundColor: c.primarySoft,
   },
   personText: {
     flex: 1,
@@ -618,12 +667,12 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuBold,
     fontSize: 15,
     lineHeight: 21,
-    color: '#191C1F',
+    color: c.text,
   },
   personPosition: {
     fontSize: 13,
     lineHeight: 18,
-    color: '#687076',
+    color: c.textMuted,
   },
   fileRow: {
     flexDirection: 'row',
@@ -636,7 +685,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FBEAEA',
+    backgroundColor: c.primarySoft,
   },
   fileText: {
     flex: 1,
@@ -646,12 +695,12 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuBold,
     fontSize: 15,
     lineHeight: 21,
-    color: '#191C1F',
+    color: c.text,
   },
   fileLink: {
     fontSize: 13,
     lineHeight: 18,
-    color: '#B33939',
+    color: c.primary,
     textDecorationLine: 'underline',
   },
   errorText: {
@@ -659,7 +708,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     fontSize: 14,
     lineHeight: 20,
-    color: '#B33939',
+    color: c.primary,
     textAlign: 'center',
   },
 });

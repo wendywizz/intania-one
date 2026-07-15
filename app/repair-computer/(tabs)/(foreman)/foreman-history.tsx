@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { TEXT } from '@/constants/text';
 
 import { RepairComputerJobListScreen } from '@/components/repair-computer-job-list-screen';
@@ -20,6 +21,8 @@ const TABS: { key: HistoryTab; label: string }[] = [
 ];
 
 export default function ForemanHistoryScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
   const [activeTab, setActiveTab] = useState<HistoryTab>('job');
@@ -95,11 +98,11 @@ export default function ForemanHistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   topTabBar: {
     flexDirection: 'row',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: c.border,
   },
   topTab: {
     flex: 1,
@@ -111,10 +114,10 @@ const styles = StyleSheet.create({
   topTabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#9CA3AF',
+    color: c.textFaint,
   },
   topTabTextActive: {
-    color: '#922124',
+    color: c.primary,
   },
   topTabIndicator: {
     height: 3,
@@ -123,6 +126,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   topTabIndicatorActive: {
-    backgroundColor: '#922124',
+    backgroundColor: c.primary,
   },
 });

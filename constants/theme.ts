@@ -8,17 +8,19 @@
  * reconciled — see chat history. Combining the files did not change any value.
  */
 
-import { Platform } from 'react-native';
+import { useContext, useMemo } from 'react';
+import { Platform, StyleSheet } from 'react-native';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ThemeContext } from '@/context/ThemeContext';
 
 const tintColorLight = '#b33939';
-const tintColorDark = tintColorLight;
+const tintColorDark = '#E06B6B';
 
 export const Colors = {
   light: {
     text: '#191c1f',
-    background: '#f8f9fd',
+    background: '#F5F6FA',
     tint: tintColorLight,
     icon: '#584140',
     tabIconDefault: '#584140',
@@ -26,10 +28,10 @@ export const Colors = {
   },
   dark: {
     text: '#ECEDEE',
-    background: '#131416',
+    background: '#0E1113',
     tint: tintColorDark,
     icon: '#ECEDEE',
-    tabIconDefault: '#9BA1A6',
+    tabIconDefault: '#8A9098',
     tabIconSelected: tintColorDark,
   },
 };
@@ -351,6 +353,119 @@ export const Layout = {
   buttonPadding: { horizontal: Spacing.lg, vertical: Spacing.md },
   tabBarHeight: 60,
 };
+
+// ============ APP SEMANTIC PALETTE (light + dark) ============
+/**
+ * The single palette every screen should theme against. Keys are semantic
+ * *roles* (surface, text, border…) rather than raw colors, so a screen written
+ * once flips correctly between light and dark. Consume via `useColors()` for
+ * inline colors or `useThemedStyles((c) => StyleSheet.create({…}))` for
+ * StyleSheet-based screens.
+ *
+ * The brand red (#B33939) stays the accent in light; in dark it is brightened
+ * (#E06B6B) so it keeps enough contrast against dark surfaces. The top nav bar,
+ * which is brand-red in light, becomes a dark elevated surface in dark mode so
+ * the whole app reads as a proper dark theme (not just a dark body).
+ */
+export type AppColors = {
+  // Surfaces
+  background: string;      // screen background
+  surface: string;         // cards / sheets / "white"
+  surfaceAlt: string;      // grey value boxes / inset rows
+  surfaceMuted: string;    // menu tiles / subtle fills
+  // Text
+  text: string;            // primary text
+  textMuted: string;       // secondary text
+  textFaint: string;       // tertiary / placeholder
+  textOnPrimary: string;   // text/icon on a primary-colored fill
+  // Lines
+  border: string;          // card borders / dividers
+  borderStrong: string;    // heavier separators
+  // Brand
+  primary: string;         // brand accent / primary actions
+  primarySoft: string;     // soft brand tint (icon circles, chips)
+  // Top navigation bar
+  navBar: string;
+  navBarText: string;
+  // Status
+  success: string; successSoft: string;
+  warning: string; warningSoft: string;
+  danger: string;  dangerSoft: string;
+  info: string;    infoSoft: string;
+  // Misc
+  overlay: string;         // modal backdrop
+  shadow: string;
+  skeleton: string;        // loading placeholder fill
+};
+
+export const LightColors: AppColors = {
+  background: '#F5F6FA',
+  surface: '#FFFFFF',
+  surfaceAlt: '#F5F6FA',
+  surfaceMuted: '#F2F3F7',
+  text: '#191C1F',
+  textMuted: '#6B7280',
+  textFaint: '#9CA3AF',
+  textOnPrimary: '#FFFFFF',
+  border: '#E8ECF0',
+  borderStrong: '#DDE2E8',
+  primary: '#B33939',
+  primarySoft: '#FFF3F3',
+  navBar: '#B33939',
+  navBarText: '#FFFFFF',
+  success: '#2F9E44', successSoft: '#EAF7EE',
+  warning: '#F08C00', warningSoft: '#FFF4E6',
+  danger: '#C92A2A',  dangerSoft: '#FEECEC',
+  info: '#2563EB',    infoSoft: '#EFF6FF',
+  overlay: 'rgba(17,24,28,0.36)',
+  shadow: '#000000',
+  skeleton: '#E9ECF1',
+};
+
+export const DarkColors: AppColors = {
+  background: '#0E1113',
+  surface: '#181C1F',
+  surfaceAlt: '#20252A',
+  surfaceMuted: '#20252A',
+  text: '#ECEDEE',
+  textMuted: '#A0A6AD',
+  textFaint: '#6B7280',
+  textOnPrimary: '#FFFFFF',
+  border: '#2A3037',
+  borderStrong: '#333A42',
+  primary: '#E06B6B',
+  primarySoft: 'rgba(224,107,107,0.16)',
+  navBar: '#1B1F22',
+  navBarText: '#F3F4F6',
+  success: '#4ADE80', successSoft: 'rgba(74,222,128,0.16)',
+  warning: '#FBBF24', warningSoft: 'rgba(251,191,36,0.16)',
+  danger: '#F87171',  dangerSoft: 'rgba(248,113,113,0.16)',
+  info: '#60A5FA',    infoSoft: 'rgba(96,165,250,0.16)',
+  overlay: 'rgba(0,0,0,0.6)',
+  shadow: '#000000',
+  skeleton: '#242A30',
+};
+
+/** Active semantic palette for the current theme. */
+export function useColors(): AppColors {
+  const ctx = useContext(ThemeContext);
+  return ctx?.isDarkMode ? DarkColors : LightColors;
+}
+
+/**
+ * Build a themed StyleSheet. Pass a factory that receives the active palette;
+ * the sheet is memoized and only rebuilt when the theme flips.
+ *
+ *   const styles = useThemedStyles((c) => StyleSheet.create({
+ *     card: { backgroundColor: c.surface, borderColor: c.border },
+ *   }));
+ */
+export function useThemedStyles<T extends StyleSheet.NamedStyles<T>>(
+  factory: (c: AppColors) => T,
+): T {
+  const c = useColors();
+  return useMemo(() => StyleSheet.create(factory(c)), [c]);
+}
 
 // ============ HOOK FOR USING DESIGN SYSTEM ============
 export function useDesignSystem() {

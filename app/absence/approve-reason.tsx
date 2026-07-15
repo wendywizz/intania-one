@@ -2,12 +2,14 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { NavTopBar } from "@/components/nav-top-bar";
@@ -22,6 +24,8 @@ function firstParam(value?: string | string[]) {
 }
 
 export default function ApproveReasonScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ detail?: string; status?: string }>();
   const detail = firstParam(params.detail);
   const status: "1" | "2" = firstParam(params.status) === "2" ? "2" : "1";
@@ -32,10 +36,12 @@ export default function ApproveReasonScreen() {
   const [reason, setReason] = useState(isApprove ? TEXT.ABSENCE_APPROVE_ACCEPT : "");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "">("");
 
-  const handleSubmit = async () => {
+  // Validate first, then ask for confirmation before actually submitting.
+  const handleSubmitPress = () => {
     if (isSubmitting) {
       return;
     }
@@ -46,6 +52,15 @@ export default function ApproveReasonScreen() {
     }
 
     setError("");
+    setShowConfirm(true);
+  };
+
+  const submitDecision = async () => {
+    setShowConfirm(false);
+    if (isSubmitting) {
+      return;
+    }
+
     setIsSubmitting(true);
     setToastMessage("");
     setToastType("");
@@ -107,7 +122,7 @@ export default function ApproveReasonScreen() {
         <Pressable
           accessibilityRole="button"
           disabled={isSubmitting}
-          onPress={handleSubmit}
+          onPress={handleSubmitPress}
           style={[
             styles.submitButton,
             isApprove ? styles.acceptButton : styles.rejectButton,
@@ -121,15 +136,51 @@ export default function ApproveReasonScreen() {
         </Pressable>
       </View>
 
+      <Modal
+        transparent
+        visible={showConfirm}
+        animationType="fade"
+        onRequestClose={() => setShowConfirm(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setShowConfirm(false)}>
+          <Pressable>
+            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
+              <ThemedText type="subtitle">{TEXT.ABSENCE_APPROVE_CONFIRM_TITLE}</ThemedText>
+              <ThemedText style={styles.confirmMessage}>
+                {TEXT.ABSENCE_APPROVE_CONFIRM_MESSAGE}
+              </ThemedText>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setShowConfirm(false)}
+                  style={styles.cancelButton}
+                >
+                  <ThemedText type="defaultSemiBold">{TEXT.CANCEL}</ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={submitDecision}
+                  style={[styles.confirmButton, isApprove ? styles.acceptButton : styles.rejectButton]}
+                >
+                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                    {TEXT.ABSENCE_APPROVE_CONFIRM_ACTION}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </ThemedView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <AppToast message={toastMessage} type={toastType === "error" ? "error" : "success"} />
     </ThemedView>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FD",
+    backgroundColor: c.background,
   },
   scrollContent: {
     padding: 16,
@@ -137,10 +188,10 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#E8ECF0",
+    borderColor: c.border,
     padding: 16,
     gap: 8,
   },
@@ -148,15 +199,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontWeight: "600",
-    color: "#000000",
+    color: c.text,
   },
   textArea: {
     minHeight: 96,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    color: "#191C1F",
+    borderColor: c.border,
+    color: c.text,
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     lineHeight: 20,
@@ -165,17 +216,17 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderWidth: 1,
-    borderColor: "#B42318",
+    borderColor: c.danger,
   },
   fieldError: {
     fontSize: 12,
     lineHeight: 17,
-    color: "#B42318",
+    color: c.danger,
   },
   bottomBar: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#E8ECF0",
+    borderTopColor: c.border,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 28,
@@ -189,12 +240,52 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   acceptButton: {
-    backgroundColor: "#12805C",
+    backgroundColor: c.success,
   },
   rejectButton: {
-    backgroundColor: "#B42318",
+    backgroundColor: c.danger,
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  backdrop: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(17, 24, 28, 0.45)",
+    padding: 24,
+  },
+  confirmModal: {
+    width: "100%",
+    maxWidth: 420,
+    borderRadius: 12,
+    padding: 18,
+  },
+  confirmMessage: {
+    color: c.textMuted,
+    lineHeight: 20,
+    marginTop: 10,
+  },
+  confirmActions: {
+    flexDirection: "row-reverse",
+    gap: 12,
+    marginTop: 18,
+  },
+  cancelButton: {
+    minHeight: 46,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    backgroundColor: c.surface,
+  },
+  confirmButton: {
+    minHeight: 46,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
   },
 });

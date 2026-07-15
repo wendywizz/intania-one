@@ -2,6 +2,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TEXT } from '@/constants/text';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 type Props = {
   visible: boolean;
@@ -21,6 +22,8 @@ export function ConfirmModal({
   visible, title, message, confirmLabel, cancelLabel,
   destructive, loading, onConfirm, onCancel,
 }: Props) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <Modal
       transparent
@@ -56,17 +59,17 @@ export function ConfirmModal({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(17,24,28,.45)', padding: 24 },
   card: { width: '100%', maxWidth: 420, borderRadius: 10, padding: 20, gap: 10 },
-  title: { fontSize: 17, fontWeight: '700', color: '#111827' },
-  message: { fontSize: 14, color: '#4B5563', lineHeight: 20 },
+  title: { fontSize: 17, fontWeight: '700', color: c.text },
+  message: { fontSize: 14, color: c.textMuted, lineHeight: 20 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
   btn: { minHeight: 44, minWidth: 96, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   btnDisabled: { opacity: 0.6 },
-  cancelBtn: { backgroundColor: '#F3F4F6' },
-  cancelText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
-  confirmBtn: { backgroundColor: '#15803D' },
-  destructiveBtn: { backgroundColor: '#DC2626' },
-  confirmText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  cancelBtn: { backgroundColor: c.border },
+  cancelText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
+  confirmBtn: { backgroundColor: c.success },
+  destructiveBtn: { backgroundColor: c.danger },
+  confirmText: { fontSize: 14, fontWeight: '700', color: c.textOnPrimary },
 });

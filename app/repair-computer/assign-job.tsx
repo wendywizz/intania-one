@@ -10,6 +10,7 @@ import {
     StyleSheet,
     View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { LoadingAnimate } from "@/components/loading-animate";
@@ -135,6 +136,8 @@ function getStepBadgeLabel(step: AssignStep) {
 // ── Shared UI (mirroring foreman-job-detail) ─────────────────────────────────
 
 function SectionCard({ children, title }: { children: ReactNode; title: string }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <ThemedView style={styles.sectionCard} lightColor="#FFFFFF" darkColor="#151718">
       <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>{title}</ThemedText>
@@ -144,6 +147,8 @@ function SectionCard({ children, title }: { children: ReactNode; title: string }
 }
 
 function RowDetail({ title, description }: { title: string; description: string }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.rowDetail}>
       <ThemedText style={styles.rowTitle}>{title}</ThemedText>
@@ -166,6 +171,8 @@ function PersonSummaryCard({
   name: string;
   role?: string;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const staffId = normalizeNumericStaffId(id);
   const [photoFailed, setPhotoFailed] = useState(false);
   const showPhoto = Boolean(staffId) && !photoFailed;
@@ -214,6 +221,8 @@ function WorkerSelectRow({
   isSelected: boolean;
   onPress: () => void;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [photoFailed, setPhotoFailed] = useState(false);
   const showPhoto = Boolean(photoId) && !photoFailed;
   const fallbackInitial = name.trim().charAt(0).toUpperCase() || "?";
@@ -258,6 +267,8 @@ function WorkerSelectRow({
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function AssignJobScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{
     backHref?: string | string[];
     id?: string | string[];
@@ -430,7 +441,7 @@ export default function AssignJobScreen() {
       <View style={styles.summaryMetaGrid}>
         {jobId ? (
           <View style={styles.summaryMetaItem}>
-            <IconSymbol name="list.bullet" size={14} color="#584140" />
+            <IconSymbol name="list.bullet" size={14} color={c.textMuted} />
             <ThemedText style={styles.summaryMetaText} numberOfLines={1}>
               {TEXT.REPAIR_COMPUTER_JOB_ID_LABEL} {jobId}
             </ThemedText>
@@ -438,7 +449,7 @@ export default function AssignJobScreen() {
         ) : null}
         {informDateTime ? (
           <View style={styles.summaryMetaItem}>
-            <IconSymbol name="calendar" size={14} color="#584140" />
+            <IconSymbol name="calendar" size={14} color={c.textMuted} />
             <ThemedText style={styles.summaryMetaText} numberOfLines={1}>
               {formatDateTime(informDateTime)}
             </ThemedText>
@@ -449,7 +460,7 @@ export default function AssignJobScreen() {
             <IconSymbol
               name={getRepairComputerTypeIcon(selectedRepairTypeId, getRepairTypeName(selectedRepairType))}
               size={14}
-              color="#922124"
+              color={c.primary}
             />
             <ThemedText style={[styles.summaryMetaText, styles.summaryMetaTextHighlight]} numberOfLines={1}>
               {getRepairTypeName(selectedRepairType)}
@@ -779,10 +790,10 @@ export default function AssignJobScreen() {
 
 // ── Styles (mirroring foreman-job-detail tokens) ──────────────────────────────
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FD",
+    backgroundColor: c.background,
   },
   content: {
     flex: 1,
@@ -805,48 +816,48 @@ const styles = StyleSheet.create({
   stepConnector: {
     flex: 1,
     height: 1.5,
-    backgroundColor: "#E1E2E6",
+    backgroundColor: c.surfaceMuted,
     marginHorizontal: 4,
     minWidth: 16,
   },
   stepConnectorDone: {
-    backgroundColor: "#922124",
+    backgroundColor: c.primary,
   },
   stepCircle: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#E1E2E6",
+    backgroundColor: c.surfaceMuted,
     alignItems: "center",
     justifyContent: "center",
   },
   stepCircleActive: {
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
   },
   stepCircleDone: {
-    backgroundColor: "#922124",
+    backgroundColor: c.primary,
   },
   stepNum: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#8A8F9D",
+    color: c.textMuted,
   },
   stepNumActive: {
-    color: "#FFFFFF",
+    color: c.textOnPrimary,
   },
   stepNumDone: {
-    color: "#FFFFFF",
+    color: c.textOnPrimary,
   },
   stepLabel: {
     fontSize: 12,
-    color: "#8A8F9D",
+    color: c.textMuted,
   },
   stepLabelActive: {
-    color: "#b33939",
+    color: c.primary,
     fontWeight: "600",
   },
   stepLabelDone: {
-    color: "#922124",
+    color: c.primary,
   },
   panel: {
     flex: 1,
@@ -860,7 +871,7 @@ const styles = StyleSheet.create({
   summaryCard: {
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E1E2E6",
+    borderColor: c.border,
     padding: 16,
     gap: 14,
   },
@@ -875,7 +886,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   summaryKicker: {
-    color: "#922124",
+    color: c.primary,
     fontSize: 12,
     lineHeight: 16,
     fontWeight: "600",
@@ -904,23 +915,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     borderRadius: 8,
-    backgroundColor: "#F2F3F7",
+    backgroundColor: c.surfaceMuted,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
   summaryMetaItemHighlight: {
-    backgroundColor: "#FFF3F3",
+    backgroundColor: c.primarySoft,
     borderWidth: 1,
     borderColor: "rgba(179,57,57,0.2)",
   },
   summaryMetaText: {
     flex: 1,
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 13,
     lineHeight: 18,
   },
   summaryMetaTextHighlight: {
-    color: "#922124",
+    color: c.primary,
     fontWeight: "600",
   },
 
@@ -928,7 +939,7 @@ const styles = StyleSheet.create({
   sectionCard: {
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E1E2E6",
+    borderColor: c.border,
     padding: 14,
     gap: 12,
   },
@@ -943,16 +954,16 @@ const styles = StyleSheet.create({
   },
   rowDetail: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E1E2E6",
+    borderBottomColor: c.border,
     paddingBottom: 10,
   },
   rowTitle: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 12,
     lineHeight: 16,
   },
   rowDescription: {
-    color: "#191C1F",
+    color: c.text,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 4,
@@ -961,7 +972,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   longDescription: {
-    color: "#191C1F",
+    color: c.text,
     fontSize: 14,
     lineHeight: 21,
   },
@@ -973,14 +984,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     borderRadius: 8,
-    backgroundColor: "#F2F3F7",
+    backgroundColor: c.surfaceMuted,
     padding: 12,
   },
   personPhoto: {
     width: 58,
     height: 58,
     borderRadius: 8,
-    backgroundColor: "#EDEEF2",
+    backgroundColor: c.border,
   },
   personPhotoPlaceholder: {
     width: 58,
@@ -988,10 +999,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#EDEEF2",
+    backgroundColor: c.border,
   },
   personPhotoInitial: {
-    color: "#922124",
+    color: c.primary,
     fontSize: 20,
     lineHeight: 26,
   },
@@ -1004,14 +1015,14 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   personRole: {
-    color: "#922124",
+    color: c.primary,
     fontSize: 12,
     lineHeight: 16,
     fontWeight: "700",
     marginTop: 2,
   },
   personMeta: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 13,
     lineHeight: 18,
     marginTop: 3,
@@ -1019,15 +1030,15 @@ const styles = StyleSheet.create({
 
   // ── Grouped list container ────────────────────────────────────────────────────
   listGroup: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E1E2E6",
+    borderColor: c.border,
     overflow: "hidden",
   },
   listDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "#E1E2E6",
+    backgroundColor: c.surfaceMuted,
   },
 
   // ── Type selection row ────────────────────────────────────────────────────────
@@ -1035,18 +1046,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
   typeRowSelected: {
-    backgroundColor: "#FFF3F3",
+    backgroundColor: c.primarySoft,
   },
   typeIconBox: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: "#F2F3F7",
+    backgroundColor: c.surfaceMuted,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -1058,10 +1069,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     lineHeight: 20,
-    color: "#191C1F",
+    color: c.text,
   },
   typeNameSelected: {
-    color: "#b33939",
+    color: c.primary,
   },
 
   // ── Worker selection row ──────────────────────────────────────────────────────
@@ -1069,30 +1080,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     padding: 12,
   },
   workerRowSelected: {
-    backgroundColor: "#FFF3F3",
+    backgroundColor: c.primarySoft,
   },
   workerPhoto: {
     width: 48,
     height: 48,
     borderRadius: 8,
-    backgroundColor: "#EDEEF2",
+    backgroundColor: c.border,
     flexShrink: 0,
   },
   workerPhotoPlaceholder: {
     width: 48,
     height: 48,
     borderRadius: 8,
-    backgroundColor: "#EDEEF2",
+    backgroundColor: c.border,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
   workerPhotoInitial: {
-    color: "#922124",
+    color: c.primary,
     fontSize: 18,
     lineHeight: 24,
   },
@@ -1104,15 +1115,15 @@ const styles = StyleSheet.create({
   workerName: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#191C1F",
+    color: c.text,
   },
   workerNameSelected: {
-    color: "#b33939",
+    color: c.primary,
   },
   workerMeta: {
     fontSize: 12,
     lineHeight: 17,
-    color: "#584140",
+    color: c.textMuted,
   },
 
   // ── Radio indicator ───────────────────────────────────────────────────────────
@@ -1121,24 +1132,24 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: "#BFC4CD",
+    borderColor: c.border,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
   radioOuterSelected: {
-    borderColor: "#b33939",
+    borderColor: c.primary,
   },
   radioDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
   },
 
   // ── Empty list ────────────────────────────────────────────────────────────────
   emptyMessage: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
@@ -1150,8 +1161,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#E1E2E6",
-    backgroundColor: "#FFFFFF",
+    borderTopColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 16,
@@ -1164,11 +1175,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: "#E1E2E6",
+    borderColor: c.border,
     paddingHorizontal: 20,
   },
   backButtonText: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 14,
   },
   ctaButton: {
@@ -1177,7 +1188,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
   },
   ctaButtonDisabled: {
     opacity: 0.45,
@@ -1191,14 +1202,14 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   stateMessage: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
     textAlign: "center",
   },
   errorText: {
-    color: "#BA1A1A",
+    color: c.primary,
   },
   retryButton: {
     minHeight: 48,
@@ -1206,7 +1217,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
     marginTop: 24,
   },
 
@@ -1225,7 +1236,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   confirmMessage: {
-    color: "#584140",
+    color: c.textMuted,
     lineHeight: 20,
     marginTop: 10,
   },
@@ -1241,8 +1252,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#E1E2E6",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
   confirmButton: {
     minHeight: 46,
@@ -1252,7 +1263,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
   },
   disabledButton: {
     opacity: 0.65,

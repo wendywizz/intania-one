@@ -2,6 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -18,6 +19,8 @@ const TABS: { key: ApproveTab; label: string }[] = [
 ];
 
 export default function TimestampApproveScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<ApproveTab>(
     params.tab === "history" ? "history" : "pending",
@@ -73,19 +76,19 @@ export default function TimestampApproveScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FD",
+    backgroundColor: c.background,
   },
   content: {
     flex: 1,
   },
   topTabBar: {
     flexDirection: "row",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: c.border,
   },
   topTab: {
     flex: 1,
@@ -94,8 +97,8 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     gap: 8,
   },
-  topTabText: { fontSize: 14, fontWeight: "600", color: "#9CA3AF" },
-  topTabTextActive: { color: "#751A1D" },
+  topTabText: { fontSize: 14, fontWeight: "600", color: c.textFaint },
+  topTabTextActive: { color: c.primary },
   topTabIndicator: { height: 3, width: 28, borderRadius: 2, backgroundColor: "transparent" },
-  topTabIndicatorActive: { backgroundColor: "#751A1D" },
+  topTabIndicatorActive: { backgroundColor: c.primary },
 });

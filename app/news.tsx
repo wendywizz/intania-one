@@ -1,4 +1,4 @@
-﻿import { ArrowRight } from 'lucide-react-native';
+﻿import { ArrowRight, Newspaper } from 'lucide-react-native';
 import { useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
@@ -9,8 +9,10 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ErrorState } from '@/components/error-state';
+import { EmptyState } from '@/components/empty-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -47,6 +49,8 @@ type NewsListItemProps = {
 };
 
 function NewsListItem({ item, onPress }: NewsListItemProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const date = item.pubDate ? formatDateTime(item.pubDate) : '';
   const excerpt = item.description ? getExcerpt(item.description) : '';
 
@@ -77,7 +81,7 @@ function NewsListItem({ item, onPress }: NewsListItemProps) {
         ) : null}
         <View style={styles.readMoreRow}>
           <ThemedText style={styles.readMoreText}>Read more</ThemedText>
-          <ArrowRight size={14} color="#922124" />
+          <ArrowRight size={14} color={c.primary} />
         </View>
       </View>
     </Pressable>
@@ -85,6 +89,8 @@ function NewsListItem({ item, onPress }: NewsListItemProps) {
 }
 
 export default function NewsScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [newsItems, setNewsItems] = useState<News[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -176,11 +182,7 @@ export default function NewsScreen() {
           <NewsListItem item={item} onPress={openNews} />
         )}
         ListHeaderComponent={listHeader}
-        ListEmptyComponent={
-          <View style={styles.emptyCard}>
-            <ThemedText style={styles.emptyMessage}>{TEXT.HOME_NO_NEWS_MESSAGE}</ThemedText>
-          </View>
-        }
+        ListEmptyComponent={<EmptyState icon={Newspaper} message={TEXT.HOME_NO_NEWS_MESSAGE} />}
       />
     );
   };
@@ -201,10 +203,10 @@ export default function NewsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   content: {
     flex: 1,
@@ -220,27 +222,28 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 28,
     fontWeight: '700',
-    color: '#191C1F',
+    color: c.text,
     fontFamily: AppFonts.psuBold,
   },
   listSubheading: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#584140',
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   listContent: {
+    flexGrow: 1,
     padding: 16,
     gap: 16,
   },
   newsCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E1E2E6',
+    borderColor: c.border,
     padding: 16,
     gap: 10,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -258,26 +261,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     letterSpacing: 0.6,
-    color: '#922124',
+    color: c.primary,
     fontFamily: AppFonts.psuBold,
   },
   dateText: {
     fontSize: 12,
     lineHeight: 16,
-    color: '#585E6D',
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   newsTitle: {
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '600',
-    color: '#191C1F',
+    color: c.text,
     fontFamily: AppFonts.psuBold,
   },
   newsExcerpt: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#584140',
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   readMoreRow: {
@@ -288,7 +291,7 @@ const styles = StyleSheet.create({
   readMoreText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#922124',
+    color: c.primary,
     fontFamily: AppFonts.psuBold,
   },
   stateContainer: {
@@ -298,14 +301,14 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   stateMessage: {
-    color: '#687076',
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
     textAlign: 'center',
   },
   errorText: {
-    color: '#B42318',
+    color: c.danger,
   },
   retryButton: {
     minHeight: 48,
@@ -313,21 +316,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
     marginTop: 24,
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 120,
     borderWidth: 1,
-    borderColor: '#E1E2E6',
+    borderColor: c.border,
   },
   emptyMessage: {
-    color: '#687076',
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',

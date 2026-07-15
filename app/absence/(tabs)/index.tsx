@@ -1,5 +1,6 @@
 import { Link } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -46,12 +47,14 @@ const absenceMenus: AbsenceMenuItem[] = [
 ];
 
 export default function ChooseAbsenceScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
         title={TEXT.ABSENCE_TITLE}
         subtitle={TEXT.ABSENCE_TAB_APPEAL}
-        moduleIcon="calendar-clock"
+        moduleIcon="person.crop.circle.badge.minus"
         backHref="/"
       />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -72,7 +75,7 @@ export default function ChooseAbsenceScreen() {
                   <ThemedText style={styles.cardDesc}>{menu.description}</ThemedText>
                 </View>
                 <View style={styles.chevronWrap}>
-                  <IconSymbol name="chevron.right" size={16} color="#585E6D" />
+                  <IconSymbol name="chevron.right" size={16} color={c.textMuted} />
                 </View>
               </Pressable>
             </Link>
@@ -83,10 +86,10 @@ export default function ChooseAbsenceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   scrollContent: {
     padding: 16,
@@ -101,12 +104,12 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     fontWeight: '600',
     letterSpacing: -0.24,
-    color: '#191C1F',
+    color: c.text,
   },
   subtitle: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#585E6D',
+    color: c.textMuted,
   },
   cardList: {
     gap: 16,
@@ -114,12 +117,12 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(223, 191, 189, 0.3)',
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -142,12 +145,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
     fontWeight: '600',
-    color: '#191C1F',
+    color: c.text,
   },
   cardDesc: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#585E6D',
+    color: c.textMuted,
   },
   chevronWrap: {
     opacity: 0.4,
@@ -158,7 +161,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(218, 223, 240, 0.3)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#DADFF0',
+    borderColor: c.border,
     paddingTop: 24,
     paddingBottom: 24,
     paddingHorizontal: 24,
@@ -177,11 +180,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: '#585E6D',
+    color: c.textMuted,
   },
   policyText: {
     fontSize: 14,
     lineHeight: 22,
-    color: '#5D6371',
+    color: c.textMuted,
   },
 });

@@ -17,6 +17,7 @@ import { checkPrivilege } from '@/services/repairComputerService';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 function normalizeRepairComputerRole(privilege?: string): RepairComputerRole {
   if (privilege === PRIVILEGE_RC_TECH || privilege === PRIVILEGE_RC_FOREMAN) {
@@ -36,6 +37,8 @@ function getDefaultRoute(role: RepairComputerRole) {
 }
 
 export default function RepairComputerIndexScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const userId = authUser?.staffId || USER_ID;
 
@@ -73,7 +76,7 @@ export default function RepairComputerIndexScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
   },

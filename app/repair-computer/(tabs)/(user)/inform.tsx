@@ -11,6 +11,7 @@ import {
     TextInput,
     View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { FloatingActionBar } from "@/components/floating-action-bar";
@@ -48,6 +49,8 @@ function getCanInform(data: unknown) {
 }
 
 export default function RepairComputerInformScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
   const [detail, setDetail] = useState("");
@@ -405,10 +408,10 @@ export default function RepairComputerInformScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   content: {
     gap: 20,
@@ -419,17 +422,17 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   headingDescription: {
-    color: '#584140',
+    color: c.textMuted,
     fontSize: 13,
     lineHeight: 19,
   },
   formCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#E1E2E6',
+    borderColor: c.border,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -441,7 +444,7 @@ const styles = StyleSheet.create({
   },
   fieldDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#e1e2e6',
+    backgroundColor: c.surfaceMuted,
     marginHorizontal: 16,
   },
   fieldLabelRow: {
@@ -454,7 +457,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   optionalLabel: {
-    color: '#9EA3A8',
+    color: c.textFaint,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -462,9 +465,9 @@ const styles = StyleSheet.create({
     minHeight: 46,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e1e2e6',
-    backgroundColor: '#f2f3f7',
-    color: '#191c1f',
+    borderColor: c.border,
+    backgroundColor: c.surfaceMuted,
+    color: c.text,
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     paddingHorizontal: 14,
@@ -474,10 +477,10 @@ const styles = StyleSheet.create({
     minHeight: 96,
   },
   inputError: {
-    borderColor: '#ba1a1a',
+    borderColor: c.primary,
   },
   fieldError: {
-    color: '#ba1a1a',
+    color: c.primary,
     fontSize: 12,
     lineHeight: 17,
   },
@@ -488,9 +491,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 100,
-    backgroundColor: '#b33939',
+    backgroundColor: c.primary,
     paddingHorizontal: 24,
-    shadowColor: '#b33939',
+    shadowColor: c.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -507,11 +510,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 18,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#E1E2E6',
+    borderColor: c.border,
     gap: 8,
   },
   messageText: {
-    color: '#584140',
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -521,8 +524,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#b33939',
-    backgroundColor: '#FFFFFF',
+    borderColor: c.primary,
+    backgroundColor: c.surface,
     paddingHorizontal: 18,
   },
   backdrop: {
@@ -539,7 +542,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   confirmMessage: {
-    color: '#584140',
+    color: c.textMuted,
     lineHeight: 20,
     marginTop: 10,
   },
@@ -555,8 +558,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e1e2e6',
-    backgroundColor: '#FFFFFF',
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
   confirmSubmitButton: {
     minHeight: 46,
@@ -564,6 +567,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#b33939',
+    backgroundColor: c.primary,
   },
 });

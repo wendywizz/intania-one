@@ -1,60 +1,35 @@
-﻿import type React from 'react';
-import { CalendarDays, CheckCircle, Clock, Fingerprint, type LucideIcon, User, XCircle } from 'lucide-react-native';
 import { useLocalSearchParams, type Href } from "expo-router";
-import { TEXT } from "@/constants/text";
 import { StatusBar } from "expo-status-bar";
 import { useMemo } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
+import { UserAvatar } from "@/components/user-avatar";
 import { AppFonts } from "@/constants/fonts";
+import { TEXT } from "@/constants/text";
 import type { TimestampHistory } from "@/services/timestampService";
-import { formatDateAndTime, formatFullDate } from "@/utils/date-format";
+import { formatFullDate } from "@/utils/date-format";
 
-const stampTypeFields = new Set(["stampType", "stamp_type", "type"]);
-const dateFields = new Set([
-  "workDate",
-  "work_date",
-  "stampDate",
-  "stamp_date",
-  "timestampDate",
-  "timestamp_date",
-]);
-const writeDateFields = new Set([
-  "date",
-  "writeDate",
-  "write_date",
-  "requestDate",
-  "request_date",
-  "createdAt",
-  "created_at",
-  "dateAdd",
-  "date_add",
-]);
-const timeFields = new Set(["inTime", "in_time", "outTime", "out_time"]);
-const approverNameFields = new Set([
-  "approverName",
-  "approver_name",
-  "approverFullName",
-  "approver_full_name",
-  "approverPositionName",
-  "approver_position_name",
-  "approverPosition",
-  "approver_position",
-]);
-const reasonFields = ["reason", "detail", "description"];
-const historyStatusFields = [
-  "status",
-  "result",
-  "approvalStatus",
-  "approval_status",
-  "isActive",
-  "is_active",
-];
+function firstParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value ?? "";
+}
 
-function getText(item: TimestampHistory, fields: Set<string> | string[]) {
+function parseItem(value?: string | string[]): TimestampHistory {
+  const raw = firstParam(value);
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? (parsed as TimestampHistory) : {};
+  } catch {
+    return {};
+  }
+}
+
+function getText(item: TimestampHistory, fields: string[]) {
   for (const field of fields) {
     const value = item[field];
     if (value !== undefined && value !== null && String(value).trim()) {
@@ -64,309 +39,306 @@ function getText(item: TimestampHistory, fields: Set<string> | string[]) {
   return "";
 }
 
-function parseItem(value: string | string[] | undefined): TimestampHistory {
-  const rawValue = Array.isArray(value) ? value[0] : value;
-  if (!rawValue) return {};
-  try {
-    const parsedValue = JSON.parse(rawValue);
-    return parsedValue && typeof parsedValue === "object"
-      ? (parsedValue as TimestampHistory)
-      : {};
-  } catch {
-    return {};
-  }
-}
-
-function getStampTime(item: TimestampHistory) {
-  for (const field of timeFields) {
-    const value = item[field];
-    const time = String(value ?? "").trim();
-    if (time && time !== "00:00:00") return time;
-  }
-  return "";
-}
-
-// Upstream uses status "1" = approved, "0" = still waiting for approval;
-// any other decided value = rejected.
-function getHistoryItemStatus(
-  item: TimestampHistory,
-): "approved" | "rejected" | "pending" {
-  for (const field of historyStatusFields) {
-    const raw = item[field];
-    if (raw === undefined || raw === null || String(raw).trim() === "") continue;
-    const value = String(raw).toLowerCase().trim();
-    if (["1", "approved", "true", "yes", "active"].includes(value)) return "approved";
-    if (["0", "pending", "waiting", "wait"].includes(value)) return "pending";
-    return "rejected";
-  }
-  return "pending";
+// "08:00:00" -> "08:00"; blank/placeholder -> "".
+function formatTime(value?: string | null) {
+  const text = String(value ?? "").trim();
+  if (!text || text === "00:00:00" || text === "00:00") return "";
+  const match = text.match(/(\d{1,2})[:.](\d{2})/);
+  return match ? `${match[1].padStart(2, "0")}:${match[2]}` : "";
 }
 
 function getStampTypeLabel(stampType: string) {
   if (stampType === "in") return TEXT.TIMESTAMP_STAMP_IN_TYPE;
   if (stampType === "out") return TEXT.TIMESTAMP_STAMP_OUT_TYPE;
   if (stampType === "all") return TEXT.TIMESTAMP_STAMP_ALL;
-  return stampType || "—";
+  return stampType || TEXT.TIMESTAMP_FORGOT_TAB;
 }
 
-const DETAIL_ROW_ICON_MAP: Record<string, LucideIcon> = {
-  event: CalendarDays,
-  'access-time': Clock,
-  fingerprint: Fingerprint,
-  person: User,
-};
+function getStatusBadge(status: string): { bg: string; color: string } {
+  if (status === "1") return { bg: "#D1FAE5", color: "#065F46" };
+  if (status === "2") return { bg: "#FEE2E2", color: "#991B1B" };
+  return { bg: "#FEF3C7", color: "#92400E" };
+}
 
-type DetailRowProps = {
-  icon: string;
+// A boxed field cell (rounded light box). `wide` cells span the full row; the
+// rest pack two-per-row in a wrapping grid.
+function InfoCell({
+  label,
+  value,
+  icon,
+  wide,
+}: {
   label: string;
   value: string;
-};
-
-function DetailRow({ icon, label, value }: DetailRowProps) {
-  const IconComponent = DETAIL_ROW_ICON_MAP[icon];
+  icon?: IconSymbolName;
+  wide?: boolean;
+}) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  if (!value) return null;
   return (
-    <View style={styles.detailRow}>
-      <View style={styles.detailIconBox}>
-        {IconComponent ? <IconComponent size={18} color="#5D6371" /> : null}
+    <View style={[styles.cell, wide ? styles.cellWide : styles.cellHalf]}>
+      <ThemedText style={styles.cellLabel}>{label}</ThemedText>
+      <View style={styles.cellValueRow}>
+        {icon ? <IconSymbol name={icon} size={16} color={c.primary} /> : null}
+        <ThemedText style={styles.cellValue} numberOfLines={2}>
+          {value}
+        </ThemedText>
       </View>
-      <View style={styles.detailText}>
-        <ThemedText style={styles.detailLabel}>{label}</ThemedText>
-        <ThemedText style={styles.detailValue}>{value || "—"}</ThemedText>
+    </View>
+  );
+}
+
+function PersonRow({
+  name,
+  position,
+  staffId,
+}: {
+  name: string;
+  position: string;
+  staffId?: string | number | null;
+}) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  if (!name && !position) return null;
+  return (
+    <View style={styles.personRow}>
+      <UserAvatar staffId={staffId} size={44} />
+      <View style={styles.personText}>
+        {name ? <ThemedText style={styles.personName}>{name}</ThemedText> : null}
+        {position ? <ThemedText style={styles.personPosition}>{position}</ThemedText> : null}
       </View>
     </View>
   );
 }
 
 export default function TimestampHistoryDetailScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ item?: string }>();
   const item = useMemo(() => parseItem(params.item), [params.item]);
 
-  const stampType = getText(item, stampTypeFields).toLowerCase();
-  const stampTypeLabel = getStampTypeLabel(stampType);
-  const status = getHistoryItemStatus(item);
+  const stampType = getText(item, ["stampType", "stamp_type", "type"]).toLowerCase();
+  const typeLabel = getStampTypeLabel(stampType);
 
-  const dateValue = getText(item, dateFields);
-  const appealDate = getText(item, writeDateFields);
-  const stampTime = getStampTime(item);
-  const approver = getText(item, approverNameFields);
-  const reason = getText(item, reasonFields);
+  const statusCode = getText(item, ["status", "approvalStatus", "approval_status"]);
+  const statusName =
+    statusCode === "1"
+      ? TEXT.TIMESTAMP_APPROVE_STATUS_APPROVED
+      : statusCode === "2"
+        ? TEXT.TIMESTAMP_APPROVE_STATUS_REJECTED
+        : TEXT.TIMESTAMP_APPROVE_STATUS_PENDING;
+  const statusBadge = getStatusBadge(statusCode);
 
-  const appealDateDisplay = appealDate ? formatFullDate(appealDate) : "—";
-  const datetimeDisplay = dateValue && stampTime
-    ? formatDateAndTime(dateValue, stampTime)
-    : dateValue
-      ? formatFullDate(dateValue)
-      : "—";
+  const stampDate = getText(item, ["stampDate", "stamp_date", "workDate", "work_date"]);
+  const stampDateLabel = stampDate ? formatFullDate(stampDate) : "";
+  const writeDate = getText(item, ["writeDate", "write_date", "requestDate", "request_date"]);
+  const writeDateLabel = writeDate ? formatFullDate(writeDate) : "";
+  const inTime = formatTime(getText(item, ["inTime", "in_time"]));
+  const outTime = formatTime(getText(item, ["outTime", "out_time"]));
+  const reason = getText(item, ["reason", "detail", "description"]);
+
+  const requesterName = getText(item, ["name", "staffName", "staff_name", "fullname"]);
+  const requesterPosition = getText(item, ["positionName", "position_name"]);
+  const requesterDept = getText(item, ["deptName", "dept_name"]);
+  const requesterStaffId = getText(item, ["uniStaffId", "uni_staff_id"]);
+
+  const approverName = getText(item, ["approverName", "approver_name"]);
+  const approverPosition = getText(item, ["approverPositionName", "approver_position_name"]);
+  const approverStaffId = getText(item, ["approverUniStaffId", "approver_uni_staff_id"]);
+  const decisionDate = getText(item, ["decisionDate", "decision_date"]);
+  const decisionDateLabel = decisionDate ? formatFullDate(decisionDate) : "";
+  const decisionReason = getText(item, ["decisionReason", "decision_reason"]);
 
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.TIMESTAMP_DETAIL_TITLE} backHref={{ pathname: "/timestamp/forgot-timestamp", params: { tab: "history" } } as Href} />
+      <NavTopBar
+        title={typeLabel}
+        subtitle={TEXT.TIMESTAMP_APPROVE_DETAIL_SUBTITLE}
+        moduleIcon="clock.fill"
+        backHref={{ pathname: "/timestamp/forgot-timestamp", params: { tab: "history" } } as Href}
+      />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.statusCard}>
-          {/* Header: stamp type + status badge */}
-          <View style={styles.cardHeader}>
-            <View style={styles.cardHeaderText}>
-              <ThemedText style={styles.headerTypeLabel}>{TEXT.TIMESTAMP_TYPE_LABEL}</ThemedText>
-              <ThemedText style={styles.headerTypeValue}>{stampTypeLabel}</ThemedText>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Miss-timestamp info card */}
+        <View style={styles.card}>
+          <ThemedText style={styles.sectionTitle}>{TEXT.TIMESTAMP_RECORD_INFO_SECTION}</ThemedText>
+
+          <View style={styles.infoHeader}>
+            <View style={styles.typeIconCircle}>
+              <IconSymbol name="clock.fill" size={22} color={c.primary} />
             </View>
-            {status === "approved" ? (
-              <View style={styles.approvedBadge}>
-                <CheckCircle size={14} color="#1E7E34" />
-                <ThemedText style={styles.approvedBadgeText}>{TEXT.TIMESTAMP_APPROVED_BADGE}</ThemedText>
-              </View>
-            ) : status === "rejected" ? (
-              <View style={styles.rejectedBadge}>
-                <XCircle size={14} color="#991B1B" />
-                <ThemedText style={styles.rejectedBadgeText}>{TEXT.TIMESTAMP_REJECTED_BADGE}</ThemedText>
+            <ThemedText style={styles.infoType} numberOfLines={2}>
+              {typeLabel}
+            </ThemedText>
+            {statusName ? (
+              <View style={[styles.statusBadge, { backgroundColor: statusBadge.bg }]}>
+                <ThemedText style={[styles.statusText, { color: statusBadge.color }]}>
+                  {statusName}
+                </ThemedText>
               </View>
             ) : null}
           </View>
 
-          <View style={styles.divider} />
-
-          {/* Detail grid */}
-          <View style={styles.detailRows}>
-            <DetailRow
-              icon="event"
-              label={TEXT.TIMESTAMP_APPEAL_DATE}
-              value={appealDateDisplay}
-            />
-            <DetailRow
-              icon="access-time"
-              label={TEXT.TIMESTAMP_TIMESTAMP_DATETIME}
-              value={datetimeDisplay}
-            />
-            <DetailRow
-              icon="fingerprint"
-              label={TEXT.TIMESTAMP_TIMESTAMP_TYPE}
-              value={stampTypeLabel}
-            />
-            <DetailRow
-              icon="person"
-              label={TEXT.ABSENCE_APPROVER_LABEL}
-              value={approver}
-            />
+          <View style={styles.infoGrid}>
+            <InfoCell label={TEXT.TIMESTAMP_APPROVE_STAMP_DATE_LABEL} value={stampDateLabel} icon="calendar" wide />
+            <InfoCell label={TEXT.TIMESTAMP_APPROVE_IN_TIME_LABEL} value={inTime} icon="clock.fill" />
+            <InfoCell label={TEXT.TIMESTAMP_APPROVE_OUT_TIME_LABEL} value={outTime} icon="clock.fill" />
+            <InfoCell label={TEXT.TIMESTAMP_APPROVE_REASON_LABEL} value={reason} wide />
           </View>
-
-          {/* Reason section */}
-          {reason ? (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.reasonSection}>
-                <ThemedText style={styles.reasonSectionLabel}>{TEXT.TIMESTAMP_REASON_LABEL}</ThemedText>
-                <View style={styles.reasonBox}>
-                  <ThemedText style={styles.reasonText}>{reason}</ThemedText>
-                </View>
-              </View>
-            </>
-          ) : null}
         </View>
+
+        {/* Requester card */}
+        {requesterName || requesterPosition || requesterDept ? (
+          <View style={styles.card}>
+            <ThemedText style={styles.sectionTitle}>{TEXT.TIMESTAMP_APPROVE_REQUESTER_LABEL}</ThemedText>
+            <PersonRow
+              name={requesterName}
+              position={[requesterPosition, requesterDept].filter(Boolean).join(" · ")}
+              staffId={requesterStaffId}
+            />
+            {writeDateLabel ? (
+              <View style={styles.infoGrid}>
+                <InfoCell label={TEXT.TIMESTAMP_APPROVE_WRITE_DATE_LABEL} value={writeDateLabel} icon="calendar" wide />
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {/* Approver card */}
+        {approverName || approverPosition || decisionDateLabel || decisionReason ? (
+          <View style={styles.card}>
+            <ThemedText style={styles.sectionTitle}>{TEXT.TIMESTAMP_FIELD_APPROVER}</ThemedText>
+            <PersonRow
+              name={approverName || approverPosition}
+              position={approverName ? approverPosition : ""}
+              staffId={approverStaffId}
+            />
+            {decisionDateLabel || decisionReason ? (
+              <View style={styles.infoGrid}>
+                <InfoCell label={TEXT.TIMESTAMP_APPROVE_DECISION_DATE_LABEL} value={decisionDateLabel} icon="calendar" wide />
+                <InfoCell label={TEXT.TIMESTAMP_APPROVE_COMMENT_LABEL} value={decisionReason} wide />
+              </View>
+            ) : null}
+          </View>
+        ) : null}
       </ScrollView>
     </ThemedView>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FD",
+    backgroundColor: c.background,
   },
-  content: {
-    padding: 16,
+  scrollContent: {
+    paddingTop: 16,
     paddingBottom: 40,
   },
-  statusCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E1E2E6",
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingBottom: 14,
+  card: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: c.surface,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     gap: 12,
   },
-  cardHeaderText: {
-    gap: 2,
-  },
-  headerTypeLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    color: "#585E6D",
-    fontFamily: AppFonts.psuBold,
-  },
-  headerTypeValue: {
-    fontSize: 16,
-    lineHeight: 22,
+  sectionTitle: {
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: "600",
-    color: "#191C1F",
-    fontFamily: AppFonts.psuBold,
+    color: c.textMuted,
   },
-  approvedBadge: {
+  infoHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    backgroundColor: "#E6F4EA",
-    borderRadius: 9999,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
-  approvedBadgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#1E7E34",
-    fontFamily: AppFonts.psuBold,
-  },
-  rejectedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: "#FEE2E2",
-    borderRadius: 9999,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
-  rejectedBadgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#991B1B",
-    fontFamily: AppFonts.psuBold,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#E7E8EC",
-    marginVertical: 14,
-  },
-  detailRows: {
-    gap: 14,
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
     gap: 12,
   },
-  detailIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: "#E7E8EC",
+  typeIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    flexShrink: 0,
-    marginTop: 1,
+    backgroundColor: c.primarySoft,
   },
-  detailText: {
+  infoType: {
     flex: 1,
-    gap: 2,
-  },
-  detailLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.4,
-    color: "#585E6D",
-    textTransform: "uppercase",
     fontFamily: AppFonts.psuBold,
+    fontSize: 17,
+    lineHeight: 24,
+    color: c.text,
   },
-  detailValue: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#191C1F",
-    fontFamily: AppFonts.psuRegular,
+  statusBadge: {
+    borderRadius: 9999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    alignSelf: "flex-start",
   },
-  reasonSection: {
+  statusText: {
+    fontFamily: AppFonts.psuBold,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  infoGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
   },
-  reasonSectionLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    color: "#585E6D",
-    fontFamily: AppFonts.psuBold,
+  cell: {
+    backgroundColor: c.surfaceAlt,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
   },
-  reasonBox: {
-    borderLeftWidth: 4,
-    borderLeftColor: "rgba(146,33,36,0.5)",
-    borderRadius: 6,
-    padding: 12,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "rgba(223,191,189,0.3)",
+  cellHalf: {
+    flexBasis: "47%",
+    flexGrow: 1,
   },
-  reasonText: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: "#584140",
+  cellWide: {
+    flexBasis: "100%",
+  },
+  cellLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: c.textFaint,
+  },
+  cellValueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  cellValue: {
+    flex: 1,
     fontFamily: AppFonts.psuRegular,
+    fontSize: 15,
+    lineHeight: 22,
+    color: c.text,
+  },
+  personRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  personText: {
+    flex: 1,
+    gap: 3,
+  },
+  personName: {
+    fontFamily: AppFonts.psuBold,
+    fontSize: 15,
+    lineHeight: 21,
+    color: c.text,
+  },
+  personPosition: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: c.textMuted,
   },
 });

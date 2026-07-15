@@ -4,16 +4,15 @@ import { TEXT } from '@/constants/text';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useColors } from '@/constants/theme';
 
 export default function MeetingTabLayout() {
-  const colorScheme = useColorScheme();
+  const c = useColors();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: c.primary,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {

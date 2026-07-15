@@ -9,6 +9,7 @@ import {
     StyleSheet,
     View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { LoadingAnimate } from "@/components/loading-animate";
@@ -74,6 +75,8 @@ function ForemanSelectRow({
   isSelected: boolean;
   onPress: () => void;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const photoId = getForemanPhotoStaffId(foreman);
   const name = getForemanName(foreman);
   const division = getForemanDivisionName(foreman);
@@ -117,6 +120,8 @@ function ForemanSelectRow({
 }
 
 export default function SelectForemanScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{
     backHref?: string | string[];
     id?: string | string[];
@@ -343,10 +348,10 @@ export default function SelectForemanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FD",
+    backgroundColor: c.background,
   },
   content: {
     flex: 1,
@@ -363,31 +368,31 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   listGroup: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E1E2E6",
+    borderColor: c.border,
     overflow: "hidden",
   },
   listDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "#E1E2E6",
+    backgroundColor: c.surfaceMuted,
   },
   foremanRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     padding: 12,
   },
   foremanRowSelected: {
-    backgroundColor: "#FFF3F3",
+    backgroundColor: c.primarySoft,
   },
   foremanPhoto: {
     width: 48,
     height: 48,
     borderRadius: 8,
-    backgroundColor: "#EDEEF2",
+    backgroundColor: c.border,
     flexShrink: 0,
   },
   foremanText: {
@@ -398,37 +403,37 @@ const styles = StyleSheet.create({
   foremanName: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#191C1F",
+    color: c.text,
   },
   foremanNameSelected: {
-    color: "#b33939",
+    color: c.primary,
   },
   foremanMeta: {
     fontSize: 12,
     lineHeight: 17,
-    color: "#584140",
+    color: c.textMuted,
   },
   radioOuter: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: "#BFC4CD",
+    borderColor: c.border,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
   radioOuterSelected: {
-    borderColor: "#b33939",
+    borderColor: c.primary,
   },
   radioDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
   },
   emptyMessage: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
@@ -441,14 +446,14 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   stateMessage: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
     textAlign: "center",
   },
   errorText: {
-    color: "#BA1A1A",
+    color: c.primary,
   },
   retryButton: {
     minHeight: 48,
@@ -456,15 +461,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
     marginTop: 24,
   },
   bottomBar: {
     flexDirection: "row",
     gap: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#E1E2E6",
-    backgroundColor: "#FFFFFF",
+    borderTopColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 16,
@@ -477,11 +482,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: "#E1E2E6",
+    borderColor: c.border,
     paddingHorizontal: 20,
   },
   backButtonText: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 14,
   },
   ctaButton: {
@@ -490,7 +495,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
   },
   ctaButtonDisabled: {
     opacity: 0.45,
@@ -509,7 +514,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   confirmMessage: {
-    color: "#584140",
+    color: c.textMuted,
     lineHeight: 20,
     marginTop: 10,
   },
@@ -525,8 +530,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#E1E2E6",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
   confirmButton: {
     minHeight: 46,
@@ -536,7 +541,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
   },
   disabledButton: {
     opacity: 0.65,

@@ -15,6 +15,7 @@ import {
     StyleSheet,
     View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
@@ -79,6 +80,8 @@ type PdfViewerModalProps = {
  * via pdf.js since its WebView can't show a raw PDF inline.
  */
 export function PdfViewerModal({ url, title = "เอกสาร PDF", showPrint = true, onClose }: PdfViewerModalProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [webSource, setWebSource] = useState<
     { uri: string } | { html: string } | null
@@ -153,7 +156,7 @@ export function PdfViewerModal({ url, title = "เอกสาร PDF", showPrin
               </Pressable>
             ) : null}
             <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={10} accessibilityRole="button">
-              <X size={18} color="#584140" />
+              <X size={18} color={c.textMuted} />
             </Pressable>
           </View>
         </View>
@@ -187,10 +190,10 @@ export function PdfViewerModal({ url, title = "เอกสาร PDF", showPrin
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   sheet: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
   },
   handle: {
     alignSelf: "center",
@@ -212,7 +215,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: "700",
-    color: "#191c1f",
+    color: c.text,
   },
   headerActions: {
     flexDirection: "row",
@@ -226,7 +229,7 @@ const styles = StyleSheet.create({
     minHeight: 36,
     paddingHorizontal: 14,
     borderRadius: 8,
-    backgroundColor: "#2f6f9f",
+    backgroundColor: c.info,
   },
   printBtnText: {
     fontSize: 14,
@@ -238,7 +241,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 17,
-    backgroundColor: "#f2f3f7",
+    backgroundColor: c.surfaceMuted,
   },
   progressTrack: {
     height: 3,
@@ -246,7 +249,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: 3,
-    backgroundColor: "#2f6f9f",
+    backgroundColor: c.info,
   },
   webview: {
     flex: 1,

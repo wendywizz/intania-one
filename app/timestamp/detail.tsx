@@ -16,6 +16,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { LoadingAnimate } from "@/components/loading-animate";
@@ -256,6 +257,8 @@ function getTimestampItem(rawItem: unknown): Timestamp {
 }
 
 export default function TimestampDetailScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const { item: rawItem } = useLocalSearchParams<{
     item?: string;
@@ -566,7 +569,7 @@ export default function TimestampDetailScreen() {
         {/* Context header card */}
         <View style={styles.contextCard}>
           <View style={styles.contextIconCircle}>
-            <Clock size={22} color="#B33939" />
+            <Clock size={22} color={c.primary} />
           </View>
           <View style={styles.contextText}>
             <ThemedText style={styles.contextTitle}>{contextTitle}</ThemedText>
@@ -1012,10 +1015,10 @@ export default function TimestampDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FD",
+    backgroundColor: c.background,
   },
   content: {
     flexGrow: 1,
@@ -1027,13 +1030,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(223,191,189,0.3)",
     padding: 14,
     marginBottom: 16,
-    shadowColor: "#000",
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -1057,20 +1060,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
     fontWeight: "600",
-    color: "#922124",
+    color: c.primary,
     fontFamily: AppFonts.psuBold,
   },
   contextDesc: {
     fontSize: 13,
     lineHeight: 18,
-    color: "#584140",
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   fieldLabel: {
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 0.8,
-    color: "#585E6D",
+    color: c.textMuted,
     fontFamily: AppFonts.psuBold,
   },
   guidanceNote: {
@@ -1088,7 +1091,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     lineHeight: 18,
-    color: "#585E6D",
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   title: {
@@ -1100,12 +1103,12 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   formCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E1E2E6',
+    borderColor: c.border,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -1129,16 +1132,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 14,
   },
   inputError: {
-    borderColor: "#B42318",
+    borderColor: c.danger,
   },
   inputButtonText: {
     flex: 1,
-    color: "#11181C",
+    color: c.text,
   },
   dateTimeRow: {
     flexDirection: "row",
@@ -1165,20 +1168,20 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   webTimeSeparator: {
-    color: "#11181C",
+    color: c.text,
     fontSize: 18,
     lineHeight: 24,
   },
   placeholder: {
-    color: "#8A969C",
+    color: c.textFaint,
   },
   fieldHint: {
-    color: "#687076",
+    color: c.textMuted,
     fontSize: 12,
     lineHeight: 18,
   },
   fieldError: {
-    color: "#B42318",
+    color: c.danger,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -1187,10 +1190,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: c.info,
   },
   chevron: {
-    color: "#0A6E8A",
+    color: c.info,
     fontSize: 16,
     lineHeight: 20,
     marginLeft: 8,
@@ -1198,9 +1201,9 @@ const styles = StyleSheet.create({
   textInput: {
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
-    color: "#11181C",
+    borderColor: c.border,
+    backgroundColor: c.surface,
+    color: c.text,
     fontFamily: AppFonts.psuRegular,
     fontSize: 14,
     paddingHorizontal: 14,
@@ -1210,11 +1213,11 @@ const styles = StyleSheet.create({
     minHeight: 72,
   },
   readOnlyDateInput: {
-    color: "#687076",
-    backgroundColor: "#F6F8F9",
+    color: c.textMuted,
+    backgroundColor: c.surfaceAlt,
   },
   requestUserText: {
-    color: "#11181C",
+    color: c.text,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -1226,7 +1229,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   errorText: {
-    color: "#B42318",
+    color: c.danger,
   },
   retryButton: {
     minHeight: 44,
@@ -1235,7 +1238,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#B33939",
+    backgroundColor: c.primary,
     marginTop: 12,
     paddingHorizontal: 16,
   },
@@ -1243,8 +1246,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#D7E6EC",
-    backgroundColor: "#FFFFFF",
+    borderTopColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 16,
@@ -1258,8 +1261,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#F0B4AE",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
   submitButton: {
     minHeight: 48,
@@ -1269,7 +1272,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
-    backgroundColor: "#B33939",
+    backgroundColor: c.primary,
   },
   row: {
     flexDirection: "row",
@@ -1277,7 +1280,7 @@ const styles = StyleSheet.create({
   },
   label: {
     width: 112,
-    color: "#687076",
+    color: c.textMuted,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -1310,7 +1313,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   confirmMessage: {
-    color: "#687076",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
@@ -1328,8 +1331,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#BFD2DA",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 16,
   },
   confirmButton: {
@@ -1341,7 +1344,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#0A6E8A",
+    backgroundColor: c.info,
     paddingHorizontal: 16,
   },
   removeConfirmButton: {
@@ -1353,7 +1356,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#B42318",
+    backgroundColor: c.danger,
     paddingHorizontal: 16,
   },
   disabledButton: {
@@ -1374,7 +1377,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#E4F0F6",
+    backgroundColor: c.infoSoft,
     paddingHorizontal: 14,
   },
   optionScroll: {
@@ -1388,17 +1391,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#D7E6EC",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   optionText: {
-    color: "#11181C",
+    color: c.text,
     lineHeight: 20,
   },
   emptyOption: {
-    color: "#687076",
+    color: c.textMuted,
     lineHeight: 20,
     paddingVertical: 16,
     textAlign: "center",

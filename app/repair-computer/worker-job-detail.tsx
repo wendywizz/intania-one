@@ -12,6 +12,7 @@ import {
     StyleSheet,
     View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { FloatingActionBar } from "@/components/floating-action-bar";
@@ -76,6 +77,8 @@ function normalizeStaffId(staffId: string) {
 }
 
 function RowDetail({ description, title }: { description: string; title: string }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.rowDetail}>
       <ThemedText style={styles.rowTitle}>{title}</ThemedText>
@@ -95,6 +98,8 @@ function SectionCard({
   title: string;
   right?: ReactNode;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <ThemedView style={styles.sectionCard} lightColor="#FFFFFF" darkColor="#151718">
       <View style={styles.sectionHeader}>
@@ -121,6 +126,8 @@ function PersonSummaryCard({
   name: string;
   role?: string;
 }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const staffId = normalizeStaffId(id);
   const [photoFailed, setPhotoFailed] = useState(false);
   const showPhoto = Boolean(staffId) && !photoFailed;
@@ -153,6 +160,8 @@ function PersonSummaryCard({
 }
 
 export default function WorkerJobDetailScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{
     backHref?: string | string[];
     id?: string | string[];
@@ -404,7 +413,7 @@ export default function WorkerJobDetailScreen() {
           {informDateTime ? (
             <View style={styles.summaryMetaGrid}>
               <View style={styles.summaryMetaItem}>
-                <IconSymbol name="calendar" size={15} color="#584140" />
+                <IconSymbol name="calendar" size={15} color={c.textMuted} />
                 <ThemedText style={styles.summaryMetaText} numberOfLines={2}>
                   {formatDateTime(informDateTime)}
                 </ThemedText>
@@ -743,10 +752,10 @@ export default function WorkerJobDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   content: {
     flex: 1,
@@ -765,7 +774,7 @@ const styles = StyleSheet.create({
   summaryCard: {
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E1E2E6",
+    borderColor: c.border,
     padding: 16,
     gap: 14,
   },
@@ -780,7 +789,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   summaryKicker: {
-    color: "#922124",
+    color: c.primary,
     fontSize: 12,
     lineHeight: 16,
     fontWeight: "600",
@@ -809,20 +818,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     borderRadius: 8,
-    backgroundColor: "#f2f3f7",
+    backgroundColor: c.surfaceMuted,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
   summaryMetaText: {
     flex: 1,
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 13,
     lineHeight: 18,
   },
   sectionCard: {
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E1E2E6",
+    borderColor: c.border,
     padding: 14,
     gap: 12,
   },
@@ -835,16 +844,16 @@ const styles = StyleSheet.create({
   },
   rowDetail: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e1e2e6",
+    borderBottomColor: c.border,
     paddingBottom: 10,
   },
   rowTitle: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 12,
     lineHeight: 16,
   },
   rowDescription: {
-    color: "#191c1f",
+    color: c.text,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 4,
@@ -864,13 +873,13 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   approvalBadgeApproved: {
-    backgroundColor: "#2e8b57",
+    backgroundColor: c.success,
   },
   approvalBadgeRejected: {
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
   },
   approvalBadgePending: {
-    backgroundColor: "#f2e2c4",
+    backgroundColor: c.warningSoft,
   },
   approvalBadgeText: {
     fontSize: 12,
@@ -878,13 +887,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   approvalBadgePendingText: {
-    color: "#8a6d1f",
+    color: c.warning,
     fontSize: 12,
     lineHeight: 16,
     fontWeight: "700",
   },
   longDescription: {
-    color: "#191c1f",
+    color: c.text,
     fontSize: 14,
     lineHeight: 21,
     marginTop: 6,
@@ -895,14 +904,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     borderRadius: 8,
-    backgroundColor: "#f2f3f7",
+    backgroundColor: c.surfaceMuted,
     padding: 12,
   },
   personPhoto: {
     width: 58,
     height: 58,
     borderRadius: 8,
-    backgroundColor: "#edeef2",
+    backgroundColor: c.surfaceMuted,
   },
   personPhotoPlaceholder: {
     width: 58,
@@ -910,10 +919,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#edeef2",
+    backgroundColor: c.surfaceMuted,
   },
   personPhotoInitial: {
-    color: "#922124",
+    color: c.primary,
     fontSize: 20,
     lineHeight: 26,
   },
@@ -926,14 +935,14 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   personRole: {
-    color: "#922124",
+    color: c.primary,
     fontSize: 12,
     lineHeight: 16,
     fontWeight: "700",
     marginTop: 2,
   },
   personMeta: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 13,
     lineHeight: 18,
     marginTop: 3,
@@ -945,14 +954,14 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   stateMessage: {
-    color: "#584140",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 10,
     textAlign: "center",
   },
   errorText: {
-    color: "#ba1a1a",
+    color: c.primary,
   },
   retryButton: {
     minHeight: 48,
@@ -960,7 +969,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
     marginTop: 24,
   },
   actionRow: {
@@ -975,7 +984,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
   },
   rejectButton: {
     flex: 1,
@@ -983,14 +992,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#ba1a1a",
+    backgroundColor: c.primary,
   },
   operateButton: {
     minHeight: 48,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
   },
   requestSupplyButton: {
     minHeight: 48,
@@ -998,15 +1007,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#b33939",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.primary,
+    backgroundColor: c.surface,
   },
   printPdfButton: {
     minHeight: 48,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#2f6f9f",
+    backgroundColor: c.info,
   },
   closeButton: {
     minHeight: 48,
@@ -1015,7 +1024,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#191c1f",
+    backgroundColor: c.text,
   },
   disabledButton: {
     opacity: 0.65,
@@ -1034,7 +1043,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   confirmMessage: {
-    color: "#584140",
+    color: c.textMuted,
     lineHeight: 20,
     marginTop: 10,
   },
@@ -1050,8 +1059,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#e1e2e6",
-    backgroundColor: "#FFFFFF",
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
   confirmButton: {
     minHeight: 46,
@@ -1061,6 +1070,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#b33939",
+    backgroundColor: c.primary,
   },
 });

@@ -1,5 +1,5 @@
 ﻿import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Search } from 'lucide-react-native';
+import { Search, SearchX } from 'lucide-react-native';
 import { TEXT } from '@/constants/text';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -12,8 +12,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { NavTopBar } from '@/components/nav-top-bar';
+import { EmptyState } from '@/components/empty-state';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
@@ -116,6 +118,8 @@ function getPersonSearchKey(person: Person, index: number) {
 }
 
 function PersonSearchListItem({ item }: { item: Person }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [photoFailed, setPhotoFailed] = useState(false);
   const photoUri = getPersonResponsePhoto(item);
 
@@ -170,6 +174,8 @@ function PersonSearchListItem({ item }: { item: Person }) {
 }
 
 export default function PersonSearchScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [keyword, setKeyword] = useState('');
   const [results, setResults] = useState<Person[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -287,7 +293,7 @@ export default function PersonSearchScreen() {
             value={keyword}
           />
           <View pointerEvents="none" style={styles.spinnerWrap}>
-            {isLoading ? <ActivityIndicator color="#B33939" size="small" /> : null}
+            {isLoading ? <ActivityIndicator color={c.primary} size="small" /> : null}
           </View>
         </View>
 
@@ -346,7 +352,7 @@ export default function PersonSearchScreen() {
             keyExtractor={getPersonSearchKey}
             ListEmptyComponent={
               showEmptyHint ? (
-                <ThemedText style={styles.emptyText}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
+                <EmptyState icon={SearchX} message={TEXT.SHARED_EMPTY_DATA} />
               ) : null
             }
             renderItem={({ item }) => <PersonSearchListItem item={item} />}
@@ -357,10 +363,10 @@ export default function PersonSearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7FA',
+    backgroundColor: c.surfaceAlt,
   },
   content: {
     flex: 1,
@@ -384,10 +390,10 @@ const styles = StyleSheet.create({
   input: {
     height: 48,
     borderRadius: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: '#E6E7EC',
-    color: '#11181C',
+    borderColor: c.border,
+    color: c.text,
     fontFamily: AppFonts.psuRegular,
     fontSize: 13,
     paddingLeft: 42,
@@ -419,12 +425,12 @@ const styles = StyleSheet.create({
     minWidth: 76,
     paddingHorizontal: 16,
     borderRadius: 15,
-    backgroundColor: '#EEF0F4',
+    backgroundColor: c.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   keywordBadgeActive: {
-    backgroundColor: '#9E1F20',
+    backgroundColor: c.primary,
   },
   keywordBadgePressed: {
     opacity: 0.82,
@@ -432,11 +438,11 @@ const styles = StyleSheet.create({
   keywordBadgeText: {
     fontSize: 12,
     lineHeight: 16,
-    color: '#6A6F78',
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   keywordBadgeTextActive: {
-    color: '#FFFFFF',
+    color: c.textOnPrimary,
   },
   resultsArea: {
     marginTop: 22,
@@ -444,21 +450,22 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   resultsCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 0,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#ECEEF3',
+    borderColor: c.border,
     maxHeight: '72%',
   },
   flatList: {},
   listContent: {
+    flexGrow: 1,
     paddingVertical: 0,
   },
   separator: {
     height: StyleSheet.hairlineWidth,
     marginLeft: 82,
-    backgroundColor: '#E7E8EC',
+    backgroundColor: c.surfaceMuted,
   },
   listItemRow: {
     flexDirection: 'row',
@@ -473,16 +480,16 @@ const styles = StyleSheet.create({
     height: 58,
     borderRadius: 29,
     overflow: 'hidden',
-    backgroundColor: '#F2F3F7',
+    backgroundColor: c.surfaceMuted,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#E8ECF0',
+    borderColor: c.border,
   },
   avatar: {
     width: 58,
     height: 58,
   },
   avatarPlaceholder: {
-    backgroundColor: '#E8ECF0',
+    backgroundColor: c.border,
   },
   listItemText: {
     flex: 1,
@@ -493,12 +500,12 @@ const styles = StyleSheet.create({
     marginTop: 3,
     fontSize: 11,
     lineHeight: 14,
-    color: '#687076',
+    color: c.textMuted,
   },
   emptyText: {
     marginVertical: 22,
     textAlign: 'center',
-    color: '#687076',
+    color: c.textMuted,
     fontSize: 14,
   },
   errorBlock: {
@@ -506,7 +513,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   errorText: {
-    color: '#B33939',
+    color: c.primary,
     fontSize: 14,
   },
   retryButton: {

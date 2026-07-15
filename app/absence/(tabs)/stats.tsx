@@ -1,8 +1,11 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ErrorState } from '@/components/error-state';
+import { Inbox } from 'lucide-react-native';
+import { EmptyState } from '@/components/empty-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -99,20 +102,24 @@ function getProgress(used: number, limit: number) {
   return Math.min(100, Math.max(0, Math.round((used / limit) * 100)));
 }
 
-function ProgressBar({ value, color = '#922124' }: { value: number; color?: string }) {
+function ProgressBar({ value, color }: { value: number; color?: string }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.progressTrack}>
-      <View style={[styles.progressFill, { width: `${value}%` as `${number}%`, backgroundColor: color }]} />
+      <View style={[styles.progressFill, { width: `${value}%` as `${number}%`, backgroundColor: color ?? c.primary }]} />
     </View>
   );
 }
 
 function InfoCard({ servantAge, budgetStartDate, budgetEndDate }: Pick<StatsData, 'servantAge' | 'budgetStartDate' | 'budgetEndDate'>) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.card}>
       <View style={styles.infoRow}>
         <View style={styles.infoIconWrap}>
-          <IconSymbol name="person.fill" size={20} color="#585E6D" />
+          <IconSymbol name="person.fill" size={20} color={c.textMuted} />
         </View>
         <View style={styles.infoText}>
           <ThemedText style={styles.infoLabel}>{TEXT.ABSENCE_STATS_WORK_AGE_LABEL}</ThemedText>
@@ -122,7 +129,7 @@ function InfoCard({ servantAge, budgetStartDate, budgetEndDate }: Pick<StatsData
       <View style={styles.cardDivider} />
       <View style={styles.infoRow}>
         <View style={styles.infoIconWrap}>
-          <IconSymbol name="calendar" size={18} color="#585E6D" />
+          <IconSymbol name="calendar" size={18} color={c.textMuted} />
         </View>
         <View style={styles.infoText}>
           <ThemedText style={styles.infoLabel}>{TEXT.ABSENCE_STATS_CYCLE_DATE_LABEL}</ThemedText>
@@ -136,6 +143,8 @@ function InfoCard({ servantAge, budgetStartDate, budgetEndDate }: Pick<StatsData
 }
 
 function SummaryCard({ absenceUsedCount, absenceLimitCount, absenceUsedDays, absenceLimitDays }: Pick<StatsData, 'absenceUsedCount' | 'absenceLimitCount' | 'absenceUsedDays' | 'absenceLimitDays'>) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const pct = getProgress(absenceUsedDays, absenceLimitDays);
   const countProgress = getProgress(absenceUsedCount, absenceLimitCount);
   const daysProgress = getProgress(absenceUsedDays, absenceLimitDays);
@@ -174,13 +183,15 @@ function SummaryCard({ absenceUsedCount, absenceLimitCount, absenceUsedDays, abs
 }
 
 function DetailGridCard({ sickUsedCount, sickUsedDays, businessUsedCount, businessUsedDays }: Pick<StatsData, 'sickUsedCount' | 'sickUsedDays' | 'businessUsedCount' | 'businessUsedDays'>) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.gridRow}>
       <View style={[styles.card, styles.gridCard]}>
         <View style={styles.gridCardTop}>
-          <IconSymbol name="cross.fill" size={18} color="#922124" />
+          <IconSymbol name="cross.fill" size={18} color={c.primary} />
           <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_SICK_TITLE}</ThemedText>
-          <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
+          <IconSymbol name="chevron.right" size={12} color={c.textMuted} style={{ opacity: 0.4 }} />
         </View>
         <View style={styles.gridStats}>
           <ThemedText style={styles.gridStatValue}>
@@ -196,9 +207,9 @@ function DetailGridCard({ sickUsedCount, sickUsedDays, businessUsedCount, busine
       </View>
       <View style={[styles.card, styles.gridCard]}>
         <View style={styles.gridCardTop}>
-          <IconSymbol name="briefcase.fill" size={18} color="#922124" />
+          <IconSymbol name="briefcase.fill" size={18} color={c.primary} />
           <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_BUSINESS_TITLE}</ThemedText>
-          <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
+          <IconSymbol name="chevron.right" size={12} color={c.textMuted} style={{ opacity: 0.4 }} />
         </View>
         <View style={styles.gridStats}>
           <ThemedText style={styles.gridStatValue}>
@@ -217,13 +228,15 @@ function DetailGridCard({ sickUsedCount, sickUsedDays, businessUsedCount, busine
 }
 
 function VacationCard({ relaxUsedDays, relaxTotalYearDays, relaxStoreDays, relaxLimitDays }: Pick<StatsData, 'relaxUsedDays' | 'relaxTotalYearDays' | 'relaxStoreDays' | 'relaxLimitDays'>) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const progress = getProgress(relaxUsedDays, relaxTotalYearDays);
 
   return (
     <View style={styles.card}>
       <View style={styles.vacationHeader}>
         <View style={styles.vacationIconBg}>
-          <IconSymbol name="sun.max.fill" size={16} color="#922124" />
+          <IconSymbol name="sun.max.fill" size={16} color={c.primary} />
         </View>
         <View style={styles.vacationTitleBlock}>
           <ThemedText style={styles.summaryTitle}>{TEXT.ABSENCE_RELAX_TITLE}</ThemedText>
@@ -259,14 +272,16 @@ function VacationCard({ relaxUsedDays, relaxTotalYearDays, relaxStoreDays, relax
 }
 
 function OthersGridCard({ birthUsedCount, lateUsedCount, lateLimitCount }: Pick<StatsData, 'birthUsedCount' | 'lateUsedCount' | 'lateLimitCount'>) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const lateProgress = getProgress(lateUsedCount, lateLimitCount);
 
   return (
     <View style={styles.gridRow}>
       <View style={[styles.card, styles.gridCard]}>
         <View style={styles.gridCardTop}>
-          <IconSymbol name="figure.child" size={18} color="#922124" />
-          <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
+          <IconSymbol name="figure.child" size={18} color={c.primary} />
+          <IconSymbol name="chevron.right" size={12} color={c.textMuted} style={{ opacity: 0.4 }} />
         </View>
         <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_BIRTH_TITLE}</ThemedText>
         <ThemedText style={styles.gridStatValue}>
@@ -276,8 +291,8 @@ function OthersGridCard({ birthUsedCount, lateUsedCount, lateLimitCount }: Pick<
       </View>
       <View style={[styles.card, styles.gridCard]}>
         <View style={styles.gridCardTop}>
-          <IconSymbol name="clock.fill" size={18} color="#922124" />
-          <IconSymbol name="chevron.right" size={12} color="#585E6D" style={{ opacity: 0.4 }} />
+          <IconSymbol name="clock.fill" size={18} color={c.primary} />
+          <IconSymbol name="chevron.right" size={12} color={c.textMuted} style={{ opacity: 0.4 }} />
         </View>
         <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_STATS_LATE_TITLE}</ThemedText>
         <ThemedText style={styles.gridStatValue}>
@@ -291,6 +306,8 @@ function OthersGridCard({ birthUsedCount, lateUsedCount, lateLimitCount }: Pick<
 }
 
 export default function StatsScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const [stats, setStats] = useState<StatsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -333,7 +350,7 @@ export default function StatsScreen() {
       );
     }
     if (!stats) {
-      return <ErrorState variant="empty" title={TEXT.ABSENCE_STATS_NO_DATA} />;
+      return <EmptyState icon={Inbox} message={TEXT.ABSENCE_STATS_NO_DATA} />;
     }
 
     return (
@@ -380,17 +397,17 @@ export default function StatsScreen() {
       <NavTopBar
         title={TEXT.ABSENCE_TITLE}
         subtitle={TEXT.ABSENCE_STATS_TITLE}
-        moduleIcon="calendar-clock"
+        moduleIcon="chart.bar.fill"
       />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   content: {
     flex: 1,
@@ -407,12 +424,12 @@ const styles = StyleSheet.create({
 
   // shared card
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(223, 191, 189, 0.3)',
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -438,12 +455,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '600',
-    color: '#584140',
+    color: c.textMuted,
   },
   infoValue: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#191C1F',
+    color: c.text,
   },
   cardDivider: {
     height: 1,
@@ -466,20 +483,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '700',
-    color: '#191C1F',
+    color: c.text,
   },
   summarySubtitle: {
     fontSize: 12,
     lineHeight: 18,
-    color: '#584140',
+    color: c.textMuted,
   },
   percentCircle: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderWidth: 4,
-    borderColor: '#922124',
+    borderColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -487,7 +504,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 14,
     fontWeight: '600',
-    color: '#922124',
+    color: c.primary,
   },
   summaryTiles: {
     flexDirection: 'row',
@@ -496,7 +513,7 @@ const styles = StyleSheet.create({
   },
   summaryTile: {
     flex: 1,
-    backgroundColor: '#F2F3F7',
+    backgroundColor: c.surfaceMuted,
     borderRadius: 8,
     padding: 8,
     gap: 6,
@@ -505,7 +522,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 14,
     fontWeight: '600',
-    color: '#584140',
+    color: c.textMuted,
   },
   tileValueRow: {
     flexDirection: 'row',
@@ -515,18 +532,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '600',
-    color: '#922124',
+    color: c.primary,
   },
   tileValueDim: {
     fontSize: 12,
     lineHeight: 18,
-    color: '#584140',
+    color: c.textMuted,
   },
 
   // progress bar
   progressTrack: {
     height: 4,
-    backgroundColor: '#DFBFBD',
+    backgroundColor: c.primarySoft,
     borderRadius: 999,
     overflow: 'hidden',
   },
@@ -556,7 +573,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '600',
-    color: '#191C1F',
+    color: c.text,
   },
   gridStats: {
     flexDirection: 'row',
@@ -567,20 +584,20 @@ const styles = StyleSheet.create({
   gridStatSeparator: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#C7CBD1',
+    color: c.textFaint,
   },
   gridStatValue: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#191C1F',
+    color: c.text,
   },
   gridStatBold: {
     fontWeight: '700',
-    color: '#922124',
+    color: c.primary,
   },
   gridStatUnit: {
     fontWeight: '400',
-    color: '#191C1F',
+    color: c.text,
   },
 
   // vacation card
@@ -615,16 +632,16 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 36,
     fontWeight: '700',
-    color: '#922124',
+    color: c.primary,
   },
   vacationNumDim: {
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '600',
-    color: '#584140',
+    color: c.textMuted,
   },
   usedBadge: {
-    backgroundColor: '#DADFF0',
+    backgroundColor: c.surfaceMuted,
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -634,10 +651,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 14,
     fontWeight: '600',
-    color: '#585E6D',
+    color: c.textMuted,
   },
   vacationDetails: {
-    backgroundColor: '#F2F3F7',
+    backgroundColor: c.surfaceMuted,
     borderRadius: 8,
     overflow: 'hidden',
     marginTop: 4,
@@ -653,13 +670,13 @@ const styles = StyleSheet.create({
   vacationDetailLabel: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#191C1F',
+    color: c.text,
   },
   vacationDetailValue: {
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '600',
-    color: '#191C1F',
+    color: c.text,
   },
 
   // states
@@ -673,13 +690,13 @@ const styles = StyleSheet.create({
   stateTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#191C1F',
+    color: c.text,
     textAlign: 'center',
   },
   errorText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#B42318',
+    color: c.danger,
     textAlign: 'center',
   },
 });

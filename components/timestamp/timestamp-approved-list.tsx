@@ -9,10 +9,12 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 // Reveal the list 10 rows at a time; load the next page as the user scrolls.
 const PAGE_SIZE = 10;
 
+import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ThemedText } from "@/components/themed-text";
@@ -49,6 +51,8 @@ function getTypeIcon(item: { inTime?: string | number | null; outTime?: string |
 }
 
 function ApprovedCard({ item }: { item: TimestampApproved }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const stampValue = String(item.stampDate ?? "");
   const stampLabel = stampValue ? formatFullDate(stampValue) : "";
   const badge = statusStyle(String(item.status ?? ""));
@@ -102,6 +106,8 @@ function ApprovedCard({ item }: { item: TimestampApproved }) {
 }
 
 export function TimestampApprovedList() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
   const [items, setItems] = useState<TimestampApproved[]>([]);
@@ -185,23 +191,18 @@ export function TimestampApprovedList() {
       ListFooterComponent={
         canLoadMore ? (
           <View style={styles.footer}>
-            <ActivityIndicator color="#B33939" />
+            <ActivityIndicator color={c.primary} />
           </View>
         ) : null
       }
       ListEmptyComponent={
-        <View style={styles.emptyState}>
-          <Inbox size={44} color="#C7CBD4" />
-          <ThemedText style={styles.emptyText}>
-            {TEXT.TIMESTAMP_APPROVE_HISTORY_EMPTY}
-          </ThemedText>
-        </View>
+        <EmptyState icon={Inbox} message={TEXT.TIMESTAMP_APPROVE_HISTORY_EMPTY} />
       }
     />
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   flatList: {
     flex: 1,
   },
@@ -222,13 +223,13 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   itemCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(223,191,189,0.3)",
     padding: 16,
     gap: 10,
-    shadowColor: "#000",
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#FBEAEA",
+    backgroundColor: c.primarySoft,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -254,26 +255,26 @@ const styles = StyleSheet.create({
   },
   infoDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: c.border,
     marginVertical: 5,
   },
   itemName: {
     fontSize: 15,
     lineHeight: 21,
     fontWeight: "600",
-    color: "#191C1F",
+    color: c.text,
     fontFamily: AppFonts.psuBold,
   },
   itemType: {
     fontSize: 13,
     lineHeight: 18,
-    color: "#584140",
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   itemDate: {
     fontSize: 12,
     lineHeight: 16,
-    color: "#585E6D",
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   itemRight: {
@@ -306,7 +307,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#687076",
+    color: c.textMuted,
     textAlign: "center",
     fontFamily: AppFonts.psuRegular,
   },

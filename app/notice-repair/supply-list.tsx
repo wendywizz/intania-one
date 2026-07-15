@@ -9,8 +9,11 @@ import { getFullDetail } from '@/services/noticeRepairService';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 export default function SupplyListScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { repair_id, staff_id: paramStaff } = useLocalSearchParams<{ repair_id: string; staff_id: string }>();
   const { user } = useAuth();
   const staffId = paramStaff ?? user?.staffId ?? '';
@@ -35,7 +38,7 @@ export default function SupplyListScreen() {
       <NavTopBar title={TEXT.NOTICE_REPAIR_SUPPLY_LIST_TITLE} showHomeButton />
 
       {isLoading ? (
-        <ActivityIndicator style={styles.loader} size="large" color="#B33939" />
+        <ActivityIndicator style={styles.loader} size="large" color={c.primary} />
       ) : error ? (
         <View style={styles.center}>
           <ThemedText style={styles.errorText}>{error}</ThemedText>
@@ -70,12 +73,12 @@ export default function SupplyListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F1F5F9' },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.surfaceAlt },
   loader: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  errorText: { fontSize: 15, color: '#DC2626', textAlign: 'center' },
+  errorText: { fontSize: 15, color: c.danger, textAlign: 'center' },
   scroll: { padding: 16, gap: 12 },
-  subhead: { fontSize: 14, fontWeight: '700', color: '#374151', marginBottom: 4 },
-  empty: { marginTop: 24, fontSize: 14, color: '#9CA3AF', textAlign: 'center' },
+  subhead: { fontSize: 14, fontWeight: '700', color: c.textMuted, marginBottom: 4 },
+  empty: { marginTop: 24, fontSize: 14, color: c.textFaint, textAlign: 'center' },
 });

@@ -283,6 +283,28 @@ export async function approvingWaitingData(staffId: string) {
   };
 }
 
+/** History of leave-approval decisions this boss/approver has made
+ * (status 1 = approved, 2 = rejected), most recent first. Paginated. */
+export async function approvingHistoryData(
+  staffId: string,
+  { length = DEFAULT_DISPLAY_LENGTH, start = 0 } = {},
+): Promise<ListResponse<absence>> {
+  const url = createabsenceUrl("/approving-history", {
+    staff_id: staffId,
+    start,
+    length,
+  });
+  const jsonData = await requestJson(url, { method: "GET" });
+  ensureSuccess(jsonData);
+  const data = Array.isArray(jsonData.data) ? (jsonData.data as absence[]) : [];
+
+  return {
+    data,
+    totalCount: Number(jsonData.total_count ?? jsonData.totalCount ?? data.length),
+    message: String(jsonData.message ?? ""),
+  };
+}
+
 /** Save an approval decision for a leave request the current user must approve.
  * `detail` is the encoded id from the approving list item; `status` is "1"
  * (approve) or "2" (reject); `reason` is the approver's note. */

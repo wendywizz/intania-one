@@ -16,6 +16,7 @@ import {
   ActivityIndicator, KeyboardAvoidingView, Modal, Platform,
   Pressable, ScrollView, StyleSheet, TextInput, View,
 } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 function todayISO() {
   const d = new Date();
@@ -25,6 +26,8 @@ function todayISO() {
 }
 
 export default function RequisitionScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { repair_id, staff_id: paramStaff, role, source } = useLocalSearchParams<{
     repair_id: string; staff_id: string; role?: string; source?: string;
   }>();
@@ -95,7 +98,7 @@ export default function RequisitionScreen() {
       <NavTopBar title="ใบขอจัดหา" backHref={backHref} showHomeButton />
 
       {isLoading ? (
-        <ActivityIndicator style={styles.loader} size="large" color="#B33939" />
+        <ActivityIndicator style={styles.loader} size="large" color={c.primary} />
       ) : error ? (
         <View style={styles.center}><ThemedText style={styles.errorText}>{error}</ThemedText></View>
       ) : (
@@ -147,7 +150,7 @@ export default function RequisitionScreen() {
                   <ThemedText style={[styles.selectText, !requesterName && styles.placeholder]} numberOfLines={1}>
                     {requesterName || 'เลือกผู้ขอให้จัดหา'}
                   </ThemedText>
-                  <IconSymbol name="chevron.down" size={18} color="#687076" />
+                  <IconSymbol name="chevron.down" size={18} color={c.textMuted} />
                 </Pressable>
               </View>
 
@@ -230,59 +233,59 @@ export default function RequisitionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F1F5F9' },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.surfaceAlt },
   flex: { flex: 1 },
   loader: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  errorText: { fontSize: 15, color: '#DC2626', textAlign: 'center' },
+  errorText: { fontSize: 15, color: c.danger, textAlign: 'center' },
   scroll: { padding: 16, gap: 12 },
-  subhead: { fontSize: 14, fontWeight: '700', color: '#374151' },
-  sectionLabel: { fontSize: 13, fontWeight: '700', color: '#6B7280', marginTop: 4 },
+  subhead: { fontSize: 14, fontWeight: '700', color: c.textMuted },
+  sectionLabel: { fontSize: 13, fontWeight: '700', color: c.textMuted, marginTop: 4 },
   matList: { gap: 10 },
-  empty: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', paddingVertical: 12 },
+  empty: { fontSize: 14, color: c.textFaint, textAlign: 'center', paddingVertical: 12 },
 
-  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, gap: 14, marginTop: 4 },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  card: { backgroundColor: c.surface, borderRadius: 16, padding: 16, gap: 14, marginTop: 4 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: c.text },
   field: { gap: 8 },
-  label: { fontSize: 14, fontWeight: '600', color: '#374151' },
+  label: { fontSize: 14, fontWeight: '600', color: c.textMuted },
   input: {
-    backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: '#111827',
+    backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border, borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: c.text,
   },
   select: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12,
+    backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 12, minHeight: 46,
   },
-  selectText: { flex: 1, fontSize: 15, color: '#111827' },
-  placeholder: { color: '#9CA3AF' },
+  selectText: { flex: 1, fontSize: 15, color: c.text },
+  placeholder: { color: c.textFaint },
 
   remarkRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  remarkName: { flex: 1, fontSize: 13, color: '#1F2937' },
+  remarkName: { flex: 1, fontSize: 13, color: c.text },
   remarkInput: {
-    width: 150, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB',
-    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, color: '#111827',
+    width: 150, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border,
+    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, color: c.text,
   },
 
   footer: {
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 20,
-    backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#F1EDED',
+    backgroundColor: c.surface, borderTopWidth: 1, borderTopColor: c.border,
   },
-  submitBtn: { backgroundColor: '#b33939', borderRadius: 12, height: 52, alignItems: 'center', justifyContent: 'center' },
+  submitBtn: { backgroundColor: c.primary, borderRadius: 12, height: 52, alignItems: 'center', justifyContent: 'center' },
   submitDisabled: { opacity: 0.6 },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  submitText: { color: c.textOnPrimary, fontSize: 16, fontWeight: '700' },
 
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  pickerCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, width: '100%', maxWidth: 420 },
-  pickerTitle: { fontSize: 15, fontWeight: '700', marginBottom: 8, color: '#111827' },
+  pickerCard: { backgroundColor: c.surface, borderRadius: 12, padding: 16, width: '100%', maxWidth: 420 },
+  pickerTitle: { fontSize: 15, fontWeight: '700', marginBottom: 8, color: c.text },
   pickerOption: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingVertical: 12, paddingHorizontal: 8, borderRadius: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#F3F4F6',
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border,
   },
-  pickerOptionActive: { backgroundColor: '#FBEAEA' },
-  pickerOptionText: { flex: 1, fontSize: 14, color: '#111827' },
-  pickerOptionTextActive: { color: '#922124', fontWeight: '700' },
-  pickerCheck: { fontSize: 15, fontWeight: '700', color: '#922124' },
+  pickerOptionActive: { backgroundColor: c.primarySoft },
+  pickerOptionText: { flex: 1, fontSize: 14, color: c.text },
+  pickerOptionTextActive: { color: c.primary, fontWeight: '700' },
+  pickerCheck: { fontSize: 15, fontWeight: '700', color: c.primary },
 });

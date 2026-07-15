@@ -54,10 +54,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const isDarkMode = isAutoTheme ? autoDark : manualDarkMode;
 
+  // Dark and Auto are mutually exclusive: turning one on turns the other off.
   const toggleDarkMode = useCallback(() => {
     setManualDarkMode((prev) => {
       const next = !prev;
       void AsyncStorage.setItem(DARK_MODE_KEY, String(next));
+      if (next) {
+        setIsAutoTheme(false);
+        void AsyncStorage.setItem(AUTO_THEME_KEY, 'false');
+      }
       return next;
     });
   }, []);
@@ -66,7 +71,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setIsAutoTheme((prev) => {
       const next = !prev;
       void AsyncStorage.setItem(AUTO_THEME_KEY, String(next));
-      if (next) setAutoDark(isNightTime());
+      if (next) {
+        setAutoDark(isNightTime());
+        setManualDarkMode(false);
+        void AsyncStorage.setItem(DARK_MODE_KEY, 'false');
+      }
       return next;
     });
   }, []);

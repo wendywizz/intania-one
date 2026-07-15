@@ -9,8 +9,11 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ErrorState } from '@/components/error-state';
+import { Inbox } from 'lucide-react-native';
+import { EmptyState } from '@/components/empty-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -121,6 +124,8 @@ type HistoryListItemProps = {
 };
 
 function HistoryListItem({ item, onPress }: HistoryListItemProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const type = getAbsenceType(item);
   const typeLabel = getAbsenceTypeLabel(item);
   const dateRange = getDateRange(item);
@@ -135,12 +140,14 @@ function HistoryListItem({ item, onPress }: HistoryListItemProps) {
         <ThemedText style={styles.itemTitle}>{typeLabel}</ThemedText>
         {dateRange ? <ThemedText style={styles.itemDate}>{dateRange}</ThemedText> : null}
       </View>
-      <IconSymbol name="chevron.right" size={16} color="#585E6D" style={{ opacity: 0.4 }} />
+      <IconSymbol name="chevron.right" size={16} color={c.textMuted} style={{ opacity: 0.4 }} />
     </Pressable>
   );
 }
 
 export default function HistoryScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const pageSize = HISTORY_PAGE_LENGTH;
   const [items, setItems] = useState<absence[]>([]);
@@ -249,11 +256,11 @@ export default function HistoryScreen() {
         ListFooterComponent={
           isLoadingMore ? (
             <View style={styles.footerLoader}>
-              <ActivityIndicator color="#922124" size="small" />
+              <ActivityIndicator color={c.primary} size="small" />
             </View>
           ) : null
         }
-        ListEmptyComponent={<ErrorState variant="empty" title={TEXT.SHARED_NO_HISTORY} fill={false} />}
+        ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.SHARED_NO_HISTORY} />}
       />
     );
   };
@@ -263,17 +270,17 @@ export default function HistoryScreen() {
       <NavTopBar
         title={TEXT.ABSENCE_TITLE}
         subtitle={TEXT.ABSENCE_HISTORY_TITLE}
-        moduleIcon="calendar-clock"
+        moduleIcon="history"
       />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   pageTitleSection: {
     paddingHorizontal: 16,
@@ -285,12 +292,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 28,
     fontWeight: '600',
-    color: '#191C1F',
+    color: c.text,
   },
   pageSubtitle: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#584140',
+    color: c.textMuted,
   },
   content: {
     flex: 1,
@@ -299,6 +306,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
+    flexGrow: 1,
     gap: 12,
     padding: 16,
     paddingTop: 20,
@@ -308,9 +316,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#F2F3F7',
+    backgroundColor: c.surface,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(223, 191, 189, 0.3)',
     padding: 16,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   itemIconCircle: {
     width: 48,
@@ -328,12 +343,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     fontWeight: '600',
-    color: '#191C1F',
+    color: c.text,
   },
   itemDate: {
     fontSize: 13,
     lineHeight: 18,
-    color: '#584140',
+    color: c.textMuted,
   },
   stateBox: {
     flex: 1,
@@ -345,13 +360,13 @@ const styles = StyleSheet.create({
   stateTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#191C1F',
+    color: c.text,
     textAlign: 'center',
   },
   errorText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#B42318',
+    color: c.danger,
     textAlign: 'center',
   },
   retryButton: {
@@ -360,7 +375,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
     marginTop: 8,
     paddingHorizontal: 24,
   },
@@ -373,7 +388,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#585E6D',
+    color: c.textMuted,
     textAlign: 'center',
   },
   footerLoader: {

@@ -5,6 +5,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -165,6 +166,8 @@ function buildCells(
 }
 
 export default function TimestampCalendarScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
   const today = useMemo(() => moment(), []);
@@ -268,11 +271,11 @@ export default function TimestampCalendarScreen() {
   const monthHeader = (
     <View style={styles.monthHeader}>
       <Pressable accessibilityRole="button" onPress={goToPreviousMonth} style={styles.monthNavButton}>
-        <ChevronLeft size={22} color="#922124" />
+        <ChevronLeft size={22} color={c.primary} />
       </Pressable>
       <ThemedText style={styles.monthLabel}>{monthLabel}</ThemedText>
       <Pressable accessibilityRole="button" onPress={goToNextMonth} style={styles.monthNavButton}>
-        <ChevronRight size={22} color="#922124" />
+        <ChevronRight size={22} color={c.primary} />
       </Pressable>
     </View>
   );
@@ -524,7 +527,7 @@ export default function TimestampCalendarScreen() {
       <NavTopBar
         title={TEXT.TIMESTAMP_TITLE}
         subtitle={TEXT.TIMESTAMP_CALENDAR_TAB}
-        moduleIcon="clock.fill"
+        moduleIcon="calendar-range"
         backHref="/"
       />
       <View style={styles.content}>{renderBody()}</View>
@@ -532,10 +535,10 @@ export default function TimestampCalendarScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   content: {
     flex: 1,
@@ -548,7 +551,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FFF7F0',
+    backgroundColor: c.warningSoft,
     borderWidth: 1,
     borderColor: 'rgba(234,88,12,0.25)',
     borderRadius: 10,
@@ -560,7 +563,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '600',
-    color: '#191C1F',
+    color: c.text,
     fontFamily: AppFonts.psuBold,
   },
   lateSummaryValue: {
@@ -574,9 +577,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#F2F3F7',
+    backgroundColor: c.surfaceMuted,
     borderLeftWidth: 4,
-    borderLeftColor: '#922124',
+    borderLeftColor: c.primary,
     borderRadius: 12,
     padding: 14,
   },
@@ -584,7 +587,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     lineHeight: 19,
-    color: '#584140',
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   monthHeader: {
@@ -598,7 +601,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderWidth: 1,
     borderColor: 'rgba(223,191,189,0.4)',
   },
@@ -606,16 +609,16 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 24,
     fontWeight: '700',
-    color: '#922124',
+    color: c.primary,
     fontFamily: AppFonts.psuBold,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 16,
     padding: 10,
     borderWidth: 1,
     borderColor: 'rgba(223,191,189,0.25)',
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -632,11 +635,11 @@ const styles = StyleSheet.create({
   weekLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#585E6D',
+    color: c.textMuted,
     fontFamily: AppFonts.psuBold,
   },
   weekendLabel: {
-    color: '#B33939',
+    color: c.primary,
   },
   grid: {
     flexDirection: 'row',
@@ -656,22 +659,22 @@ const styles = StyleSheet.create({
   },
   dayToday: {
     borderWidth: 1.5,
-    borderColor: '#922124',
+    borderColor: c.primary,
   },
   daySelected: {
-    backgroundColor: '#922124',
+    backgroundColor: c.primary,
   },
   dayNumber: {
     fontSize: 14,
     lineHeight: 18,
-    color: '#191C1F',
+    color: c.text,
     fontFamily: AppFonts.psuBold,
   },
   dayNumberWeekend: {
-    color: '#B33939',
+    color: c.primary,
   },
   dayNumberSelected: {
-    color: '#FFFFFF',
+    color: c.textOnPrimary,
   },
   dayDot: {
     width: 6,
@@ -694,7 +697,7 @@ const styles = StyleSheet.create({
   lateBadgeText: {
     fontSize: 8,
     lineHeight: 11,
-    color: '#FFFFFF',
+    color: c.textOnPrimary,
     fontFamily: AppFonts.psuBold,
   },
   legend: {
@@ -718,11 +721,11 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 12,
     lineHeight: 16,
-    color: '#585E6D',
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   detailCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 16,
     padding: 16,
     gap: 12,
@@ -740,7 +743,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
     fontWeight: '700',
-    color: '#191C1F',
+    color: c.text,
     fontFamily: AppFonts.psuBold,
   },
   statusChip: {
@@ -764,7 +767,7 @@ const styles = StyleSheet.create({
   timeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
     borderRadius: 12,
     padding: 14,
   },
@@ -777,19 +780,19 @@ const styles = StyleSheet.create({
   timeDivider: {
     width: 1,
     alignSelf: 'stretch',
-    backgroundColor: '#E1E2E6',
+    backgroundColor: c.surfaceMuted,
     marginHorizontal: 8,
   },
   timeLabel: {
     fontSize: 11,
     lineHeight: 15,
-    color: '#585E6D',
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   timeValue: {
     fontSize: 16,
     lineHeight: 22,
-    color: '#191C1F',
+    color: c.text,
     fontFamily: AppFonts.psuBold,
   },
   lateChip: {
@@ -798,7 +801,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     gap: 3,
     marginTop: 4,
-    backgroundColor: '#FFF1E8',
+    backgroundColor: c.warningSoft,
     borderRadius: 9999,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -812,13 +815,13 @@ const styles = StyleSheet.create({
   detailEmpty: {
     fontSize: 13,
     lineHeight: 19,
-    color: '#687076',
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   detailCaption: {
     fontSize: 12,
     lineHeight: 18,
-    color: '#687076',
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   requestButton: {
@@ -828,7 +831,7 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 48,
     borderRadius: 12,
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
     paddingHorizontal: 16,
   },
   requestButtonPressed: {
@@ -842,7 +845,7 @@ const styles = StyleSheet.create({
   detailNote: {
     fontSize: 13,
     lineHeight: 19,
-    color: '#584140',
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   inlineEmpty: {
@@ -852,7 +855,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 13,
     lineHeight: 19,
-    color: '#687076',
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
     paddingVertical: 8,
   },

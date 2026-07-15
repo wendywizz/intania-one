@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { navReplace } from '@/utils/navigation';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -47,6 +48,8 @@ async function clearBrowserAuthStorage() {
 }
 
 export default function ClearAuthScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [done, setDone] = useState(false);
   const [message, setMessage] = useState('Clearing OpenID session...');
 
@@ -94,7 +97,7 @@ export default function ClearAuthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -108,7 +111,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#0A6E8A',
+    backgroundColor: c.info,
     marginTop: 24,
     paddingHorizontal: 16,
   },

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
-import { colors } from '@/constants/theme';
+import { useColors } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -29,12 +29,15 @@ export function NavTopBar({
   backHref,
   onBackPress,
   showBackButton = true,
-  showHomeButton = false,
+  showHomeButton = true,
   rightContent,
-  backgroundColor = '#b33939',
-  contentColor = '#FFFFFF',
+  backgroundColor,
+  contentColor,
 }: NavTopBarProps) {
   const insets = useSafeAreaInsets();
+  const c = useColors();
+  const barColor = backgroundColor ?? c.navBar;
+  const barContent = contentColor ?? c.navBarText;
 
   const goBack = () => {
     if (!acquireNavLock()) return;
@@ -58,7 +61,7 @@ export function NavTopBar({
   };
 
   return (
-    <View style={[styles.container, subtitle ? styles.containerWithSubtitle : null, { paddingTop: insets.top + 8, backgroundColor }]}>
+    <View style={[styles.container, subtitle ? styles.containerWithSubtitle : null, { paddingTop: insets.top + 8, backgroundColor: barColor }]}>
       <View style={styles.leftActions}>
         {showBackButton ? (
           <Pressable
@@ -66,7 +69,7 @@ export function NavTopBar({
             accessibilityRole="button"
             onPress={goBack}
             style={styles.iconButton}>
-            <IconSymbol name="arrow.left" size={24} color={contentColor} />
+            <IconSymbol name="arrow.left" size={24} color={barContent} />
           </Pressable>
         ) : (
           <View style={styles.iconButtonSpacer} />
@@ -75,16 +78,16 @@ export function NavTopBar({
 
       <View style={styles.titleContainer}>
           {moduleIcon ? (
-          <View style={[styles.iconCircle, { backgroundColor: `${contentColor}20`, borderColor: colors.iconCircleBorder, borderWidth: 2 }]}>
-          <IconSymbol name={moduleIcon} size={28} color={contentColor} />
+          <View style={[styles.iconCircle, { backgroundColor: `${barContent}20`, borderColor: `${barContent}40`, borderWidth: 2 }]}>
+          <IconSymbol name={moduleIcon} size={28} color={barContent} />
           </View>
         ) : null}
         <View style={styles.textContainer}>
-          <ThemedText lightColor={contentColor} darkColor={contentColor} type="defaultSemiBold" numberOfLines={1} style={styles.title}>
+          <ThemedText lightColor={barContent} darkColor={barContent} type="defaultSemiBold" numberOfLines={1} style={styles.title}>
             {title}
           </ThemedText>
           {subtitle ? (
-            <ThemedText lightColor={contentColor} darkColor={contentColor} numberOfLines={2} style={styles.subtitle}>
+            <ThemedText lightColor={barContent} darkColor={barContent} numberOfLines={2} style={styles.subtitle}>
               {subtitle}
             </ThemedText>
           ) : null}
@@ -92,13 +95,12 @@ export function NavTopBar({
       </View>
 
       <View style={[styles.rightActions, rightContent ? styles.customRightActions : undefined]}>
-        {rightContent ? (
-          rightContent
-        ) : showHomeButton ? (
+        {rightContent}
+        {showHomeButton ? (
           <Pressable accessibilityLabel={TEXT.NAV_HOME_ACCESSIBILITY_LABEL} accessibilityRole="button" onPress={() => navReplace('/')} style={styles.iconButton}>
-            <IconSymbol name="house.fill" size={23} color={contentColor} />
+            <IconSymbol name="house.fill" size={23} color={barContent} />
           </Pressable>
-        ) : (
+        ) : rightContent ? null : (
           <View style={styles.iconButtonSpacer} />
         )}
       </View>
@@ -135,8 +137,10 @@ const styles = StyleSheet.create({
   },
   rightActions: {
     minWidth: 48,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
   },
   customRightActions: {
     minWidth: 116,

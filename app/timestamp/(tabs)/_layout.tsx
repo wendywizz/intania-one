@@ -2,41 +2,60 @@ import { Tabs } from "expo-router";
 import React, { useEffect, useState } from "react";
 
 import { HapticTab } from "@/components/haptic-tab";
+import { LoadingAnimate } from "@/components/loading-animate";
+import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
+import { useColors } from "@/constants/theme";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getForgetApprovalWaiting } from "@/services/timestampService";
 
 export default function TimestampTabLayout() {
-  const colorScheme = useColorScheme();
+  const c = useColors();
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
 
   // Whether the user may approve others' miss-timestamp requests (holds an active
   // executive position or has pending rows). Only then is the approval tab shown.
   const [isApprover, setIsApprover] = useState(false);
+  // Wait for the boss check to finish before rendering the tab bar, so the
+  // approval tab doesn't flash in after the view has already appeared.
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     let active = true;
+    setIsChecking(true);
     getForgetApprovalWaiting(staffId)
       .then((result) => {
         if (active) setIsApprover(result.show);
       })
       .catch(() => {
         if (active) setIsApprover(false);
+      })
+      .finally(() => {
+        if (active) setIsChecking(false);
       });
     return () => {
       active = false;
     };
   }, [staffId]);
 
+  if (isChecking) {
+    return (
+      <ThemedView style={{ flex: 1, backgroundColor: c.background }}>
+        <LoadingAnimate
+          title={TEXT.SHARED_LOADING_DATA_TITLE}
+          desc={TEXT.SHARED_LOADING_DESCRIPTION}
+        />
+      </ThemedView>
+    );
+  }
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor: c.primary,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
@@ -63,7 +82,7 @@ export default function TimestampTabLayout() {
         options={{
           title: TEXT.TIMESTAMP_FORGOT_TAB,
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="list.bullet" color={color} />
+            <IconSymbol size={28} name="clock.fill" color={color} />
           ),
         }}
       />

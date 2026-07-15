@@ -1,25 +1,69 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
+import { LoadingAnimate } from '@/components/loading-animate';
+import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TEXT } from '@/constants/text';
-
-const BRAND_RED = '#B33939';
-const INACTIVE_COLOR = '#585E6D';
-const TAB_BAR_BG = '#F8F9FD';
+import { USER_ID } from '@/constants/user';
+import { useAuth } from '@/context/AuthContext';
+import { useColors } from '@/constants/theme';
+import { approvingWaitingData } from '@/services/absenceService';
 
 export default function absenceTabLayout() {
+  const c = useColors();
+  const { user: authUser } = useAuth();
+  const staffId = authUser?.staffId || USER_ID;
+
+  // Boss/approver → gets the "การลาของฉัน" + "อนุมัติลา" tabs; a general user keeps
+  // the "รออนุมัติ" + "ประวัติ" tabs. Wait for the check so the bar doesn't flicker.
+  const [isApprover, setIsApprover] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    setIsChecking(true);
+    approvingWaitingData(staffId)
+      .then((result) => {
+        if (active) setIsApprover(result.show);
+      })
+      .catch(() => {
+        if (active) setIsApprover(false);
+      })
+      .finally(() => {
+        if (active) setIsChecking(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [staffId]);
+
+  if (isChecking) {
+    return (
+      <ThemedView style={{ flex: 1, backgroundColor: c.background }}>
+        <LoadingAnimate
+          title={TEXT.SHARED_LOADING_DATA_TITLE}
+          desc={TEXT.SHARED_LOADING_DESCRIPTION}
+        />
+      </ThemedView>
+    );
+  }
+
+  // Tabs shown only to a boss vs only to a general user.
+  const bossHref = isApprover ? undefined : null;
+  const generalHref = isApprover ? null : undefined;
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarActiveTintColor: BRAND_RED,
-        tabBarInactiveTintColor: INACTIVE_COLOR,
+        tabBarActiveTintColor: c.primary,
+        tabBarInactiveTintColor: c.textMuted,
         tabBarStyle: {
-          backgroundColor: TAB_BAR_BG,
-          borderTopColor: 'rgba(223, 191, 189, 0.6)',
+          backgroundColor: c.surface,
+          borderTopColor: c.border,
           height: 68,
           paddingBottom: 10,
           paddingTop: 6,
@@ -36,8 +80,25 @@ export default function absenceTabLayout() {
         }}
       />
       <Tabs.Screen
+        name="my-leave"
+        options={{
+          href: bossHref,
+          title: TEXT.ABSENCE_MY_LEAVE_TAB,
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="doc.text.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="approve-leave"
+        options={{
+          href: bossHref,
+          title: TEXT.ABSENCE_APPROVE_LEAVE_TAB,
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="checkmark.circle.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="pending"
         options={{
+          href: generalHref,
           title: TEXT.ABSENCE_TAB_WAITING,
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="clock.fill" color={color} />,
         }}
@@ -52,6 +113,7 @@ export default function absenceTabLayout() {
       <Tabs.Screen
         name="history"
         options={{
+          href: generalHref,
           title: TEXT.ABSENCE_TAB_HISTORY,
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="history" color={color} />,
         }}

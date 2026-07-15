@@ -6,6 +6,7 @@ import type { NoticeRepairJob } from '@/models/types';
 import { getCategoryIcon } from '@/utils/category-icon';
 import { formatDateOnly } from '@/utils/date-format';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   '001': { bg: '#EFF6FF', text: '#2563EB' },
@@ -43,6 +44,8 @@ type Props = {
 };
 
 export function NoticeRepairJobCard({ job, onPress }: Props) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const badge = statusBadge(job);
   // ID hidden for now (kept in `job.repair_id` for upcoming update/remove actions).
   // const number = job.repair_number ? `#${job.repair_number}` : `${job.repair_id}`;
@@ -57,7 +60,7 @@ export function NoticeRepairJobCard({ job, onPress }: Props) {
         <View style={styles.cardRow}>
           {/* Leading category icon */}
           <View style={styles.iconBox}>
-            <IconSymbol name={categoryIcon} size={22} color="#922124" />
+            <IconSymbol name={categoryIcon} size={22} color={c.primary} />
           </View>
 
           <View style={styles.content}>
@@ -85,30 +88,33 @@ export function NoticeRepairJobCard({ job, onPress }: Props) {
             {/* วันที่แจ้ง */}
             {!!dateText && (
               <View style={styles.dateRow}>
-                <IconSymbol name="calendar" size={13} color="#584140" />
+                <IconSymbol name="calendar" size={13} color={c.textMuted} />
                 <ThemedText style={styles.metaText}>{dateText}</ThemedText>
               </View>
             )}
           </View>
 
           {/* Navigable indicator */}
-          <IconSymbol name="chevron.right" size={18} color="#9CA3AF" style={styles.chevron} />
+          <IconSymbol name="chevron.right" size={18} color={c.textFaint} style={styles.chevron} />
         </View>
       </ThemedView>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   card: {
     borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e1e2e6',
+    borderWidth: 1,
+    borderColor: 'rgba(223, 191, 189, 0.3)',
     padding: 16,
     marginHorizontal: 12,
     marginVertical: 6,
-    boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-    elevation: 1,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   cardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   chevron: { alignSelf: 'center' },
@@ -118,7 +124,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FBEAEA',
+    backgroundColor: c.primarySoft,
   },
   content: { flex: 1, gap: 8 },
   header: {
@@ -151,8 +157,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
   },
-  metaLabel: { color: '#584140', fontSize: 13, lineHeight: 18 },
-  metaValue: { color: '#584140', fontSize: 13, lineHeight: 18, fontWeight: '500', flexShrink: 1 },
+  metaLabel: { color: c.textMuted, fontSize: 13, lineHeight: 18 },
+  metaValue: { color: c.textMuted, fontSize: 13, lineHeight: 18, fontWeight: '500', flexShrink: 1 },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  metaText: { color: '#584140', fontSize: 13, lineHeight: 18 },
+  metaText: { color: c.textMuted, fontSize: 13, lineHeight: 18 },
 });

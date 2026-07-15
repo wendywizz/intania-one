@@ -29,6 +29,7 @@ import { listExamTasks } from '@/services/examinarService';
 import { formatDateRange, formatNewsDate } from '@/utils/date-format';
 import { navPush } from '@/utils/navigation';
 import { ENDPOINTS } from '@/constants/endpoints';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import {
   TYPE_ABSENCE_BIRTH,
   TYPE_ABSENCE_BUSINESS,
@@ -38,15 +39,6 @@ import {
 } from '@/constants/types';
 
 const D = {
-  primary: '#922124',
-  primaryContainer: '#B33939',
-  onPrimary: '#ffffff',
-  background: '#F8F9FD',
-  surface: '#ffffff',
-  onSurface: '#191C1F',
-  onSurfaceVariant: '#584140',
-  outlineVariant: '#EDEEF2',
-  menuCard: '#F2F3F7',
   pad: 16,
   gap: 12,
 } as const;
@@ -176,6 +168,8 @@ type ShiftCardProps = {
 };
 
 function ShiftCard({ icon, iconBg, iconColor, title, subtitle, onPress, badge }: ShiftCardProps) {
+  const c = useColors();
+  const shiftStyles = useThemedStyles(makeShiftStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -185,24 +179,24 @@ function ShiftCard({ icon, iconBg, iconColor, title, subtitle, onPress, badge }:
         <IconSymbol name={icon} size={20} color={iconColor} />
       </View>
       <View style={shiftStyles.cardContent}>
-        <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} numberOfLines={1} style={shiftStyles.cardTitle}>
+        <ThemedText lightColor={c.text} darkColor={c.text} numberOfLines={1} style={shiftStyles.cardTitle}>
           {title}
         </ThemedText>
         {Boolean(subtitle) && (
-          <ThemedText lightColor={D.onSurfaceVariant} darkColor={D.onSurfaceVariant} numberOfLines={2} style={shiftStyles.cardSubtitle}>
+          <ThemedText lightColor={c.textMuted} darkColor={c.textMuted} numberOfLines={2} style={shiftStyles.cardSubtitle}>
             {subtitle}
           </ThemedText>
         )}
       </View>
       {badge !== undefined && (
         <View style={shiftStyles.badge}>
-          <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={shiftStyles.badgeText}>
+          <ThemedText lightColor={c.textOnPrimary} darkColor={c.textOnPrimary} style={shiftStyles.badgeText}>
             {badge}
           </ThemedText>
         </View>
       )}
       {onPress && (
-        <IconSymbol name="chevron.right" size={16} color={D.onSurfaceVariant} />
+        <IconSymbol name="chevron.right" size={16} color={c.textMuted} />
       )}
     </Pressable>
   );
@@ -229,6 +223,8 @@ function RepairShiftCard({
   tasks: { label: string; count: number }[];
   onPress: () => void;
 }) {
+  const c = useColors();
+  const shiftStyles = useThemedStyles(makeShiftStyles);
   const multi = tasks.length > 1;
   return (
     <Pressable
@@ -236,24 +232,24 @@ function RepairShiftCard({
       onPress={onPress}
       style={({ pressed }) => [shiftStyles.card, pressed && shiftStyles.cardPressed]}>
       <View style={[shiftStyles.iconCircle, { backgroundColor: '#FFF3F3' }]}>
-        <IconSymbol name="laptop" size={20} color={D.primaryContainer} />
+        <IconSymbol name="laptop" size={20} color={c.primary} />
       </View>
       <View style={shiftStyles.cardContent}>
-        <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} numberOfLines={1} style={shiftStyles.cardTitle}>
+        <ThemedText lightColor={c.text} darkColor={c.text} numberOfLines={1} style={shiftStyles.cardTitle}>
           {TEXT.REPAIR_COMPUTER_MENU_TITLE}
         </ThemedText>
         {multi ? (
           tasks.map((task) => (
             <View key={task.label} style={shiftStyles.taskRow}>
               <ThemedText
-                lightColor={D.onSurfaceVariant}
-                darkColor={D.onSurfaceVariant}
+                lightColor={c.textMuted}
+                darkColor={c.textMuted}
                 numberOfLines={1}
                 style={shiftStyles.taskLabel}>
                 {`- ${task.label}`}
               </ThemedText>
               <View style={shiftStyles.taskBadge}>
-                <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={shiftStyles.taskBadgeText}>
+                <ThemedText lightColor={c.textOnPrimary} darkColor={c.textOnPrimary} style={shiftStyles.taskBadgeText}>
                   {task.count}
                 </ThemedText>
               </View>
@@ -261,8 +257,8 @@ function RepairShiftCard({
           ))
         ) : (
           <ThemedText
-            lightColor={D.onSurfaceVariant}
-            darkColor={D.onSurfaceVariant}
+            lightColor={c.textMuted}
+            darkColor={c.textMuted}
             numberOfLines={2}
             style={shiftStyles.cardSubtitle}>
             {tasks[0].label}
@@ -271,12 +267,12 @@ function RepairShiftCard({
       </View>
       {!multi && (
         <View style={shiftStyles.badge}>
-          <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={shiftStyles.badgeText}>
+          <ThemedText lightColor={c.textOnPrimary} darkColor={c.textOnPrimary} style={shiftStyles.badgeText}>
             {tasks[0].count}
           </ThemedText>
         </View>
       )}
-      <IconSymbol name="chevron.right" size={16} color={D.onSurfaceVariant} />
+      <IconSymbol name="chevron.right" size={16} color={c.textMuted} />
     </Pressable>
   );
 }
@@ -288,6 +284,9 @@ type UpcomingShiftSectionProps = {
 };
 
 function UpcomingShiftSection({ data, loading, upcomingExams }: UpcomingShiftSectionProps) {
+  const c = useColors();
+  const shiftStyles = useThemedStyles(makeShiftStyles);
+  const styles = useThemedStyles(makeStyles);
   const cards: React.ReactElement[] = [];
 
   if (data) {
@@ -412,20 +411,20 @@ function UpcomingShiftSection({ data, loading, upcomingExams }: UpcomingShiftSec
 
   return (
     <View style={shiftStyles.section}>
-      <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} style={styles.sectionTitle}>
+      <ThemedText lightColor={c.text} darkColor={c.text} style={styles.sectionTitle}>
         Upcoming Shift
       </ThemedText>
 
       <View style={shiftStyles.cardsContainer}>
         {loading && (
           <View style={shiftStyles.emptyCard}>
-            <ActivityIndicator color={D.primaryContainer} />
+            <ActivityIndicator color={c.primary} />
           </View>
         )}
         {!loading && cards.length === 0 && (
           <View style={shiftStyles.emptyCard}>
             <IconSymbol name="checkmark.circle.fill" size={24} color="#22C55E" />
-            <ThemedText lightColor={D.onSurfaceVariant} darkColor={D.onSurfaceVariant} style={shiftStyles.emptyText}>
+            <ThemedText lightColor={c.textMuted} darkColor={c.textMuted} style={shiftStyles.emptyText}>
               No active activities
             </ThemedText>
           </View>
@@ -436,7 +435,7 @@ function UpcomingShiftSection({ data, loading, upcomingExams }: UpcomingShiftSec
   );
 }
 
-const shiftStyles = StyleSheet.create({
+const makeShiftStyles = (c: AppColors) => StyleSheet.create({
   section: {
     gap: 12,
   },
@@ -446,12 +445,12 @@ const shiftStyles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: D.surface,
+    backgroundColor: c.surface,
     borderRadius: 12,
     padding: 14,
     gap: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: D.outlineVariant,
+    borderColor: c.border,
     boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
     elevation: 1,
   },
@@ -483,7 +482,7 @@ const shiftStyles = StyleSheet.create({
     minWidth: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: D.primaryContainer,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 7,
@@ -512,7 +511,7 @@ const shiftStyles = StyleSheet.create({
     minWidth: 22,
     height: 20,
     borderRadius: 10,
-    backgroundColor: D.primaryContainer,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
@@ -527,12 +526,12 @@ const shiftStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: D.surface,
+    backgroundColor: c.surface,
     borderRadius: 12,
     padding: 20,
     gap: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: D.outlineVariant,
+    borderColor: c.border,
   },
   emptyText: {
     fontSize: 14,
@@ -541,6 +540,8 @@ const shiftStyles = StyleSheet.create({
 });
 
 export default function HomeScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{
     code?: string;
     error?: string;
@@ -753,7 +754,7 @@ export default function HomeScreen() {
 
   // ─── Authenticated ──────────────────────────────────────────────────────────
 
-  const displayedNews = newsItems;
+  const displayedNews = newsItems.slice(0, 3);
   const menuCardWidth = Math.floor((screenWidth - D.pad * 2 - D.gap * 2) / 3);
   const newsCardWidth = Math.floor(screenWidth * 0.72);
   const avatarSource = authUser?.staffId
@@ -761,7 +762,7 @@ export default function HomeScreen() {
     : null;
 
   return (
-    <View style={[styles.container, { backgroundColor: D.background }]}>
+    <View style={[styles.container, { backgroundColor: c.background }]}>
       <StatusBar style="light" />
 
       {/* ── Header ────────────────────────────────────────────────────────── */}
@@ -781,7 +782,7 @@ export default function HomeScreen() {
               />
             ) : (
               <View style={[styles.avatar, styles.avatarFallback]}>
-                <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={styles.avatarText}>
+                <ThemedText lightColor={c.textOnPrimary} darkColor={c.textOnPrimary} style={styles.avatarText}>
                   {getInitials(authUser)}
                 </ThemedText>
               </View>
@@ -790,7 +791,7 @@ export default function HomeScreen() {
         </Pressable>
 
         <View style={styles.headerCenter}>
-          <ThemedText lightColor={D.onPrimary} darkColor={D.onPrimary} style={styles.headerTitle}>
+          <ThemedText lightColor={c.textOnPrimary} darkColor={c.textOnPrimary} style={styles.headerTitle}>
             {getGreeting()}, {getFirstName(authUser)}
           </ThemedText>
           <ThemedText lightColor="rgba(255,255,255,0.6)" darkColor="rgba(255,255,255,0.6)" style={styles.headerStaffId}>
@@ -804,14 +805,14 @@ export default function HomeScreen() {
             accessibilityLabel="Settings"
             onPress={() => navPush('/settings')}
             style={styles.iconBtn}>
-            <IconSymbol name="gearshape.fill" size={22} color={D.onPrimary} />
+            <IconSymbol name="gearshape.fill" size={22} color={c.textOnPrimary} />
           </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Notifications"
             onPress={() => navPush('/notification')}
             style={styles.iconBtn}>
-            <IconSymbol name="bell.fill" size={22} color={D.onPrimary} />
+            <IconSymbol name="bell.fill" size={22} color={c.textOnPrimary} />
             {unreadCount > 0 ? <View style={styles.bellBadge} /> : null}
           </Pressable>
         </View>
@@ -821,19 +822,19 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={D.onPrimary} />}>
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={c.textOnPrimary} />}>
 
         {/* Padded sections below the header */}
         <View style={styles.innerContent}>
 
           {/* News section */}
           <View style={styles.sectionRow}>
-            <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} style={styles.sectionTitle}>
+            <ThemedText lightColor={c.text} darkColor={c.text} style={styles.sectionTitle}>
               {TEXT.HOME_NEWS_SECTION_TITLE}
             </ThemedText>
             {isNewsError ? null : (
               <Pressable accessibilityRole="button" onPress={() => navPush('/news')}>
-                <ThemedText lightColor={D.primary} darkColor={D.primary} style={styles.seeAll}>
+                <ThemedText lightColor={c.primary} darkColor={c.primary} style={styles.seeAll}>
                   {TEXT.HOME_SEE_ALL_THAI}
                 </ThemedText>
               </Pressable>
@@ -844,14 +845,14 @@ export default function HomeScreen() {
           <View style={styles.newsScrollOuter}>
             {isNewsLoading ? (
               <View style={styles.newsLoadingWrap}>
-                <ActivityIndicator color={D.primaryContainer} />
+                <ActivityIndicator color={c.primary} />
               </View>
             ) : displayedNews.length === 0 ? (
               <View style={[styles.newsEmptyCard, { width: screenWidth - D.pad * 2 }]}>
                 <View style={styles.newsEmptyIcon}>
-                  <IconSymbol name="doc.text.fill" size={22} color={D.primaryContainer} />
+                  <IconSymbol name="doc.text.fill" size={22} color={c.primary} />
                 </View>
-                <ThemedText lightColor={D.onSurfaceVariant} darkColor={D.onSurfaceVariant} style={styles.newsEmpty}>
+                <ThemedText lightColor={c.textMuted} darkColor={c.textMuted} style={styles.newsEmpty}>
                   {TEXT.HOME_NO_NEWS_MESSAGE}
                 </ThemedText>
               </View>
@@ -866,11 +867,11 @@ export default function HomeScreen() {
                     accessibilityRole="button"
                     style={[styles.newsCard, { width: newsCardWidth }]}
                     onPress={() => openNews(item)}>
-                    <ThemedText lightColor={D.primary} darkColor={D.primary} numberOfLines={2} style={styles.newsTitle}>
+                    <ThemedText lightColor={c.primary} darkColor={c.primary} numberOfLines={2} style={styles.newsTitle}>
                       {item.title}
                     </ThemedText>
                     {item.pubDate ? (
-                      <ThemedText lightColor={D.onSurfaceVariant} darkColor={D.onSurfaceVariant} style={styles.newsDate}>
+                      <ThemedText lightColor={c.textMuted} darkColor={c.textMuted} style={styles.newsDate}>
                         {formatNewsDate(item.pubDate)}
                       </ThemedText>
                     ) : null}
@@ -884,7 +885,7 @@ export default function HomeScreen() {
           <UpcomingShiftSection data={activeSummary} loading={isActiveSummaryLoading} upcomingExams={upcomingExams} />
 
           {/* Menu section */}
-          <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} style={styles.sectionTitle}>
+          <ThemedText lightColor={c.text} darkColor={c.text} style={styles.sectionTitle}>
             {TEXT.HOME_MENU_SECTION_TITLE}
           </ThemedText>
 
@@ -895,8 +896,8 @@ export default function HomeScreen() {
                 accessibilityRole="button"
                 style={[styles.menuCard, { width: menuCardWidth }]}
                 onPress={() => navPush(item.href as Parameters<typeof navPush>[0])}>
-                <IconSymbol name={item.icon} size={28} color={D.primary} />
-                <ThemedText lightColor={D.onSurface} darkColor={D.onSurface} numberOfLines={2} style={styles.menuLabel}>
+                <IconSymbol name={item.icon} size={28} color={c.primary} />
+                <ThemedText lightColor={c.text} darkColor={c.text} numberOfLines={2} style={styles.menuLabel}>
                   {item.title}
                 </ThemedText>
               </Pressable>
@@ -944,7 +945,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1 },
 
   // Header — red background with white content
@@ -954,7 +955,7 @@ const styles = StyleSheet.create({
     minHeight: 88,
     paddingHorizontal: D.pad,
     paddingBottom: 10,
-    backgroundColor: D.primaryContainer,
+    backgroundColor: c.navBar,
   },
   avatarBtn: {
     width: 44,
@@ -1019,9 +1020,9 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#BA1A1A',
+    backgroundColor: c.primary,
     borderWidth: 1.5,
-    borderColor: D.primaryContainer,
+    borderColor: c.navBar,
   },
 
   // Scroll — no outer padding so greeting is full-bleed
@@ -1070,13 +1071,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   newsCard: {
-    backgroundColor: D.surface,
+    backgroundColor: c.surface,
     borderRadius: 12,
     padding: 16,
     height: 100,
     gap: 4,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: D.outlineVariant,
+    borderColor: c.border,
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
     elevation: 1,
     justifyContent: 'flex-start',
@@ -1096,7 +1097,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   newsEmptyCard: {
-    backgroundColor: D.surface,
+    backgroundColor: c.surface,
     borderRadius: 12,
     alignSelf: 'center',
     minHeight: 100,
@@ -1106,7 +1107,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     borderWidth: 1,
-    borderColor: D.outlineVariant,
+    borderColor: c.border,
     borderStyle: 'dashed',
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
     elevation: 1,
@@ -1131,7 +1132,7 @@ const styles = StyleSheet.create({
     gap: D.gap,
   },
   menuCard: {
-    backgroundColor: D.menuCard,
+    backgroundColor: c.surfaceMuted,
     borderRadius: 8,
     paddingVertical: 16,
     paddingHorizontal: 8,
@@ -1161,11 +1162,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: D.outlineVariant,
+    borderColor: c.border,
     boxShadow: '0 8px 20px rgba(17, 24, 28, 0.08)',
   },
   modalMessage: {
-    color: D.onSurfaceVariant,
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 8,
@@ -1181,7 +1182,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: D.primaryContainer,
+    backgroundColor: c.primary,
     paddingHorizontal: 16,
   },
   btnSecondary: {
@@ -1190,7 +1191,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: D.outlineVariant,
+    borderColor: c.border,
     paddingHorizontal: 14,
   },
   btnSecondaryText: { color: '#52656D' },
@@ -1208,7 +1209,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 20,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: D.outlineVariant,
+    borderColor: c.border,
   },
 
   // Welcome (unauthenticated)
@@ -1227,7 +1228,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   welcomeDesc: {
-    color: D.onSurfaceVariant,
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
@@ -1238,7 +1239,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: D.primaryContainer,
+    backgroundColor: c.primary,
     paddingHorizontal: 32,
   },
   welcomeLoginText: {

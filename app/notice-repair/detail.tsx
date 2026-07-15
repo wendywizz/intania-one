@@ -22,6 +22,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 // New job awaiting approval — the only status where the approver's
 // เห็นชอบ / ไม่เห็นชอบ / ยกเลิก actions are valid (see Repair_Controller).
@@ -44,6 +45,8 @@ function normalizeStaffId(id: string) {
 
 /** White rounded card with soft shadow (Figma: Section cards, radius 24). */
 function Card({ children }: { children: ReactNode }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <ThemedView style={styles.card} lightColor="#FFFFFF" darkColor="#151718">
       {children}
@@ -53,6 +56,8 @@ function Card({ children }: { children: ReactNode }) {
 
 /** Filled key/value tile used for อาคาร / สถานที่ (Figma: #F9FAFB, radius 16). */
 function InfoTile({ label, value }: { label: string; value?: string | null }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   if (!value) return null;
   return (
     <View style={styles.infoTile}>
@@ -64,6 +69,8 @@ function InfoTile({ label, value }: { label: string; value?: string | null }) {
 
 /** Label/value row with a bottom divider (Figma: หน่วยงาน / เบอร์โทรศัพท์). */
 function DividerRow({ label, value, valueColor }: { label: string; value?: string | null; valueColor?: string }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   if (!value) return null;
   return (
     <View style={styles.dividerRow}>
@@ -74,6 +81,8 @@ function DividerRow({ label, value, valueColor }: { label: string; value?: strin
 }
 
 function RequesterAvatar({ staffId, name, size = 64 }: { staffId: string; name: string; size?: number }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [failed, setFailed] = useState(false);
   const normalized = normalizeStaffId(staffId);
   const showPhoto = Boolean(normalized) && !failed;
@@ -97,6 +106,8 @@ function RequesterAvatar({ staffId, name, size = 64 }: { staffId: string; name: 
 }
 
 export default function NoticeRepairDetailScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { repair_id, staff_id: paramStaff, role, source } = useLocalSearchParams<{
     repair_id: string; staff_id: string; role?: string; source?: string;
   }>();
@@ -352,7 +363,7 @@ export default function NoticeRepairDetailScreen() {
 
   const renderContent = () => {
     if (isLoading) {
-      return <ActivityIndicator style={styles.loader} size="large" color="#B33939" />;
+      return <ActivityIndicator style={styles.loader} size="large" color={c.primary} />;
     }
     if (error) {
       return (
@@ -423,7 +434,7 @@ export default function NoticeRepairDetailScreen() {
                   <ThemedText style={styles.kicker}>{TEXT.NOTICE_REPAIR_DETAIL_CATEGORY}</ThemedText>
                   <View style={styles.kickerValueRow}>
                     <View style={styles.kickerIconBox}>
-                      <IconSymbol name={getCategoryIcon(detail.work_category_name)} size={20} color="#922124" />
+                      <IconSymbol name={getCategoryIcon(detail.work_category_name)} size={20} color={c.primary} />
                     </View>
                     <ThemedText style={styles.kickerValue}>{detail.work_category_name}</ThemedText>
                   </View>
@@ -432,7 +443,7 @@ export default function NoticeRepairDetailScreen() {
 
               {!!dateText && (
                 <View style={styles.dateBox}>
-                  <IconSymbol name="calendar" size={20} color="#B33939" />
+                  <IconSymbol name="calendar" size={20} color={c.primary} />
                   <ThemedText style={styles.dateText}>{dateText}</ThemedText>
                 </View>
               )}
@@ -598,7 +609,13 @@ export default function NoticeRepairDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.NOTICE_REPAIR__TITLE} showHomeButton onBackPress={handleBackPress} />
+      <NavTopBar
+        title={TEXT.NOTICE_REPAIR__TITLE}
+        subtitle={TEXT.NOTICE_REPAIR_DETAIL_TITLE}
+        moduleIcon="wrench.fill"
+        showHomeButton
+        onBackPress={handleBackPress}
+      />
 
       {renderContent()}
 
@@ -720,11 +737,11 @@ export default function NoticeRepairDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F1F5F9' },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.surfaceAlt },
   loader: { flex: 1 },
   stateContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  errorText: { color: '#ba1a1a', fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  errorText: { color: c.primary, fontSize: 14, lineHeight: 20, textAlign: 'center' },
 
   scroll: { padding: 20, gap: 24 },
   scrollWithActions: { paddingBottom: 128 },
@@ -732,7 +749,7 @@ const styles = StyleSheet.create({
 
   card: {
     borderRadius: 24,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
@@ -744,13 +761,13 @@ const styles = StyleSheet.create({
   // Summary card
   summaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   summaryTitleBlock: { flex: 1, gap: 4 },
-  summaryTitle: { fontSize: 18, fontWeight: '700', lineHeight: 24, color: '#111827' },
-  requestNo: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+  summaryTitle: { fontSize: 18, fontWeight: '700', lineHeight: 24, color: c.text },
+  requestNo: { fontSize: 14, color: c.textMuted, lineHeight: 20 },
   statusBadge: { borderRadius: 9999, paddingHorizontal: 12, paddingVertical: 6, maxWidth: '42%' },
   statusText: { fontSize: 12, fontWeight: '600', lineHeight: 16 },
   summaryBody: { gap: 16 },
   kvBlock: { gap: 4 },
-  kicker: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, color: '#B33939' },
+  kicker: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, color: c.primary },
   kickerValueRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   kickerIconBox: {
     width: 38,
@@ -758,24 +775,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FBEAEA',
+    backgroundColor: c.primarySoft,
   },
-  kickerValue: { flex: 1, fontSize: 16, fontWeight: '600', lineHeight: 24, color: '#111827' },
+  kickerValue: { flex: 1, fontSize: 16, fontWeight: '600', lineHeight: 24, color: c.text },
   dateBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    backgroundColor: '#F9FAFB',
+    borderColor: c.border,
+    backgroundColor: c.surfaceAlt,
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
-  dateText: { fontSize: 16, fontWeight: '500', lineHeight: 24, color: '#374151' },
+  dateText: { fontSize: 16, fontWeight: '500', lineHeight: 24, color: c.textMuted },
 
   // Section headings
-  sectionHeading: { fontSize: 16, fontWeight: '600', lineHeight: 24, color: '#111827' },
+  sectionHeading: { fontSize: 16, fontWeight: '600', lineHeight: 24, color: c.text },
 
   // Requester card
   profileRow: {
@@ -784,17 +801,17 @@ const styles = StyleSheet.create({
     gap: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
-    backgroundColor: '#F8FAFC',
+    borderColor: c.border,
+    backgroundColor: c.background,
     padding: 16,
   },
   avatarWrap: { width: 64, height: 64 },
-  avatar: { width: 64, height: 64, borderRadius: 9999, borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: '#EDEEF2' },
+  avatar: { width: 64, height: 64, borderRadius: 9999, borderWidth: 2, borderColor: c.textOnPrimary, backgroundColor: c.border },
   avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { fontSize: 22, fontWeight: '700', color: '#922124' },
+  avatarInitial: { fontSize: 22, fontWeight: '700', color: c.primary },
   profileTextBlock: { flex: 1, gap: 3 },
-  profileName: { fontSize: 16, fontWeight: '700', lineHeight: 22, color: '#111827' },
-  profileRole: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
+  profileName: { fontSize: 16, fontWeight: '700', lineHeight: 22, color: c.text },
+  profileRole: { fontSize: 14, color: c.textMuted, lineHeight: 20 },
 
   dividerRow: {
     flexDirection: 'row',
@@ -803,28 +820,28 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: c.border,
   },
-  rowLabel: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
-  rowValue: { flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '600', lineHeight: 20, color: '#1F2937' },
+  rowLabel: { fontSize: 14, color: c.textMuted, lineHeight: 20 },
+  rowValue: { flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '600', lineHeight: 20, color: c.text },
 
   // Location card
   tileGroup: { gap: 16 },
-  infoTile: { borderRadius: 16, backgroundColor: '#F9FAFB', padding: 12, gap: 4 },
-  tileLabel: { fontSize: 12, fontWeight: '600', letterSpacing: 0.5, color: '#9CA3AF', textTransform: 'uppercase' },
-  tileValue: { fontSize: 16, lineHeight: 24, color: '#374151' },
+  infoTile: { borderRadius: 16, backgroundColor: c.surfaceAlt, padding: 12, gap: 4 },
+  tileLabel: { fontSize: 12, fontWeight: '600', letterSpacing: 0.5, color: c.textFaint, textTransform: 'uppercase' },
+  tileValue: { fontSize: 16, lineHeight: 24, color: c.textMuted },
   damageBlock: { gap: 8 },
   damageBox: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
-    backgroundColor: '#F8FAFC',
+    borderColor: c.border,
+    backgroundColor: c.background,
     padding: 16,
   },
-  damageText: { fontSize: 16, lineHeight: 24, color: '#374151' },
+  damageText: { fontSize: 16, lineHeight: 24, color: c.textMuted },
 
   // Header assignment / materials / examine
-  techProfileName: { fontSize: 15, fontWeight: '700', lineHeight: 20, color: '#111827' },
+  techProfileName: { fontSize: 15, fontWeight: '700', lineHeight: 20, color: c.text },
   techListItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -833,7 +850,7 @@ const styles = StyleSheet.create({
   },
   techListItemBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: c.border,
   },
   matHeader: {
     flexDirection: 'row',
@@ -844,7 +861,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -852,38 +869,38 @@ const styles = StyleSheet.create({
   addMatBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: c.textOnPrimary,
   },
   matList: { marginTop: 12, gap: 10 },
   matItem: {
-    borderWidth: 1, borderColor: '#EEF2F7', borderRadius: 14,
-    backgroundColor: '#FFFFFF', padding: 12, gap: 10,
+    borderWidth: 1, borderColor: c.border, borderRadius: 14,
+    backgroundColor: c.surface, padding: 12, gap: 10,
   },
-  matItemDraft: { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' },
+  matItemDraft: { backgroundColor: c.warningSoft, borderColor: c.warning },
   matItemHead: {
     flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8,
   },
-  matItemName: { flex: 1, fontSize: 15, fontWeight: '700', color: '#111827', lineHeight: 20 },
+  matItemName: { flex: 1, fontSize: 15, fontWeight: '700', color: c.text, lineHeight: 20 },
   matStatusTag: {
-    backgroundColor: '#ECFDF5', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2,
+    backgroundColor: c.successSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2,
   },
-  matStatusTagText: { fontSize: 11, fontWeight: '700', color: '#15803D' },
+  matStatusTagText: { fontSize: 11, fontWeight: '700', color: c.success },
   matItemRows: {
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E5E7EB', paddingTop: 8, gap: 6,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border, paddingTop: 8, gap: 6,
   },
   matDetailRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  matDetailLabel: { fontSize: 13, color: '#6B7280' },
-  matDetailValue: { flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '600', color: '#1F2937' },
-  matDetailValueEmphasis: { fontSize: 15, fontWeight: '700', color: '#B33939' },
+  matDetailLabel: { fontSize: 13, color: c.textMuted },
+  matDetailValue: { flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '600', color: c.text },
+  matDetailValueEmphasis: { fontSize: 15, fontWeight: '700', color: c.primary },
   draftTagCell: { alignItems: 'center', justifyContent: 'center' },
   draftTag: {
-    fontSize: 11, fontWeight: '700', color: '#C2410C',
-    backgroundColor: '#FFEDD5', borderRadius: 999,
+    fontSize: 11, fontWeight: '700', color: c.warning,
+    backgroundColor: c.warningSoft, borderRadius: 999,
     paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden',
   },
-  draftHint: { marginTop: 10, fontSize: 12, color: '#C2410C', lineHeight: 18 },
-  matEmptyText: { marginTop: 12, fontSize: 14, color: '#9CA3AF', textAlign: 'center' },
-  examineText: { fontSize: 15, fontWeight: '600', color: '#15803D', lineHeight: 22, marginTop: 4 },
+  draftHint: { marginTop: 10, fontSize: 12, color: c.warning, lineHeight: 18 },
+  matEmptyText: { marginTop: 12, fontSize: 14, color: c.textFaint, textAlign: 'center' },
+  examineText: { fontSize: 15, fontWeight: '600', color: c.success, lineHeight: 22, marginTop: 4 },
 
   // Bottom action bar
   actionBar: {
@@ -891,7 +908,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', gap: 12,
     paddingHorizontal: 20, paddingTop: 16, paddingBottom: 18,
     backgroundColor: 'rgba(255,255,255,0.96)',
-    borderTopWidth: 1, borderTopColor: '#F3F4F6',
+    borderTopWidth: 1, borderTopColor: c.border,
   },
   actionBtn: { minHeight: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 8 },
   actionBtnDisabled: { opacity: 0.5 },
@@ -899,18 +916,18 @@ const styles = StyleSheet.create({
   threeQuarterFlex: { flex: 3 },
   quarterFlex: { flex: 1 },
   approveBtn: {
-    backgroundColor: '#B33939',
-    shadowColor: '#B33939',
+    backgroundColor: c.primary,
+    shadowColor: c.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 3,
   },
-  approveText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  approveText: { fontSize: 14, fontWeight: '700', color: c.textOnPrimary },
   rejectBtn: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FEE2E2' },
-  rejectText: { fontSize: 14, fontWeight: '600', color: '#B33939' },
-  cancelBtn: { borderWidth: 1, borderColor: '#F3F4F6' },
-  cancelText: { fontSize: 14, fontWeight: '600', color: '#374151' },
-  editBtn: { backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#DBEAFE' },
-  editText: { fontSize: 14, fontWeight: '600', color: '#1D4ED8' },
+  rejectText: { fontSize: 14, fontWeight: '600', color: c.primary },
+  cancelBtn: { borderWidth: 1, borderColor: c.border },
+  cancelText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
+  editBtn: { backgroundColor: c.infoSoft, borderWidth: 1, borderColor: '#DBEAFE' },
+  editText: { fontSize: 14, fontWeight: '600', color: c.info },
 });

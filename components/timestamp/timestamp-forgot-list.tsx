@@ -1,4 +1,4 @@
-import { ChevronRight, Clock, Fingerprint, LogIn, LogOut } from 'lucide-react-native';
+import { ChevronRight, Clock, Inbox, LogIn, LogOut } from 'lucide-react-native';
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -8,8 +8,10 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ErrorState } from "@/components/error-state";
+import { EmptyState } from "@/components/empty-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ThemedText } from "@/components/themed-text";
 import { AppFonts } from "@/constants/fonts";
@@ -133,7 +135,17 @@ function hasSubmittedRequest(item: Timestamp) {
   return false;
 }
 
+// Icon + colour that convey the miss-timestamp type — kept in sync with the
+// approve screens: forgot check-in (green), check-out (amber), both (red).
+function getTypeIcon(stampType: string) {
+  if (stampType === "in") return { Icon: LogIn, color: "#12805C", bg: "#E7F5EF" };
+  if (stampType === "out") return { Icon: LogOut, color: "#B54708", bg: "#FDF3E7" };
+  return { Icon: Clock, color: "#B33939", bg: "#FBEAEA" };
+}
+
 function TimestampItem({ item }: { item: Timestamp }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const alreadyRequested = hasSubmittedRequest(item);
   const canOpenDetail = isStatusTrue(item) || alreadyRequested;
   const showAppealDocumentMessage = isStatusFalse(item) && !alreadyRequested;
@@ -141,6 +153,7 @@ function TimestampItem({ item }: { item: Timestamp }) {
   const dateValue = getItemDateValue(item);
   const dateLabel = dateValue ? formatFullDate(dateValue) : "";
   const stampType = getStampType(item);
+  const { Icon: TypeIcon, color: typeColor, bg: typeBg } = getTypeIcon(stampType);
 
   const handlePress = () => {
     if (!canOpenDetail) return;
@@ -153,7 +166,6 @@ function TimestampItem({ item }: { item: Timestamp }) {
     } as Parameters<typeof router.push>[0]);
   };
 
-  const StampIcon = stampType === "in" ? LogIn : stampType === "out" ? LogOut : Fingerprint;
 
   return (
     <Pressable
@@ -164,8 +176,8 @@ function TimestampItem({ item }: { item: Timestamp }) {
     >
       <View style={[styles.itemCard, isUnavailable && styles.itemCardUnavailable]}>
         <View style={styles.itemRow}>
-          <View style={styles.iconCircle}>
-            <StampIcon size={18} color="#5D6371" />
+          <View style={[styles.iconCircle, { backgroundColor: typeBg }]}>
+            <TypeIcon size={18} color={typeColor} />
           </View>
           <View style={styles.itemInfo}>
             <ThemedText style={styles.itemTitle}>{getItemTitle(item)}</ThemedText>
@@ -198,6 +210,8 @@ function TimestampItem({ item }: { item: Timestamp }) {
 }
 
 export function TimestampForgotList() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const [items, setItems] = useState<Timestamp[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -253,7 +267,7 @@ export function TimestampForgotList() {
       </View>
 
       <View style={styles.noteBox}>
-        <Clock size={20} color="#922124" style={styles.noteIcon} />
+        <Clock size={20} color={c.primary} style={styles.noteIcon} />
         <ThemedText style={styles.noteText}>
           {TEXT.TIMESTAMP_NOTE_TEXT}
         </ThemedText>
@@ -296,22 +310,17 @@ export function TimestampForgotList() {
       }
       renderItem={({ item }) => <TimestampItem item={item} />}
       ListHeaderComponent={listHeader}
-      ListEmptyComponent={
-        <View style={styles.emptyCard}>
-          <ThemedText style={styles.emptyMessage}>
-            {TEXT.SHARED_EMPTY_DATA}
-          </ThemedText>
-        </View>
-      }
+      ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.SHARED_EMPTY_DATA} />}
     />
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   flatList: {
     flex: 1,
   },
   listContent: {
+    flexGrow: 1,
     padding: 16,
     gap: 12,
   },
@@ -326,27 +335,27 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 28,
     fontWeight: "700",
-    color: "#922124",
+    color: c.primary,
     fontFamily: AppFonts.psuBold,
   },
   welcomeSubtitle: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#584140",
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   cycleText: {
     fontSize: 12,
     lineHeight: 16,
-    color: "#585E6D",
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   noteBox: {
     flexDirection: "row",
     gap: 10,
-    backgroundColor: "#F2F3F7",
+    backgroundColor: c.surfaceMuted,
     borderLeftWidth: 4,
-    borderLeftColor: "#922124",
+    borderLeftColor: c.primary,
     borderRadius: 12,
     padding: 14,
   },
@@ -357,24 +366,24 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     lineHeight: 19,
-    color: "#584140",
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   itemCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(223,191,189,0.3)",
     padding: 16,
     gap: 10,
-    shadowColor: "#000",
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
   },
   itemCardUnavailable: {
-    backgroundColor: "#F8F9FD",
+    backgroundColor: c.background,
     borderColor: "rgba(223,191,189,0.2)",
   },
   itemPressed: {
@@ -388,8 +397,8 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 40,
     height: 40,
-    borderRadius: 8,
-    backgroundColor: "#DADFF0",
+    borderRadius: 20,
+    backgroundColor: c.primarySoft,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -402,13 +411,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
     fontWeight: "600",
-    color: "#191C1F",
+    color: c.text,
     fontFamily: AppFonts.psuBold,
   },
   itemDate: {
     fontSize: 12,
     lineHeight: 16,
-    color: "#585E6D",
+    color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   itemRight: {
@@ -418,20 +427,20 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   actionBadge: {
-    backgroundColor: "#B33939",
+    backgroundColor: c.primary,
     borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
   actionBadgeText: {
-    color: "#FFFFFF",
+    color: c.textOnPrimary,
     fontSize: 9,
     fontWeight: "700",
     letterSpacing: 0.5,
     fontFamily: AppFonts.psuBold,
   },
   pendingBadge: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: c.warningSoft,
     borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -445,7 +454,7 @@ const styles = StyleSheet.create({
   appealMessage: {
     fontSize: 12,
     lineHeight: 18,
-    color: "#B33939",
+    color: c.primary,
     fontFamily: AppFonts.psuRegular,
   },
   stateContainer: {
@@ -455,7 +464,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   emptyCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: c.surface,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
@@ -465,7 +474,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(223,191,189,0.2)",
   },
   emptyMessage: {
-    color: "#687076",
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",

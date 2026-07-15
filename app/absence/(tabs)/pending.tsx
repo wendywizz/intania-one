@@ -2,7 +2,9 @@ import { useFocusEffect } from 'expo-router';
 import { Inbox } from 'lucide-react-native';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
+import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -102,6 +104,8 @@ type RequestCardProps = {
 // One card shape shared by both "รออนุมัติลา" and "อนุมัติผู้ยื่นลา" so their
 // details render identically: name (bold), leave type, date range and badge.
 function RequestCard({ item, name, onPress }: RequestCardProps) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const type = getAbsenceType(item);
   const typeLabel = getText(item, ['approveName']) || getAbsenceTypeLabel(item);
   const dateRange = getDateRange(item);
@@ -110,7 +114,7 @@ function RequestCard({ item, name, onPress }: RequestCardProps) {
   const body = (
     <View style={styles.itemRow}>
       <View style={styles.itemIconCircle}>
-        <IconSymbol name={icon} size={20} color="#922124" />
+        <IconSymbol name={icon} size={20} color={c.primary} />
       </View>
       <View style={styles.itemBody}>
         {name ? (
@@ -143,6 +147,8 @@ function RequestCard({ item, name, onPress }: RequestCardProps) {
 type PendingTab = 'approve' | 'mine';
 
 export default function PendingScreen() {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const [items, setItems] = useState<{ remain: absence | null; cancel: absence | null }>({
     remain: null,
@@ -219,10 +225,7 @@ export default function PendingScreen() {
   }, []);
 
   const renderEmpty = () => (
-    <>
-      <Inbox size={40} color="#C7CBD1" strokeWidth={1.5} />
-      <ThemedText style={styles.emptyText}>{TEXT.SHARED_NO_ITEMS}</ThemedText>
-    </>
+    <EmptyState icon={Inbox} message={TEXT.SHARED_NO_ITEMS} />
   );
 
   // A scrollable list body that either lists the cards or, when empty, shows the
@@ -332,17 +335,17 @@ export default function PendingScreen() {
       <NavTopBar
         title={TEXT.ABSENCE_TITLE}
         subtitle={TEXT.ABSENCE_PENDING_TITLE}
-        moduleIcon="calendar-clock"
+        moduleIcon="clock.fill"
       />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FD',
+    backgroundColor: c.background,
   },
   headerSection: {
     paddingHorizontal: 24,
@@ -354,21 +357,21 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 28,
     fontWeight: '600',
-    color: '#191C1F',
+    color: c.text,
   },
   pageSubtitle: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#585E6D',
+    color: c.textMuted,
   },
   content: {
     flex: 1,
   },
   topTabBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: c.border,
   },
   topTab: {
     flex: 1,
@@ -380,10 +383,10 @@ const styles = StyleSheet.create({
   topTabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#9CA3AF',
+    color: c.textFaint,
   },
   topTabTextActive: {
-    color: '#922124',
+    color: c.primary,
   },
   topTabIndicator: {
     height: 3,
@@ -392,7 +395,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   topTabIndicatorActive: {
-    backgroundColor: '#922124',
+    backgroundColor: c.primary,
   },
   tabContent: {
     flex: 1,
@@ -416,7 +419,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     minHeight: 34,
     borderRadius: 2,
-    backgroundColor: '#922124',
+    backgroundColor: c.primary,
   },
   sectionHeaderText: {
     flex: 1,
@@ -426,12 +429,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '700',
-    color: '#191C1F',
+    color: c.text,
   },
   sectionSubtitle: {
     fontSize: 12,
     lineHeight: 16,
-    color: '#585E6D',
+    color: c.textMuted,
   },
   sectionCountChip: {
     minWidth: 24,
@@ -445,11 +448,11 @@ const styles = StyleSheet.create({
   sectionCountText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#922124',
+    color: c.primary,
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: c.border,
     marginVertical: 4,
   },
   sectionScroll: {
@@ -474,12 +477,12 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   itemCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#DFBFBD',
+    borderColor: c.border,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -506,27 +509,27 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#191C1F',
+    color: c.text,
   },
   itemRequester: {
     fontSize: 15,
     lineHeight: 22,
     fontWeight: '700',
-    color: '#191C1F',
+    color: c.text,
   },
   itemDate: {
     fontSize: 12,
     lineHeight: 16,
-    color: '#585E6D',
+    color: c.textMuted,
   },
   itemStep: {
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '500',
-    color: '#585E6D',
+    color: c.textMuted,
   },
   pendingBadge: {
-    backgroundColor: '#E1E2E6',
+    backgroundColor: c.surfaceMuted,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -535,7 +538,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '500',
-    color: '#584140',
+    color: c.textMuted,
   },
   stateBox: {
     flex: 1,
@@ -547,13 +550,13 @@ const styles = StyleSheet.create({
   stateTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#191C1F',
+    color: c.text,
     textAlign: 'center',
   },
   errorText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#B42318',
+    color: c.danger,
     textAlign: 'center',
   },
   retryButton: {
@@ -562,7 +565,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#B33939',
+    backgroundColor: c.primary,
     marginTop: 8,
     paddingHorizontal: 24,
   },
@@ -575,7 +578,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#585E6D',
+    color: c.textMuted,
     textAlign: 'center',
   },
 });
