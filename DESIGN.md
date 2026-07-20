@@ -16,13 +16,13 @@ colors:
   outline: '#8b716f'
   outline-variant: '#dfbfbd'
   surface-tint: '#ab3334'
-  primary: '#922124'
+  primary: '#b33939'
   on-primary: '#ffffff'
   primary-container: '#b33939'
   on-primary-container: '#ffd9d7'
   inverse-primary: '#ffb3ae'
-  secondary: '#585e6d'
-  on-secondary: '#ffffff'
+  secondary: 'rgba(20, 20, 20, 0.08)'
+  on-secondary: '#141414'
   secondary-container: '#dadff0'
   on-secondary-container: '#5d6371'
   tertiary: '#444d5b'
@@ -33,6 +33,10 @@ colors:
   on-error: '#ffffff'
   error-container: '#ffdad6'
   on-error-container: '#93000a'
+  success: '#2ecc71'
+  info: '#3498db'
+  danger: '#e74c3c'
+  warning: '#f1c40f'
   primary-fixed: '#ffdad7'
   primary-fixed-dim: '#ffb3ae'
   on-primary-fixed: '#410005'
@@ -117,8 +121,9 @@ The visual style is **Corporate Modern**, leaning heavily into high-end utility.
 
 ## Colors
 This design system utilizes a "High-Value Interaction" color strategy. 
-- **Primary Red (#b33939):** Reserved strictly for primary call-to-actions (CTAs), key brand moments, and critical status indicators. 
-- **Secondary Navy (#2f3542):** Used for typography and navigation elements to provide a grounded, professional contrast.
+- **Primary (#b33939):** Reserved strictly for primary call-to-actions (CTAs), key brand moments, and critical status indicators. 
+- **Secondary (rgba(20, 20, 20, 0.08)):** The subtle neutral fill used behind circular icon buttons — matching the nav-top-bar back button background (the text color `#141414` at ~8% opacity). Used for low-emphasis, tappable icon affordances.
+- **Inverse (#2e3134):** The inverse surface — a dark slate used for inverted UI (e.g. snackbars, tooltips, high-contrast surfaces) and to ground content against the light canvas.
 - **Neutrals:** A spectrum of cool grays provides the scaffolding for the interface, creating clear boundaries between content sections without adding visual noise.
 - **Semantic Colors:** Success, Warning, and Error colors are slightly desaturated to maintain harmony with the deep primary red.
 

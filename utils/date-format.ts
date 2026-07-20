@@ -52,10 +52,23 @@ export function formatDateTime(value: string) {
 }
 
 export function formatNewsDate(value: string) {
-  const m = parseDateTime(value);
-  if (!m) return value;
-  const base = m.locale('en').format('D MMMM YYYY');
-  const hasTime = /\d{1,2}:\d{2}/.test(value.trim());
+  const trimmed = value.trim();
+  if (!trimmed) return value;
+
+  // News feeds (RSS) send RFC-2822 dates carrying a timezone, e.g.
+  // "Tue, 27 Jun 2023 10:45:00 GMT". parseDateTime's strict formats reject
+  // those, so parse the absolute instant here and re-express it in Thai time
+  // (UTC+7) — that drops the "GMT" label and shows the local Thai clock.
+  let m = parseDateTime(trimmed);
+  if (!m) {
+    const rfc = moment(trimmed, moment.RFC_2822, true);
+    const parsed = rfc.isValid() ? rfc : moment(new Date(trimmed));
+    if (!parsed.isValid()) return value;
+    m = parsed.utcOffset(420); // Asia/Bangkok (no DST)
+  }
+
+  const hasTime = /\d{1,2}:\d{2}/.test(trimmed);
+  const base = m.locale('en').format('D MMM YYYY');
   return hasTime ? `${base} - ${m.format('HH:mm')}` : base;
 }
 

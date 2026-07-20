@@ -1,16 +1,13 @@
 import { TEXT } from "@/constants/text";
 import { router, useLocalSearchParams } from "expo-router";
 import { navPush } from "@/utils/navigation";
-import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Image,
-    Modal,
     Pressable,
     ScrollView,
     StyleSheet,
-    TextInput,
     View,
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
@@ -21,8 +18,7 @@ import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { AppFonts } from "@/constants/fonts";
+import { ConfirmDialog, IconSymbol, TextField } from "@/components/ui";
 import {
     REPAIR_STATUS_WAIT_WORKER,
     REPAIR_STATUS_WORKING,
@@ -506,48 +502,27 @@ export default function RepairComputerEditJobScreen() {
           </>
         ) : (
           <>
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
-                {TEXT.REPAIR_COMPUTER_DETAIL}
-              </ThemedText>
-              <TextInput
-                multiline
-                numberOfLines={2}
-                onChangeText={setDetail}
-                placeholder={TEXT.REPAIR_COMPUTER_DETAIL}
-                placeholderTextColor="#8A969C"
-                style={[styles.input, styles.textArea]}
-                textAlignVertical="top"
-                value={detail}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
-                {TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
-              </ThemedText>
-              <TextInput
-                onChangeText={setSupplyCode}
-                placeholder={TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
-                placeholderTextColor="#8A969C"
-                style={styles.input}
-                value={supplyCode}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
-                {TEXT.REPAIR_COMPUTER_PHONE}
-              </ThemedText>
-              <TextInput
-                keyboardType="phone-pad"
-                onChangeText={setPhone}
-                placeholder={TEXT.REPAIR_COMPUTER_PHONE}
-                placeholderTextColor="#8A969C"
-                style={styles.input}
-                value={phone}
-              />
-            </View>
+            <TextField
+              label={TEXT.REPAIR_COMPUTER_DETAIL}
+              multiline
+              numberOfLines={2}
+              value={detail}
+              onChangeText={setDetail}
+              placeholder={TEXT.REPAIR_COMPUTER_DETAIL}
+            />
+            <TextField
+              label={TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
+              value={supplyCode}
+              onChangeText={setSupplyCode}
+              placeholder={TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
+            />
+            <TextField
+              label={TEXT.REPAIR_COMPUTER_PHONE}
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+              placeholder={TEXT.REPAIR_COMPUTER_PHONE}
+            />
           </>
         )}
 
@@ -728,119 +703,27 @@ export default function RepairComputerEditJobScreen() {
         type={toastType === "error" ? "error" : "success"}
       />
 
-      <Modal
-        transparent
+      <ConfirmDialog
         visible={isWorkerAcceptConfirmOpen}
-        animationType="fade"
-        onRequestClose={() => setIsWorkerAcceptConfirmOpen(false)}
-      >
-        <Pressable
-          style={styles.backdrop}
-          onPress={() => setIsWorkerAcceptConfirmOpen(false)}
-        >
-          <Pressable>
-            <ThemedView
-              style={styles.confirmModal}
-              lightColor="#FFFFFF"
-              darkColor="#151718"
-            >
-              <ThemedText type="subtitle">Confirm Accept</ThemedText>
-              <ThemedText style={styles.confirmMessage}>
-                Do you want to accept this repair computer job?
-              </ThemedText>
-              <View style={styles.confirmActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isWorkerActionSubmitting}
-                  onPress={() => setIsWorkerAcceptConfirmOpen(false)}
-                  style={styles.cancelButton}
-                >
-                  <ThemedText type="defaultSemiBold">No</ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isWorkerActionSubmitting}
-                  onPress={handleWorkerAccept}
-                  style={[
-                    styles.confirmButton,
-                    isWorkerActionSubmitting
-                      ? styles.disabledButton
-                      : undefined,
-                  ]}
-                >
-                  {isWorkerActionSubmitting ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : null}
-                  <ThemedText
-                    lightColor="#FFFFFF"
-                    darkColor="#FFFFFF"
-                    type="defaultSemiBold"
-                  >
-                    Yes
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        title="Confirm Accept"
+        message="Do you want to accept this repair computer job?"
+        confirmLabel="Yes"
+        cancelLabel="No"
+        loading={isWorkerActionSubmitting}
+        onConfirm={handleWorkerAccept}
+        onCancel={() => setIsWorkerAcceptConfirmOpen(false)}
+      />
 
-      <Modal
-        transparent
+      <ConfirmDialog
         visible={isWorkerCloseConfirmOpen}
-        animationType="fade"
-        onRequestClose={() => setIsWorkerCloseConfirmOpen(false)}
-      >
-        <Pressable
-          style={styles.backdrop}
-          onPress={() => setIsWorkerCloseConfirmOpen(false)}
-        >
-          <Pressable>
-            <ThemedView
-              style={styles.confirmModal}
-              lightColor="#FFFFFF"
-              darkColor="#151718"
-            >
-              <ThemedText type="subtitle">Confirm Close Job</ThemedText>
-              <ThemedText style={styles.confirmMessage}>
-                Do you want to close this repair computer job?
-              </ThemedText>
-              <View style={styles.confirmActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isWorkerActionSubmitting}
-                  onPress={() => setIsWorkerCloseConfirmOpen(false)}
-                  style={styles.cancelButton}
-                >
-                  <ThemedText type="defaultSemiBold">No</ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isWorkerActionSubmitting}
-                  onPress={handleWorkerCloseJob}
-                  style={[
-                    styles.confirmButton,
-                    isWorkerActionSubmitting
-                      ? styles.disabledButton
-                      : undefined,
-                  ]}
-                >
-                  {isWorkerActionSubmitting ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : null}
-                  <ThemedText
-                    lightColor="#FFFFFF"
-                    darkColor="#FFFFFF"
-                    type="defaultSemiBold"
-                  >
-                    Yes
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        title="Confirm Close Job"
+        message="Do you want to close this repair computer job?"
+        confirmLabel="Yes"
+        cancelLabel="No"
+        loading={isWorkerActionSubmitting}
+        onConfirm={handleWorkerCloseJob}
+        onCancel={() => setIsWorkerCloseConfirmOpen(false)}
+      />
     </ThemedView>
   );
 }
@@ -904,21 +787,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     lineHeight: 21,
-  },
-  input: {
-    minHeight: 46,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-    color: c.text,
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  textArea: {
-    minHeight: 76,
   },
   readOnlyValue: {
     minHeight: 34,
@@ -1041,48 +909,5 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: c.primary,
     marginTop: 4,
     paddingHorizontal: 18,
-  },
-  backdrop: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(17, 24, 28, 0.45)",
-    padding: 24,
-  },
-  confirmModal: {
-    width: "100%",
-    maxWidth: 420,
-    borderRadius: 8,
-    padding: 18,
-  },
-  confirmMessage: {
-    color: c.textMuted,
-    lineHeight: 20,
-    marginTop: 10,
-  },
-  confirmActions: {
-    flexDirection: "row-reverse",
-    gap: 12,
-    marginTop: 18,
-  },
-  cancelButton: {
-    minHeight: 46,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-  },
-  confirmButton: {
-    minHeight: 46,
-    flex: 1,
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.primary,
   },
 });

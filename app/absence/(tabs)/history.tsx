@@ -12,10 +12,10 @@ import {
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ErrorState } from '@/components/error-state';
-import { Inbox } from 'lucide-react-native';
+import { CalendarDays, Inbox } from 'lucide-react-native';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingAnimate } from '@/components/loading-animate';
-import { NavTopBar } from '@/components/nav-top-bar';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -88,7 +88,7 @@ function getDateRange(item: absence) {
   const startDate = getText(item, startDateFields);
   const endDate = getText(item, endDateFields);
   const formatted = formatDateRange(startDate, endDate);
-  return formatted ? `${TEXT.ABSENCE_HISTORY_DATE_PREFIX}${formatted}` : '';
+  return formatted || '';
 }
 
 function getAbsenceTimestamp(item: absence) {
@@ -129,18 +129,23 @@ function HistoryListItem({ item, onPress }: HistoryListItemProps) {
   const type = getAbsenceType(item);
   const typeLabel = getAbsenceTypeLabel(item);
   const dateRange = getDateRange(item);
-  const { iconBg, iconColor, icon } = getIconStyle(type);
+  const { iconColor, icon } = getIconStyle(type);
 
   return (
     <Pressable accessibilityRole="button" onPress={() => onPress(item)} style={styles.itemCard}>
-      <View style={[styles.itemIconCircle, { backgroundColor: iconBg }]}>
+      <View style={styles.itemIconCircle}>
         <IconSymbol name={icon} size={22} color={iconColor} />
       </View>
       <View style={styles.itemBody}>
         <ThemedText style={styles.itemTitle}>{typeLabel}</ThemedText>
-        {dateRange ? <ThemedText style={styles.itemDate}>{dateRange}</ThemedText> : null}
+        {dateRange ? (
+          <View style={styles.itemDateRow}>
+            <CalendarDays size={13} color={c.textMuted} />
+            <ThemedText style={styles.itemDate}>{dateRange}</ThemedText>
+          </View>
+        ) : null}
       </View>
-      <IconSymbol name="chevron.right" size={16} color={c.textMuted} style={{ opacity: 0.4 }} />
+      <IconSymbol name="chevron.right" size={16} color={c.textMuted} style={{ opacity: 0.4, alignSelf: 'center' }} />
     </Pressable>
   );
 }
@@ -267,11 +272,7 @@ export default function HistoryScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar
-        title={TEXT.ABSENCE_TITLE}
-        subtitle={TEXT.ABSENCE_HISTORY_TITLE}
-        moduleIcon="history"
-      />
+      <ScreenHeader title={TEXT.ABSENCE_HISTORY_TITLE} backHref="/" />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
@@ -280,7 +281,7 @@ export default function HistoryScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: c.background,
+    backgroundColor: '#ffffff',
   },
   pageTitleSection: {
     paddingHorizontal: 16,
@@ -307,30 +308,22 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-    gap: 12,
     padding: 16,
     paddingTop: 20,
     paddingBottom: 96,
   },
   itemCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
-    backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(223, 191, 189, 0.3)',
-    padding: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    paddingVertical: 22,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
   itemIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -344,6 +337,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     lineHeight: 24,
     fontWeight: '600',
     color: c.text,
+  },
+  itemDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 3,
   },
   itemDate: {
     fontSize: 13,

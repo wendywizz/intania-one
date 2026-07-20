@@ -2,9 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
-    ActivityIndicator,
     Image,
-    Modal,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -17,7 +15,7 @@ import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Button, ConfirmDialog, IconSymbol } from "@/components/ui";
 import { TEXT } from "@/constants/text";
 import { PRIVILEGE_RC_FOREMAN } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
@@ -517,7 +515,7 @@ export default function AssignJobScreen() {
       <ThemedView style={styles.container}>
         <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} onBackPress={handleBackPress} showBackButton />
         <View style={styles.stateContent}>
-          <LoadingAnimate title="Loading data" desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
+          <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
         </View>
       </ThemedView>
     );
@@ -567,7 +565,7 @@ export default function AssignJobScreen() {
                     <IconSymbol
                       name={getRepairComputerTypeIcon(itemId, getRepairTypeName(item))}
                       size={20}
-                      color={isSelected ? "#b33939" : "#8A8F9D"}
+                      color={isSelected ? "#B33939" : "#8A8F9D"}
                     />
                   </View>
                   <ThemedText
@@ -722,66 +720,25 @@ export default function AssignJobScreen() {
 
       {/* Fixed CTA bar */}
       <View style={styles.bottomBar}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={handleBackPress}
-          style={styles.backButton}
-        >
-          <ThemedText style={styles.backButtonText} type="defaultSemiBold">
-            Back
-          </ThemedText>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
+        <Button title="Back" variant="secondary" onPress={handleBackPress} />
+        <Button
+          title={ctaLabel}
           disabled={ctaDisabled}
           onPress={handleCta}
-          style={[styles.ctaButton, ctaDisabled && styles.ctaButtonDisabled]}
-        >
-          <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-            {ctaLabel}
-          </ThemedText>
-        </Pressable>
+          style={styles.ctaButton}
+        />
       </View>
 
-      {/* Confirm modal */}
-      <Modal
-        transparent
+      <ConfirmDialog
         visible={isConfirmOpen}
-        animationType="fade"
-        onRequestClose={() => setIsConfirmOpen(false)}
-      >
-        <Pressable style={styles.backdrop} onPress={() => setIsConfirmOpen(false)}>
-          <Pressable>
-            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
-              <ThemedText type="subtitle">Confirm Assignment</ThemedText>
-              <ThemedText style={styles.confirmMessage}>
-                Assign this job to the selected worker?
-              </ThemedText>
-              <View style={styles.confirmActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting}
-                  onPress={() => setIsConfirmOpen(false)}
-                  style={styles.cancelButton}
-                >
-                  <ThemedText type="defaultSemiBold">Cancel</ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting}
-                  onPress={handleAssign}
-                  style={[styles.confirmButton, isSubmitting && styles.disabledButton]}
-                >
-                  {isSubmitting && <ActivityIndicator color="#FFFFFF" size="small" />}
-                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                    {isSubmitting ? "Assigning…" : "Confirm"}
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        title="Confirm Assignment"
+        message="Assign this job to the selected worker?"
+        confirmLabel="Confirm"
+        cancelLabel="Cancel"
+        loading={isSubmitting}
+        onConfirm={handleAssign}
+        onCancel={() => setIsConfirmOpen(false)}
+      />
 
       <AppToast message={toastMessage} type={toastType === "error" ? "error" : "success"} />
     </ThemedView>
@@ -1169,29 +1126,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     boxShadow: "0 -2px 10px rgba(0,0,0,0.07)",
     elevation: 12,
   },
-  backButton: {
-    minHeight: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: c.border,
-    paddingHorizontal: 20,
-  },
-  backButtonText: {
-    color: c.textMuted,
-    fontSize: 14,
-  },
   ctaButton: {
     flex: 1,
-    minHeight: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.primary,
-  },
-  ctaButtonDisabled: {
-    opacity: 0.45,
   },
 
   // ── State: loading / error ────────────────────────────────────────────────────
@@ -1219,53 +1155,5 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 8,
     backgroundColor: c.primary,
     marginTop: 24,
-  },
-
-  // ── Confirm modal ─────────────────────────────────────────────────────────────
-  backdrop: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(17, 24, 28, 0.45)",
-    padding: 24,
-  },
-  confirmModal: {
-    width: "100%",
-    maxWidth: 420,
-    borderRadius: 8,
-    padding: 18,
-  },
-  confirmMessage: {
-    color: c.textMuted,
-    lineHeight: 20,
-    marginTop: 10,
-  },
-  confirmActions: {
-    flexDirection: "row-reverse",
-    gap: 12,
-    marginTop: 18,
-  },
-  cancelButton: {
-    minHeight: 46,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-  },
-  confirmButton: {
-    minHeight: 46,
-    flex: 1,
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.primary,
-  },
-  disabledButton: {
-    opacity: 0.65,
   },
 });

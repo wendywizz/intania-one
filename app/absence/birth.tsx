@@ -1,3 +1,4 @@
+import { X } from "lucide-react-native";
 import { TEXT } from "@/constants/text";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { navReplace } from "@/utils/navigation";
@@ -5,6 +6,7 @@ import { useCallback, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Modal,
+    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -17,9 +19,10 @@ import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
-import { NavTopBar } from "@/components/nav-top-bar";
+import { ScreenHeader } from "@/components/screen-header";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { UserAvatar } from "@/components/user-avatar";
 import { AppFonts } from "@/constants/fonts";
 import { TYPE_ABSENCE_BIRTH } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
@@ -41,6 +44,10 @@ import {
 } from "@/utils/absence-form";
 import { getStaffDisplayLabel } from "@/utils/staff-label";
 
+// Remove the default focus outline on web so active inputs match the
+// borderless underline style (RN Web only; no-op on native).
+const webNoOutline: any = Platform.OS === "web" ? { outlineStyle: "none" } : null;
+
 type Approver = {
   staffId?: string;
   firstNameTH?: string;
@@ -56,6 +63,7 @@ type SelectOption = {
   label: string;
   value: string;
   staffId?: string;
+  photoId?: string;
 };
 
 type SelectFieldProps = {
@@ -82,6 +90,18 @@ function getApproverLabel(approver: Approver) {
 
 function getStaffId(staff: Approver) {
   return getabsenceTextValue(staff as absence, ["staffId", "staff_id", "STAFF_ID", "id"]);
+}
+
+// Staff photos are keyed on the university staff id (UNI_STAFF_ID). Fall back to
+// the internal staffId so an avatar still resolves if only that is present.
+function getStaffPhotoId(staff: Approver) {
+  return (
+    getabsenceTextValue(staff as absence, [
+      "uniStaffId",
+      "uni_staff_id",
+      "UNI_STAFF_ID",
+    ]) || getStaffId(staff)
+  );
 }
 
 function getPositionId(staff: Approver) {
@@ -111,15 +131,20 @@ function SelectField({
 
   return (
     <View style={styles.field}>
-      <ThemedText type="defaultSemiBold">{label}</ThemedText>
+      <ThemedText style={styles.fieldLabel}>{label}</ThemedText>
       <Pressable
         accessibilityRole="button"
         onPress={onToggle}
         style={[styles.selectButton, hasError ? styles.inputError : undefined]}
       >
-        <ThemedText style={[styles.selectText, !displayValue && styles.placeholder]}>
-          {displayValue || placeholder}
-        </ThemedText>
+        <View style={styles.selectValueRow}>
+          {selectedOption?.photoId ? (
+            <UserAvatar staffId={selectedOption.photoId} size={30} />
+          ) : null}
+          <ThemedText style={[styles.selectText, !displayValue && styles.placeholder]} numberOfLines={1}>
+            {displayValue || placeholder}
+          </ThemedText>
+        </View>
         <ThemedText style={styles.chevron}>⌄</ThemedText>
       </Pressable>
       {errorMessage ? (
@@ -148,12 +173,11 @@ function SelectField({
                 </ThemedText>
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
                   onPress={onToggle}
                   style={styles.closeButton}
                 >
-                  <ThemedText type="defaultSemiBold">
-                    {TEXT.SHARED_CLOSE_THAI}
-                  </ThemedText>
+                  <X size={20} color={c.text} />
                 </Pressable>
               </View>
 
@@ -172,16 +196,19 @@ function SelectField({
                         value === option.value ? styles.selectedOption : undefined,
                       ]}
                     >
-                      <ThemedText
-                        lightColor={value === option.value ? "#FFFFFF" : undefined}
-                        darkColor={value === option.value ? "#FFFFFF" : undefined}
-                        style={[
-                          styles.optionText,
-                          value === option.value ? styles.selectedOptionText : undefined,
-                        ]}
-                      >
-                        {option.label}
-                      </ThemedText>
+                      <View style={styles.optionRow}>
+                        {option.photoId ? (
+                          <UserAvatar staffId={option.photoId} size={38} />
+                        ) : null}
+                        <ThemedText
+                          style={[
+                            styles.optionText,
+                            value === option.value ? styles.selectedOptionText : undefined,
+                          ]}
+                        >
+                          {option.label}
+                        </ThemedText>
+                      </View>
                     </Pressable>
                   ))
                 ) : (
@@ -286,6 +313,7 @@ export default function BirthScreen() {
           label: getApproverLabel(item),
           value: getPositionId(item),
           staffId: getStaffId(item),
+          photoId: getStaffPhotoId(item),
         }))
         .filter((item) => item.label && item.value),
     [initialabsenceData],
@@ -442,7 +470,7 @@ export default function BirthScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_BIRTH_TITLE} moduleIcon="figure.child" backHref={backHref} />
+        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -454,7 +482,7 @@ export default function BirthScreen() {
   if (initialError) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_BIRTH_TITLE} moduleIcon="figure.child" backHref={backHref} />
+        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} />
         <ErrorState
           variant={isRetryableInitialError(initialError) ? "error" : "empty"}
           title={
@@ -474,24 +502,13 @@ export default function BirthScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_BIRTH_TITLE} moduleIcon="figure.child" backHref={backHref} />
+      <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} />
 
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <ThemedView
-          style={styles.panel}
-          lightColor="#FFFFFF"
-          darkColor="#1F2B30"
-        >
-          <ThemedText type="subtitle">{TEXT.ABSENCE_BIRTH_TITLE}</ThemedText>
-          {initialabsenceData ? (
-            <ThemedText style={styles.initialStatus}>
-              {TEXT.ABSENCE_INITIAL_DATA_LOADED}
-            </ThemedText>
-          ) : null}
-
+        <View style={styles.formCard}>
           <View style={styles.form}>
             <SelectField
               label={TEXT.ABSENCE_APPROVER_LABEL}
@@ -511,7 +528,7 @@ export default function BirthScreen() {
             />
 
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
+              <ThemedText style={styles.fieldLabel}>
                 {TEXT.ABSENCE_LEAVE_DATE_LABEL}
               </ThemedText>
               <View style={styles.dateRow}>
@@ -555,7 +572,7 @@ export default function BirthScreen() {
             </View>
 
             <View style={styles.field}>
-              <ThemedText type="defaultSemiBold">
+              <ThemedText style={styles.fieldLabel}>
                 {TEXT.ABSENCE_CONTACT_CHANNEL_LABEL}
               </ThemedText>
               <TextInput
@@ -570,6 +587,7 @@ export default function BirthScreen() {
                 style={[
                   styles.input,
                   validationErrors.contact ? styles.inputError : undefined,
+                  webNoOutline,
                 ]}
                 value={contact}
               />
@@ -627,7 +645,7 @@ export default function BirthScreen() {
               ) : null}
             </View>
           </View>
-        </ThemedView>
+        </View>
       </ScrollView>
       <Modal
         transparent
@@ -756,10 +774,12 @@ export default function BirthScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: c.background,
+    backgroundColor: '#ffffff',
   },
   content: {
-    padding: 16,
+    paddingHorizontal: 32,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
   stateContent: {
     flex: 1,
@@ -781,53 +801,45 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     maxWidth: 360,
     width: "100%",
   },
-  panel: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: c.border,
-    padding: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  initialStatus: {
-    marginTop: 8,
-    color: c.textMuted,
-    fontSize: 12,
-    lineHeight: 18,
-  },
+  formCard: {},
   form: {
-    gap: 24,
-    marginTop: 24,
+    marginTop: 4,
   },
   field: {
+    paddingHorizontal: 0,
+    paddingVertical: 20,
     gap: 10,
   },
+  fieldLabel: {
+    fontSize: 15,
+    lineHeight: 20,
+    color: c.text,
+    fontFamily: AppFonts.psuBold,
+  },
   input: {
-    minHeight: 48,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
+    minHeight: 40,
     color: c.text,
     fontFamily: AppFonts.psuRegular,
-    fontSize: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    fontSize: 16,
+    lineHeight: 22,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
   inputError: {
-    borderColor: c.danger,
+    borderBottomWidth: 1.5,
+    borderBottomColor: c.danger,
   },
   dateRow: {
     flexDirection: "row",
-    gap: 14,
+    gap: 12,
   },
   hint: {
+    marginTop: 10,
     color: c.textMuted,
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17,
   },
   errorText: {
     color: c.danger,
@@ -838,28 +850,41 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     lineHeight: 18,
   },
   selectButton: {
-    minHeight: 48,
+    minHeight: 40,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-    paddingHorizontal: 14,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
+  },
+  selectValueRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   selectText: {
     flex: 1,
     color: c.text,
+    fontSize: 16,
+    fontFamily: AppFonts.psuRegular,
+  },
+  optionRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   placeholder: {
     color: c.textFaint,
   },
   chevron: {
-    color: c.info,
-    fontSize: 16,
-    lineHeight: 20,
-    marginLeft: 8,
+    color: c.textMuted,
+    fontSize: 18,
+    lineHeight: 22,
   },
   backdrop: {
     flex: 1,
@@ -908,11 +933,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 16,
   },
   closeButton: {
-    minHeight: 40,
+    width: 40,
+    height: 40,
+    alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.infoSoft,
-    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: `${c.text}14`,
   },
   optionScroll: {
     maxHeight: 360,
@@ -923,23 +949,19 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   option: {
     minHeight: 48,
     justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-    paddingHorizontal: 14,
+    paddingHorizontal: 0,
     paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
-  selectedOption: {
-    borderColor: c.info,
-    backgroundColor: c.info,
-  },
+  selectedOption: {},
   optionText: {
     color: c.text,
     lineHeight: 20,
   },
   selectedOptionText: {
-    color: c.textOnPrimary,
+    color: c.primary,
+    fontFamily: AppFonts.psuBold,
   },
   emptyOption: {
     color: c.textMuted,
@@ -975,7 +997,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.info,
+    backgroundColor: c.primary,
     marginTop: 6,
   },
   removeRequestButton: {

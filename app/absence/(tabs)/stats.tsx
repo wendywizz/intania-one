@@ -7,7 +7,7 @@ import { ErrorState } from '@/components/error-state';
 import { Inbox } from 'lucide-react-native';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingAnimate } from '@/components/loading-animate';
-import { NavTopBar } from '@/components/nav-top-bar';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -387,12 +387,7 @@ export default function StatsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar
-        title={TEXT.ABSENCE_TITLE}
-        subtitle={TEXT.ABSENCE_STATS_TITLE}
-        moduleIcon="chart.bar.fill"
-        backHref="/"
-      />
+      <ScreenHeader title={TEXT.ABSENCE_STATS_TITLE} backHref="/" />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
@@ -401,7 +396,7 @@ export default function StatsScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: c.background,
+    backgroundColor: '#ffffff',
   },
   content: {
     flex: 1,

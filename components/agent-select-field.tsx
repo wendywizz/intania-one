@@ -1,6 +1,8 @@
+import { Minus, Plus, Search, X } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import {
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,10 +15,19 @@ import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { ThemedText } from "./themed-text";
 import { ThemedView } from "./themed-view";
+import { UserAvatar } from "./user-avatar";
+
+// Remove the default focus outline on web so the active search field shows only
+// its bottom line (RN Web only; no-op on native).
+const webNoOutline: any = Platform.OS === "web" ? { outlineStyle: "none" } : null;
 
 type AgentSelectFieldProps = {
   options: string[];
   selectedAgents: string[];
+  /** Resolve an option/agent label to its staff photo id (uni_staff_id). */
+  photoIdForOption?: (option: string) => string | undefined;
+  /** Resolve an option/agent label to a secondary line (e.g. department). */
+  subtitleForOption?: (option: string) => string | undefined;
   isOpen: boolean;
   hasError?: boolean;
   errorMessage?: string;
@@ -28,6 +39,8 @@ type AgentSelectFieldProps = {
 export function AgentSelectField({
   options,
   selectedAgents,
+  photoIdForOption,
+  subtitleForOption,
   isOpen,
   hasError,
   errorMessage,
@@ -85,21 +98,28 @@ export function AgentSelectField({
               key={`${String(selectedAgent)}-${index}`}
               style={styles.agentListItem}
             >
-              <ThemedText style={styles.agentListText}>
-                {selectedAgent}
-              </ThemedText>
+              <View style={styles.agentRow}>
+                {photoIdForOption?.(selectedAgent) ? (
+                  <UserAvatar staffId={photoIdForOption(selectedAgent)} size={34} />
+                ) : null}
+                <View style={styles.agentTextCol}>
+                  <ThemedText style={styles.agentListText} numberOfLines={1}>
+                    {selectedAgent}
+                  </ThemedText>
+                  {subtitleForOption?.(selectedAgent) ? (
+                    <ThemedText style={styles.agentSubtitle} numberOfLines={1}>
+                      {subtitleForOption(selectedAgent)}
+                    </ThemedText>
+                  ) : null}
+                </View>
+              </View>
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel={TEXT.SHARED_DELETE_THAI}
                 onPress={() => onRemove(selectedAgent)}
                 style={styles.deleteAgentButton}
               >
-                <ThemedText
-                  lightColor="#B42318"
-                  darkColor="#B42318"
-                  type="defaultSemiBold"
-                >
-                  {TEXT.SHARED_DELETE_THAI}
-                </ThemedText>
+                <Minus size={18} color={c.danger} />
               </Pressable>
             </View>
           ))}
@@ -128,26 +148,29 @@ export function AgentSelectField({
                 </ThemedText>
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
                   onPress={handleToggle}
                   style={styles.closeButton}
                 >
-                  <ThemedText type="defaultSemiBold">
-                    {TEXT.SHARED_CLOSE_THAI}
-                  </ThemedText>
+                  <X size={20} color={c.text} />
                 </Pressable>
               </View>
 
-              <TextInput
-                onChangeText={setSearchText}
-                placeholder={TEXT.SHARED_SEARCH_NAME_PLACEHOLDER}
-                placeholderTextColor="#8A969C"
-                style={styles.searchInput}
-                value={searchText}
-              />
+              <View style={styles.searchRow}>
+                <Search size={18} color={c.textMuted} />
+                <TextInput
+                  onChangeText={setSearchText}
+                  placeholder={TEXT.SHARED_SEARCH_NAME_PLACEHOLDER}
+                  placeholderTextColor="#8A969C"
+                  style={[styles.searchInput, webNoOutline]}
+                  value={searchText}
+                />
+              </View>
 
               <ScrollView
                 style={styles.optionScroll}
                 contentContainerStyle={styles.optionScrollContent}
+                showsVerticalScrollIndicator={false}
               >
                 {filteredOptions.length ? (
                   filteredOptions.map((option, index) => (
@@ -157,17 +180,24 @@ export function AgentSelectField({
                       onPress={() => handleSelect(option)}
                       style={styles.option}
                     >
-                      <ThemedText style={styles.optionText}>
-                        {option}
-                      </ThemedText>
-                      <ThemedText
-                        lightColor="#0A6E8A"
-                        darkColor="#0A6E8A"
-                        type="defaultSemiBold"
-                        style={styles.optionActionText}
-                      >
-                        {TEXT.SHARED_ADD_THAI}
-                      </ThemedText>
+                      <View style={styles.agentRow}>
+                        {photoIdForOption?.(option) ? (
+                          <UserAvatar staffId={photoIdForOption(option)} size={38} />
+                        ) : null}
+                        <View style={styles.agentTextCol}>
+                          <ThemedText style={styles.optionText} numberOfLines={1}>
+                            {option}
+                          </ThemedText>
+                          {subtitleForOption?.(option) ? (
+                            <ThemedText style={styles.agentSubtitle} numberOfLines={1}>
+                              {subtitleForOption(option)}
+                            </ThemedText>
+                          ) : null}
+                        </View>
+                      </View>
+                      <View style={styles.addButton}>
+                        <Plus size={18} color={c.success} />
+                      </View>
                     </Pressable>
                   ))
                 ) : (
@@ -186,46 +216,44 @@ export function AgentSelectField({
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   field: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 0,
+    paddingVertical: 20,
     gap: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
   },
   fieldLabel: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: "600",
-    letterSpacing: 0.6,
+    fontSize: 15,
+    lineHeight: 20,
     color: c.text,
-    textTransform: "uppercase",
+    fontFamily: AppFonts.psuBold,
   },
   selectButton: {
-    minHeight: 48,
+    minHeight: 40,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-    paddingHorizontal: 14,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
   inputError: {
-    borderColor: c.danger,
+    borderBottomWidth: 1.5,
+    borderBottomColor: c.danger,
   },
   selectText: {
     flex: 1,
     color: c.text,
+    fontSize: 16,
+    fontFamily: AppFonts.psuRegular,
   },
   placeholder: {
     color: c.textFaint,
   },
   chevron: {
-    color: c.info,
-    fontSize: 16,
-    lineHeight: 20,
-    marginLeft: 8,
+    color: c.textMuted,
+    fontSize: 18,
+    lineHeight: 22,
   },
   fieldError: {
     color: c.danger,
@@ -233,7 +261,24 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     lineHeight: 18,
   },
   agentList: {
+    marginTop: 12,
     gap: 10,
+  },
+  agentRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  agentTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  agentSubtitle: {
+    color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 12,
+    lineHeight: 16,
   },
   agentListItem: {
     minHeight: 44,
@@ -241,12 +286,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 0,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
   agentListText: {
     flex: 1,
@@ -256,13 +299,13 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     lineHeight: 20,
   },
   deleteAgentButton: {
-    minHeight: 36,
+    width: 32,
+    height: 32,
+    alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: c.danger,
   },
   backdrop: {
     flex: 1,
@@ -293,24 +336,30 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 16,
   },
   closeButton: {
-    minHeight: 40,
+    width: 40,
+    height: 40,
+    alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.infoSoft,
-    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: `${c.text}14`,
+  },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+    paddingVertical: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
   searchInput: {
-    minHeight: 44,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
+    flex: 1,
+    minHeight: 40,
     color: c.text,
     fontFamily: AppFonts.psuRegular,
-    fontSize: 14,
-    marginBottom: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    fontSize: 15,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
   },
   optionScroll: {
     // Fixed height so filtering the list doesn't resize the modal on every
@@ -326,12 +375,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-    paddingHorizontal: 14,
+    paddingHorizontal: 0,
     paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
   optionText: {
     flex: 1,
@@ -340,6 +387,15 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   optionActionText: {
     fontSize: 13,
+  },
+  addButton: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: c.success,
   },
   emptyOption: {
     color: c.textMuted,

@@ -15,7 +15,7 @@ import {
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
-import { NavTopBar } from '@/components/nav-top-bar';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TEXT } from '@/constants/text';
@@ -191,11 +191,7 @@ export default function ApproveLeaveScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar
-        title={TEXT.ABSENCE_TITLE}
-        subtitle={TEXT.ABSENCE_APPROVE_LEAVE_TAB}
-        moduleIcon="checkmark.circle.fill"
-      />
+      <ScreenHeader title={TEXT.ABSENCE_APPROVE_LEAVE_TAB} backHref="/" />
 
       <View style={styles.topTabBar}>
         {tabs.map((tab) => {
@@ -223,11 +219,11 @@ export default function ApproveLeaveScreen() {
 }
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: c.background },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   content: { flex: 1 },
   topTabBar: {
     flexDirection: 'row',
-    backgroundColor: c.surface,
+    paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: c.border,
   },

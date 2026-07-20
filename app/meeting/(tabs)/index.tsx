@@ -117,7 +117,7 @@ function MeetingCard({ meeting }: { meeting: Meeting }) {
           {timeStr ? (
             <ThemedText style={styles.timeText}>{timeStr}</ThemedText>
           ) : (
-            <CalendarDays size={20} color="#5D6371" />
+            <CalendarDays size={20} color={c.textMuted} />
           )}
         </View>
         <View style={styles.itemBody}>
@@ -129,7 +129,7 @@ function MeetingCard({ meeting }: { meeting: Meeting }) {
             </View>
           ) : null}
         </View>
-        <ChevronRight size={20} color="#8B716F" style={styles.chevron} />
+        <ChevronRight size={20} color={c.textFaint} style={styles.chevron} />
       </View>
     </Pressable>
   );
@@ -219,8 +219,8 @@ export default function TodayMeetingScreen() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={() => loadMeetings(true)}
-            tintColor="#922124"
-            colors={["#922124"]}
+            tintColor={c.primary}
+            colors={[c.primary]}
           />
         }
         renderItem={({ item: row }) => {
@@ -284,22 +284,22 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   separator: { height: 10 },
   itemCard: {
     backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     padding: 16,
     shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
   },
-  itemRow: { flexDirection: "row", gap: 12, alignItems: "center" },
-  chevron: { flexShrink: 0 },
+  itemRow: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
+  chevron: { flexShrink: 0, marginTop: 2 },
   timeBox: {
     width: 54,
-    minHeight: 44,
-    borderRadius: 8,
+    minHeight: 46,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,

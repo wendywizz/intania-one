@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
-import { Inbox } from 'lucide-react-native';
 import { EmptyState } from "@/components/empty-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
@@ -306,7 +305,7 @@ export default function RepairComputerQueueScreen() {
             onPhotoError={handlePhotoError}
           />
         )}
-        ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.REPAIR_COMPUTER_NO_WORKER_QUEUE} />}
+        ListEmptyComponent={<EmptyState iconName="tray.fill" message={TEXT.REPAIR_COMPUTER_NO_WORKER_QUEUE} />}
       />
     );
   };
@@ -349,7 +348,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   itemCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(223, 191, 189, 0.3)',

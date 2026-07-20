@@ -1,4 +1,4 @@
-﻿import { ChevronDown, MapPin, CalendarX } from 'lucide-react-native';
+﻿import { ChevronDown, ChevronLeft, ChevronRight, MapPin, CalendarX } from 'lucide-react-native';
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -8,6 +8,7 @@ import {
     RefreshControl,
     ScrollView,
     StyleSheet,
+    useWindowDimensions,
     View,
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
@@ -19,9 +20,11 @@ import { EmptyState } from "@/components/empty-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
+import { UserAvatar } from "@/components/user-avatar";
 import { ThemedView } from "@/components/themed-view";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
+import { useTheme } from "@/context/ThemeContext";
 import {
     getCalendarEventsOfMonth,
     getExecutiveCalendarSources,
@@ -29,7 +32,9 @@ import {
     type CalendarSource,
 } from "@/services/executiveCalendarService";
 
-const EVENT_COLORS = ["#585E6D", "#DFBFBD", "#922124"] as const;
+// Rotating accent dots for the event list — a small, tasteful set that reads
+// clearly against the white panel (brand red, amber, green).
+const EVENT_COLORS = ["#B33939", "#E8842B", "#2E9E7B"] as const;
 
 const todayKey = toDateKey(new Date());
 
@@ -49,17 +54,48 @@ function formatSelectedDate(dateKey: string) {
     weekday: "long",
     day: "numeric",
     month: "long",
+    year: "numeric",
   });
 }
 
 function getEventColor(isAllDay: boolean, index: number): string {
-  if (isAllDay) return "#922124";
+  if (isAllDay) return EVENT_COLORS[0];
   return EVENT_COLORS[index % EVENT_COLORS.length];
+}
+
+function formatMonthTitle(dateKey: string) {
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString("th-TH", {
+    month: "long",
+  });
+}
+
+function formatYearTitle(dateKey: string) {
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString("th-TH", {
+    year: "numeric",
+  });
+}
+
+// Split the source name into the executive position and the parenthetical
+// person name, e.g. "คณบดี (ผศ.ดร. …)" → { position: "คณบดี", person: "(ผศ.ดร. …)" }.
+function splitSourceName(name: string) {
+  const openIndex = name.indexOf("(");
+  if (openIndex <= 0) {
+    return { position: name.trim(), person: "" };
+  }
+  return {
+    position: name.slice(0, openIndex).trimEnd(),
+    person: name.slice(openIndex).trim(),
+  };
 }
 
 export default function CalendarScreen() {
   const c = useColors();
+  const { isDarkMode } = useTheme();
+  const { height } = useWindowDimensions();
   const styles = useThemedStyles(makeStyles);
+  // Scale the screen title with the device height (clamped) so it feels
+  // proportional on both short and tall screens.
+  const titleSize = Math.round(Math.min(26, Math.max(20, height * 0.028)));
   const [sources, setSources] = useState<CalendarSource[]>([]);
   const [selectedSource, setSelectedSource] = useState<CalendarSource>();
   const [selectedDate, setSelectedDate] = useState(todayKey);
@@ -127,21 +163,75 @@ export default function CalendarScreen() {
 
   const markedDates = useMemo<MarkedDates>(() => {
     const marks = events.reduce<MarkedDates>((acc, event) => {
-      acc[event.date] = { marked: true, dotColor: "#922124" };
+      acc[event.date] = { marked: true, dotColor: c.primary };
       return acc;
     }, {});
     marks[selectedDate] = {
       ...(marks[selectedDate] ?? {}),
       selected: true,
-      selectedColor: "#922124",
-      selectedTextColor: "#FFFFFF",
+      // Hide the event dot while the day is selected — the filled circle is
+      // enough; the dot under it looks noisy.
+      marked: false,
+      selectedColor: c.primary,
+      selectedTextColor: c.textOnPrimary,
     };
     return marks;
-  }, [events, selectedDate]);
+  }, [events, selectedDate, c.primary, c.textOnPrimary]);
 
   const selectedEvents = useMemo(
     () => events.filter((event) => event.date === selectedDate),
     [events, selectedDate],
+  );
+
+  const calendarTheme = useMemo(
+    () => ({
+      backgroundColor: c.surface,
+      calendarBackground: c.surface,
+      textSectionTitleColor: c.textMuted,
+      selectedDayBackgroundColor: c.primary,
+      selectedDayTextColor: c.textOnPrimary,
+      todayTextColor: c.primary,
+      dayTextColor: c.text,
+      textDisabledColor: c.textFaint,
+      dotColor: c.primary,
+      selectedDotColor: c.textOnPrimary,
+      arrowColor: c.textMuted,
+      monthTextColor: c.text,
+      textDayFontFamily: AppFonts.psuRegular,
+      textMonthFontFamily: AppFonts.psuBold,
+      textDayHeaderFontFamily: AppFonts.psuBold,
+      textDayFontSize: 13,
+      textMonthFontSize: 18,
+      textDayHeaderFontSize: 12,
+    }),
+    [c],
+  );
+
+  const renderCalendarHeader = useCallback(
+    () => (
+      <View style={styles.calHeader}>
+        <ThemedText style={styles.calHeaderMonth}>
+          {formatMonthTitle(visibleMonth)}
+        </ThemedText>
+        <ThemedText style={styles.calHeaderYear}>
+          {formatYearTitle(visibleMonth)}
+        </ThemedText>
+      </View>
+    ),
+    [styles, visibleMonth],
+  );
+
+  const renderCalendarArrow = useCallback(
+    (direction: "left" | "right") => (
+      <View style={styles.calArrow}>
+        {direction === "left" ? (
+          <ChevronLeft size={18} color={c.textMuted} />
+        ) : (
+          <ChevronRight size={18} color={c.textMuted} />
+        )}
+      </View>
+    ),
+    [styles, c.textMuted],
   );
 
   const handleMonthChange = (date: DateData) => {
@@ -183,38 +273,27 @@ export default function CalendarScreen() {
       !item.isAllDay && item.endTime && item.endTime !== item.startTime
         ? item.endTime
         : null;
+    const timeLabel = item.isAllDay
+      ? "ALL DAY"
+      : [startTime, endTime].filter(Boolean).join(" - ");
 
     return (
-      <View style={[styles.eventCard, { borderLeftColor: color }]}>
-        <View style={styles.eventRow}>
-          <View style={styles.timeCol}>
-            {item.isAllDay ? (
-              <ThemedText style={styles.allDayLabel}>ALL DAY</ThemedText>
-            ) : (
-              <>
-                {startTime ? (
-                  <ThemedText style={styles.startTime}>{startTime}</ThemedText>
-                ) : null}
-                {endTime ? (
-                  <ThemedText style={styles.endTime}>{endTime}</ThemedText>
-                ) : null}
-              </>
-            )}
-          </View>
-          <View style={styles.eventBody}>
-            <ThemedText style={styles.eventTitle} numberOfLines={2}>
-              {item.title || "—"}
-            </ThemedText>
-            {item.location ? (
-              <View style={styles.locationRow}>
-                <MapPin size={12} color={c.textMuted} />
-                <ThemedText style={styles.locationText} numberOfLines={2}>
-                  {item.location}
-                </ThemedText>
-              </View>
-            ) : null}
-          </View>
+      <View style={styles.eventRow}>
+        <View style={styles.eventMetaRow}>
+          <View style={[styles.eventDot, { backgroundColor: color }]} />
+          <ThemedText style={styles.eventTime}>{timeLabel || "—"}</ThemedText>
         </View>
+        <ThemedText style={styles.eventTitle} numberOfLines={2}>
+          {item.title || "—"}
+        </ThemedText>
+        {item.location ? (
+          <View style={styles.locationRow}>
+            <MapPin size={12} color={c.textMuted} style={styles.locationIcon} />
+            <ThemedText style={styles.locationText} numberOfLines={2}>
+              {item.location}
+            </ThemedText>
+          </View>
+        ) : null}
       </View>
     );
   };
@@ -222,15 +301,15 @@ export default function CalendarScreen() {
   if (loadingSources) {
     return (
       <ThemedView style={styles.container}>
-        <StatusBar style="light" />
+        <StatusBar style={isDarkMode ? "light" : "dark"} />
         <NavTopBar
-          title={TEXT.CALENDAR_TITLE}
-          subtitle={TEXT.CALENDAR_SUBTITLE}
-          moduleIcon="calendar-range"
+          title=""
           backHref="/"
+          backgroundColor={c.background}
+          contentColor={c.text}
         />
         <LoadingAnimate
-          title="Loading calendar"
+          title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
         />
       </ThemedView>
@@ -241,12 +320,12 @@ export default function CalendarScreen() {
   if (sourceLoadFailed) {
     return (
       <ThemedView style={styles.container}>
-        <StatusBar style="light" />
+        <StatusBar style={isDarkMode ? "light" : "dark"} />
         <NavTopBar
-          title={TEXT.CALENDAR_TITLE}
-          subtitle={TEXT.CALENDAR_SUBTITLE}
-          moduleIcon="calendar-range"
+          title=""
           backHref="/"
+          backgroundColor={c.background}
+          contentColor={c.text}
         />
         <ErrorState
           title={TEXT.SHARED_UNABLE_TO_COMPLETE}
@@ -263,20 +342,28 @@ export default function CalendarScreen() {
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
       <NavTopBar
-        title={TEXT.CALENDAR_TITLE}
-        subtitle={TEXT.CALENDAR_SUBTITLE}
-        moduleIcon="calendar-range"
+        title=""
         backHref="/"
+        backgroundColor={c.background}
+        contentColor={c.text}
       />
 
       {/* Fixed calendar panel */}
       <View style={styles.calendarPane}>
+        {/* Screen title, shown in the content instead of the top bar */}
+        <ThemedText style={[styles.pageTitle, { fontSize: titleSize, lineHeight: titleSize + 6 }]}>
+          {TEXT.CALENDAR_TITLE}
+        </ThemedText>
+
         {/* Source selector card */}
         <Pressable
           accessibilityRole="button"
           onPress={() => setSourceModalOpen(true)}
           style={styles.sourceCard}
         >
+          {selectedSource ? (
+            <UserAvatar staffId={selectedSource.uniId} size={32} />
+          ) : null}
           <ThemedText
             style={[styles.sourceText, !selectedSource && styles.sourcePlaceholder]}
             numberOfLines={1}
@@ -317,6 +404,7 @@ export default function CalendarScreen() {
                   {sources.length ? (
                     sources.map((source, index) => {
                       const active = selectedSource?.source === source.source;
+                      const { position, person } = splitSourceName(source.name);
                       return (
                         <Pressable
                           key={`${String(source.source)}-${index}`}
@@ -324,11 +412,23 @@ export default function CalendarScreen() {
                           onPress={() => handleSelectSource(source)}
                           style={[styles.option, active && styles.optionActive]}
                         >
-                          <ThemedText
-                            style={[styles.optionText, active && styles.optionActiveText]}
-                          >
-                            {source.name}
-                          </ThemedText>
+                          <UserAvatar staffId={source.uniId} size={40} />
+                          <View style={styles.optionTextCol}>
+                            <ThemedText
+                              numberOfLines={2}
+                              style={[styles.optionPosition, active && styles.optionActiveText]}
+                            >
+                              {position}
+                            </ThemedText>
+                            {person ? (
+                              <ThemedText
+                                numberOfLines={2}
+                                style={[styles.optionPerson, active && styles.optionActiveText]}
+                              >
+                                {person}
+                              </ThemedText>
+                            ) : null}
+                          </View>
                         </Pressable>
                       );
                     })
@@ -341,93 +441,78 @@ export default function CalendarScreen() {
           </Pressable>
         </Modal>
 
-        {/* Calendar + date header */}
+        {/* Calendar */}
         {!eventLoadFailed && (
-          <>
-            <View style={styles.calendarCard}>
-              <Calendar
-                current={selectedDate}
-                markedDates={markedDates}
-                markingType="dot"
-                onDayPress={(date) => setSelectedDate(date.dateString)}
-                onMonthChange={handleMonthChange}
-                theme={calendarTheme}
-              />
-            </View>
-            <View style={styles.dateHeader}>
-              <ThemedText style={styles.dateHeaderText}>
-                {formatSelectedDate(selectedDate)}
-              </ThemedText>
-            </View>
-          </>
+          <View style={styles.calendarCard}>
+            <Calendar
+              current={selectedDate}
+              markedDates={markedDates}
+              markingType="dot"
+              onDayPress={(date) => setSelectedDate(date.dateString)}
+              onMonthChange={handleMonthChange}
+              renderHeader={renderCalendarHeader}
+              renderArrow={renderCalendarArrow}
+              theme={calendarTheme}
+            />
+          </View>
         )}
       </View>
 
-      {/* Scrollable events list */}
-      <FlatList
-        style={styles.eventList}
-        data={selectedEvents}
-        keyExtractor={(item, index) => `${String(item.id || "event")}-${index}`}
-        renderItem={renderEvent}
-        contentContainerStyle={styles.eventListContent}
-        ItemSeparatorComponent={() => <View style={styles.eventSeparator} />}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor="#922124"
-            colors={["#922124"]}
+      {/* Scrollable events list — a single card (outer view holds the shadow,
+          inner clips content so only one border ever shows) */}
+      <View style={styles.eventCardShadow}>
+        <View style={styles.eventCard}>
+          {/* Selected-date header, now part of the events section */}
+          <View style={styles.dateHeader}>
+            <ThemedText style={styles.dateHeaderText}>
+              {formatSelectedDate(selectedDate)}
+            </ThemedText>
+          </View>
+          <FlatList
+            style={styles.eventList}
+            data={selectedEvents}
+            keyExtractor={(item, index) => `${String(item.id || "event")}-${index}`}
+            renderItem={renderEvent}
+            contentContainerStyle={styles.eventListContent}
+            ItemSeparatorComponent={() => <View style={styles.eventSeparator} />}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={c.primary}
+                colors={[c.primary]}
+              />
+            }
+            ListHeaderComponent={
+              loadingEvents ? (
+                <LoadingAnimate
+                  fill={false}
+                  title={TEXT.SHARED_LOADING_DATA_TITLE}
+                  desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
+                />
+              ) : null
+            }
+            ListEmptyComponent={
+              loadingEvents ? null : errorMessage ? (
+                <View style={styles.errorBox}>
+                  <ThemedText style={styles.errorTitle}>
+                    {TEXT.SHARED_UNABLE_TO_COMPLETE}
+                  </ThemedText>
+                  <ThemedText style={styles.errorDetail}>{errorMessage}</ThemedText>
+                  <Pressable style={styles.retryBtn} onPress={handleRefresh}>
+                    <ThemedText style={styles.retryBtnText}>{TEXT.SHARED_RETRY}</ThemedText>
+                  </Pressable>
+                </View>
+              ) : (
+                <EmptyState icon={CalendarX} message={TEXT.SHARED_EMPTY_DATA} />
+              )
+            }
           />
-        }
-        ListHeaderComponent={
-          loadingEvents ? (
-            <LoadingAnimate
-              fill={false}
-              title="Loading events"
-              desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
-            />
-          ) : null
-        }
-        ListEmptyComponent={
-          loadingEvents ? null : errorMessage ? (
-            <View style={styles.errorBox}>
-              <ThemedText style={styles.errorTitle}>
-                {TEXT.SHARED_UNABLE_TO_COMPLETE}
-              </ThemedText>
-              <ThemedText style={styles.errorDetail}>{errorMessage}</ThemedText>
-              <Pressable style={styles.retryBtn} onPress={handleRefresh}>
-                <ThemedText style={styles.retryBtnText}>{TEXT.SHARED_RETRY}</ThemedText>
-              </Pressable>
-            </View>
-          ) : (
-            <EmptyState icon={CalendarX} message={TEXT.SHARED_EMPTY_DATA} />
-          )
-        }
-      />
+        </View>
+      </View>
     </ThemedView>
   );
 }
-
-const calendarTheme = {
-  backgroundColor: "#FFFFFF",
-  calendarBackground: "#FFFFFF",
-  textSectionTitleColor: "#8B716F",
-  selectedDayBackgroundColor: "#922124",
-  selectedDayTextColor: "#FFFFFF",
-  todayTextColor: "#B33939",
-  dayTextColor: "#191C1F",
-  textDisabledColor: "rgba(88, 65, 64, 0.3)",
-  dotColor: "#922124",
-  selectedDotColor: "#FFFFFF",
-  arrowColor: "#8B716F",
-  monthTextColor: "#191C1F",
-  textDayFontFamily: AppFonts.psuRegular,
-  textMonthFontFamily: AppFonts.psuBold,
-  textDayHeaderFontFamily: AppFonts.psuBold,
-  textDayFontSize: 12,
-  textMonthFontSize: 18,
-  textDayHeaderFontSize: 12,
-};
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
@@ -439,8 +524,15 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   calendarPane: {
     backgroundColor: c.background,
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 8,
     gap: 12,
+  },
+  pageTitle: {
+    fontSize: 26,
+    lineHeight: 32,
+    color: c.text,
+    fontFamily: AppFonts.psuBold,
+    marginBottom: 16,
   },
   sourceCard: {
     flexDirection: "row",
@@ -450,111 +542,149 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     backgroundColor: c.surface,
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
     shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
     elevation: 1,
   },
   sourceText: {
     flex: 1,
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 20,
     color: c.text,
-    fontFamily: AppFonts.psuBold,
+    fontFamily: AppFonts.psuRegular,
   },
   sourcePlaceholder: {
     color: c.textFaint,
   },
   calendarCard: {
     backgroundColor: c.surface,
-    borderRadius: 12,
+    borderRadius: 20,
     overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    paddingBottom: 4,
     shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
+  },
+  // ─── Calendar header (month / year + arrows) ─────────────────────
+  calHeader: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 2,
+  },
+  calHeaderMonth: {
+    fontSize: 15,
+    lineHeight: 20,
+    color: c.text,
+    fontFamily: AppFonts.psuRegular,
+  },
+  calHeaderYear: {
+    fontSize: 11,
+    lineHeight: 14,
+    color: c.textFaint,
+    fontFamily: AppFonts.psuRegular,
+  },
+  calArrow: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: c.surfaceMuted,
   },
   dateHeader: {
-    paddingBottom: 4,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
   dateHeaderText: {
     fontSize: 14,
     lineHeight: 20,
     color: c.textMuted,
-    fontFamily: AppFonts.psuRegular,
+    fontFamily: AppFonts.psuBold,
   },
 
   // ─── Events list ─────────────────────────────────────────────────
+  // One card: the outer view carries the soft shadow + rounded background, the
+  // inner view clips the list to the radius so only its single border shows
+  // (no doubled edge where dividers/content meet the card border).
+  eventCardShadow: {
+    flex: 1,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 16,
+    borderRadius: 20,
+    backgroundColor: c.surface,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
+  },
+  eventCard: {
+    flex: 1,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    overflow: "hidden",
+  },
   eventList: {
     flex: 1,
   },
   eventListContent: {
     flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 32,
+    paddingTop: 8,
+    paddingBottom: 6,
   },
   eventSeparator: {
-    height: 12,
-  },
-  eventCard: {
-    backgroundColor: c.surface,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: c.border,
   },
   eventRow: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 6,
+  },
+  eventMetaRow: {
     flexDirection: "row",
-    padding: 16,
-    gap: 12,
-  },
-  timeCol: {
-    width: 55,
     alignItems: "center",
-    justifyContent: "flex-start",
+    gap: 8,
   },
-  allDayLabel: {
+  eventDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  eventTime: {
     fontSize: 12,
     lineHeight: 16,
-    fontFamily: AppFonts.psuBold,
-    color: c.primary,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  startTime: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontFamily: AppFonts.psuBold,
     color: c.textMuted,
-  },
-  endTime: {
-    marginTop: 2,
-    fontSize: 12,
-    lineHeight: 16,
     fontFamily: AppFonts.psuRegular,
-    color: "rgba(88, 64, 64, 0.6)",
-  },
-  eventBody: {
-    flex: 1,
-    gap: 4,
+    letterSpacing: 0.3,
   },
   eventTitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: AppFonts.psuBold,
+    fontSize: 15,
+    lineHeight: 20,
+    fontFamily: AppFonts.psuRegular,
     color: c.text,
   },
   locationRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 4,
+  },
+  locationIcon: {
+    marginTop: 4,
   },
   locationText: {
     flex: 1,
@@ -565,25 +695,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
 
   // ─── Empty / error states ────────────────────────────────────────
-  emptyWrap: {
-    paddingTop: 32,
-    paddingHorizontal: 16,
-    alignItems: "center",
-  },
-  emptyTitle: {
-    textAlign: "center",
-    color: c.textMuted,
-  },
-  emptyMessage: {
-    marginTop: 4,
-    color: c.textMuted,
-    textAlign: "center",
-    fontSize: 13,
-    lineHeight: 18,
-  },
   errorBox: {
     marginVertical: 16,
-    marginHorizontal: 0,
+    marginHorizontal: 16,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
@@ -675,20 +789,34 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   option: {
     minHeight: 48,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   optionActive: {
     borderColor: c.primary,
     backgroundColor: c.primary,
   },
-  optionText: {
+  optionTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  optionPosition: {
     color: c.text,
+    fontFamily: AppFonts.psuBold,
+    fontSize: 15,
     lineHeight: 20,
+  },
+  optionPerson: {
+    color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 14,
+    lineHeight: 19,
   },
   optionActiveText: {
     color: c.textOnPrimary,

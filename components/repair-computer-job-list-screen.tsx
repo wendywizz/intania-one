@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
-import { Inbox } from 'lucide-react-native';
 import { EmptyState } from "@/components/empty-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
@@ -281,7 +280,7 @@ export function RepairComputerJobListScreen({
             </View>
           ) : null
         }
-        ListEmptyComponent={<EmptyState icon={Inbox} message={emptyMessage} />}
+        ListEmptyComponent={<EmptyState iconName="tray.fill" message={emptyMessage} />}
       />
     );
   };

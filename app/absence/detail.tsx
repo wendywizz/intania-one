@@ -1,10 +1,10 @@
 import { useFocusEffect, useLocalSearchParams, type Href } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
-import { Fragment, useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { LoadingAnimate } from '@/components/loading-animate';
-import { NavTopBar } from '@/components/nav-top-bar';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
@@ -32,19 +32,6 @@ const absenceTypeLabels: Record<string, string> = {
   [TYPE_ABSENCE_HELPMATE]: TEXT.ABSENCE_BIRTH_TITLE,
   [TYPE_ABSENCE_HAJJ]: TEXT.ABSENCE_HAJJ_TITLE,
 };
-
-const absenceTypeIcons: Record<string, IconSymbolName> = {
-  [TYPE_ABSENCE_SICK]: 'cross.fill',
-  [TYPE_ABSENCE_BUSINESS]: 'briefcase.fill',
-  [TYPE_ABSENCE_BIRTH]: 'figure.child',
-  [TYPE_ABSENCE_RELAX]: 'sun.max.fill',
-  [TYPE_ABSENCE_HELPMATE]: 'figure.child',
-  [TYPE_ABSENCE_HAJJ]: 'calendar-clock',
-};
-
-function getabsenceTypeIcon(type: string): IconSymbolName {
-  return absenceTypeIcons[type] || 'calendar-clock';
-}
 
 const absenceTypeFields = [
   'absentType',
@@ -309,9 +296,9 @@ function InfoRow({ label, value, icon }: { label: string; value: string; icon?: 
   if (!value) return null;
   return (
     <View style={styles.infoRow}>
-      <ThemedText style={styles.infoLabel}>{label}</ThemedText>
-      <View style={styles.infoValueRow}>
-        {icon ? <IconSymbol name={icon} size={16} color={c.primary} /> : null}
+      {icon ? <IconSymbol name={icon} size={22} color={c.inverse} /> : null}
+      <View style={styles.infoRowText}>
+        <ThemedText style={styles.infoLabel}>{label}</ThemedText>
         <ThemedText style={styles.infoValue}>{value}</ThemedText>
       </View>
     </View>
@@ -322,7 +309,7 @@ function InfoRow({ label, value, icon }: { label: string; value: string; icon?: 
 function PersonRow({ name, position, staffId }: StaffEntry) {
   const styles = useThemedStyles(makeStyles);
   return (
-    <View style={styles.personRow}>
+    <View style={styles.personCard}>
       <UserAvatar staffId={staffId} size={44} />
       <View style={styles.personText}>
         <ThemedText style={styles.personName}>{name}</ThemedText>
@@ -352,7 +339,6 @@ export default function absenceDetailScreen() {
 
   const typeLabel = getabsenceTypeLabel(item, routeType);
   const absType = getabsenceType(item, routeType);
-  const typeIcon = getabsenceTypeIcon(absType);
 
   const startDate = getText(item, ['startDate', 'start_date', 'dateStart', 'date_start']);
   const endDate = getText(item, ['endDate', 'end_date', 'dateEnd', 'date_end']);
@@ -428,12 +414,7 @@ export default function absenceDetailScreen() {
   if (isLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar
-          title={typeLabel}
-          subtitle={TEXT.ABSENCE_DETAIL_TITLE}
-          moduleIcon={typeIcon}
-          backHref={backHref}
-        />
+        <ScreenHeader title={typeLabel} backHref={backHref} titlePaddingHorizontal={32} />
         <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
       </ThemedView>
     );
@@ -441,33 +422,25 @@ export default function absenceDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar
+      <ScreenHeader
         title={typeLabel}
-        subtitle={TEXT.ABSENCE_DETAIL_TITLE}
-        moduleIcon={typeIcon}
         backHref={backHref}
+        titlePaddingHorizontal={32}
+        titleTrailing={
+          statusBadge ? (
+            <View style={[styles.statusBadge, { backgroundColor: statusBadge.bg }]}>
+              <ThemedText style={[styles.statusText, { color: statusBadge.color }]}>
+                {statusLabel}
+              </ThemedText>
+            </View>
+          ) : null
+        }
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Leave-info card — leads with the requester, then the leave type */}
+        {/* Leave-info section */}
         <View style={styles.card}>
           <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_DETAIL_INFO_SECTION}</ThemedText>
-
-          <View style={styles.typeRow}>
-            <View style={styles.typeIconCircle}>
-              <IconSymbol name={typeIcon} size={20} color={c.primary} />
-            </View>
-            <ThemedText style={styles.infoType} numberOfLines={2}>
-              {typeLabel}
-            </ThemedText>
-            {statusBadge ? (
-              <View style={[styles.statusBadge, { backgroundColor: statusBadge.bg }]}>
-                <ThemedText style={[styles.statusText, { color: statusBadge.color }]}>
-                  {statusLabel}
-                </ThemedText>
-              </View>
-            ) : null}
-          </View>
 
           <View style={styles.infoBody}>
             <InfoRow label={TEXT.ABSENCE_LEAVE_DATE_LABEL} value={dateText} icon="calendar" />
@@ -476,10 +449,10 @@ export default function absenceDetailScreen() {
               value={leaveDay ? `${leaveDay} ${TEXT.ABSENCE_DAY_UNIT}` : ''}
               icon="calendar-range"
             />
-            <InfoRow label={TEXT.ABSENCE_HALF_DAY_LABEL} value={halfDay} />
-            <InfoRow label={TEXT.ABSENCE_REASON_LABEL} value={reason} />
+            <InfoRow label={TEXT.ABSENCE_HALF_DAY_LABEL} value={halfDay} icon="calendar-clock" />
+            <InfoRow label={TEXT.ABSENCE_REASON_LABEL} value={reason} icon="list.bullet" />
             <InfoRow label={TEXT.ABSENCE_CONTACT_CHANNEL_LABEL} value={contact} icon="phone.fill" />
-            <InfoRow label={TEXT.ABSENCE_TRAVEL_DETAIL_LABEL} value={travelDetail} />
+            <InfoRow label={TEXT.ABSENCE_TRAVEL_DETAIL_LABEL} value={travelDetail} icon="mappin" />
           </View>
         </View>
 
@@ -496,10 +469,12 @@ export default function absenceDetailScreen() {
           <View style={styles.card}>
             <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_DELEGATE_LABEL}</ThemedText>
             {agentEntries.map((agent, index) => (
-              <Fragment key={`${agent.name}-${index}`}>
-                {index > 0 ? <View style={styles.agentDivider} /> : null}
-                <PersonRow name={agent.name} position={agent.position} staffId={agent.staffId} />
-              </Fragment>
+              <PersonRow
+                key={`${agent.name}-${index}`}
+                name={agent.name}
+                position={agent.position}
+                staffId={agent.staffId}
+              />
             ))}
           </View>
         ) : null}
@@ -514,7 +489,7 @@ export default function absenceDetailScreen() {
               style={styles.fileRow}
             >
               <View style={styles.fileIcon}>
-                <IconSymbol name="doc.text.fill" size={20} color={c.primary} />
+                <IconSymbol name="doc.text.fill" size={20} color={c.inverse} />
               </View>
               <View style={styles.fileText}>
                 <ThemedText style={styles.fileName} numberOfLines={1}>
@@ -536,18 +511,15 @@ export default function absenceDetailScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: c.background,
+    backgroundColor: '#ffffff',
   },
   scrollContent: {
-    paddingTop: 16,
+    paddingTop: 4,
     paddingBottom: 40,
   },
   card: {
-    marginHorizontal: 16,
+    marginHorizontal: 32,
     marginBottom: 12,
-    backgroundColor: c.surface,
-    borderRadius: 16,
-    paddingHorizontal: 16,
     paddingVertical: 16,
     gap: 12,
   },
@@ -614,38 +586,44 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     lineHeight: 16,
   },
   infoBody: {
-    gap: 10,
+    gap: 0,
   },
   infoRow: {
-    backgroundColor: c.surfaceAlt,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
+  },
+  infoRowText: {
+    flex: 1,
+    gap: 2,
   },
   infoLabel: {
     fontSize: 12,
     lineHeight: 16,
     color: c.textFaint,
   },
-  infoValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   infoValue: {
-    flex: 1,
     fontFamily: AppFonts.psuRegular,
     fontSize: 15,
     lineHeight: 22,
     color: c.text,
   },
-  personRow: {
+  personCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    backgroundColor: c.surface,
+    borderRadius: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 20,
+    elevation: 4,
   },
   agentDivider: {
     height: StyleSheet.hairlineWidth,

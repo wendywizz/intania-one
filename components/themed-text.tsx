@@ -59,6 +59,6 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.psuRegular,
     lineHeight: 20,
     fontSize: 14,
-    color: '#b33939',
+    color: '#B33939',
   },
 });

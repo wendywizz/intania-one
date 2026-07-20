@@ -1,3 +1,5 @@
+// @deprecated DEAD CODE — no screen imports this. Uses the off-brand indigo
+// palette (useDesignSystem). Use @/components/ui (Card, Button, …) instead.
 import { useDesignSystem } from "@/constants/theme";
 import React from "react";
 import {

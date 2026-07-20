@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -7,6 +7,7 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Text,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -17,35 +18,110 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import type { AuthUser, ExamTask, News } from '@/models/types';
 import { getUnreadNotificationCount } from '@/services/notificationService';
 import { staffNewsFeed } from '@/services/newsService';
 import { getActiveSummary, type ActiveSummaryData } from '@/services/activeSummaryService';
+import { approvingWaitingData } from '@/services/absenceService';
+import { getForgetApprovalWaiting } from '@/services/timestampService';
 import { listExamTasks } from '@/services/examinarService';
-import { formatDateRange, formatNewsDate } from '@/utils/date-format';
+import { formatNewsDate } from '@/utils/date-format';
 import { navPush } from '@/utils/navigation';
 import { ENDPOINTS } from '@/constants/endpoints';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
-import {
-  TYPE_ABSENCE_BIRTH,
-  TYPE_ABSENCE_BUSINESS,
-  TYPE_ABSENCE_HAJJ,
-  TYPE_ABSENCE_RELAX,
-  TYPE_ABSENCE_SICK,
-} from '@/constants/types';
+
+// ─── Soft warm palette (smart-home reference) ─────────────────────────────────
+// A warm cream canvas with pure-white cards floating on soft, warm-tinted
+// shadows; thin charcoal icons sit in soft grey circles. One warm-orange accent
+// carries counts, the unread dot, and CTAs — everything else stays neutral.
+type M = {
+  bg: string;
+  card: string;
+  fill: string;
+  text: string;
+  textMuted: string;
+  textFaint: string;
+  border: string;
+  icon: string;
+  accent: string;
+  accentSoft: string;
+  accentText: string;
+  notify: string;
+  shadow: string;
+  // Text that sits directly on the screen canvas (m.bg), not on a card.
+  onCanvas: string;
+  onCanvasMuted: string;
+  onCanvasFaint: string;
+};
+
+const LIGHT: M = {
+  bg: '#F4F6F8',
+  card: '#FFFFFF',
+  fill: '#EEF1F4',
+  text: '#141414',
+  textMuted: '#8D8E92',
+  textFaint: '#B4B7BC',
+  border: '#E3E6EA',
+  icon: '#2E3338',
+  accent: '#B33939',
+  accentSoft: 'rgba(179, 57, 57, 0.14)',
+  accentText: '#FFFFFF',
+  notify: '#C0392B',
+  shadow: '#9AA3AE',
+  onCanvas: '#141414',
+  onCanvasMuted: '#8D8E92',
+  onCanvasFaint: '#B4B7BC',
+};
+
+const DARK: M = {
+  bg: '#141311',
+  card: '#1E1C19',
+  fill: '#282520',
+  text: '#F2EFEA',
+  textMuted: '#A39C90',
+  textFaint: '#6E675B',
+  border: '#2C2925',
+  icon: '#E6E1D8',
+  accent: '#E07A7A',
+  accentSoft: 'rgba(224, 122, 122, 0.30)',
+  accentText: '#0B1220',
+  notify: '#E4726D',
+  shadow: '#000000',
+  onCanvas: '#F2EFEA',
+  onCanvasMuted: '#A39C90',
+  onCanvasFaint: '#6E675B',
+};
+
+function useMinimal(): M {
+  const { isDarkMode } = useTheme();
+  return isDarkMode ? DARK : LIGHT;
+}
+
+function useMStyles<T extends StyleSheet.NamedStyles<T>>(factory: (m: M) => T): T {
+  const m = useMinimal();
+  return useMemo(() => StyleSheet.create(factory(m)), [m, factory]);
+}
+
+// IBM Plex Sans Thai. Emphasis roles stay at Regular to keep the home screen
+// light — hierarchy comes from size and accent color rather than heavy strokes.
+// (IBM Plex Medium / SemiBold are available if a stronger scale is wanted.)
+const F = {
+  light: 'IBMPlexSansThai_Rg',
+  regular: 'IBMPlexSansThai_Rg',
+  medium: 'IBMPlexSansThai_Rg',
+  semibold: 'IBMPlexSansThai_Rg',
+} as const;
 
 const D = {
-  pad: 16,
+  pad: 20,
   gap: 12,
 } as const;
 
 type IconName = Parameters<typeof IconSymbol>[0]['name'];
 
-const MENU_ITEMS: ReadonlyArray<{ title: string; href: string; icon: IconName }> = [
+const MENU_ITEMS: readonly { title: string; href: string; icon: IconName }[] = [
   { title: TEXT.ABSENCE_TITLE, href: '/absence', icon: 'calendar-clock' },
   { title: TEXT.TIMESTAMP_TITLE, href: '/timestamp/calendar', icon: 'clock.fill' },
   { title: TEXT.MEETING_MENU_TITLE, href: '/meeting', icon: 'person.2.fill' },
@@ -56,20 +132,9 @@ const MENU_ITEMS: ReadonlyArray<{ title: string; href: string; icon: IconName }>
   { title: TEXT.EXAMINER_MENU_TITLE, href: '/examiner', icon: 'checkmark.circle.fill' },
 ];
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-const GREETINGS = ['Hooray', 'Hi', 'Hello', "What's up", 'Howdy', 'Yo'];
-function getGreeting() {
-  return GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
-}
-
 function getDateString() {
   const n = new Date();
-  return `${DAY_NAMES[n.getDay()]}, ${n.getDate()} ${MONTH_NAMES[n.getMonth()]} ${n.getFullYear()}`;
+  return `${TEXT.HOME_DAY_NAMES[n.getDay()]} ${n.getDate()} ${TEXT.HOME_MONTH_NAMES[n.getMonth()]} ${n.getFullYear()}`;
 }
 
 function getFirstName(user: AuthUser | null) {
@@ -86,10 +151,6 @@ function getInitials(user: AuthUser | null) {
 
 function getNewsKey(item: News, index: number) {
   return `${String(item.guid || item.link || item.title)}-${index}`;
-}
-
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function wait(ms: number) {
@@ -113,435 +174,413 @@ function isExamUpcoming(task: ExamTask): boolean {
   return !isNaN(d.getTime()) && d >= today;
 }
 
-// ─── Absence helpers (mirror absence/pending screen) ──────────────────────────
-
-const absenceTypeLabels: Record<string, string> = {
-  [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
-  [TYPE_ABSENCE_BUSINESS]: TEXT.ABSENCE_BUSINESS_TITLE,
-  [TYPE_ABSENCE_BIRTH]: TEXT.ABSENCE_BIRTH_TITLE,
-  [TYPE_ABSENCE_RELAX]: TEXT.ABSENCE_RELAX_TITLE,
-  [TYPE_ABSENCE_HAJJ]: TEXT.ABSENCE_HAJJ_TITLE,
-};
-
-const absenceTypeFields = ['absentType', 'absenceType', 'typeAbsence', 'ABSENCE_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type'];
-const absenceTypeNameFields = ['absentTypeName', 'absenceTypeName', 'ABSENCE_type_name', 'typeName', 'type_name', 'leaveTypeName', 'leave_type_name'];
-const absenceStartDateFields = ['startDate', 'start_date', 'dateStart', 'date_start'];
-const absenceEndDateFields = ['endDate', 'end_date', 'dateEnd', 'date_end'];
-const absenceIdFields = ['id', 'absenceId', 'ABSENCE_id', 'requestId', 'request_id'];
-
-function getAbsenceField(item: Record<string, unknown>, fields: string[]) {
-  for (const field of fields) {
-    const value = item[field];
-    if (typeof value === 'string' && value.trim()) return value.trim();
-    if (typeof value === 'number') return String(value);
-  }
-  return '';
-}
-
-function getAbsenceType(item: Record<string, unknown>) {
-  return getAbsenceField(item, absenceTypeFields);
-}
-
-function getAbsenceTypeLabel(item: Record<string, unknown>) {
-  const typeName = getAbsenceField(item, absenceTypeNameFields);
-  const type = getAbsenceType(item);
-  return typeName || absenceTypeLabels[type] || (type ? `${TEXT.ABSENCE_TITLE} ${type}` : TEXT.ABSENCE_TITLE);
-}
-
-function getAbsenceDateRange(item: Record<string, unknown>) {
-  return formatDateRange(
-    getAbsenceField(item, absenceStartDateFields),
-    getAbsenceField(item, absenceEndDateFields),
-  );
-}
-
-// ─── Shift card component ─────────────────────────────────────────────────────
-
-type ShiftCardProps = {
-  icon: Parameters<typeof IconSymbol>[0]['name'];
-  iconBg: string;
-  iconColor: string;
-  title: string;
-  subtitle: string;
-  onPress?: () => void;
-  badge?: number;
-};
-
-function ShiftCard({ icon, iconBg, iconColor, title, subtitle, onPress, badge }: ShiftCardProps) {
-  const c = useColors();
-  const shiftStyles = useThemedStyles(makeShiftStyles);
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [shiftStyles.card, pressed && shiftStyles.cardPressed]}>
-      <View style={[shiftStyles.iconCircle, { backgroundColor: iconBg }]}>
-        <IconSymbol name={icon} size={20} color={iconColor} />
-      </View>
-      <View style={shiftStyles.cardContent}>
-        <ThemedText lightColor={c.text} darkColor={c.text} numberOfLines={1} style={shiftStyles.cardTitle}>
-          {title}
-        </ThemedText>
-        {Boolean(subtitle) && (
-          <ThemedText lightColor={c.textMuted} darkColor={c.textMuted} numberOfLines={2} style={shiftStyles.cardSubtitle}>
-            {subtitle}
-          </ThemedText>
-        )}
-      </View>
-      {badge !== undefined && (
-        <View style={shiftStyles.badge}>
-          <ThemedText lightColor={c.textOnPrimary} darkColor={c.textOnPrimary} style={shiftStyles.badgeText}>
-            {badge}
-          </ThemedText>
-        </View>
-      )}
-      {onPress && (
-        <IconSymbol name="chevron.right" size={16} color={c.textMuted} />
-      )}
-    </Pressable>
-  );
-}
-
-// Repair-computer upcoming-shift task keys (from active-summary) → Thai labels.
-const REPAIR_TASK_LABELS: Record<string, string> = {
-  'user-current-job': TEXT.REPAIR_COMPUTER_SHIFT_CURRENT_JOB,
-  'foreman-new-job': TEXT.REPAIR_COMPUTER_SHIFT_NEW_JOB,
-  'foreman-supply-approve': TEXT.REPAIR_COMPUTER_SHIFT_SUPPLY_APPROVE,
-  'foreman-running': TEXT.REPAIR_COMPUTER_SHIFT_RUNNING,
-  'worker-new-job': TEXT.REPAIR_COMPUTER_SHIFT_WORKER_NEW_JOB,
-  'worker-current-job': TEXT.REPAIR_COMPUTER_SHIFT_WORKER_CURRENT_JOB,
-  'worker-supply-wait': TEXT.REPAIR_COMPUTER_SHIFT_SUPPLY_WAIT,
-};
-
-// One repair-computer card listing the current role's tasks. Multiple tasks are
-// bulleted with a leading hyphen; a single task shows no hyphen. Each task keeps
-// its own count badge on the right.
-function RepairShiftCard({
-  tasks,
-  onPress,
-}: {
-  tasks: { label: string; count: number }[];
+// A single upcoming-shift stat tile: label + count, presented like the
+// reference's featured "stat" tiles inside a white cover card.
+type ShiftTile = {
+  key: string;
+  label: string;
+  count: number;
+  icon: IconName;
   onPress: () => void;
-}) {
-  const c = useColors();
-  const shiftStyles = useThemedStyles(makeShiftStyles);
-  const multi = tasks.length > 1;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [shiftStyles.card, pressed && shiftStyles.cardPressed]}>
-      <View style={[shiftStyles.iconCircle, { backgroundColor: '#FFF3F3' }]}>
-        <IconSymbol name="laptop" size={20} color={c.primary} />
-      </View>
-      <View style={shiftStyles.cardContent}>
-        <ThemedText lightColor={c.text} darkColor={c.text} numberOfLines={1} style={shiftStyles.cardTitle}>
-          {TEXT.REPAIR_COMPUTER_MENU_TITLE}
-        </ThemedText>
-        {multi ? (
-          tasks.map((task) => (
-            <View key={task.label} style={shiftStyles.taskRow}>
-              <ThemedText
-                lightColor={c.textMuted}
-                darkColor={c.textMuted}
-                numberOfLines={1}
-                style={shiftStyles.taskLabel}>
-                {`- ${task.label}`}
-              </ThemedText>
-              <View style={shiftStyles.taskBadge}>
-                <ThemedText lightColor={c.textOnPrimary} darkColor={c.textOnPrimary} style={shiftStyles.taskBadgeText}>
-                  {task.count}
-                </ThemedText>
-              </View>
-            </View>
-          ))
-        ) : (
-          <ThemedText
-            lightColor={c.textMuted}
-            darkColor={c.textMuted}
-            numberOfLines={2}
-            style={shiftStyles.cardSubtitle}>
-            {tasks[0].label}
-          </ThemedText>
-        )}
-      </View>
-      {!multi && (
-        <View style={shiftStyles.badge}>
-          <ThemedText lightColor={c.textOnPrimary} darkColor={c.textOnPrimary} style={shiftStyles.badgeText}>
-            {tasks[0].count}
-          </ThemedText>
-        </View>
-      )}
-      <IconSymbol name="chevron.right" size={16} color={c.textMuted} />
-    </Pressable>
-  );
-}
+};
+
+// A grouped sub-item row (repair roles, or absence own/approve). When a module
+// has more than one, its rows collapse into a single grouped card.
+type ShiftSub = {
+  key: string;
+  label: string;
+  count: number;
+  onPress: () => void;
+};
 
 type UpcomingShiftSectionProps = {
   data: ActiveSummaryData | null;
   loading: boolean;
   upcomingExams: ExamTask[];
+  absenceApproval: { show: boolean; count: number };
+  timestampApproval: { show: boolean; count: number };
 };
 
-function UpcomingShiftSection({ data, loading, upcomingExams }: UpcomingShiftSectionProps) {
-  const c = useColors();
-  const shiftStyles = useThemedStyles(makeShiftStyles);
-  const styles = useThemedStyles(makeStyles);
-  const cards: React.ReactElement[] = [];
-
-  if (data) {
-    // ── Repair computer: role-based tasks (user/foreman/worker) ─────────────
-    // Zero-count tasks are hidden; the card only appears when something is active.
-    if (data.repairComputer.success) {
-      const repairTasks = (data.repairComputer.tasks ?? [])
-        .filter((task) => task.count > 0)
-        .map((task) => ({
-          label: REPAIR_TASK_LABELS[task.key] ?? task.key,
-          count: task.count,
-        }));
-
-      if (repairTasks.length > 0) {
-        cards.push(
-          <RepairShiftCard
-            key="repair-summary"
-            tasks={repairTasks}
-            onPress={() => navPush('/repair-computer' as Parameters<typeof navPush>[0])}
-          />
-        );
-      }
-    }
-
-    // ── Absence: single → type/date → detail; multiple → count badge → waiting
-    if (data.absence.success) {
-      const absencePending = [
-        ...(data.absence.pending ?? []),
-        ...(data.absence.cancelled ?? []),
-      ];
-
-      if (absencePending.length === 1) {
-        const absenceItem = absencePending[0];
-        cards.push(
-          <ShiftCard
-            key="absence-summary"
-            icon="calendar-clock"
-            iconBg="#FFFBEB"
-            iconColor="#D97706"
-            title={getAbsenceTypeLabel(absenceItem)}
-            subtitle={getAbsenceDateRange(absenceItem)}
-            onPress={() =>
-              navPush({
-                pathname: '/absence/detail',
-                params: {
-                  id: getAbsenceField(absenceItem, absenceIdFields),
-                  type: getAbsenceType(absenceItem),
-                  item: encodeURIComponent(JSON.stringify(absenceItem)),
-                },
-              } as Parameters<typeof navPush>[0])
-            }
-          />
-        );
-      } else if (absencePending.length > 1) {
-        cards.push(
-          <ShiftCard
-            key="absence-summary"
-            icon="calendar-clock"
-            iconBg="#FFFBEB"
-            iconColor="#D97706"
-            title="Absence Requests"
-            subtitle=""
-            badge={absencePending.length}
-            onPress={() => navPush('/absence/pending' as Parameters<typeof navPush>[0])}
-          />
-        );
-      }
-    }
-
-    // ── Meeting: total count → navigate to meeting list ────────────────────
-    if (data.meeting.success && data.meeting.items.length > 0) {
-      const count = data.meeting.items.length;
-      cards.push(
-        <ShiftCard
-          key="meeting-summary"
-          icon="person.2.fill"
-          iconBg="#EFF6FF"
-          iconColor="#2563EB"
-          title="Today's Meetings"
-          subtitle={`${count} meeting${count > 1 ? 's' : ''}`}
-          onPress={() => navPush('/meeting' as Parameters<typeof navPush>[0])}
-        />
-      );
-    }
-
-    // ── Timestamp: total count badge → navigate to timestamp list
-    if (data.timestamp.success && data.timestamp.items.length > 0) {
-      const count = data.timestamp.items.length;
-      cards.push(
-        <ShiftCard
-          key="forgot-summary"
-          icon="clock.fill"
-          iconBg="#F5F3FF"
-          iconColor="#7C3AED"
-          title="Timestamp"
-          subtitle=""
-          badge={count}
-          onPress={() => navPush('/timestamp/forgot-timestamp' as Parameters<typeof navPush>[0])}
-        />
-      );
-    }
-  }
-
-  // ── Examinar: upcoming exams ─────────────────────────────────────────────
-  if (upcomingExams.length > 0) {
-    const count = upcomingExams.length;
-    const nearest = upcomingExams[0] as Record<string, unknown>;
-    const nearestDate = String(nearest.date_label ?? nearest.date ?? '');
-    cards.push(
-      <ShiftCard
-        key="examinar-summary"
-        icon="checkmark.circle.fill"
-        iconBg="#F0FDF4"
-        iconColor="#059669"
-        title={TEXT.EXAMINAR_HEADER_TITLE}
-        subtitle={nearestDate || `${count} รายการ`}
-        badge={count}
-        onPress={() => navPush('/examinar' as Parameters<typeof navPush>[0])}
-      />
-    );
-  }
-
+// A grouped module card: a header (title + icon) over tappable sub-rows. Used by
+// any module with more than one sub-item (repair roles, absence own/approve).
+function ShiftGroupCard({ title, icon, subs }: { title: string; icon: IconName; subs: ShiftSub[] }) {
+  const m = useMinimal();
+  const s = useMStyles(makeShiftStyles);
   return (
-    <View style={shiftStyles.section}>
-      <ThemedText lightColor={c.text} darkColor={c.text} style={styles.sectionTitle}>
-        Upcoming Shift
-      </ThemedText>
-
-      <View style={shiftStyles.cardsContainer}>
-        {loading && (
-          <View style={shiftStyles.emptyCard}>
-            <ActivityIndicator color={c.primary} />
-          </View>
-        )}
-        {!loading && cards.length === 0 && (
-          <View style={shiftStyles.emptyCard}>
-            <IconSymbol name="checkmark.circle.fill" size={24} color="#22C55E" />
-            <ThemedText lightColor={c.textMuted} darkColor={c.textMuted} style={shiftStyles.emptyText}>
-              No active activities
-            </ThemedText>
-          </View>
-        )}
-        {!loading && cards}
+    <View style={s.repairCard}>
+      <View style={s.repairHeader}>
+        <Text style={s.repairTitle}>{title}</Text>
+        <IconSymbol name={icon} size={20} color={m.accent} />
       </View>
+      {subs.map((sub) => (
+        <Pressable
+          key={sub.key}
+          accessibilityRole="button"
+          onPress={sub.onPress}
+          style={({ pressed }) => [s.repairSub, pressed && s.tilePressed]}>
+          <Text numberOfLines={1} style={s.repairSubLabel}>{sub.label}</Text>
+          <View style={s.repairSubRight}>
+            <Text style={s.repairSubCount}>{sub.count}</Text>
+            <IconSymbol name="chevron.right" size={16} color={m.textFaint} />
+          </View>
+        </Pressable>
+      ))}
     </View>
   );
 }
 
-const makeShiftStyles = (c: AppColors) => StyleSheet.create({
-  section: {
-    gap: 12,
+function UpcomingShiftSection({ data, loading, upcomingExams, absenceApproval, timestampApproval }: UpcomingShiftSectionProps) {
+  const m = useMinimal();
+  const s = useMStyles(makeShiftStyles);
+  const tiles: ShiftTile[] = [];
+  const repairSubs: ShiftSub[] = [];
+  const absenceSubs: ShiftSub[] = [];
+
+  if (data) {
+    // ── Repair computer: grouped card with role-specific sub-items ──────────
+    if (data.repairComputer.success) {
+      const repairTasks = data.repairComputer.tasks ?? [];
+      const countOf = (key: string) =>
+        repairTasks.find((task) => task.key === key)?.count ?? 0;
+      const addSub = (key: string, label: string, count: number, path: string) => {
+        if (count > 0) {
+          repairSubs.push({
+            key,
+            label,
+            count,
+            onPress: () => navPush(path as Parameters<typeof navPush>[0]),
+          });
+        }
+      };
+
+      // Informer: only the current job.
+      addSub('repair-informer', TEXT.HOME_SHIFT_CURRENT_JOB, countOf('user-current-job'),
+        '/repair-computer/current-job');
+      // Foreman: new job + current jobs (running / supply approvals).
+      addSub('repair-foreman-new', TEXT.HOME_SHIFT_NEW_JOB, countOf('foreman-new-job'),
+        '/repair-computer/foreman-new-job');
+      addSub('repair-foreman-current', TEXT.HOME_SHIFT_CURRENT_JOB,
+        countOf('foreman-running') + countOf('foreman-supply-approve'),
+        '/repair-computer/manage-job');
+      // Worker: new job + current jobs (in progress / awaiting supply).
+      addSub('repair-worker-new', TEXT.HOME_SHIFT_NEW_JOB, countOf('worker-new-job'),
+        '/repair-computer/worker-new-job');
+      addSub('repair-worker-current', TEXT.HOME_SHIFT_CURRENT_JOB,
+        countOf('worker-current-job') + countOf('worker-supply-wait'),
+        '/repair-computer/worker-current-job');
+    }
+
+    // ── Absence: own requests (all roles) + approvals (boss only). Multiple
+    //    entries collapse into one grouped card (like repair computer). ────────
+    if (data.absence.success) {
+      const ownCount =
+        (data.absence.pending?.length ?? 0) + (data.absence.cancelled?.length ?? 0);
+      if (ownCount > 0) {
+        absenceSubs.push({
+          key: 'absence-mine',
+          label: TEXT.HOME_SHIFT_MY_LEAVE,
+          count: ownCount,
+          onPress: () => navPush('/absence/my-leave' as Parameters<typeof navPush>[0]),
+        });
+      }
+    }
+    if (absenceApproval.show && absenceApproval.count > 0) {
+      absenceSubs.push({
+        key: 'absence-approve',
+        label: TEXT.HOME_SHIFT_APPROVE_LEAVE,
+        count: absenceApproval.count,
+        onPress: () => navPush('/absence/approve-leave' as Parameters<typeof navPush>[0]),
+      });
+    }
+    // A single absence entry stays a tile; multiple collapse into a card below.
+    if (absenceSubs.length === 1) {
+      const only = absenceSubs[0];
+      tiles.push({
+        key: only.key,
+        label: only.label,
+        count: only.count,
+        icon: 'calendar-clock',
+        onPress: only.onPress,
+      });
+    }
+
+    // ── Meeting ─────────────────────────────────────────────────────────────
+    if (data.meeting.success && data.meeting.items.length > 0) {
+      tiles.push({
+        key: 'meeting',
+        label: TEXT.HOME_SHIFT_MEETINGS_TODAY,
+        count: data.meeting.items.length,
+        icon: 'person.2.fill',
+        onPress: () => navPush('/meeting' as Parameters<typeof navPush>[0]),
+      });
+    }
+
+    // ── Timestamp: own forgot-timestamp requests (all roles) ────────────────
+    if (data.timestamp.success && data.timestamp.items.length > 0) {
+      tiles.push({
+        key: 'timestamp-mine',
+        label: TEXT.HOME_SHIFT_TIMESTAMP,
+        count: data.timestamp.items.length,
+        icon: 'clock.fill',
+        onPress: () => navPush('/timestamp/forgot-timestamp' as Parameters<typeof navPush>[0]),
+      });
+    }
+  }
+
+  // ── Timestamp approvals: boss/approver only ───────────────────────────────
+  if (timestampApproval.show && timestampApproval.count > 0) {
+    tiles.push({
+      key: 'timestamp-approve',
+      label: TEXT.HOME_SHIFT_APPROVE_TIMESTAMP,
+      count: timestampApproval.count,
+      icon: 'checkmark.circle.fill',
+      onPress: () => navPush('/timestamp/approve' as Parameters<typeof navPush>[0]),
+    });
+  }
+
+  // ── Examinar: upcoming exams ───────────────────────────────────────────────
+  if (upcomingExams.length > 0) {
+    tiles.push({
+      key: 'exam',
+      label: TEXT.EXAMINAR_HEADER_TITLE,
+      count: upcomingExams.length,
+      icon: 'checkmark.circle.fill',
+      onPress: () => navPush('/examinar' as Parameters<typeof navPush>[0]),
+    });
+  }
+
+  return (
+    <View style={s.coverCard}>
+      <Text style={s.coverTitle}>{TEXT.HOME_UPCOMING_SHIFT_TITLE}</Text>
+
+      {loading ? (
+        <View style={s.stateWrap}>
+          <ActivityIndicator color={m.textMuted} />
+        </View>
+      ) : repairSubs.length === 0 && absenceSubs.length <= 1 && tiles.length === 0 ? (
+        <View style={s.stateWrap}>
+          <IconSymbol name="checkmark.circle.fill" size={22} color={m.textFaint} />
+          <Text style={s.emptyText}>{TEXT.HOME_ALL_CAUGHT_UP}</Text>
+        </View>
+      ) : (
+        <>
+          {repairSubs.length > 0 && (
+            <ShiftGroupCard title={TEXT.REPAIR_COMPUTER_MENU_TITLE} icon="laptop" subs={repairSubs} />
+          )}
+
+          {absenceSubs.length > 1 && (
+            <ShiftGroupCard title={TEXT.ABSENCE_TITLE} icon="calendar-clock" subs={absenceSubs} />
+          )}
+
+          {tiles.length > 0 && (
+            <View style={s.tileGrid}>
+              {tiles.map((tile, index) => {
+                const isFullRow =
+                  index === tiles.length - 1 && tiles.length % 2 === 1;
+                return (
+              <Pressable
+                key={tile.key}
+                accessibilityRole="button"
+                onPress={tile.onPress}
+                style={({ pressed }) => [
+                  s.tile,
+                  isFullRow && s.tileFull,
+                  pressed && s.tilePressed,
+                ]}>
+                {isFullRow ? (
+                  <>
+                    <Text numberOfLines={1} style={s.tileFullTitle}>{tile.label}</Text>
+                    <View style={s.tileFullRight}>
+                      <Text style={s.tileCountSm}>{tile.count}</Text>
+                      <IconSymbol name={tile.icon} size={40} color={m.textFaint} />
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View style={s.tileHead}>
+                      <Text numberOfLines={2} style={s.tileLabel}>{tile.label}</Text>
+                      <IconSymbol name={tile.icon} size={18} color={m.textFaint} />
+                    </View>
+                    <Text style={s.tileCount}>{tile.count}</Text>
+                  </>
+                )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
+const makeShiftStyles = (m: M) => StyleSheet.create({
+  // Section container — no card chrome; title + items sit on the canvas.
+  coverCard: {
+    gap: 14,
   },
-  cardsContainer: {
-    gap: 8,
+  coverTitle: {
+    fontFamily: F.semibold,
+    fontSize: 16,
+    lineHeight: 21,
+    color: m.onCanvas,
   },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: c.surface,
-    borderRadius: 12,
-    padding: 14,
-    gap: 12,
+  // Repair-computer grouped card: a module header over role-specific sub-rows.
+  repairCard: {
+    backgroundColor: m.card,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+    borderColor: m.border,
+    shadowColor: m.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
     elevation: 1,
   },
-  iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  cardContent: {
-    flex: 1,
-    gap: 2,
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-  cardSubtitle: {
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  cardPressed: {
-    opacity: 0.7,
-  },
-  badge: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: c.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 7,
-    flexShrink: 0,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 24,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-  },
-  taskRow: {
+  repairHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
-    marginTop: 2,
+    gap: 10,
+    paddingTop: 14,
+    paddingBottom: 12,
   },
-  taskLabel: {
+  repairTitle: {
     flex: 1,
-    fontSize: 12,
-    lineHeight: 17,
+    fontFamily: F.medium,
+    fontSize: 15,
+    lineHeight: 20,
+    color: m.text,
   },
-  taskBadge: {
-    minWidth: 22,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: c.primary,
+  repairSub: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-    flexShrink: 0,
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: m.border,
   },
-  taskBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    lineHeight: 15,
+  repairSubLabel: {
+    flex: 1,
+    fontFamily: F.regular,
+    fontSize: 14,
+    lineHeight: 19,
+    color: m.text,
   },
-  emptyCard: {
+  repairSubRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  repairSubCount: {
+    fontFamily: F.medium,
+    fontSize: 16,
+    lineHeight: 20,
+    color: m.accent,
+  },
+  // Two-up grid of stat tiles inside the cover card.
+  tileGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  tile: {
+    flexGrow: 1,
+    flexBasis: '46%',
+    minHeight: 116,
+    justifyContent: 'space-between',
+    backgroundColor: m.card,
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 14,
+    gap: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: m.border,
+    shadowColor: m.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
+  },
+  tilePressed: {
+    opacity: 0.7,
+  },
+  // Full-width row (the lone last tile of an odd grid): detail on the left,
+  // a larger icon anchoring the right, with a smaller count.
+  tileFull: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 88,
+    paddingTop: 22,
+    paddingBottom: 22,
+    gap: 16,
+  },
+  tileFullTitle: {
+    flex: 1,
+    fontFamily: F.medium,
+    fontSize: 16,
+    lineHeight: 21,
+    color: m.text,
+  },
+  tileFullRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  tileCountSm: {
+    fontFamily: F.semibold,
+    fontSize: 24,
+    lineHeight: 28,
+    letterSpacing: -0.4,
+    color: m.accent,
+  },
+  tileHead: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  tileLabel: {
+    flex: 1,
+    fontFamily: F.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: m.textMuted,
+  },
+  // KPI-style metric: a solid, bold count in corporate navy — the number reads
+  // like a dashboard figure, with the module as its muted caption above.
+  tileCount: {
+    fontFamily: F.semibold,
+    fontSize: 34,
+    lineHeight: 38,
+    letterSpacing: -0.4,
+    color: m.accent,
+  },
+  stateWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: c.surface,
-    borderRadius: 12,
-    padding: 20,
-    gap: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
+    paddingVertical: 20,
+    gap: 10,
   },
   emptyText: {
+    fontFamily: F.regular,
     fontSize: 14,
     lineHeight: 20,
+    color: m.textMuted,
   },
 });
 
 export default function HomeScreen() {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
+  const m = useMinimal();
+  const { isDarkMode } = useTheme();
+  const styles = useMStyles(makeStyles);
   const params = useLocalSearchParams<{
     code?: string;
     error?: string;
@@ -562,6 +601,14 @@ export default function HomeScreen() {
   const [activeSummary, setActiveSummary] = useState<ActiveSummaryData | null>(null);
   const [isActiveSummaryLoading, setIsActiveSummaryLoading] = useState(false);
   const [upcomingExams, setUpcomingExams] = useState<ExamTask[]>([]);
+  const [absenceApproval, setAbsenceApproval] = useState<{ show: boolean; count: number }>({
+    show: false,
+    count: 0,
+  });
+  const [timestampApproval, setTimestampApproval] = useState<{ show: boolean; count: number }>({
+    show: false,
+    count: 0,
+  });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const processedCallbackRef = useRef('');
@@ -650,6 +697,18 @@ export default function HomeScreen() {
         if (isActive) setUpcomingExams([]);
       });
 
+      void approvingWaitingData(staffId).then((result) => {
+        if (isActive) setAbsenceApproval({ show: result.show, count: result.data.length });
+      }).catch(() => {
+        if (isActive) setAbsenceApproval({ show: false, count: 0 });
+      });
+
+      void getForgetApprovalWaiting(staffId).then((result) => {
+        if (isActive) setTimestampApproval({ show: result.show, count: result.data.length });
+      }).catch(() => {
+        if (isActive) setTimestampApproval({ show: false, count: 0 });
+      });
+
       return () => { isActive = false; };
     }, [authUser]),
   );
@@ -671,6 +730,16 @@ export default function HomeScreen() {
         ? listExamTasks({ staff_id: staffId, ...getCurrentExamParams() })
             .then((tasks) => setUpcomingExams(tasks.filter(isExamUpcoming)))
             .catch(() => setUpcomingExams([]))
+        : Promise.resolve(),
+      staffId
+        ? approvingWaitingData(staffId)
+            .then((result) => setAbsenceApproval({ show: result.show, count: result.data.length }))
+            .catch(() => setAbsenceApproval({ show: false, count: 0 }))
+        : Promise.resolve(),
+      staffId
+        ? getForgetApprovalWaiting(staffId)
+            .then((result) => setTimestampApproval({ show: result.show, count: result.data.length }))
+            .catch(() => setTimestampApproval({ show: false, count: 0 }))
         : Promise.resolve(),
     ]);
 
@@ -703,9 +772,9 @@ export default function HomeScreen() {
 
   if (isAuthLoading) {
     return (
-      <ThemedView style={styles.container}>
+      <View style={[styles.container, styles.center]}>
         <LoadingAnimate title={TEXT.AUTH_SIGNING_IN_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
-      </ThemedView>
+      </View>
     );
   }
 
@@ -713,16 +782,18 @@ export default function HomeScreen() {
 
   if (!authUser) {
     return (
-      <ThemedView style={styles.container} lightColor="#ffffff">
+      <View style={styles.container}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
         <View style={styles.welcomeContent}>
           <View style={styles.welcomeTextGroup}>
-            <ThemedText type="title" style={styles.welcomeTitle}>{TEXT.HOME_TITLE}</ThemedText>
-            <ThemedText style={styles.welcomeDesc}>{TEXT.HOME_WELCOME_DESCRIPTION}</ThemedText>
+            <Text style={styles.welcomeTitle}>{TEXT.HOME_TITLE}</Text>
+            <Text style={styles.welcomeDesc}>{TEXT.HOME_WELCOME_DESCRIPTION}</Text>
           </View>
-          <Pressable accessibilityRole="button" onPress={handleLogin} style={styles.welcomeLoginButton}>
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold" style={styles.welcomeLoginText}>
-              {TEXT.AUTH_LOGIN}
-            </ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleLogin}
+            style={({ pressed }) => [styles.welcomeLoginButton, pressed && styles.pressed]}>
+            <Text style={styles.welcomeLoginText}>{TEXT.AUTH_LOGIN}</Text>
           </Pressable>
         </View>
 
@@ -733,22 +804,22 @@ export default function HomeScreen() {
           onRequestClose={() => setAuthCallbackErrorMessage('')}>
           <Pressable style={styles.backdrop} onPress={() => setAuthCallbackErrorMessage('')}>
             <Pressable accessibilityRole="none" onPress={(e) => e.stopPropagation()}>
-              <ThemedView style={styles.modal} lightColor="#FFFFFF" darkColor="#151718">
-                <ThemedText type="subtitle">{TEXT.AUTH_LOGIN_FAILED}</ThemedText>
-                <ThemedText style={styles.modalMessage}>{authCallbackErrorMessage}</ThemedText>
+              <View style={styles.modal}>
+                <Text style={styles.modalTitle}>{TEXT.AUTH_LOGIN_FAILED}</Text>
+                <Text style={styles.modalMessage}>{authCallbackErrorMessage}</Text>
                 <View style={styles.modalActions}>
                   <Pressable
                     accessibilityRole="button"
                     onPress={() => setAuthCallbackErrorMessage('')}
                     style={styles.btnPrimary}>
-                    <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">{TEXT.SHARED_OK}</ThemedText>
+                    <Text style={styles.btnPrimaryText}>{TEXT.SHARED_OK}</Text>
                   </Pressable>
                 </View>
-              </ThemedView>
+              </View>
             </Pressable>
           </Pressable>
         </Modal>
-      </ThemedView>
+      </View>
     );
   }
 
@@ -762,99 +833,92 @@ export default function HomeScreen() {
     : null;
 
   return (
-    <View style={[styles.container, { backgroundColor: c.background }]}>
-      <StatusBar style="light" />
+    <View style={styles.container}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
-      {/* ── Header ────────────────────────────────────────────────────────── */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="View profile"
-          onPress={() => navPush('/my-profile' as Parameters<typeof navPush>[0])}
-          style={styles.avatarBtn}>
-          <View style={styles.avatarInner}>
-            {avatarSource && !avatarFailed ? (
-              <Image
-                source={{ uri: avatarSource }}
-                style={styles.avatar}
-                contentFit="cover"
-                onError={() => setAvatarFailed(true)}
-              />
-            ) : (
-              <View style={[styles.avatar, styles.avatarFallback]}>
-                <ThemedText lightColor={c.textOnPrimary} darkColor={c.textOnPrimary} style={styles.avatarText}>
-                  {getInitials(authUser)}
-                </ThemedText>
-              </View>
-            )}
-          </View>
-        </Pressable>
-
-        <View style={styles.headerCenter}>
-          <ThemedText lightColor={c.textOnPrimary} darkColor={c.textOnPrimary} style={styles.headerTitle}>
-            {getGreeting()}, {getFirstName(authUser)}
-          </ThemedText>
-          <ThemedText lightColor="rgba(255,255,255,0.6)" darkColor="rgba(255,255,255,0.6)" style={styles.headerStaffId}>
-            {getDateString()}
-          </ThemedText>
-        </View>
-
-        <View style={styles.headerRight}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Settings"
-            onPress={() => navPush('/settings')}
-            style={styles.iconBtn}>
-            <IconSymbol name="gearshape.fill" size={22} color={c.textOnPrimary} />
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Notifications"
-            onPress={() => navPush('/notification')}
-            style={styles.iconBtn}>
-            <IconSymbol name="bell.fill" size={22} color={c.textOnPrimary} />
-            {unreadCount > 0 ? <View style={styles.bellBadge} /> : null}
-          </Pressable>
-        </View>
-      </View>
-
-      {/* ── Scrollable content ────────────────────────────────────────────── */}
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 28 }]}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={c.textOnPrimary} />}>
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={m.onCanvasMuted} />}>
 
-        {/* Padded sections below the header */}
+        {/* ── Header ──────────────────────────────────────────────────────── */}
+        <View style={[styles.header, { paddingTop: insets.top + 28 }]}>
+          <View style={styles.headerRow}>
+            <View style={styles.greetRow}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="View profile"
+                onPress={() => navPush('/my-profile' as Parameters<typeof navPush>[0])}
+                style={({ pressed }) => [styles.avatarBtn, pressed && styles.pressed]}>
+                {avatarSource && !avatarFailed ? (
+                  <Image
+                    source={{ uri: avatarSource }}
+                    style={styles.avatar}
+                    contentFit="cover"
+                    onError={() => setAvatarFailed(true)}
+                  />
+                ) : (
+                  <View style={[styles.avatar, styles.avatarFallback]}>
+                    <Text style={styles.avatarText}>{getInitials(authUser)}</Text>
+                  </View>
+                )}
+              </Pressable>
+              <View style={styles.greetingWrap}>
+                <Text numberOfLines={1} style={styles.greeting}>{getFirstName(authUser)}</Text>
+                <Text numberOfLines={1} style={styles.date}>{getDateString()}</Text>
+              </View>
+            </View>
+
+            <View style={styles.headerRight}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Settings"
+                onPress={() => navPush('/settings')}
+                style={({ pressed }) => [styles.iconBtn, styles.iconBtnLight, pressed && styles.pressed]}>
+                <IconSymbol name="gearshape.fill" size={20} color={m.icon} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Notifications"
+                onPress={() => navPush('/notification')}
+                style={({ pressed }) => [styles.iconBtn, styles.iconBtnLight, pressed && styles.pressed]}>
+                <IconSymbol name="bell.fill" size={20} color={m.icon} />
+                {unreadCount > 0 ? <View style={styles.bellBadge} /> : null}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Padded content ──────────────────────────────────────────────── */}
         <View style={styles.innerContent}>
 
           {/* News section */}
-          <View style={styles.sectionRow}>
-            <ThemedText lightColor={c.text} darkColor={c.text} style={styles.sectionTitle}>
-              {TEXT.HOME_NEWS_SECTION_TITLE}
-            </ThemedText>
-            {isNewsError ? null : (
-              <Pressable accessibilityRole="button" onPress={() => navPush('/news')}>
-                <ThemedText lightColor={c.primary} darkColor={c.primary} style={styles.seeAll}>
-                  {TEXT.HOME_SEE_ALL_THAI}
-                </ThemedText>
-              </Pressable>
-            )}
+          <View style={styles.sectionHead}>
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionTitle}>{TEXT.HOME_NEWS_SECTION_TITLE}</Text>
+              {isNewsError ? null : (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => navPush('/news')}
+                  hitSlop={8}>
+                  <Text style={styles.seeAll}>{TEXT.HOME_SEE_ALL_THAI}</Text>
+                </Pressable>
+              )}
+            </View>
           </View>
 
           {/* News cards — horizontal scroll, break out of inner padding */}
           <View style={styles.newsScrollOuter}>
             {isNewsLoading ? (
               <View style={styles.newsLoadingWrap}>
-                <ActivityIndicator color={c.primary} />
+                <ActivityIndicator color={m.textMuted} />
               </View>
             ) : displayedNews.length === 0 ? (
               <View style={[styles.newsEmptyCard, { width: screenWidth - D.pad * 2 }]}>
                 <View style={styles.newsEmptyIcon}>
-                  <IconSymbol name="doc.text.fill" size={22} color={c.primary} />
+                  <IconSymbol name="doc.text.fill" size={20} color={m.textFaint} />
                 </View>
-                <ThemedText lightColor={c.textMuted} darkColor={c.textMuted} style={styles.newsEmpty}>
-                  {TEXT.HOME_NO_NEWS_MESSAGE}
-                </ThemedText>
+                <Text style={styles.newsEmpty}>{TEXT.HOME_NO_NEWS_MESSAGE}</Text>
               </View>
             ) : (
               <ScrollView
@@ -865,15 +929,11 @@ export default function HomeScreen() {
                   <Pressable
                     key={getNewsKey(item, i)}
                     accessibilityRole="button"
-                    style={[styles.newsCard, { width: newsCardWidth }]}
+                    style={({ pressed }) => [styles.newsCard, { width: newsCardWidth }, pressed && styles.pressed]}
                     onPress={() => openNews(item)}>
-                    <ThemedText lightColor={c.primary} darkColor={c.primary} numberOfLines={2} style={styles.newsTitle}>
-                      {item.title}
-                    </ThemedText>
+                    <Text numberOfLines={3} style={styles.newsTitle}>{item.title}</Text>
                     {item.pubDate ? (
-                      <ThemedText lightColor={c.textMuted} darkColor={c.textMuted} style={styles.newsDate}>
-                        {formatNewsDate(item.pubDate)}
-                      </ThemedText>
+                      <Text style={styles.newsDate}>{formatNewsDate(item.pubDate)}</Text>
                     ) : null}
                   </Pressable>
                 ))}
@@ -882,24 +942,22 @@ export default function HomeScreen() {
           </View>
 
           {/* Upcoming Shift section */}
-          <UpcomingShiftSection data={activeSummary} loading={isActiveSummaryLoading} upcomingExams={upcomingExams} />
+          <UpcomingShiftSection data={activeSummary} loading={isActiveSummaryLoading} upcomingExams={upcomingExams} absenceApproval={absenceApproval} timestampApproval={timestampApproval} />
 
           {/* Menu section */}
-          <ThemedText lightColor={c.text} darkColor={c.text} style={styles.sectionTitle}>
-            {TEXT.HOME_MENU_SECTION_TITLE}
-          </ThemedText>
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>{TEXT.HOME_MENU_SECTION_TITLE}</Text>
+          </View>
 
           <View style={styles.menuGrid}>
             {MENU_ITEMS.map((item) => (
               <Pressable
                 key={item.href}
                 accessibilityRole="button"
-                style={[styles.menuCard, { width: menuCardWidth }]}
+                style={({ pressed }) => [styles.menuCard, { width: menuCardWidth }, pressed && styles.pressed]}
                 onPress={() => navPush(item.href as Parameters<typeof navPush>[0])}>
-                <IconSymbol name={item.icon} size={28} color={c.primary} />
-                <ThemedText lightColor={c.text} darkColor={c.text} numberOfLines={2} style={styles.menuLabel}>
-                  {item.title}
-                </ThemedText>
+                <IconSymbol name={item.icon} size={30} color={m.icon} />
+                <Text numberOfLines={2} style={styles.menuLabel}>{item.title}</Text>
               </Pressable>
             ))}
           </View>
@@ -915,154 +973,178 @@ export default function HomeScreen() {
         onRequestClose={() => setIsLogoutConfirmOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setIsLogoutConfirmOpen(false)}>
           <Pressable accessibilityRole="none" onPress={(e) => e.stopPropagation()}>
-            <ThemedView style={styles.modal} lightColor="#FFFFFF" darkColor="#151718">
-              <ThemedText type="subtitle">{TEXT.HOME_CONFIRM_LOGOUT_TITLE}</ThemedText>
-              <ThemedText style={styles.modalMessage}>{TEXT.HOME_CONFIRM_LOGOUT_MESSAGE}</ThemedText>
+            <View style={styles.modal}>
+              <Text style={styles.modalTitle}>{TEXT.HOME_CONFIRM_LOGOUT_TITLE}</Text>
+              <Text style={styles.modalMessage}>{TEXT.HOME_CONFIRM_LOGOUT_MESSAGE}</Text>
               <View style={styles.modalActions}>
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => setIsLogoutConfirmOpen(false)}
                   style={styles.btnSecondary}>
-                  <ThemedText type="defaultSemiBold" style={styles.btnSecondaryText}>{TEXT.CANCEL}</ThemedText>
+                  <Text style={styles.btnSecondaryText}>{TEXT.CANCEL}</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" onPress={handleConfirmLogout} style={styles.btnDanger}>
-                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">{TEXT.HOME_LOGOUT}</ThemedText>
+                  <Text style={styles.btnDangerText}>{TEXT.HOME_LOGOUT}</Text>
                 </Pressable>
               </View>
-            </ThemedView>
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
 
       <Modal transparent visible={isSigningOut} animationType="fade">
         <View style={styles.backdrop}>
-          <ThemedView style={styles.signingOutModal} lightColor="#FFFFFF" darkColor="#151718">
+          <View style={styles.signingOutModal}>
             <LoadingAnimate fill={false} title={TEXT.HOME_SIGNING_OUT_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
-          </ThemedView>
+          </View>
         </View>
       </Modal>
     </View>
   );
 }
 
-const makeStyles = (c: AppColors) => StyleSheet.create({
-  container: { flex: 1 },
+const makeStyles = (m: M) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: m.bg },
+  center: { alignItems: 'center', justifyContent: 'center' },
+  pressed: { opacity: 0.6 },
 
-  // Header — red background with white content
+  scrollContent: { flexGrow: 1 },
+
+  // Header — clean, on the page canvas (no colored bar)
   header: {
+    paddingHorizontal: D.pad,
+    paddingBottom: 8,
+    backgroundColor: m.bg,
+  },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 88,
-    paddingHorizontal: D.pad,
-    paddingBottom: 10,
-    backgroundColor: c.navBar,
+    justifyContent: 'space-between',
+    gap: 12,
+    minHeight: 52,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexShrink: 0,
+  },
+  iconBtn: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 21,
+    position: 'relative',
+  },
+  iconBtnLight: {
+    backgroundColor: m.card,
+    shadowColor: m.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 9,
+    right: 9,
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: m.notify,
+    borderWidth: 1.5,
+    borderColor: m.card,
+  },
+  greetRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  greetingWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  greeting: {
+    fontFamily: F.semibold,
+    fontSize: 23,
+    lineHeight: 29,
+    color: m.onCanvas,
+  },
+  date: {
+    fontFamily: F.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: m.onCanvasMuted,
   },
   avatarBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    borderWidth: 2,
-    borderColor: '#FFDAD7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: m.card,
+    shadowColor: m.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    elevation: 2,
   },
   avatar: {
-    width: 40,
-    height: 40,
+    width: '100%',
+    height: '100%',
   },
   avatarFallback: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: m.fill,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 18,
-  },
-  headerCenter: {
-    flex: 1,
-    marginHorizontal: 12,
-    gap: 3,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 24,
-  },
-  headerStaffId: {
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    position: 'relative',
-  },
-  bellBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: c.primary,
-    borderWidth: 1.5,
-    borderColor: c.navBar,
+    fontFamily: F.semibold,
+    fontSize: 15,
+    lineHeight: 20,
+    color: m.text,
   },
 
-  // Scroll — no outer padding so greeting is full-bleed
-  scrollContent: {
-    flexGrow: 1,
-  },
-
-  // Greeting — same red as header, no border-radius, full-width
-  // Inner padded content below header
+  // Padded content below header
   innerContent: {
     paddingHorizontal: D.pad,
-    paddingTop: 20,
-    paddingBottom: 8,
-    gap: 18,
+    paddingTop: 24,
+    gap: 40,
   },
 
-  // Section header row
+  // Title + decorative rule as one unit. The negative margin keeps the larger
+  // inter-section gap spacing sections apart, not the title from its content.
+  sectionHead: {
+    marginBottom: -26,
+  },
   sectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    lineHeight: 24,
+    fontFamily: F.semibold,
+    fontSize: 16,
+    lineHeight: 21,
+    color: m.onCanvas,
   },
   seeAll: {
-    fontSize: 13,
-    fontWeight: '500',
-    lineHeight: 18,
+    fontFamily: F.medium,
+    fontSize: 14,
+    lineHeight: 19,
+    color: m.accent,
   },
 
   // News — break out of innerContent horizontal padding
   newsScrollOuter: {
     marginHorizontal: -D.pad,
-    minHeight: 100,
+    minHeight: 112,
   },
   newsLoadingWrap: {
     flex: 1,
+    minHeight: 112,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1071,45 +1153,48 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 12,
   },
   newsCard: {
-    backgroundColor: c.surface,
-    borderRadius: 12,
-    padding: 16,
-    height: 100,
-    gap: 4,
+    backgroundColor: m.card,
+    borderRadius: 22,
+    padding: 18,
+    height: 112,
+    gap: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-    elevation: 1,
+    borderColor: m.border,
     justifyContent: 'flex-start',
-  },
-  newsDate: {
-    fontSize: 12,
-    lineHeight: 17,
+    shadowColor: m.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
   },
   newsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 20,
+    fontFamily: F.medium,
+    fontSize: 13,
+    lineHeight: 18,
+    color: m.text,
   },
-  newsDesc: {
+  newsDate: {
+    fontFamily: F.regular,
     fontSize: 12,
-    lineHeight: 17,
-    marginTop: 2,
+    lineHeight: 16,
+    color: m.textFaint,
   },
   newsEmptyCard: {
-    backgroundColor: c.surface,
-    borderRadius: 12,
+    backgroundColor: m.card,
+    borderRadius: 22,
     alignSelf: 'center',
-    minHeight: 100,
-    paddingVertical: 20,
+    minHeight: 112,
+    paddingVertical: 24,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    borderWidth: 1,
-    borderColor: c.border,
-    borderStyle: 'dashed',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: m.border,
+    shadowColor: m.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
     elevation: 1,
   },
   newsEmptyIcon: {
@@ -1118,33 +1203,44 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF3F3',
+    backgroundColor: m.fill,
   },
   newsEmpty: {
+    fontFamily: F.regular,
     fontSize: 14,
+    lineHeight: 20,
+    color: m.textMuted,
     textAlign: 'center',
   },
 
-  // Menu grid — grey cards, no shadow
+  // Menu grid — airy, hairline-bordered tiles, monochrome glyphs
   menuGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: D.gap,
   },
   menuCard: {
-    backgroundColor: c.surfaceMuted,
-    borderRadius: 8,
-    paddingVertical: 16,
+    backgroundColor: m.card,
+    borderRadius: 20,
+    paddingVertical: 20,
     paddingHorizontal: 8,
     alignItems: 'center',
-    gap: 4,
-    minHeight: 90,
+    gap: 12,
+    minHeight: 112,
     justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: m.border,
+    shadowColor: m.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
   },
   menuLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16,
+    fontFamily: F.regular,
+    fontSize: 13,
+    lineHeight: 17,
+    color: m.text,
     textAlign: 'center',
   },
 
@@ -1153,63 +1249,85 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(17, 24, 28, 0.36)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     padding: 24,
   },
   modal: {
     width: '100%',
     maxWidth: 360,
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 18,
+    padding: 22,
+    backgroundColor: m.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    boxShadow: '0 8px 20px rgba(17, 24, 28, 0.08)',
+    borderColor: m.border,
+  },
+  modalTitle: {
+    fontFamily: F.semibold,
+    fontSize: 17,
+    lineHeight: 24,
+    color: m.text,
   },
   modalMessage: {
-    color: c.textMuted,
+    fontFamily: F.regular,
     fontSize: 14,
     lineHeight: 20,
+    color: m.textMuted,
     marginTop: 8,
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 10,
-    marginTop: 20,
+    marginTop: 22,
   },
   btnPrimary: {
-    minHeight: 42,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: c.primary,
-    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: m.accent,
+    paddingHorizontal: 18,
+  },
+  btnPrimaryText: {
+    fontFamily: F.semibold,
+    fontSize: 15,
+    color: m.accentText,
   },
   btnSecondary: {
-    minHeight: 42,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    paddingHorizontal: 14,
+    borderColor: m.border,
+    paddingHorizontal: 16,
   },
-  btnSecondaryText: { color: '#52656D' },
+  btnSecondaryText: {
+    fontFamily: F.semibold,
+    fontSize: 15,
+    color: m.text,
+  },
   btnDanger: {
-    minHeight: 42,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: '#B42318',
-    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: m.accent,
+    paddingHorizontal: 18,
+  },
+  btnDangerText: {
+    fontFamily: F.semibold,
+    fontSize: 15,
+    color: m.accentText,
   },
   signingOutModal: {
     width: '100%',
     maxWidth: 320,
-    borderRadius: 12,
+    borderRadius: 18,
     paddingHorizontal: 20,
+    backgroundColor: m.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
+    borderColor: m.border,
   },
 
   // Welcome (unauthenticated)
@@ -1218,32 +1336,39 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
-    gap: 36,
+    gap: 40,
   },
   welcomeTextGroup: {
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   welcomeTitle: {
+    fontFamily: F.semibold,
+    fontSize: 28,
+    lineHeight: 34,
+    color: m.onCanvas,
     textAlign: 'center',
   },
   welcomeDesc: {
-    color: c.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
+    fontFamily: F.regular,
+    fontSize: 15,
+    lineHeight: 22,
+    color: m.onCanvasMuted,
     textAlign: 'center',
   },
   welcomeLoginButton: {
-    minHeight: 52,
+    minHeight: 54,
     minWidth: 220,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: c.primary,
+    borderRadius: 14,
+    backgroundColor: m.accent,
     paddingHorizontal: 32,
   },
   welcomeLoginText: {
+    fontFamily: F.semibold,
     fontSize: 16,
     lineHeight: 22,
+    color: m.accentText,
   },
 });

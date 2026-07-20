@@ -4,6 +4,7 @@ import { TEXT } from '@/constants/text';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AppFonts } from '@/constants/fonts';
 import { useColors } from '@/constants/theme';
 
 export default function MeetingTabLayout() {
@@ -13,15 +14,19 @@ export default function MeetingTabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: c.primary,
+        tabBarInactiveTintColor: c.textMuted,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
           height: 68,
           paddingBottom: 10,
           paddingTop: 6,
+          backgroundColor: c.surface,
+          borderTopColor: c.border,
         },
         tabBarLabelStyle: {
           fontSize: 11,
+          fontFamily: AppFonts.psuRegular,
         },
       }}>
       <Tabs.Screen

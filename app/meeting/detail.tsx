@@ -226,8 +226,8 @@ function PdfCard({
         </ThemedText>
       </View>
       {expandable
-        ? (expanded ? <ChevronDown size={16} color="#8B716F" /> : <ChevronRight size={16} color="#8B716F" />)
-        : <ChevronRight size={16} color="#8B716F" />}
+        ? (expanded ? <ChevronDown size={16} color={c.textFaint} /> : <ChevronRight size={16} color={c.textFaint} />)
+        : <ChevronRight size={16} color={c.textFaint} />}
     </Pressable>
   );
 }
@@ -318,7 +318,7 @@ function SubtopicRow({
           {sub.topic ?? ''}
         </ThemedText>
         {hasItems
-          ? (open ? <ChevronDown size={15} color="#8B716F" /> : <ChevronRight size={15} color="#8B716F" />)
+          ? (open ? <ChevronDown size={15} color={c.textFaint} /> : <ChevronRight size={15} color={c.textFaint} />)
           : null}
       </Pressable>
       {open && items.map((item, i) => (
@@ -364,8 +364,8 @@ function TopicRow({
         </ThemedText>
         {hasChildren ? (
           open
-            ? <ChevronDown size={18} color="#8B716F" />
-            : <ChevronRight size={18} color="#8B716F" />
+            ? <ChevronDown size={18} color={c.textFaint} />
+            : <ChevronRight size={18} color={c.textFaint} />
         ) : hasPdf ? (
           <ThemedText style={styles.viewDocText}>ดูเอกสาร</ThemedText>
         ) : null}
@@ -602,15 +602,15 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 16,
     backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     overflow: 'hidden',
     shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 10,
+    elevation: 1,
   },
   heroBody: {
     padding: 16,
@@ -688,16 +688,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   // ── Card container ────────────────────────────────────────────────────────
   card: {
     backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     overflow: 'hidden',
   },
 
   // ── Number badge (shared across all levels) ───────────────────────────────
   numberBadge: {
-    backgroundColor: '#2E3134',
-    borderRadius: 6,
+    backgroundColor: c.primary,
+    borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
     minWidth: 28,
@@ -755,7 +755,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   pdfBadge: {
     backgroundColor: c.primary,
-    borderRadius: 6,
+    borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 6,
     alignItems: 'center',
@@ -834,9 +834,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   centerWrap: { flex: 1, padding: 16, justifyContent: 'center' },
   errorCard: {
     backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(223,191,189,0.4)',
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
     padding: 20,
     gap: 8,
   },

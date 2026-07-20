@@ -24,9 +24,10 @@ import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
-import { NavTopBar } from "@/components/nav-top-bar";
+import { ScreenHeader } from "@/components/screen-header";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { ENDPOINTS } from "@/constants/endpoints";
 import { AppFonts } from "@/constants/fonts";
 import { TYPE_ABSENCE_SICK } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
@@ -48,9 +49,16 @@ import {
   startOfDay
 } from "@/utils/absence-form";
 
+// Removes the browser focus outline on web so active inputs show only their
+// bottom border (no box).
+const webNoOutline: any = Platform.OS === "web" ? { outlineStyle: "none" } : null;
+
 type Approver = {
   staffId?: string;
   staff_id?: string;
+  uniStaffId?: string;
+  uni_staff_id?: string;
+  UNI_STAFF_ID?: string;
   positionId?: string;
   position_id?: string;
   prefixNameTH?: string;
@@ -67,6 +75,9 @@ type SelectOption = {
   label: string;
   value: string;
   staffId?: string;
+  photoId?: string;
+  title?: string;
+  subtitle?: string;
 };
 
 type UploadableFile =
@@ -107,12 +118,36 @@ function getApproverLabel(approver: Approver) {
   return positionName || fullName || approver.staffId || "";
 }
 
+function getApproverFullName(approver: Approver) {
+  return `${approver.prefixNameTH ?? ""}${approver.firstNameTH ?? ""} ${approver.lastNameTH ?? ""}`
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getApproverPositionName(approver: Approver) {
+  return approver.positionName?.trim() ?? "";
+}
+
 function getApproverPositionId(approver: Approver) {
   return String(approver.positionId ?? approver.position_id ?? "").trim();
 }
 
 function getApproverStaffId(approver: Approver) {
   return String(approver.staffId ?? approver.staff_id ?? "").trim();
+}
+
+// Staff photos are keyed on the university staff id (UNI_STAFF_ID). If the API
+// doesn't send it yet, fall back to the internal staffId so the image still
+// resolves once the server starts returning uni_staff_id.
+function getApproverPhotoId(approver: Approver) {
+  return (
+    String(
+      approver.uniStaffId ??
+        approver.uni_staff_id ??
+        approver.UNI_STAFF_ID ??
+        "",
+    ).trim() || getApproverStaffId(approver)
+  );
 }
 
 function getItemText(item: absence, fields: string[]) {
@@ -194,6 +229,50 @@ const CONFIRM_REMOVE_TITLE = TEXT.ABSENCE_CONFIRM_REMOVE_TITLE;
 const CONFIRM_REMOVE_MESSAGE = TEXT.ABSENCE_CONFIRM_REMOVE_MESSAGE;
 const PENDING_APPROVAL_TITLE = TEXT.ABSENCE_CANNOT_REQUEST_TITLE;
 
+function getPersonInitials(name?: string) {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+function PersonAvatar({
+  photoId,
+  name,
+  size = 40,
+}: {
+  photoId?: string;
+  name?: string;
+  size?: number;
+}) {
+  const styles = useThemedStyles(makeStyles);
+  const [failed, setFailed] = useState(false);
+  const uri = photoId ? `${ENDPOINTS.photoBase}${photoId}.jpg` : "";
+  const dimension = { width: size, height: size, borderRadius: size / 2 };
+
+  if (uri && !failed) {
+    return (
+      <Image
+        source={{ uri }}
+        style={[styles.personAvatar, dimension]}
+        contentFit="cover"
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+
+  return (
+    <View style={[styles.personAvatar, styles.personAvatarFallback, dimension]}>
+      <ThemedText style={styles.personAvatarText}>
+        {getPersonInitials(name)}
+      </ThemedText>
+    </View>
+  );
+}
+
 type SelectFieldProps = {
   label: string;
   placeholder: string;
@@ -225,7 +304,9 @@ function SelectField({
   const selectedOption = normalizedOptions.find(
     (option) => option.value === value,
   );
-  const displayValue = selectedOption?.label || value;
+  // Only show a label when the value maps to a real option; otherwise fall back
+  // to the placeholder (e.g. half-day "0"/none must not render a literal "0").
+  const displayValue = selectedOption?.label ?? "";
 
   return (
     <View style={styles.field}>
@@ -235,12 +316,32 @@ function SelectField({
         onPress={onToggle}
         style={[styles.selectButton, hasError ? styles.inputError : undefined]}
       >
-        <ThemedText
-          style={[styles.selectText, !displayValue && styles.placeholder]}
-          numberOfLines={1}
-        >
-          {displayValue || placeholder}
-        </ThemedText>
+        {selectedOption && (selectedOption.staffId || selectedOption.title) ? (
+          <View style={styles.selectPerson}>
+            <PersonAvatar
+              photoId={selectedOption.photoId ?? selectedOption.staffId}
+              name={selectedOption.title}
+              size={40}
+            />
+            <View style={styles.selectPersonText}>
+              <ThemedText style={styles.selectPersonTitle} numberOfLines={1}>
+                {selectedOption.title || displayValue}
+              </ThemedText>
+              {selectedOption.subtitle ? (
+                <ThemedText style={styles.selectPersonSubtitle} numberOfLines={1}>
+                  {selectedOption.subtitle}
+                </ThemedText>
+              ) : null}
+            </View>
+          </View>
+        ) : (
+          <ThemedText
+            style={[styles.selectText, !displayValue && styles.placeholder]}
+            numberOfLines={1}
+          >
+            {displayValue || placeholder}
+          </ThemedText>
+        )}
         <ThemedText style={styles.chevron}>⌄</ThemedText>
       </Pressable>
       {errorMessage ? (
@@ -269,12 +370,11 @@ function SelectField({
                 </ThemedText>
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
                   onPress={onToggle}
                   style={styles.closeButton}
                 >
-                  <ThemedText type="defaultSemiBold">
-                    {TEXT.SHARED_CLOSE_THAI}
-                  </ThemedText>
+                  <X size={20} color={c.text} />
                 </Pressable>
               </View>
 
@@ -290,25 +390,49 @@ function SelectField({
                       onPress={() => onSelect(option.value, option)}
                       style={[
                         styles.option,
+                        (option.staffId || option.title) && styles.optionPersonRow,
                         value === option.value
                           ? styles.selectedOption
                           : undefined,
                       ]}
                     >
-                      <ThemedText
-                        lightColor={
-                          value === option.value ? "#FFFFFF" : undefined
-                        }
-                        darkColor={
-                          value === option.value ? "#FFFFFF" : undefined
-                        }
-                        style={[
-                          styles.optionText,
-                          value === option.value ? styles.selectedOptionText : undefined,
-                        ]}
-                      >
-                        {option.label}
-                      </ThemedText>
+                      {option.staffId || option.title ? (
+                        <View style={styles.optionPerson}>
+                          <PersonAvatar
+                            photoId={option.photoId ?? option.staffId}
+                            name={option.title}
+                            size={40}
+                          />
+                          <View style={styles.optionPersonText}>
+                            <ThemedText
+                              numberOfLines={1}
+                              style={[
+                                styles.optionText,
+                                value === option.value ? styles.selectedOptionText : undefined,
+                              ]}
+                            >
+                              {option.title || option.label}
+                            </ThemedText>
+                            {option.subtitle ? (
+                              <ThemedText
+                                numberOfLines={1}
+                                style={styles.optionSubtitle}
+                              >
+                                {option.subtitle}
+                              </ThemedText>
+                            ) : null}
+                          </View>
+                        </View>
+                      ) : (
+                        <ThemedText
+                          style={[
+                            styles.optionText,
+                            value === option.value ? styles.selectedOptionText : undefined,
+                          ]}
+                        >
+                          {option.label}
+                        </ThemedText>
+                      )}
                     </Pressable>
                   ))
                 ) : (
@@ -326,8 +450,6 @@ function SelectField({
 }
 
 function getUploadFileName(asset: DocumentPicker.DocumentPickerAsset) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
   return asset.name || `medical-certificate.${asset.mimeType?.split("/")[1] || "jpg"}`;
 }
 
@@ -509,6 +631,9 @@ export default function SickScreen() {
           label: getApproverLabel(item),
           value: getApproverPositionId(item),
           staffId: getApproverStaffId(item),
+          photoId: getApproverPhotoId(item),
+          title: getApproverFullName(item),
+          subtitle: getApproverPositionName(item),
         }))
         .filter((item) => item.label && item.value),
     [initialabsenceData],
@@ -779,7 +904,7 @@ export default function SickScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_SICK_TITLE} moduleIcon="cross.fill" backHref={backHref} />
+        <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} titlePaddingHorizontal={32} />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -793,7 +918,7 @@ export default function SickScreen() {
 
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_SICK_TITLE} moduleIcon="cross.fill" backHref={backHref} />
+        <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} titlePaddingHorizontal={32} />
         <ErrorState
           variant={shouldShowRetry ? "error" : "empty"}
           title={shouldShowRetry ? TEXT.SHARED_ERROR_TITLE_THAI : PENDING_APPROVAL_TITLE}
@@ -807,7 +932,7 @@ export default function SickScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_SICK_TITLE} moduleIcon="cross.fill" backHref={backHref} />
+      <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} titlePaddingHorizontal={32} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -853,7 +978,7 @@ export default function SickScreen() {
             </ThemedText>
             <TextInput
               multiline
-              numberOfLines={3}
+              numberOfLines={2}
               onChangeText={(value) => {
                 setReason(value);
                 if (value.trim()) {
@@ -865,6 +990,7 @@ export default function SickScreen() {
               style={[
                 styles.textArea,
                 validationErrors.reason ? styles.inputError : undefined,
+                webNoOutline,
               ]}
               textAlignVertical="top"
               value={reason}
@@ -876,7 +1002,7 @@ export default function SickScreen() {
             ) : null}
           </View>
 
-          <View style={styles.field}>
+          <View style={[styles.field, styles.fieldNoBorder]}>
             <ThemedText style={styles.fieldLabel}>
               {TEXT.ABSENCE_LEAVE_DATE_LABEL}
             </ThemedText>
@@ -966,6 +1092,7 @@ export default function SickScreen() {
               style={[
                 styles.input,
                 validationErrors.contact ? styles.inputError : undefined,
+                webNoOutline,
               ]}
               value={contact}
             />
@@ -1301,17 +1428,14 @@ export default function SickScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: c.background,
+    backgroundColor: '#ffffff',
   },
   scrollContent: {
     paddingTop: 16,
     paddingBottom: 24,
   },
   formCard: {
-    marginHorizontal: 16,
-    backgroundColor: c.surface,
-    borderRadius: 16,
-    overflow: "hidden",
+    marginHorizontal: 32,
   },
   stateContent: {
     flex: 1,
@@ -1334,55 +1458,52 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     width: "100%",
   },
   field: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 8,
+    paddingHorizontal: 0,
+    paddingVertical: 20,
+    gap: 10,
+  },
+  fieldNoBorder: {
+    borderBottomWidth: 0,
+  },
+  fieldLabel: {
+    fontSize: 15,
+    lineHeight: 20,
+    color: c.text,
+    fontFamily: AppFonts.psuBold,
+  },
+  input: {
+    minHeight: 40,
+    color: c.text,
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 16,
+    lineHeight: 22,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: c.border,
   },
-  fieldLabel: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: "600",
-    letterSpacing: 0.6,
-    color: c.text,
-    textTransform: "uppercase",
-  },
-  input: {
-    minHeight: 44,
-    backgroundColor: c.surface,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    color: c.text,
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 14,
-    lineHeight: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
   inputError: {
-    borderWidth: 1,
-    borderColor: c.danger,
+    borderBottomWidth: 1.5,
+    borderBottomColor: c.danger,
   },
   textArea: {
-    minHeight: 80,
-    backgroundColor: c.surface,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
+    minHeight: 52,
     color: c.text,
     fontFamily: AppFonts.psuRegular,
-    fontSize: 14,
-    lineHeight: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    fontSize: 16,
+    lineHeight: 22,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
+    textAlignVertical: "top",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
   dateRow: {
     flexDirection: "row",
     gap: 12,
   },
   hint: {
+    marginTop: 10,
     fontSize: 12,
     lineHeight: 17,
     color: c.textMuted,
@@ -1401,22 +1522,20 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.danger,
   },
   selectButton: {
-    minHeight: 44,
+    minHeight: 40,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: c.surface,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
     gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
   selectText: {
     flex: 1,
     color: c.text,
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: AppFonts.psuRegular,
   },
   placeholder: {
@@ -1474,11 +1593,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 16,
   },
   closeButton: {
-    minHeight: 40,
+    width: 40,
+    height: 40,
+    alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.surfaceMuted,
-    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: `${c.text}14`,
   },
   optionScroll: {
     maxHeight: 360,
@@ -1489,17 +1609,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   option: {
     minHeight: 48,
     justifyContent: "center",
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.background,
-    paddingHorizontal: 14,
+    paddingHorizontal: 0,
     paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
-  selectedOption: {
-    borderColor: c.primary,
-    backgroundColor: c.primary,
-  },
+  selectedOption: {},
   optionText: {
     color: c.text,
     fontSize: 14,
@@ -1507,7 +1622,61 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontFamily: AppFonts.psuRegular,
   },
   selectedOptionText: {
-    color: c.textOnPrimary,
+    color: c.primary,
+    fontFamily: AppFonts.psuBold,
+  },
+  personAvatar: {
+    backgroundColor: c.surfaceMuted,
+  },
+  personAvatarFallback: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  personAvatarText: {
+    color: c.textMuted,
+    fontSize: 14,
+    lineHeight: 18,
+    fontFamily: AppFonts.psuBold,
+  },
+  selectPerson: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  selectPersonText: {
+    flex: 1,
+    gap: 2,
+  },
+  selectPersonTitle: {
+    color: c.text,
+    fontSize: 14,
+    lineHeight: 19,
+    fontFamily: AppFonts.psuBold,
+  },
+  selectPersonSubtitle: {
+    color: c.textMuted,
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: AppFonts.psuRegular,
+  },
+  optionPersonRow: {
+    justifyContent: "flex-start",
+  },
+  optionPerson: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  optionPersonText: {
+    flex: 1,
+    gap: 2,
+  },
+  optionSubtitle: {
+    color: c.textMuted,
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: AppFonts.psuRegular,
   },
   emptyOption: {
     color: c.textMuted,
@@ -1525,6 +1694,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingBottom: 24,
   },
   uploadZone: {
+    marginTop: 14,
     borderWidth: 1.5,
     borderColor: c.border,
     borderStyle: "dashed",
@@ -1547,6 +1717,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textFaint,
   },
   selectedFileCard: {
+    marginTop: 14,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -1592,17 +1763,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     borderRadius: 12,
-    marginHorizontal: 16,
+    marginHorizontal: 32,
     marginBottom: 14,
     padding: 16,
   },
   policyIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: c.infoSoft,
-    alignItems: "center",
-    justifyContent: "center",
     flexShrink: 0,
   },
   policyBody: {

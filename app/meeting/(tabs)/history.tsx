@@ -111,7 +111,7 @@ function MeetingCard({ meeting }: { meeting: Meeting }) {
           {timeStr ? (
             <ThemedText style={styles.timeText}>{timeStr}</ThemedText>
           ) : (
-            <History size={20} color="#5D6371" />
+            <History size={20} color={c.textMuted} />
           )}
         </View>
         <View style={styles.itemBody}>
@@ -123,7 +123,7 @@ function MeetingCard({ meeting }: { meeting: Meeting }) {
             </View>
           ) : null}
         </View>
-        <ChevronRight size={20} color="#8B716F" style={styles.chevron} />
+        <ChevronRight size={20} color={c.textFaint} style={styles.chevron} />
       </View>
     </Pressable>
   );
@@ -226,8 +226,8 @@ export default function MeetingHistoryScreen() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={() => loadMeetings(true)}
-            tintColor="#922124"
-            colors={["#922124"]}
+            tintColor={c.primary}
+            colors={[c.primary]}
           />
         }
         renderItem={({ item: row }) => {
@@ -255,16 +255,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   listContent: { flexGrow: 1, padding: 16, paddingBottom: 32 },
   headerCard: {
     backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     padding: 16,
     marginBottom: 16,
     shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
     gap: 12,
   },
   headerTitle: {
@@ -303,22 +303,22 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   separator: { height: 10 },
   itemCard: {
     backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     padding: 16,
     shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
   },
-  itemRow: { flexDirection: "row", gap: 12, alignItems: "center" },
+  itemRow: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
   chevron: { flexShrink: 0 },
   timeBox: {
     width: 54,
     minHeight: 44,
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -364,16 +364,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   errorWrap: { flex: 1, padding: 16, justifyContent: "center" },
   errorCard: {
     backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     padding: 20,
     gap: 8,
     shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
   },
   errorTitle: { fontFamily: AppFonts.psuBold, fontSize: 15, color: c.primary },
   errorMessage: { fontFamily: AppFonts.psuRegular, fontSize: 14, lineHeight: 20, color: c.textMuted },
@@ -382,7 +382,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     marginTop: 8,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 14,
     backgroundColor: c.primary,
   },
   retryText: { color: c.textOnPrimary, fontFamily: AppFonts.psuBold, fontSize: 14 },

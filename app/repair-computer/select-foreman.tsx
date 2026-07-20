@@ -1,21 +1,20 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
     Image,
-    Modal,
     Pressable,
     ScrollView,
     StyleSheet,
     View,
 } from "react-native";
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { Button, ConfirmDialog } from "@/components/ui";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
@@ -75,7 +74,6 @@ function ForemanSelectRow({
   isSelected: boolean;
   onPress: () => void;
 }) {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const photoId = getForemanPhotoStaffId(foreman);
   const name = getForemanName(foreman);
@@ -120,7 +118,6 @@ function ForemanSelectRow({
 }
 
 export default function SelectForemanScreen() {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{
     backHref?: string | string[];
@@ -213,7 +210,7 @@ export default function SelectForemanScreen() {
   const renderContent = () => {
     if (isLoading) {
       return (
-        <LoadingAnimate title="Loading data" desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
+        <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
       );
     }
 
@@ -222,11 +219,7 @@ export default function SelectForemanScreen() {
         <View style={styles.stateContent}>
           <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={loadForemen} style={styles.retryButton}>
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              {TEXT.SHARED_RETRY}
-            </ThemedText>
-          </Pressable>
+          <Button title={TEXT.SHARED_RETRY} onPress={loadForemen} style={styles.retryButton} />
         </View>
       );
     }
@@ -284,64 +277,30 @@ export default function SelectForemanScreen() {
 
       {!isLoading && !error && visibleForemen.length > 0 ? (
         <View style={styles.bottomBar}>
-          <Pressable accessibilityRole="button" onPress={handleBackPress} style={styles.backButton}>
-            <ThemedText style={styles.backButtonText} type="defaultSemiBold">
-              Back
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
+          <Button title="Back" variant="secondary" onPress={handleBackPress} />
+          <Button
+            title="Forward Foreman"
             disabled={!selectedForeman}
             onPress={() => setIsConfirmOpen(true)}
-            style={[styles.ctaButton, !selectedForeman && styles.ctaButtonDisabled]}
-          >
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              Forward Foreman
-            </ThemedText>
-          </Pressable>
+            style={styles.ctaButton}
+          />
         </View>
       ) : null}
 
-      <Modal
-        transparent
+      <ConfirmDialog
         visible={isConfirmOpen}
-        animationType="fade"
-        onRequestClose={() => setIsConfirmOpen(false)}
-      >
-        <Pressable style={styles.backdrop} onPress={() => setIsConfirmOpen(false)}>
-          <Pressable>
-            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
-              <ThemedText type="subtitle">Confirm Forward Foreman</ThemedText>
-              <ThemedText style={styles.confirmMessage}>
-                {selectedForeman
-                  ? `Forward this job to ${getForemanName(selectedForeman)}?`
-                  : "Forward this job to the selected foreman?"}
-              </ThemedText>
-              <View style={styles.confirmActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting}
-                  onPress={() => setIsConfirmOpen(false)}
-                  style={styles.cancelButton}
-                >
-                  <ThemedText type="defaultSemiBold">Cancel</ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting}
-                  onPress={handleForward}
-                  style={[styles.confirmButton, isSubmitting && styles.disabledButton]}
-                >
-                  {isSubmitting && <ActivityIndicator color="#FFFFFF" size="small" />}
-                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                    {isSubmitting ? "Forwarding…" : "Confirm"}
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        title="Confirm Forward Foreman"
+        message={
+          selectedForeman
+            ? `Forward this job to ${getForemanName(selectedForeman)}?`
+            : "Forward this job to the selected foreman?"
+        }
+        confirmLabel="Confirm"
+        cancelLabel="Cancel"
+        loading={isSubmitting}
+        onConfirm={handleForward}
+        onCancel={() => setIsConfirmOpen(false)}
+      />
 
       <AppToast message={toastMessage} type={toastType === "error" ? "error" : "success"} />
     </ThemedView>
@@ -456,12 +415,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.primary,
   },
   retryButton: {
-    minHeight: 48,
     minWidth: 132,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.primary,
     marginTop: 24,
   },
   bottomBar: {
@@ -476,74 +430,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     boxShadow: "0 -2px 10px rgba(0,0,0,0.07)",
     elevation: 12,
   },
-  backButton: {
-    minHeight: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: c.border,
-    paddingHorizontal: 20,
-  },
-  backButtonText: {
-    color: c.textMuted,
-    fontSize: 14,
-  },
   ctaButton: {
     flex: 1,
-    minHeight: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.primary,
-  },
-  ctaButtonDisabled: {
-    opacity: 0.45,
-  },
-  backdrop: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(17, 24, 28, 0.45)",
-    padding: 24,
-  },
-  confirmModal: {
-    width: "100%",
-    maxWidth: 420,
-    borderRadius: 8,
-    padding: 18,
-  },
-  confirmMessage: {
-    color: c.textMuted,
-    lineHeight: 20,
-    marginTop: 10,
-  },
-  confirmActions: {
-    flexDirection: "row-reverse",
-    gap: 12,
-    marginTop: 18,
-  },
-  cancelButton: {
-    minHeight: 46,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-  },
-  confirmButton: {
-    minHeight: 46,
-    flex: 1,
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.primary,
-  },
-  disabledButton: {
-    opacity: 0.65,
   },
 });

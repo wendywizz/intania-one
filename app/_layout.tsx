@@ -58,6 +58,17 @@ export default function RootLayout() {
     LINESeedSansTH_Rg: require('../assets/fonts/LINE_Seed_Sans_TH/TTF/LINESeedSansTH_A_Rg.ttf'),
     LINESeedSansTH_Bd: require('../assets/fonts/LINE_Seed_Sans_TH/TTF/LINESeedSansTH_A_Bd.ttf'),
     LINESeedSansTH_XBd: require('../assets/fonts/LINE_Seed_Sans_TH/TTF/LINESeedSansTH_A_XBd.ttf'),
+    // IBM Plex Sans Thai — clean, loopless minimalist sans (Airbnb-style trial on Home)
+    IBMPlexSansThai_Rg: require('../assets/fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf'),
+    IBMPlexSansThai_Md: require('../assets/fonts/IBMPlexSansThai/IBMPlexSansThai-Medium.ttf'),
+    IBMPlexSansThai_Sb: require('../assets/fonts/IBMPlexSansThai/IBMPlexSansThai-SemiBold.ttf'),
+    IBMPlexSansThai_Bd: require('../assets/fonts/IBMPlexSansThai/IBMPlexSansThai-Bold.ttf'),
+    // FC Mittraphap — single-weight display sans (Home trial). NOTE: non-commercial license.
+    FCMittraphap: require('../assets/fonts/FC Mittraphap/FC Mittraphap.ttf'),
+    // PSU Stidti — Prince of Songkla University's official typeface (Light/Regular/Bold).
+    PSUStidti_Lt: require('../assets/fonts/psu-stidti/psu-stidti-light.ttf'),
+    PSUStidti_Rg: require('../assets/fonts/psu-stidti/psu-stidti-regular.ttf'),
+    PSUStidti_Bd: require('../assets/fonts/psu-stidti/psu-stidti-bold.ttf'),
   });
 
   useEffect(() => {

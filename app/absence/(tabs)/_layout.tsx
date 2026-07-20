@@ -41,7 +41,7 @@ export default function absenceTabLayout() {
 
   if (isChecking) {
     return (
-      <ThemedView style={{ flex: 1, backgroundColor: c.background }}>
+      <ThemedView style={{ flex: 1, backgroundColor: '#ffffff' }}>
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -59,11 +59,11 @@ export default function absenceTabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarActiveTintColor: c.primary,
-        tabBarInactiveTintColor: c.textMuted,
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
         tabBarStyle: {
-          backgroundColor: c.surface,
-          borderTopColor: c.border,
+          backgroundColor: c.primary,
+          borderTopColor: c.primary,
           height: 68,
           paddingBottom: 10,
           paddingTop: 6,

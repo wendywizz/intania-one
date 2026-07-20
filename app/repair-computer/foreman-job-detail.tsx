@@ -4,9 +4,7 @@ import { navPush } from "@/utils/navigation";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
     Image,
-    Modal,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -20,7 +18,7 @@ import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { ConfirmDialog, IconSymbol } from "@/components/ui";
 import {
     REPAIR_STATUS_APPROVAL_REJECTED,
     REPAIR_STATUS_FORWARD_FOREMAN,
@@ -137,8 +135,6 @@ function RowDetail({ description, title }: RowDetailProps) {
 }
 
 function normalizeStaffId(staffId: string) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
   return /^\d+$/.test(staffId) ? staffId.padStart(7, "0") : staffId;
 }
 
@@ -807,60 +803,17 @@ export default function ForemanJobDetailScreen() {
         type={toastType === "error" ? "error" : "success"}
       />
 
-      <Modal
-        transparent
+      <ConfirmDialog
         visible={Boolean(confirmContent)}
-        animationType="fade"
-        onRequestClose={() => setConfirmAction(null)}
-      >
-        <Pressable
-          style={styles.backdrop}
-          onPress={() => setConfirmAction(null)}
-        >
-          <Pressable>
-            <ThemedView
-              style={styles.confirmModal}
-              lightColor="#FFFFFF"
-              darkColor="#151718"
-            >
-              <ThemedText type="subtitle">{confirmContent?.title}</ThemedText>
-              <ThemedText style={styles.confirmMessage}>
-                {confirmContent?.message}
-              </ThemedText>
-              <View style={styles.confirmActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting}
-                  onPress={() => setConfirmAction(null)}
-                  style={styles.cancelButton}
-                >
-                  <ThemedText type="defaultSemiBold">No</ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting}
-                  onPress={handleConfirmAction}
-                  style={[
-                    styles.confirmButton,
-                    isSubmitting ? styles.disabledButton : undefined,
-                  ]}
-                >
-                  {isSubmitting ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : null}
-                  <ThemedText
-                    lightColor="#FFFFFF"
-                    darkColor="#FFFFFF"
-                    type="defaultSemiBold"
-                  >
-                    Yes
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        title={confirmContent?.title ?? ""}
+        message={confirmContent?.message}
+        confirmLabel="Yes"
+        cancelLabel="No"
+        destructive={confirmAction === "forwardReject"}
+        loading={isSubmitting}
+        onConfirm={handleConfirmAction}
+        onCancel={() => setConfirmAction(null)}
+      />
     </ThemedView>
   );
 }
@@ -1144,48 +1097,5 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.65,
-  },
-  backdrop: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(17, 24, 28, 0.45)",
-    padding: 24,
-  },
-  confirmModal: {
-    width: "100%",
-    maxWidth: 420,
-    borderRadius: 8,
-    padding: 18,
-  },
-  confirmMessage: {
-    color: c.textMuted,
-    lineHeight: 20,
-    marginTop: 10,
-  },
-  confirmActions: {
-    flexDirection: "row-reverse",
-    gap: 12,
-    marginTop: 18,
-  },
-  cancelButton: {
-    minHeight: 46,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-  },
-  confirmButton: {
-    minHeight: 46,
-    flex: 1,
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.primary,
   },
 });

@@ -1,6 +1,7 @@
-﻿import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Search, SearchX } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Building2, Phone, Search, SearchX } from 'lucide-react-native';
 import { TEXT } from '@/constants/text';
+import { StatusBar } from 'expo-status-bar';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -10,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
@@ -19,12 +21,14 @@ import { EmptyState } from '@/components/empty-state';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
+import { useTheme } from '@/context/ThemeContext';
 import type { Person } from '@/models/types';
 import { getPersonnelSuggestions } from '@/services/personService';
 
 const SEARCH_DEBOUNCE_MS = 350;
 const RECENT_KEYWORDS_KEY = '@person_search_recent_keywords';
 const MAX_RECENT_KEYWORDS = 5;
+const PAGE_SIZE = 10;
 
 function getPersonLabel(person: Person): string {
   const r = person as Record<string, unknown>;
@@ -66,7 +70,7 @@ function getPersonDetails(person: Person): {
   const id = person.staffId ? String(person.staffId) : '';
   return {
     dept: dept || undefined,
-    phone: phone ? `Tel: ${phone}` : undefined,
+    phone: phone || undefined,
     fallback: id || undefined,
   };
 }
@@ -150,18 +154,24 @@ function PersonSearchListItem({ item }: { item: Person }) {
         )}
       </View>
       <View style={styles.listItemText}>
-        <ThemedText type="defaultSemiBold" numberOfLines={2}>
+        <ThemedText style={styles.name} numberOfLines={2}>
           {title}
         </ThemedText>
         {details.dept ? (
-          <ThemedText style={styles.subtitle} numberOfLines={2}>
-            {details.dept}
-          </ThemedText>
+          <View style={styles.metaRow}>
+            <Building2 size={12} color={c.textMuted} style={styles.metaIcon} />
+            <ThemedText style={styles.metaText} numberOfLines={2}>
+              {details.dept}
+            </ThemedText>
+          </View>
         ) : null}
         {details.phone ? (
-          <ThemedText style={styles.subtitle} numberOfLines={1}>
-            {details.phone}
-          </ThemedText>
+          <View style={styles.metaRow}>
+            <Phone size={12} color={c.textMuted} style={styles.metaIcon} />
+            <ThemedText style={styles.metaText} numberOfLines={1}>
+              {details.phone}
+            </ThemedText>
+          </View>
         ) : null}
         {!details.dept && !details.phone && details.fallback && details.fallback !== title ? (
           <ThemedText style={styles.subtitle} numberOfLines={1}>
@@ -175,9 +185,15 @@ function PersonSearchListItem({ item }: { item: Person }) {
 
 export default function PersonSearchScreen() {
   const c = useColors();
+  const { isDarkMode } = useTheme();
+  const { height } = useWindowDimensions();
   const styles = useThemedStyles(makeStyles);
+  // Scale the screen title with the device height (clamped) so it feels
+  // proportional on both short and tall screens.
+  const titleSize = Math.round(Math.min(26, Math.max(20, height * 0.028)));
   const [keyword, setKeyword] = useState('');
   const [results, setResults] = useState<Person[]>([]);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recentKeywords, setRecentKeywords] = useState<string[]>([]);
@@ -215,6 +231,7 @@ export default function PersonSearchScreen() {
         .then((data) => {
           if (id !== requestIdRef.current) return;
           setResults(data);
+          setVisibleCount(PAGE_SIZE);
           saveKeyword(trimmed);
         })
         .catch((searchError) => {
@@ -264,39 +281,70 @@ export default function PersonSearchScreen() {
   };
 
   const trimmedLength = keyword.trim().length;
-  const showEmptyHint = trimmedLength >= 2 && !isLoading && !error && results.length === 0;
+  const visibleResults = results.slice(0, visibleCount);
+  const hasMore = visibleCount < results.length;
+
+  const loadMore = () => {
+    if (hasMore) {
+      setVisibleCount((prev) => prev + PAGE_SIZE);
+    }
+  };
+
+  const renderEmpty = () => {
+    if (isLoading) {
+      return null;
+    }
+    if (error) {
+      return (
+        <View style={styles.errorBox}>
+          <ThemedText style={styles.errorTitle}>{TEXT.SHARED_UNABLE_TO_COMPLETE}</ThemedText>
+          <ThemedText style={styles.errorDetail}>{error}</ThemedText>
+          <Pressable style={styles.retryBtn} onPress={handleRetry}>
+            <ThemedText style={styles.retryBtnText}>{TEXT.SHARED_RETRY}</ThemedText>
+          </Pressable>
+        </View>
+      );
+    }
+    if (trimmedLength < 2) {
+      return <EmptyState icon={Search} message={TEXT.PERSON_SEARCH_SUBTITLE} />;
+    }
+    return <EmptyState icon={SearchX} message={TEXT.SHARED_EMPTY_DATA} />;
+  };
 
   return (
     <ThemedView style={styles.container}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <NavTopBar
-        title={TEXT.PERSON_SEARCH_TITLE}
-        subtitle={TEXT.PERSON_SEARCH_SUBTITLE}
-        moduleIcon="user-round-search"
+        title=""
         backHref="/"
+        backgroundColor={c.background}
+        contentColor={c.text}
       />
 
       <View style={styles.content}>
-        <View style={styles.inputWrap}>
-          <View pointerEvents="none" style={styles.searchIconWrap}>
-            <Search size={18} color="#8A969C" />
-          </View>
+        <ThemedText style={[styles.pageTitle, { fontSize: titleSize, lineHeight: titleSize + 6 }]}>
+          {TEXT.PERSON_SEARCH_TITLE}
+        </ThemedText>
+
+        {/* Search field */}
+        <View style={styles.searchCard}>
+          <Search size={18} color={c.textMuted} />
           <TextInput
             accessibilityLabel={TEXT.SHARED_SEARCH_NAME_PLACEHOLDER}
             autoCapitalize="none"
             autoCorrect={false}
             clearButtonMode="while-editing"
             onChangeText={setKeyword}
-            placeholder="Search by name or department..."
-            placeholderTextColor="#8A969C"
+            placeholder={TEXT.SHARED_SEARCH_NAME_PLACEHOLDER}
+            placeholderTextColor={c.textFaint}
             returnKeyType="search"
             style={styles.input}
             value={keyword}
           />
-          <View pointerEvents="none" style={styles.spinnerWrap}>
-            {isLoading ? <ActivityIndicator color={c.primary} size="small" /> : null}
-          </View>
+          {isLoading ? <ActivityIndicator color={c.primary} size="small" /> : null}
         </View>
 
+        {/* Recent keywords */}
         {recentKeywords.length > 0 ? (
           <ScrollView
             horizontal
@@ -330,34 +378,27 @@ export default function PersonSearchScreen() {
           </ScrollView>
         ) : null}
 
-        {error ? (
-          <View style={styles.errorBlock}>
-            <ThemedText style={styles.errorText}>{error}</ThemedText>
-            <Pressable accessibilityRole="button" onPress={handleRetry} style={styles.retryButton}>
-              <ThemedText lightColor="#B33939" darkColor="#B33939" type="defaultSemiBold">
-                {TEXT.SHARED_RETRY}
+        {/* Results — each person is its own card, listed one by one */}
+        <FlatList
+          style={styles.flatList}
+          contentContainerStyle={styles.listContent}
+          data={visibleResults}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          keyExtractor={getPersonSearchKey}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.3}
+          ListEmptyComponent={renderEmpty()}
+          ListFooterComponent={
+            results.length > PAGE_SIZE ? (
+              <ThemedText style={styles.countFooter}>
+                {`${visibleResults.length} / ${results.length}`}
               </ThemedText>
-            </Pressable>
-          </View>
-        ) : null}
-
-        <View style={[styles.resultsArea, (results.length > 0 || showEmptyHint) && styles.resultsCard]}>
-          <FlatList
-            style={styles.flatList}
-            contentContainerStyle={styles.listContent}
-            data={results}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-            keyboardDismissMode="on-drag"
-            keyboardShouldPersistTaps="handled"
-            keyExtractor={getPersonSearchKey}
-            ListEmptyComponent={
-              showEmptyHint ? (
-                <EmptyState icon={SearchX} message={TEXT.SHARED_EMPTY_DATA} />
-              ) : null
-            }
-            renderItem={({ item }) => <PersonSearchListItem item={item} />}
-          />
-        </View>
+            ) : null
+          }
+          renderItem={({ item }) => <PersonSearchListItem item={item} />}
+        />
       </View>
     </ThemedView>
   );
@@ -366,66 +407,66 @@ export default function PersonSearchScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: c.surfaceAlt,
+    backgroundColor: c.background,
   },
   content: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 18,
+    paddingTop: 8,
   },
-  inputWrap: {
-    position: 'relative',
-    justifyContent: 'center',
+  pageTitle: {
+    fontSize: 26,
+    lineHeight: 32,
+    color: c.text,
+    fontFamily: AppFonts.psuBold,
+    marginBottom: 16,
   },
-  searchIconWrap: {
-    position: 'absolute',
-    left: 14,
-    top: 0,
-    bottom: 0,
-    width: 20,
+
+  // ─── Search field ────────────────────────────────────────────────
+  searchCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
+    gap: 10,
+    height: 52,
+    paddingHorizontal: 16,
+    backgroundColor: c.surface,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
   },
   input: {
-    height: 48,
-    borderRadius: 0,
-    backgroundColor: c.surface,
-    borderWidth: 1,
-    borderColor: c.border,
+    flex: 1,
+    height: '100%',
     color: c.text,
     fontFamily: AppFonts.psuRegular,
-    fontSize: 13,
-    paddingLeft: 42,
-    paddingRight: 42,
+    fontSize: 15,
     paddingVertical: 0,
   },
-  spinnerWrap: {
-    position: 'absolute',
-    right: 12,
-    top: 0,
-    bottom: 0,
-    width: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+
+  // ─── Recent keywords ─────────────────────────────────────────────
   keywordsRow: {
     marginTop: 14,
+    marginBottom: 16,
     marginHorizontal: -16,
     maxHeight: 34,
   },
   keywordsContent: {
     paddingHorizontal: 16,
-    gap: 10,
+    gap: 8,
     flexDirection: 'row',
     alignItems: 'center',
   },
   keywordBadge: {
-    height: 30,
-    minWidth: 76,
-    paddingHorizontal: 16,
-    borderRadius: 15,
-    backgroundColor: c.surfaceAlt,
+    height: 32,
+    minWidth: 72,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: c.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -436,89 +477,139 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     opacity: 0.82,
   },
   keywordBadgeText: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 17,
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
   keywordBadgeTextActive: {
     color: c.textOnPrimary,
   },
-  resultsArea: {
-    marginTop: 22,
-    flexGrow: 0,
-    flexShrink: 1,
+
+  // ─── Results list ────────────────────────────────────────────────
+  flatList: {
+    flex: 1,
   },
-  resultsCard: {
-    backgroundColor: c.surface,
-    borderRadius: 0,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: c.border,
-    maxHeight: '72%',
-  },
-  flatList: {},
   listContent: {
     flexGrow: 1,
-    paddingVertical: 0,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   separator: {
-    height: StyleSheet.hairlineWidth,
-    marginLeft: 82,
-    backgroundColor: c.surfaceMuted,
+    height: 12,
   },
+  countFooter: {
+    paddingTop: 16,
+    paddingBottom: 4,
+    textAlign: 'center',
+    fontSize: 12,
+    lineHeight: 16,
+    color: c.textFaint,
+    fontFamily: AppFonts.psuRegular,
+  },
+
+  // ─── Person card ─────────────────────────────────────────────────
   listItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 78,
-    paddingVertical: 8,
-    paddingHorizontal: 13,
     gap: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    backgroundColor: c.surface,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
   },
   avatarWrap: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     overflow: 'hidden',
     backgroundColor: c.surfaceMuted,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
   },
   avatar: {
-    width: 58,
-    height: 58,
+    width: 48,
+    height: 48,
   },
   avatarPlaceholder: {
-    backgroundColor: c.border,
+    backgroundColor: c.surfaceMuted,
   },
   listItemText: {
     flex: 1,
     minWidth: 0,
     justifyContent: 'center',
   },
+  name: {
+    fontSize: 15,
+    lineHeight: 20,
+    marginBottom: 3,
+    color: c.text,
+    fontFamily: AppFonts.psuBold,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 5,
+    marginTop: 3,
+  },
+  metaIcon: {
+    marginTop: 3,
+  },
+  metaText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
+  },
   subtitle: {
     marginTop: 3,
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 13,
+    lineHeight: 17,
     color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
   },
-  emptyText: {
-    marginVertical: 22,
-    textAlign: 'center',
-    color: c.textMuted,
-    fontSize: 14,
+
+  // ─── Error ───────────────────────────────────────────────────────
+  errorBox: {
+    margin: 16,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    backgroundColor: c.primarySoft,
+    padding: 16,
+    gap: 6,
   },
-  errorBlock: {
-    paddingTop: 14,
-    gap: 8,
-  },
-  errorText: {
+  errorTitle: {
     color: c.primary,
+    fontFamily: AppFonts.psuBold,
     fontSize: 14,
+    lineHeight: 20,
   },
-  retryButton: {
+  errorDetail: {
+    color: c.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  retryBtn: {
     alignSelf: 'flex-start',
-    paddingVertical: 6,
-    paddingHorizontal: 4,
+    marginTop: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: c.primary,
+  },
+  retryBtnText: {
+    color: c.textOnPrimary,
+    fontFamily: AppFonts.psuBold,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

@@ -3,13 +3,10 @@ import { router, useLocalSearchParams } from "expo-router";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
     Image,
-    Modal,
     Pressable,
     ScrollView,
     StyleSheet,
-    TextInput,
     View,
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
@@ -20,8 +17,7 @@ import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { AppFonts } from "@/constants/fonts";
+import { Button, ConfirmDialog, IconSymbol, TextField } from "@/components/ui";
 import { REPAIR_STATUS_NEW_JOB } from "@/constants/types";
 import type { RepairComputer } from "@/models/types";
 import { getPersonPhoto } from "@/services/personService";
@@ -336,48 +332,27 @@ export default function UserJobDetailScreen() {
 
         {isEditable ? (
           <SectionCard title={TEXT.REPAIR_COMPUTER_DETAIL}>
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.inputLabel}>
-                {TEXT.REPAIR_COMPUTER_DETAIL}
-              </ThemedText>
-              <TextInput
-                multiline
-                numberOfLines={3}
-                onChangeText={setDetail}
-                placeholder={TEXT.REPAIR_COMPUTER_DETAIL}
-                placeholderTextColor="#8b716f"
-                style={[styles.input, styles.textArea]}
-                textAlignVertical="top"
-                value={detail}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.inputLabel}>
-                {TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
-              </ThemedText>
-              <TextInput
-                onChangeText={setSupplyCode}
-                placeholder={TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
-                placeholderTextColor="#8b716f"
-                style={styles.input}
-                value={supplyCode}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <ThemedText style={styles.inputLabel}>
-                {TEXT.REPAIR_COMPUTER_PHONE}
-              </ThemedText>
-              <TextInput
-                keyboardType="phone-pad"
-                onChangeText={setPhone}
-                placeholder={TEXT.REPAIR_COMPUTER_PHONE}
-                placeholderTextColor="#8b716f"
-                style={styles.input}
-                value={phone}
-              />
-            </View>
+            <TextField
+              label={TEXT.REPAIR_COMPUTER_DETAIL}
+              multiline
+              numberOfLines={3}
+              value={detail}
+              onChangeText={setDetail}
+              placeholder={TEXT.REPAIR_COMPUTER_DETAIL}
+            />
+            <TextField
+              label={TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
+              value={supplyCode}
+              onChangeText={setSupplyCode}
+              placeholder={TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
+            />
+            <TextField
+              label={TEXT.REPAIR_COMPUTER_PHONE}
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+              placeholder={TEXT.REPAIR_COMPUTER_PHONE}
+            />
           </SectionCard>
         ) : (
           <SectionCard title={TEXT.REPAIR_COMPUTER_DETAIL}>
@@ -429,17 +404,12 @@ export default function UserJobDetailScreen() {
 
     return (
       <FloatingActionBar disabled={isUpdating}>
-        <Pressable
-          accessibilityRole="button"
-          disabled={isUpdating}
+        <Button
+          title={TEXT.SHARED_UPDATE}
+          fullWidth
+          loading={isUpdating}
           onPress={() => setIsConfirmOpen(true)}
-          style={[styles.updateButton, isUpdating ? styles.disabledButton : undefined]}
-        >
-          {isUpdating ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
-          <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-            {isUpdating ? TEXT.SHARED_UPDATING : TEXT.SHARED_UPDATE}
-          </ThemedText>
-        </Pressable>
+        />
       </FloatingActionBar>
     );
   };
@@ -466,43 +436,16 @@ export default function UserJobDetailScreen() {
 
       {renderFooterActions()}
 
-      <Modal
-        transparent
+      <ConfirmDialog
         visible={isConfirmOpen}
-        animationType="fade"
-        onRequestClose={() => setIsConfirmOpen(false)}
-      >
-        <Pressable style={styles.backdrop} onPress={() => setIsConfirmOpen(false)}>
-          <Pressable accessibilityRole="none" onPress={(e) => e.stopPropagation()}>
-            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
-              <ThemedText type="subtitle">
-                {TEXT.REPAIR_COMPUTER_UPDATE_CONFIRM_TITLE}
-              </ThemedText>
-              <ThemedText style={styles.confirmMessage}>
-                {TEXT.REPAIR_COMPUTER_UPDATE_CONFIRM_MESSAGE}
-              </ThemedText>
-              <View style={styles.confirmActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setIsConfirmOpen(false)}
-                  style={styles.cancelButton}
-                >
-                  <ThemedText type="defaultSemiBold">{TEXT.CANCEL}</ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={handleUpdate}
-                  style={styles.confirmUpdateButton}
-                >
-                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                    {TEXT.SHARED_UPDATE}
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        title={TEXT.REPAIR_COMPUTER_UPDATE_CONFIRM_TITLE}
+        message={TEXT.REPAIR_COMPUTER_UPDATE_CONFIRM_MESSAGE}
+        confirmLabel={TEXT.SHARED_UPDATE}
+        cancelLabel={TEXT.CANCEL}
+        loading={isUpdating}
+        onConfirm={handleUpdate}
+        onCancel={() => setIsConfirmOpen(false)}
+      />
 
       <AppToast
         message={toastMessage}
@@ -627,29 +570,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     lineHeight: 21,
     marginTop: 6,
   },
-  inputGroup: {
-    gap: 8,
-  },
-  inputLabel: {
-    color: c.textMuted,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  input: {
-    minHeight: 46,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-    color: c.text,
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  textArea: {
-    minHeight: 84,
-  },
   personCard: {
     minHeight: 82,
     flexDirection: "row",
@@ -723,61 +643,5 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 8,
     backgroundColor: c.primary,
     marginTop: 24,
-  },
-  updateButton: {
-    minHeight: 48,
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.primary,
-  },
-  disabledButton: {
-    opacity: 0.65,
-  },
-  backdrop: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(17, 24, 28, 0.45)",
-    padding: 24,
-  },
-  confirmModal: {
-    width: "100%",
-    maxWidth: 420,
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-  },
-  confirmMessage: {
-    color: c.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 8,
-  },
-  confirmActions: {
-    flexDirection: "row-reverse",
-    gap: 12,
-    marginTop: 20,
-  },
-  cancelButton: {
-    flex: 1,
-    minHeight: 46,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-  },
-  confirmUpdateButton: {
-    flex: 1,
-    minHeight: 46,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.primary,
   },
 });

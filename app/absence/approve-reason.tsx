@@ -12,7 +12,7 @@ import {
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
-import { NavTopBar } from "@/components/nav-top-bar";
+import { ScreenHeader } from "@/components/screen-header";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { AppFonts } from "@/constants/fonts";
@@ -86,10 +86,8 @@ export default function ApproveReasonScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar
-        title={TEXT.ABSENCE_TITLE}
-        subtitle={isApprove ? TEXT.ABSENCE_APPROVE_ACCEPT : TEXT.ABSENCE_APPROVE_REJECT}
-        moduleIcon="calendar-clock"
+      <ScreenHeader
+        title={isApprove ? TEXT.ABSENCE_APPROVE_ACCEPT : TEXT.ABSENCE_APPROVE_REJECT}
         backHref="/absence/pending"
       />
 
@@ -180,7 +178,7 @@ export default function ApproveReasonScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: c.background,
+    backgroundColor: '#ffffff',
   },
   scrollContent: {
     padding: 16,

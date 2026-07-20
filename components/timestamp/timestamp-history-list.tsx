@@ -413,7 +413,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: "rgba(223,191,189,0.3)",
     padding: 16,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 12,
     shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 1 },

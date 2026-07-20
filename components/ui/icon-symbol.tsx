@@ -54,6 +54,13 @@ import Wrench from 'lucide-react-native/dist/cjs/icons/wrench';
 import RotateCcw from 'lucide-react-native/dist/cjs/icons/rotate-ccw';
 import CircleArrowRight from 'lucide-react-native/dist/cjs/icons/circle-arrow-right';
 import CircleX from 'lucide-react-native/dist/cjs/icons/circle-x';
+import Eye from 'lucide-react-native/dist/cjs/icons/eye';
+import EyeOff from 'lucide-react-native/dist/cjs/icons/eye-off';
+import TriangleAlert from 'lucide-react-native/dist/cjs/icons/triangle-alert';
+import Trash from 'lucide-react-native/dist/cjs/icons/trash-2';
+import Pencil from 'lucide-react-native/dist/cjs/icons/pencil';
+import Check from 'lucide-react-native/dist/cjs/icons/check';
+import X from 'lucide-react-native/dist/cjs/icons/x';
 import type { LucideIcon } from 'lucide-react-native';
 import { OpaqueColorValue, StyleProp, ViewStyle } from 'react-native';
 
@@ -115,6 +122,13 @@ const MAPPING = {
   'arrow.triangle.2.circlepath': RotateCcw,
   'arrow.right.circle': CircleArrowRight,
   'xmark.circle': CircleX,
+  'xmark': X,
+  'checkmark': Check,
+  'eye': Eye,
+  'eye.slash': EyeOff,
+  'exclamationmark.triangle.fill': TriangleAlert,
+  'trash.fill': Trash,
+  'pencil': Pencil,
   // Misc
   'chart.bar.fill': ChartBar,
   'cross.fill': Cross,

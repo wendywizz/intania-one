@@ -13,7 +13,6 @@ import {
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
-import { Inbox } from 'lucide-react-native';
 import { EmptyState } from "@/components/empty-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
@@ -244,7 +243,7 @@ export default function RepairComputerHistoryScreen() {
             </View>
           ) : null
         }
-        ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.SHARED_NO_HISTORY} />}
+        ListEmptyComponent={<EmptyState iconName="tray.fill" message={TEXT.SHARED_NO_HISTORY} />}
       />
     );
   };

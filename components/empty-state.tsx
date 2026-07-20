@@ -2,11 +2,17 @@ import type { LucideIcon } from 'lucide-react-native';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 type EmptyStateProps = {
-  /** Lucide icon shown inside the tonal circle. */
-  icon: LucideIcon;
+  /**
+   * Preferred: an icon from the shared IconSymbol set (avoids the lucide barrel
+   * import). Falls back to `icon` when not provided.
+   */
+  iconName?: IconSymbolName;
+  /** @deprecated Pass `iconName` instead — a direct LucideIcon pulls in the barrel. */
+  icon?: LucideIcon;
   /** "No data" message under the icon. */
   message: string;
   style?: StyleProp<ViewStyle>;
@@ -18,13 +24,17 @@ type EmptyStateProps = {
  * background tone* so the state reads as a deliberate, calm placeholder in both
  * light and dark themes (rather than a barely-visible pale glyph).
  */
-export function EmptyState({ icon: Icon, message, style }: EmptyStateProps) {
+export function EmptyState({ iconName, icon: Icon, message, style }: EmptyStateProps) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={[styles.wrap, style]}>
       <View style={styles.circle}>
-        <Icon size={34} color={c.textFaint} strokeWidth={1.75} />
+        {iconName ? (
+          <IconSymbol name={iconName} size={34} color={c.textFaint} />
+        ) : Icon ? (
+          <Icon size={34} color={c.textFaint} strokeWidth={1.75} />
+        ) : null}
       </View>
       <ThemedText style={styles.message} type="defaultSemiBold">
         {message}

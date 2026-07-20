@@ -1,11 +1,12 @@
 import { TEXT } from "@/constants/text";
-import { Info } from "lucide-react-native";
+import { Info, X } from "lucide-react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { navReplace } from "@/utils/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Modal,
+    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -19,9 +20,10 @@ import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
-import { NavTopBar } from "@/components/nav-top-bar";
+import { ScreenHeader } from "@/components/screen-header";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { UserAvatar } from "@/components/user-avatar";
 import { AppFonts } from "@/constants/fonts";
 import { TYPE_ABSENCE_RELAX } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
@@ -45,6 +47,10 @@ import {
 } from "@/utils/absence-form";
 import { getStaffDisplayLabel } from "@/utils/staff-label";
 
+// Remove the default focus outline on web so active inputs match the
+// borderless underline style (RN Web only; no-op on native).
+const webNoOutline: any = Platform.OS === "web" ? { outlineStyle: "none" } : null;
+
 type Approver = {
   staffId?: string;
   prefixNameTH?: string;
@@ -63,6 +69,7 @@ type SelectOption = {
   label: string;
   value: string;
   staffId?: string;
+  photoId?: string;
 };
 
 function getApproverList(data: absence | null): Approver[] {
@@ -85,6 +92,46 @@ function getStaffLabel(staff: Approver | Agent) {
 
 function getStaffId(staff: Approver | Agent) {
   return getabsenceTextValue(staff as absence, ["staffId", "staff_id", "STAFF_ID", "id"]);
+}
+
+// Staff photos are keyed on the university staff id (UNI_STAFF_ID). Fall back to
+// the internal staffId so an avatar still resolves if only that is present.
+function getStaffPhotoId(staff: Approver | Agent) {
+  return (
+    getabsenceTextValue(staff as absence, [
+      "uniStaffId",
+      "uni_staff_id",
+      "UNI_STAFF_ID",
+    ]) || getStaffId(staff)
+  );
+}
+
+// True when the staff entry is the signed-in user. authUser.staffId can be the
+// internal staff_id OR the uni_staff_id depending on the auth source, so compare
+// against both id fields.
+function isAuthUser(staff: Approver | Agent, userId: string) {
+  const uid = String(userId ?? "").trim();
+  if (!uid) return false;
+  const staffId = getStaffId(staff);
+  const uniStaffId = getabsenceTextValue(staff as absence, [
+    "uniStaffId",
+    "uni_staff_id",
+    "UNI_STAFF_ID",
+  ]);
+  return uid === String(staffId).trim() || uid === String(uniStaffId).trim();
+}
+
+function getStaffDept(staff: Approver | Agent) {
+  return getabsenceTextValue(staff as absence, [
+    "deptName",
+    "dept_name",
+    "DEPT_NAME",
+    "DEPT_NAME_TH",
+    "deptNameTH",
+    "department",
+    "departmentName",
+    "faculty",
+  ]);
 }
 
 function getPositionId(staff: Approver | Agent) {
@@ -239,9 +286,14 @@ function SelectField({
         onPress={onToggle}
         style={[styles.selectButton, hasError ? styles.inputError : undefined]}
       >
-        <ThemedText style={[styles.selectText, !displayValue && styles.placeholder]} numberOfLines={1}>
-          {displayValue || placeholder}
-        </ThemedText>
+        <View style={styles.selectValueRow}>
+          {selectedOption?.photoId ? (
+            <UserAvatar staffId={selectedOption.photoId} size={30} />
+          ) : null}
+          <ThemedText style={[styles.selectText, !displayValue && styles.placeholder]} numberOfLines={1}>
+            {displayValue || placeholder}
+          </ThemedText>
+        </View>
         <ThemedText style={styles.chevron}>⌄</ThemedText>
       </Pressable>
       {errorMessage ? (
@@ -270,12 +322,11 @@ function SelectField({
                 </ThemedText>
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
                   onPress={onToggle}
                   style={styles.closeButton}
                 >
-                  <ThemedText type="defaultSemiBold">
-                    {TEXT.SHARED_CLOSE_THAI}
-                  </ThemedText>
+                  <X size={20} color={c.text} />
                 </Pressable>
               </View>
 
@@ -304,16 +355,19 @@ function SelectField({
                         value === option.value ? styles.selectedOption : undefined,
                       ]}
                     >
-                      <ThemedText
-                        lightColor={value === option.value ? "#FFFFFF" : undefined}
-                        darkColor={value === option.value ? "#FFFFFF" : undefined}
-                        style={[
-                          styles.optionText,
-                          value === option.value ? styles.selectedOptionText : undefined,
-                        ]}
-                      >
-                        {option.label}
-                      </ThemedText>
+                      <View style={styles.optionRow}>
+                        {option.photoId ? (
+                          <UserAvatar staffId={option.photoId} size={38} />
+                        ) : null}
+                        <ThemedText
+                          style={[
+                            styles.optionText,
+                            value === option.value ? styles.selectedOptionText : undefined,
+                          ]}
+                        >
+                          {option.label}
+                        </ThemedText>
+                      </View>
                       {optionActionLabel ? (
                         <ThemedText
                           lightColor={value === option.value ? "#FFFFFF" : "#0A6E8A"}
@@ -503,16 +557,44 @@ export default function RelaxScreen() {
           label: getApproverLabel(item),
           value: getPositionId(item),
           staffId: getStaffId(item),
+          photoId: getStaffPhotoId(item),
         }))
         .filter((item) => item.label && item.value),
     [initialabsenceData],
   );
+  // Map each agent display label to its photo id (uni_staff_id) and department.
+  const agentPhotoByLabel = useMemo(() => {
+    const map: Record<string, string> = {};
+    getAgentList(initialabsenceData).forEach((item) => {
+      const label = getStaffLabel(item);
+      if (label) {
+        map[label] = getStaffPhotoId(item);
+      }
+    });
+    return map;
+  }, [initialabsenceData]);
+  const agentDeptByLabel = useMemo(() => {
+    const map: Record<string, string> = {};
+    getAgentList(initialabsenceData).forEach((item) => {
+      const label = getStaffLabel(item);
+      if (label) {
+        map[label] = getStaffDept(item);
+      }
+    });
+    return map;
+  }, [initialabsenceData]);
   const agentOptions = useMemo(
     () =>
       uniqueValues(
-        getAgentList(initialabsenceData).map(getStaffLabel).filter(Boolean),
+        getAgentList(initialabsenceData)
+          // The requester can't delegate to themselves — drop the auth user.
+          // authUser.staffId may be either the internal staff_id or the
+          // uni_staff_id, so match against both id fields on each agent.
+          .filter((item) => !isAuthUser(item, userId))
+          .map(getStaffLabel)
+          .filter(Boolean),
       ),
-    [initialabsenceData],
+    [initialabsenceData, userId],
   );
   const availableAgentOptions = useMemo(
     () => agentOptions.filter((option) => !selectedAgents.includes(option)),
@@ -772,7 +854,7 @@ export default function RelaxScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_RELAX_TITLE} moduleIcon="sun.max.fill" backHref={backHref} />
+        <ScreenHeader title={TEXT.ABSENCE_RELAX_TITLE} backHref={backHref} />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -786,7 +868,7 @@ export default function RelaxScreen() {
 
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_RELAX_TITLE} moduleIcon="sun.max.fill" backHref={backHref} />
+        <ScreenHeader title={TEXT.ABSENCE_RELAX_TITLE} backHref={backHref} />
         <ErrorState
           variant={shouldShowRetry ? "error" : "empty"}
           title={shouldShowRetry ? TEXT.SHARED_ERROR_TITLE_THAI : TEXT.ABSENCE_CANNOT_REQUEST_TITLE}
@@ -800,7 +882,7 @@ export default function RelaxScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.ABSENCE_TITLE} subtitle={TEXT.ABSENCE_RELAX_TITLE} moduleIcon="sun.max.fill" backHref={backHref} />
+      <ScreenHeader title={TEXT.ABSENCE_RELAX_TITLE} backHref={backHref} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -912,6 +994,7 @@ export default function RelaxScreen() {
               style={[
                 styles.input,
                 validationErrors.contact ? styles.inputError : undefined,
+                webNoOutline,
               ]}
               value={contact}
             />
@@ -925,6 +1008,8 @@ export default function RelaxScreen() {
           <AgentSelectField
             options={availableAgentOptions}
             selectedAgents={selectedAgents}
+            photoIdForOption={(option) => agentPhotoByLabel[option]}
+            subtitleForOption={(option) => agentDeptByLabel[option]}
             isOpen={openSelect === "agent"}
             hasError={Boolean(validationErrors.agent)}
             errorMessage={validationErrors.agent}
@@ -1137,17 +1222,14 @@ export default function RelaxScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: c.background,
+    backgroundColor: '#ffffff',
   },
   scrollContent: {
     paddingTop: 16,
     paddingBottom: 24,
   },
   formCard: {
-    marginHorizontal: 16,
-    backgroundColor: c.surface,
-    borderRadius: 16,
-    overflow: "hidden",
+    marginHorizontal: 32,
   },
   policyCard: {
     flexDirection: "row",
@@ -1161,12 +1243,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     padding: 16,
   },
   policyIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: c.infoSoft,
-    alignItems: "center",
-    justifyContent: "center",
     flexShrink: 0,
   },
   policyBody: {
@@ -1205,42 +1281,37 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     width: "100%",
   },
   field: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 8,
+    paddingHorizontal: 0,
+    paddingVertical: 20,
+    gap: 10,
+  },
+  fieldLabel: {
+    fontSize: 15,
+    lineHeight: 20,
+    color: c.text,
+    fontFamily: AppFonts.psuBold,
+  },
+  input: {
+    minHeight: 40,
+    color: c.text,
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 16,
+    lineHeight: 22,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: c.border,
   },
-  fieldLabel: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: "600",
-    letterSpacing: 0.6,
-    color: c.text,
-    textTransform: "uppercase",
-  },
-  input: {
-    minHeight: 44,
-    backgroundColor: c.surface,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    color: c.text,
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 14,
-    lineHeight: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
   inputError: {
-    borderWidth: 1,
-    borderColor: c.danger,
+    borderBottomWidth: 1.5,
+    borderBottomColor: c.danger,
   },
   dateRow: {
     flexDirection: "row",
     gap: 12,
   },
   hint: {
+    marginTop: 10,
     fontSize: 12,
     lineHeight: 17,
     color: c.textMuted,
@@ -1259,22 +1330,26 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.danger,
   },
   selectButton: {
-    minHeight: 44,
+    minHeight: 40,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: c.surface,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
     gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
+  },
+  selectValueRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   selectText: {
     flex: 1,
     color: c.text,
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: AppFonts.psuRegular,
   },
   placeholder: {
@@ -1336,11 +1411,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 16,
   },
   closeButton: {
-    minHeight: 40,
+    width: 40,
+    height: 40,
+    alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.surfaceMuted,
-    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: `${c.text}14`,
   },
   searchInput: {
     minHeight: 44,
@@ -1367,16 +1443,17 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.background,
-    paddingHorizontal: 14,
+    paddingHorizontal: 0,
     paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
-  selectedOption: {
-    borderColor: c.primary,
-    backgroundColor: c.primary,
+  selectedOption: {},
+  optionRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   optionText: {
     flex: 1,
@@ -1386,7 +1463,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontFamily: AppFonts.psuRegular,
   },
   selectedOptionText: {
-    color: c.textOnPrimary,
+    color: c.primary,
+    fontFamily: AppFonts.psuBold,
   },
   emptyOption: {
     color: c.textMuted,

@@ -1,28 +1,20 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import {
-    ActivityIndicator,
-    Modal,
-    Pressable,
-    StyleSheet,
-    TextInput,
-    View,
-} from "react-native";
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { StyleSheet, View } from "react-native";
+import { type AppColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { FloatingActionBar } from "@/components/floating-action-bar";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { AppFonts } from "@/constants/fonts";
+import { Button, Card, ConfirmDialog, TextField } from "@/components/ui";
 import { TEXT } from "@/constants/text";
 import { acceptRejectedFromWorker } from "@/services/repairComputerService";
 
 const DEFAULT_REJECT_REASON = "Reject job";
 
 export default function WorkerRejectJobScreen() {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const jobId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -89,101 +81,39 @@ export default function WorkerRejectJobScreen() {
       />
 
       <View style={styles.content}>
-        <ThemedView
-          style={styles.panel}
-          lightColor="#FFFFFF"
-          darkColor="#1F2B30"
-        >
+        <Card style={styles.panel}>
           <ThemedText type="subtitle">Reject Reason</ThemedText>
-
-          <View style={styles.field}>
-            <ThemedText type="defaultSemiBold">
-              {TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL}
-            </ThemedText>
-            <TextInput
-              multiline
-              numberOfLines={2}
-              onChangeText={setReason}
-              placeholder={TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL}
-              placeholderTextColor="#8A969C"
-              style={styles.textArea}
-              textAlignVertical="top"
-              value={reason}
-            />
-          </View>
-        </ThemedView>
+          <TextField
+            label={TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL}
+            multiline
+            numberOfLines={2}
+            value={reason}
+            onChangeText={setReason}
+            placeholder={TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL}
+          />
+        </Card>
       </View>
 
       <FloatingActionBar disabled={isSubmitting}>
-        <Pressable
-          accessibilityRole="button"
+        <Button
+          title="Confirm"
+          variant="danger"
+          fullWidth
           onPress={() => setIsConfirmOpen(true)}
-          style={styles.submitButton}
-        >
-          <ThemedText
-            lightColor="#FFFFFF"
-            darkColor="#FFFFFF"
-            type="defaultSemiBold"
-          >
-            Confirm
-          </ThemedText>
-        </Pressable>
+        />
       </FloatingActionBar>
 
-      <Modal
-        transparent
+      <ConfirmDialog
         visible={isConfirmOpen}
-        animationType="fade"
-        onRequestClose={() => setIsConfirmOpen(false)}
-      >
-        <Pressable
-          style={styles.backdrop}
-          onPress={() => setIsConfirmOpen(false)}
-        >
-          <Pressable>
-            <ThemedView
-              style={styles.confirmModal}
-              lightColor="#FFFFFF"
-              darkColor="#151718"
-            >
-              <ThemedText type="subtitle">Confirm Reject</ThemedText>
-              <ThemedText style={styles.confirmMessage}>
-                Do you want to reject this repair computer job?
-              </ThemedText>
-              <View style={styles.confirmActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting}
-                  onPress={() => setIsConfirmOpen(false)}
-                  style={styles.cancelButton}
-                >
-                  <ThemedText type="defaultSemiBold">No</ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting}
-                  onPress={handleSubmit}
-                  style={[
-                    styles.confirmButton,
-                    isSubmitting ? styles.disabledButton : undefined,
-                  ]}
-                >
-                  {isSubmitting ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : null}
-                  <ThemedText
-                    lightColor="#FFFFFF"
-                    darkColor="#FFFFFF"
-                    type="defaultSemiBold"
-                  >
-                    Yes
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        title="Confirm Reject"
+        message="Do you want to reject this repair computer job?"
+        confirmLabel="Yes"
+        cancelLabel="No"
+        destructive
+        loading={isSubmitting}
+        onConfirm={handleSubmit}
+        onCancel={() => setIsConfirmOpen(false)}
+      />
 
       <AppToast
         message={toastMessage}
@@ -203,84 +133,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     padding: 16,
   },
   panel: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: c.border,
     gap: 18,
-    padding: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  field: {
-    gap: 8,
-  },
-  textArea: {
-    minHeight: 76,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-    color: c.text,
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  submitButton: {
-    minHeight: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.primary,
-    paddingHorizontal: 18,
-  },
-  backdrop: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(17, 24, 28, 0.45)",
-    padding: 24,
-  },
-  confirmModal: {
-    width: "100%",
-    maxWidth: 420,
-    borderRadius: 8,
-    padding: 18,
-  },
-  confirmMessage: {
-    color: c.textMuted,
-    lineHeight: 20,
-    marginTop: 10,
-  },
-  confirmActions: {
-    flexDirection: "row-reverse",
-    gap: 12,
-    marginTop: 18,
-  },
-  cancelButton: {
-    minHeight: 46,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-  },
-  confirmButton: {
-    minHeight: 46,
-    flex: 1,
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.primary,
-  },
-  disabledButton: {
-    opacity: 0.65,
   },
 });

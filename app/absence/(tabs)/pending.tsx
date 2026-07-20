@@ -7,7 +7,7 @@ import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
-import { NavTopBar } from '@/components/nav-top-bar';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -332,11 +332,7 @@ export default function PendingScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar
-        title={TEXT.ABSENCE_TITLE}
-        subtitle={TEXT.ABSENCE_PENDING_TITLE}
-        moduleIcon="clock.fill"
-      />
+      <ScreenHeader title={TEXT.ABSENCE_PENDING_TITLE} backHref="/" />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
@@ -345,7 +341,7 @@ export default function PendingScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: c.background,
+    backgroundColor: '#ffffff',
   },
   headerSection: {
     paddingHorizontal: 24,
@@ -478,14 +474,15 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   itemCard: {
     backgroundColor: c.surface,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
-    padding: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
     elevation: 1,
   },
   itemRow: {
@@ -494,10 +491,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 12,
   },
   itemIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(179, 57, 57, 0.1)',
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: c.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

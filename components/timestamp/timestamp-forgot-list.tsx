@@ -406,7 +406,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   itemRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 12,
   },
   iconCircle: {

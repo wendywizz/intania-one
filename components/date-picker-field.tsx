@@ -1,3 +1,4 @@
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
@@ -111,6 +112,7 @@ export function DatePickerField({
         accessibilityRole="button"
         onPress={() => setIsOpen(true)}
         style={[styles.button, hasError ? styles.inputError : undefined]}>
+        <CalendarDays size={16} color={c.textMuted} />
         <ThemedText
           numberOfLines={1}
           adjustsFontSizeToFit
@@ -124,14 +126,22 @@ export function DatePickerField({
           <Pressable>
             <ThemedView style={styles.calendar} lightColor="#FFFFFF" darkColor="#151718">
               <View style={styles.calendarHeader}>
-                <Pressable accessibilityRole="button" onPress={() => changeMonth(-1)} style={styles.monthButton}>
-                  <ThemedText type="defaultSemiBold">{TEXT.DATE_PICKER_PREVIOUS_MONTH_LABEL}</ThemedText>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={TEXT.DATE_PICKER_PREVIOUS_MONTH_LABEL}
+                  onPress={() => changeMonth(-1)}
+                  style={styles.monthButton}>
+                  <ChevronLeft size={20} color={c.text} />
                 </Pressable>
                 <ThemedText type="defaultSemiBold" style={styles.monthTitle}>
                   {getMonthTitle(visibleMonth)}
                 </ThemedText>
-                <Pressable accessibilityRole="button" onPress={() => changeMonth(1)} style={styles.monthButton}>
-                  <ThemedText type="defaultSemiBold">{TEXT.DATE_PICKER_NEXT_MONTH_LABEL}</ThemedText>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={TEXT.DATE_PICKER_NEXT_MONTH_LABEL}
+                  onPress={() => changeMonth(1)}
+                  style={styles.monthButton}>
+                  <ChevronRight size={20} color={c.text} />
                 </Pressable>
               </View>
 
@@ -209,20 +219,23 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 8,
   },
   button: {
-    minHeight: 48,
-    justifyContent: 'center',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-    paddingHorizontal: 14,
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
+    paddingHorizontal: 0,
+    paddingVertical: 6,
   },
   inputError: {
-    borderColor: c.danger,
+    borderBottomWidth: 1.5,
+    borderBottomColor: c.danger,
   },
   buttonText: {
+    flex: 1,
     color: c.text,
-    fontSize: 13,
+    fontSize: 15,
   },
   placeholder: {
     color: c.textFaint,
@@ -251,8 +264,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: c.infoSoft,
+    borderRadius: 20,
+    backgroundColor: `${c.text}14`,
   },
   monthTitle: {
     flex: 1,
@@ -278,7 +291,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: 999,
   },
   selectedDayButton: {
     backgroundColor: c.info,

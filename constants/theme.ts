@@ -14,16 +14,16 @@ import { Platform, StyleSheet } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ThemeContext } from '@/context/theme-context';
 
-const tintColorLight = '#b33939';
-const tintColorDark = '#E06B6B';
+const tintColorLight = '#B33939';
+const tintColorDark = '#E07A7A';
 
 export const Colors = {
   light: {
-    text: '#191c1f',
-    background: '#F5F6FA',
+    text: '#141414',
+    background: '#F4F6F8',
     tint: tintColorLight,
-    icon: '#584140',
-    tabIconDefault: '#584140',
+    icon: '#2E3338',
+    tabIconDefault: '#8D8E92',
     tabIconSelected: tintColorLight,
   },
   dark: {
@@ -65,21 +65,27 @@ export const Fonts = Platform.select({
  * Flat palette used by the navigation theme (formerly constants/colors.ts).
  */
 export const colors = {
-  primary: '#b33939',
-  background: '#f5f6fa',
-  surface: '#ffffff',
-  text: '#1f2933',
-  mutedText: '#6b7280',
-  border: '#dde2e8',
+  primary: '#B33939',
+  background: '#F4F6F8',
+  surface: '#FFFFFF',
+  text: '#141414',
+  mutedText: '#8D8E92',
+  border: '#E3E6EA',
   success: '#2f9e44',
   warning: '#f08c00',
-  danger: '#c92a2a',
+  danger: '#C0392B',
   iconCircleBorder: '#FFFFFF', // White ring for the nav top-bar module icon circle
 };
 
 /**
- * Modern Design System for Staff Management App (formerly constants/designSystem.ts).
- * Bold, energetic colors with dark mode support.
+ * @deprecated INDIGO/PURPLE DESIGN SYSTEM — do not use in new code.
+ *
+ * This palette (ColorPalette / SemanticColors / Typography / Spacing … consumed
+ * via `useDesignSystem()`) is the app's *old*, off-brand look and renders
+ * nowhere — its only consumers were the now-unused `modern-*` components. The
+ * app's real, brand-red design system is `AppColors` + `useColors()` /
+ * `useThemedStyles()` below, with the shared primitives in `@/components/ui`.
+ * Kept only because removal cascades into ThemeContext; migrate off it, then delete.
  */
 
 // ============ COLOR PALETTE ============/
@@ -362,10 +368,10 @@ export const Layout = {
  * inline colors or `useThemedStyles((c) => StyleSheet.create({…}))` for
  * StyleSheet-based screens.
  *
- * The brand red (#B33939) stays the accent in light; in dark it is brightened
- * (#E06B6B) so it keeps enough contrast against dark surfaces. The top nav bar,
- * which is brand-red in light, becomes a dark elevated surface in dark mode so
- * the whole app reads as a proper dark theme (not just a dark body).
+ * The brand accent is brick-red (#B33939); in dark it is softened (#E07A7A) to
+ * keep contrast against dark surfaces. The top nav bar is red in light and
+ * becomes a dark elevated surface in dark mode so the whole app reads as a
+ * proper dark theme (not just a dark body).
  */
 export type AppColors = {
   // Surfaces
@@ -378,6 +384,7 @@ export type AppColors = {
   textMuted: string;       // secondary text
   textFaint: string;       // tertiary / placeholder
   textOnPrimary: string;   // text/icon on a primary-colored fill
+  inverse: string;         // inverse surface (dark slate) — inverted UI / icon emphasis
   // Lines
   border: string;          // card borders / dividers
   borderStrong: string;    // heavier separators
@@ -399,43 +406,45 @@ export type AppColors = {
 };
 
 export const LightColors: AppColors = {
-  background: '#F5F6FA',
+  background: '#F4F6F8',
   surface: '#FFFFFF',
-  surfaceAlt: '#F5F6FA',
-  surfaceMuted: '#F2F3F7',
-  text: '#191C1F',
-  textMuted: '#6B7280',
-  textFaint: '#9CA3AF',
+  surfaceAlt: '#EEF1F4',
+  surfaceMuted: '#EEF1F4',
+  text: '#141414',
+  textMuted: '#8D8E92',
+  textFaint: '#B4B7BC',
   textOnPrimary: '#FFFFFF',
-  border: '#E8ECF0',
-  borderStrong: '#DDE2E8',
+  inverse: '#2E3134',
+  border: '#E3E6EA',
+  borderStrong: '#D3D8DE',
   primary: '#B33939',
-  primarySoft: '#FFF3F3',
-  navBar: '#B33939',
-  navBarText: '#FFFFFF',
+  primarySoft: '#F7EBEB',
+  navBar: '#FFFFFF',
+  navBarText: '#141414',
   success: '#2F9E44', successSoft: '#EAF7EE',
   warning: '#F08C00', warningSoft: '#FFF4E6',
-  danger: '#C92A2A',  dangerSoft: '#FEECEC',
-  info: '#2563EB',    infoSoft: '#EFF6FF',
+  danger: '#C0392B',  dangerSoft: '#FCEDEB',
+  info: '#1890D7',    infoSoft: '#EAF4FB',
   overlay: 'rgba(17,24,28,0.36)',
-  shadow: '#000000',
-  skeleton: '#E9ECF1',
+  shadow: '#9AA3AE',
+  skeleton: '#E7EBEF',
 };
 
 export const DarkColors: AppColors = {
-  background: '#0E1113',
-  surface: '#181C1F',
-  surfaceAlt: '#20252A',
-  surfaceMuted: '#20252A',
+  background: '#0E1417',
+  surface: '#161C21',
+  surfaceAlt: '#1E262C',
+  surfaceMuted: '#1E262C',
   text: '#ECEDEE',
   textMuted: '#A0A6AD',
   textFaint: '#6B7280',
   textOnPrimary: '#FFFFFF',
-  border: '#2A3037',
-  borderStrong: '#333A42',
-  primary: '#E06B6B',
-  primarySoft: 'rgba(224,107,107,0.16)',
-  navBar: '#1B1F22',
+  inverse: '#E8EAED',
+  border: '#2A333B',
+  borderStrong: '#333E47',
+  primary: '#E07A7A',
+  primarySoft: 'rgba(224,122,122,0.18)',
+  navBar: '#161C21',
   navBarText: '#F3F4F6',
   success: '#4ADE80', successSoft: 'rgba(74,222,128,0.16)',
   warning: '#FBBF24', warningSoft: 'rgba(251,191,36,0.16)',
@@ -443,7 +452,7 @@ export const DarkColors: AppColors = {
   info: '#60A5FA',    infoSoft: 'rgba(96,165,250,0.16)',
   overlay: 'rgba(0,0,0,0.6)',
   shadow: '#000000',
-  skeleton: '#242A30',
+  skeleton: '#232B32',
 };
 
 /** Active semantic palette for the current theme. */
@@ -468,6 +477,11 @@ export function useThemedStyles<T extends StyleSheet.NamedStyles<T>>(
 }
 
 // ============ HOOK FOR USING DESIGN SYSTEM ============
+/**
+ * @deprecated Returns the off-brand indigo palette. Use `useColors()` /
+ * `useThemedStyles()` (brand-red AppColors) instead. No live screens consume
+ * this — only the dead `modern-*` components did.
+ */
 export function useDesignSystem() {
   const colorScheme = useColorScheme();
   const isDark = (colorScheme || "light") === "dark";

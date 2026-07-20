@@ -6,7 +6,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Image,
-    Modal,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -21,7 +20,7 @@ import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { ConfirmDialog, IconSymbol } from "@/components/ui";
 import {
     REPAIR_STATUS_APPROVAL_REJECTED,
     REPAIR_STATUS_PROCESSING_EQUIPMENT,
@@ -606,7 +605,7 @@ export default function WorkerJobDetailScreen() {
               onPress={handleRequestSupply}
               style={[styles.requestSupplyButton, isSubmitting ? styles.disabledButton : undefined]}
             >
-              <ThemedText lightColor="#b33939" darkColor="#f0a5a5" type="defaultSemiBold">
+              <ThemedText lightColor="#B33939" darkColor="#E07A7A" type="defaultSemiBold">
                 Request Supply
               </ThemedText>
             </Pressable>
@@ -656,89 +655,27 @@ export default function WorkerJobDetailScreen() {
         type={toastType === "error" ? "error" : "success"}
       />
 
-      <Modal
-        transparent
+      <ConfirmDialog
         visible={isAcceptConfirmOpen}
-        animationType="fade"
-        onRequestClose={() => setIsAcceptConfirmOpen(false)}
-      >
-        <Pressable
-          style={styles.backdrop}
-          onPress={() => setIsAcceptConfirmOpen(false)}
-        >
-          <Pressable>
-            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
-              <ThemedText type="subtitle">Confirm Accept</ThemedText>
-              <ThemedText style={styles.confirmMessage}>
-                Do you want to accept this repair computer job?
-              </ThemedText>
-              <View style={styles.confirmActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting}
-                  onPress={() => setIsAcceptConfirmOpen(false)}
-                  style={styles.cancelButton}
-                >
-                  <ThemedText type="defaultSemiBold">No</ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting}
-                  onPress={handleAccept}
-                  style={[styles.confirmButton, isSubmitting ? styles.disabledButton : undefined]}
-                >
-                  {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
-                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                    Yes
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        title="Confirm Accept"
+        message="Do you want to accept this repair computer job?"
+        confirmLabel="Yes"
+        cancelLabel="No"
+        loading={isSubmitting}
+        onConfirm={handleAccept}
+        onCancel={() => setIsAcceptConfirmOpen(false)}
+      />
 
-      <Modal
-        transparent
+      <ConfirmDialog
         visible={isCloseConfirmOpen}
-        animationType="fade"
-        onRequestClose={() => setIsCloseConfirmOpen(false)}
-      >
-        <Pressable
-          style={styles.backdrop}
-          onPress={() => setIsCloseConfirmOpen(false)}
-        >
-          <Pressable>
-            <ThemedView style={styles.confirmModal} lightColor="#FFFFFF" darkColor="#151718">
-              <ThemedText type="subtitle">Confirm Close Job</ThemedText>
-              <ThemedText style={styles.confirmMessage}>
-                Do you want to close this repair computer job?
-              </ThemedText>
-              <View style={styles.confirmActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting}
-                  onPress={() => setIsCloseConfirmOpen(false)}
-                  style={styles.cancelButton}
-                >
-                  <ThemedText type="defaultSemiBold">No</ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isSubmitting}
-                  onPress={handleCloseJob}
-                  style={[styles.confirmButton, isSubmitting ? styles.disabledButton : undefined]}
-                >
-                  {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
-                  <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                    Yes
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        title="Confirm Close Job"
+        message="Do you want to close this repair computer job?"
+        confirmLabel="Yes"
+        cancelLabel="No"
+        loading={isSubmitting}
+        onConfirm={handleCloseJob}
+        onCancel={() => setIsCloseConfirmOpen(false)}
+      />
 
       {isPdfOpen && jobId ? (
         <PdfViewerModal
@@ -1028,48 +965,5 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.65,
-  },
-  backdrop: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(17, 24, 28, 0.45)",
-    padding: 24,
-  },
-  confirmModal: {
-    width: "100%",
-    maxWidth: 420,
-    borderRadius: 8,
-    padding: 18,
-  },
-  confirmMessage: {
-    color: c.textMuted,
-    lineHeight: 20,
-    marginTop: 10,
-  },
-  confirmActions: {
-    flexDirection: "row-reverse",
-    gap: 12,
-    marginTop: 18,
-  },
-  cancelButton: {
-    minHeight: 46,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-  },
-  confirmButton: {
-    minHeight: 46,
-    flex: 1,
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.primary,
   },
 });

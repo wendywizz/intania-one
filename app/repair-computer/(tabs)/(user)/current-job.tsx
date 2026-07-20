@@ -5,7 +5,6 @@ import { useCallback, useRef, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
-    Modal,
     Platform,
     Pressable,
     RefreshControl,
@@ -15,8 +14,8 @@ import {
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
-import { Inbox } from 'lucide-react-native';
 import { EmptyState } from "@/components/empty-state";
+import { ConfirmDialog } from "@/components/ui";
 import { AppToast } from "@/components/app-toast";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
@@ -329,7 +328,7 @@ export default function RepairComputerCurrentJobScreen() {
             </View>
           ) : null
         }
-        ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.REPAIR_COMPUTER_NO_CURRENT_JOBS} />}
+        ListEmptyComponent={<EmptyState iconName="tray.fill" message={TEXT.REPAIR_COMPUTER_NO_CURRENT_JOBS} />}
       />
     );
   };
@@ -368,58 +367,17 @@ export default function RepairComputerCurrentJobScreen() {
         </ThemedText>
       </Pressable>
 
-      <Modal
-        transparent
+      <ConfirmDialog
         visible={Boolean(selectedJob)}
-        animationType="fade"
-        onRequestClose={closeDeleteConfirm}
-      >
-        <Pressable style={styles.backdrop} onPress={closeDeleteConfirm}>
-          <Pressable>
-            <ThemedView
-              style={styles.confirmModal}
-              lightColor="#FFFFFF"
-              darkColor="#151718"
-            >
-              <ThemedText type="subtitle">{TEXT.CONFIRM_DELETE}</ThemedText>
-              <ThemedText style={styles.confirmMessage}>
-                {TEXT.REPAIR_COMPUTER_DELETE_CONFIRM_MESSAGE}
-              </ThemedText>
-
-              <View style={styles.confirmActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isDeleting}
-                  onPress={closeDeleteConfirm}
-                  style={styles.cancelButton}
-                >
-                  <ThemedText type="defaultSemiBold">{TEXT.CANCEL}</ThemedText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isDeleting}
-                  onPress={handleDelete}
-                  style={[
-                    styles.confirmDeleteButton,
-                    isDeleting ? styles.disabledButton : undefined,
-                  ]}
-                >
-                  {isDeleting ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : null}
-                  <ThemedText
-                    lightColor="#FFFFFF"
-                    darkColor="#FFFFFF"
-                    type="defaultSemiBold"
-                  >
-                    {isDeleting ? "Deleting..." : "Delete"}
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        title={TEXT.CONFIRM_DELETE}
+        message={TEXT.REPAIR_COMPUTER_DELETE_CONFIRM_MESSAGE}
+        confirmLabel="Delete"
+        cancelLabel={TEXT.CANCEL}
+        destructive
+        loading={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={closeDeleteConfirm}
+      />
 
       <AppToast
         message={toastMessage}
@@ -511,51 +469,5 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   footerLoader: {
     alignItems: "center",
     paddingVertical: 14,
-  },
-  backdrop: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(17, 24, 28, 0.45)",
-    padding: 24,
-  },
-  confirmModal: {
-    width: "100%",
-    maxWidth: 420,
-    borderRadius: 8,
-    padding: 18,
-  },
-  confirmMessage: {
-    color: c.textMuted,
-    lineHeight: 20,
-    marginTop: 10,
-  },
-  confirmActions: {
-    flexDirection: "row-reverse",
-    gap: 12,
-    marginTop: 18,
-  },
-  cancelButton: {
-    minHeight: 46,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-  },
-  confirmDeleteButton: {
-    minHeight: 46,
-    flex: 1,
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.primary,
-  },
-  disabledButton: {
-    opacity: 0.65,
   },
 });

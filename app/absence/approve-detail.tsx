@@ -3,7 +3,7 @@ import { Fragment, useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { LoadingAnimate } from "@/components/loading-animate";
-import { NavTopBar } from "@/components/nav-top-bar";
+import { ScreenHeader } from "@/components/screen-header";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
@@ -260,12 +260,7 @@ export default function ApproveDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar
-        title={typeLabel}
-        subtitle={TEXT.ABSENCE_APPROVE_DETAIL_SUBTITLE}
-        moduleIcon={typeIcon}
-        backHref="/absence/approve-leave"
-      />
+      <ScreenHeader title={TEXT.ABSENCE_APPROVE_DETAIL_SUBTITLE} backHref="/absence/approve-leave" />
 
       {isLoading ? (
         <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
@@ -357,10 +352,10 @@ export default function ApproveDetailScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: c.background,
+    backgroundColor: '#ffffff',
   },
   scrollContent: {
-    paddingTop: 16,
+    paddingTop: 4,
     paddingBottom: 40,
   },
   card: {
@@ -368,9 +363,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     marginBottom: 12,
     backgroundColor: c.surface,
     borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
     paddingHorizontal: 16,
     paddingVertical: 16,
     gap: 12,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
   },
   sectionTitle: {
     fontSize: 13,

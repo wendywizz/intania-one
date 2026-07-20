@@ -9,6 +9,12 @@ type ScoobaScheduleItem = {
   attributes?: {
     name?: string | null;
     source?: string | null;
+    // Executive's university staff id — accept the common casings so the app
+    // works whatever exact key the content type uses.
+    UNI_ID?: string | number | null;
+    uni_id?: string | number | null;
+    uniId?: string | number | null;
+    UNI_STAFF_ID?: string | number | null;
   };
 };
 
@@ -29,6 +35,9 @@ type GoogleCalendarItem = {
 export type CalendarSource = {
   name: string;
   source: string;
+  // University staff id of the executive who owns this calendar; used to build
+  // the profile-photo URL (photoBase + uniId + ".jpg").
+  uniId: string;
 };
 
 export type CalendarEvent = {
@@ -113,6 +122,7 @@ function dedupeCalendarSources(sources: CalendarSource[]) {
       uniqueSources.set(key, {
         name,
         source: calendarSource,
+        uniId: source.uniId,
       });
     }
   });
@@ -145,10 +155,16 @@ export async function getExecutiveCalendarSources(): Promise<CalendarSource[]> {
 
   const json = (await response.json()) as {data?: ScoobaScheduleItem[]};
   return dedupeCalendarSources((json.data ?? [])
-    .map((item) => ({
-      name: item.attributes?.name ?? '',
-      source: item.attributes?.source ?? '',
-    }))
+    .map((item) => {
+      const attrs = item.attributes;
+      const rawUniId =
+        attrs?.UNI_ID ?? attrs?.uni_id ?? attrs?.uniId ?? attrs?.UNI_STAFF_ID;
+      return {
+        name: attrs?.name ?? '',
+        source: attrs?.source ?? '',
+        uniId: rawUniId != null ? String(rawUniId).trim() : '',
+      };
+    })
     .filter((item) => item.name && item.source));
 }
 

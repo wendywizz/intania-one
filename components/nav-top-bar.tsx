@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
 import { useColors } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { acquireNavLock, navReplace } from '@/utils/navigation';
 
@@ -61,14 +60,14 @@ export function NavTopBar({
   };
 
   return (
-    <View style={[styles.container, subtitle ? styles.containerWithSubtitle : null, { paddingTop: insets.top + 8, backgroundColor: barColor }]}>
+    <View style={[styles.container, subtitle ? styles.containerWithSubtitle : null, { paddingTop: insets.top + 14, backgroundColor: barColor }]}>
       <View style={styles.leftActions}>
         {showBackButton ? (
           <Pressable
             accessibilityLabel={TEXT.SHARED_BACK_THAI}
             accessibilityRole="button"
             onPress={goBack}
-            style={styles.iconButton}>
+            style={[styles.iconButton, { backgroundColor: `${barContent}14` }]}>
             <IconSymbol name="arrow.left" size={22} color={barContent} />
           </Pressable>
         ) : (
@@ -103,6 +102,7 @@ export function NavTopBar({
             onPress={() => navReplace('/')}
             style={({ pressed }) => [
               styles.iconButton,
+              { backgroundColor: `${barContent}14` },
               pressed ? styles.homeButtonPressed : undefined,
             ]}>
             <IconSymbol name="house.fill" size={22} color={barContent} />
@@ -121,6 +121,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
+    paddingBottom: 14,
   },
   containerWithSubtitle: {
     minHeight: 88,
@@ -157,7 +158,7 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: 20,
   },
   iconButtonSpacer: {
     width: 40,

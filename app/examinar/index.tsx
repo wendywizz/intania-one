@@ -7,6 +7,7 @@ import {
   Pressable,
   RefreshControl,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
@@ -21,6 +22,7 @@ import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import type { ExamTask } from '@/models/types';
 import { listExamTasks } from '@/services/examinarService';
 
@@ -35,7 +37,6 @@ const YEAR_OPTIONS: ModalSelectOption[] = Array.from({ length: 4 }, (_, i) => {
 const TERM_OPTIONS: ModalSelectOption[] = [
   { label: TEXT.EXAMINAR_TERM_1, value: '1' },
   { label: TEXT.EXAMINAR_TERM_2, value: '2' },
-  { label: TEXT.EXAMINAR_TERM_SUMMER, value: '3' },
 ];
 
 const PERIOD_OPTIONS: ModalSelectOption[] = [
@@ -77,10 +78,6 @@ function getExamDateStatus(task: ExamTask): ExamDateStatus {
   return 'incoming';
 }
 
-function getPeriodLabel(period: string): string {
-  return PERIOD_OPTIONS.find((o) => o.value === period)?.label ?? period;
-}
-
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function FilterBar({
@@ -92,10 +89,10 @@ function FilterBar({
   onTermChange: (v: string) => void;
   onPeriodChange: (v: string) => void;
 }) {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.filterSection}>
+      <ThemedText style={styles.filterTitle}>{TEXT.EXAMINAR_FILTER_TITLE}</ThemedText>
       <View style={styles.filterRow}>
         <FilterDropdown
           label={TEXT.EXAMINAR_FILTER_YEAR}
@@ -131,12 +128,9 @@ function FilterDropdown({
   title: string;
   onSelect: (v: string) => void;
 }) {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const selected = options.find((o) => o.value === value);
   return (
     <View style={styles.filterItem}>
-      <ThemedText style={styles.filterLabel}>{label}</ThemedText>
       <ModalSelectField
         options={options}
         placeholder={label}
@@ -144,18 +138,6 @@ function FilterDropdown({
         value={value}
         onSelect={onSelect}
       />
-    </View>
-  );
-}
-
-function TaskCount({ count }: { count: number }) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <View style={styles.taskCount}>
-      <View style={styles.taskCountAccent} />
-      <ThemedText style={styles.taskCountNum}>{count}</ThemedText>
-      <ThemedText style={styles.taskCountLabel}>{TEXT.EXAMINAR_HEADER_TITLE}</ThemedText>
     </View>
   );
 }
@@ -212,7 +194,7 @@ function ExamCard({
           {dateLabel ? (
             <View style={styles.metaRow}>
               <View style={[styles.metaIconBox, dateStatus === 'past' && styles.metaIconBoxPast]}>
-                <CalendarDays size={14} color={dateStatus === 'past' ? '#9AA0B0' : '#922124'} />
+                <CalendarDays size={14} color={dateStatus === 'past' ? c.textFaint : c.primary} />
               </View>
               <ThemedText style={[styles.metaText, dateStatus === 'past' && styles.textPast]}>{dateLabel}</ThemedText>
             </View>
@@ -220,7 +202,7 @@ function ExamCard({
           {timeFromLabel ? (
             <View style={styles.metaRow}>
               <View style={[styles.metaIconBox, dateStatus === 'past' && styles.metaIconBoxPast]}>
-                <Clock size={14} color={dateStatus === 'past' ? '#9AA0B0' : '#922124'} />
+                <Clock size={14} color={dateStatus === 'past' ? c.textFaint : c.primary} />
               </View>
               <ThemedText style={[styles.metaText, dateStatus === 'past' && styles.textPast]}>{timeRange}</ThemedText>
             </View>
@@ -234,7 +216,7 @@ function ExamCard({
         style={[styles.viewDetailsButton, dateStatus === 'past' && styles.viewDetailsButtonPast]}
       >
         <ThemedText style={[styles.viewDetailsText, dateStatus === 'past' && styles.textPast]}>{TEXT.EXAMINAR_VIEW_DETAILS}</ThemedText>
-        <ChevronRight size={16} color={dateStatus === 'past' ? '#9AA0B0' : '#922124'} />
+        <ChevronRight size={16} color={dateStatus === 'past' ? c.textFaint : c.primary} />
       </Pressable>
     </View>
   );
@@ -244,9 +226,14 @@ function ExamCard({
 
 export default function ExaminarListScreen() {
   const c = useColors();
+  const { isDarkMode } = useTheme();
+  const { height } = useWindowDimensions();
   const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId ?? '';
+  // Scale the screen title with the device height (clamped) so it feels
+  // proportional on both short and tall screens.
+  const titleSize = Math.round(Math.min(26, Math.max(20, height * 0.028)));
 
   const [year, setYear] = useState(String(currentYear));
   const [term, setTerm] = useState('1');
@@ -285,80 +272,62 @@ export default function ExaminarListScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year, term, period]);
 
-  const filterBar = (
-    <FilterBar
-      year={year} term={term} period={period}
-      onYearChange={setYear}
-      onTermChange={setTerm}
-      onPeriodChange={setPeriod}
-    />
-  );
-
-  if (isLoading) {
-    return (
-      <ThemedView style={styles.container}>
-        <StatusBar style="light" />
-        <NavTopBar
-          title={TEXT.EXAMINAR_HEADER_TITLE}
-          subtitle={TEXT.EXAMINAR_HEADER_SUBTITLE}
-          moduleIcon="checkmark.circle.fill"
-          backHref="/"
-        />
-        {filterBar}
-        <LoadingAnimate title={TEXT.EXAMINAR_LOADING} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
-      </ThemedView>
-    );
-  }
-
-  if (error) {
-    return (
-      <ThemedView style={styles.container}>
-        <StatusBar style="light" />
-        <NavTopBar
-          title={TEXT.EXAMINAR_HEADER_TITLE}
-          subtitle={TEXT.EXAMINAR_HEADER_SUBTITLE}
-          moduleIcon="checkmark.circle.fill"
-          backHref="/"
-        />
-        {filterBar}
-        <ErrorState
-          title={TEXT.SHARED_SOMETHING_WENT_WRONG}
-          message={error}
-          onRetry={() => loadTasks()}
-        />
-      </ThemedView>
-    );
-  }
-
   return (
     <ThemedView style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <NavTopBar
-        title={TEXT.EXAMINAR_HEADER_TITLE}
-        subtitle={TEXT.EXAMINAR_HEADER_SUBTITLE}
-        moduleIcon="checkmark.circle.fill"
+        title=""
         backHref="/"
+        backgroundColor={c.background}
+        contentColor={c.text}
       />
-      {filterBar}
-      <FlatList<ExamTask>
-        contentContainerStyle={styles.listContent}
-        data={tasks}
-        keyExtractor={(item, i) => `${getRoomId(item)}-${i}`}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={() => loadTasks(true)}
-            tintColor="#922124"
-            colors={['#922124']}
+      <View style={styles.content}>
+        <ThemedText style={[styles.pageTitle, { fontSize: titleSize, lineHeight: titleSize + 6 }]}>
+          {TEXT.EXAMINAR_HEADER_TITLE}
+        </ThemedText>
+        <FilterBar
+          year={year} term={term} period={period}
+          onYearChange={setYear}
+          onTermChange={setTerm}
+          onPeriodChange={setPeriod}
+        />
+        {isLoading ? (
+          <LoadingAnimate title={TEXT.EXAMINAR_LOADING} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
+        ) : error ? (
+          <ErrorState
+            title={TEXT.SHARED_SOMETHING_WENT_WRONG}
+            message={error}
+            onRetry={() => loadTasks()}
           />
-        }
-        ListHeaderComponent={tasks.length > 0 ? <TaskCount count={tasks.length} /> : null}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        renderItem={({ item }) => (
-          <ExamCard task={item} year={year} term={term} period={period} />
+        ) : (
+          <FlatList<ExamTask>
+            style={styles.flatList}
+            contentContainerStyle={styles.listContent}
+            data={tasks}
+            keyExtractor={(item, i) => `${getRoomId(item)}-${i}`}
+            ListHeaderComponent={
+              tasks.length > 0 ? (
+                <ThemedText style={styles.resultCount}>
+                  {`คุมสอบทั้งหมด ${tasks.length} รายการ`}
+                </ThemedText>
+              ) : null
+            }
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={() => loadTasks(true)}
+                tintColor={c.primary}
+                colors={[c.primary]}
+              />
+            }
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+            renderItem={({ item }) => (
+              <ExamCard task={item} year={year} term={term} period={period} />
+            )}
+            ListEmptyComponent={<EmptyState icon={ClipboardX} message={TEXT.EXAMINAR_NO_EXAMS} />}
+          />
         )}
-        ListEmptyComponent={<EmptyState icon={ClipboardX} message={TEXT.EXAMINAR_NO_EXAMS} />}
-      />
+      </View>
     </ThemedView>
   );
 }
@@ -367,15 +336,42 @@ export default function ExaminarListScreen() {
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
+  content: { flex: 1, paddingHorizontal: 16, paddingTop: 20 },
+  pageTitle: {
+    fontSize: 26,
+    lineHeight: 32,
+    color: c.text,
+    fontFamily: AppFonts.psuBold,
+    marginBottom: 28,
+  },
+  resultCount: {
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: c.textMuted,
+    marginBottom: 10,
+  },
 
   // Filter section
+  filterTitle: {
+    fontSize: 14,
+    lineHeight: 18,
+    fontFamily: AppFonts.psuBold,
+    color: c.text,
+    marginBottom: 14,
+  },
   filterSection: {
-    backgroundColor: c.background,
-    borderBottomWidth: 1,
-    borderBottomColor: c.border,
-    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginBottom: 28,
+    padding: 18,
+    backgroundColor: c.surface,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
   },
   filterRow: { flexDirection: 'row', gap: 8 },
   filterItem: { flex: 1, gap: 4 },
@@ -388,44 +384,22 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
 
   // List
-  listContent: { flexGrow: 1, padding: 16, paddingBottom: 32 },
+  flatList: { flex: 1 },
+  listContent: { flexGrow: 1, paddingTop: 4, paddingBottom: 24 },
   separator: { height: 12 },
-
-  // Task count
-  taskCount: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-    marginBottom: 14,
-  },
-  taskCountAccent: {
-    width: 4,
-    height: 28,
-    borderRadius: 2,
-    backgroundColor: c.primary,
-    alignSelf: 'center',
-    marginRight: 2,
-  },
-  taskCountNum: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 28,
-    lineHeight: 32,
-    color: c.primary,
-  },
-  taskCountLabel: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 15,
-    color: c.textMuted,
-  },
 
   // Exam card
   examCard: {
     backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(223, 191, 189, 0.2)',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.04)',
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
     overflow: 'hidden',
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
   },
   examCardPast: {
     backgroundColor: c.border,

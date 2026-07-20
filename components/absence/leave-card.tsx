@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { type AppColors, useColors, useThemedStyles } from "@/constants/theme";
 import {
@@ -136,15 +137,16 @@ export function LeaveCard({ item, name, badge, onPress }: LeaveCardProps) {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   itemCard: {
     backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
-    padding: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
   },
   itemRow: {
     flexDirection: 'row',
@@ -152,9 +154,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 12,
   },
   itemIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     backgroundColor: c.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
@@ -162,33 +164,35 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   itemBody: {
     flex: 1,
-    gap: 2,
+    gap: 3,
   },
   itemTitle: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 20,
     color: c.text,
+    fontFamily: AppFonts.psuBold,
   },
   itemRequester: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontWeight: '700',
-    color: c.text,
+    fontSize: 13,
+    lineHeight: 17,
+    color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
   },
   itemDate: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 17,
     color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
   },
   badge: {
     borderRadius: 999,
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 5,
     flexShrink: 0,
   },
   badgeText: {
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '600',
+    fontFamily: AppFonts.psuBold,
   },
 });
