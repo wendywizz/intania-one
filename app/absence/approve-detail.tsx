@@ -10,7 +10,8 @@ import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
 import { UserAvatar } from "@/components/user-avatar";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
-import { type AppColors, useColors, useThemedStyles } from "@/constants/theme";
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from "@/constants/theme";
+import { getAbsenceTypeAccent } from "@/constants/absence-visual";
 import {
   TYPE_ABSENCE_BIRTH,
   TYPE_ABSENCE_BUSINESS,
@@ -197,6 +198,7 @@ function PersonRow({ name, position, staffId }: StaffEntry) {
 export default function ApproveDetailScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const gutter = useScreenGutter();
   const params = useLocalSearchParams<{ item?: string }>();
   const fallback = useMemo(() => parseItem(params.item), [params.item]);
 
@@ -234,6 +236,7 @@ export default function ApproveDetailScreen() {
     absenceTypeLabels[routeType] ||
     TEXT.ABSENCE_TITLE;
   const typeIcon = getabsenceTypeIcon(routeType);
+  const typeAccent = getAbsenceTypeAccent(routeType);
 
   const startDate = getText(item, ["startDate", "start_date"]);
   const endDate = getText(item, ["endDate", "end_date"]);
@@ -260,20 +263,20 @@ export default function ApproveDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_APPROVE_DETAIL_SUBTITLE} backHref="/absence/approve-leave" />
+      <ScreenHeader title={TEXT.ABSENCE_APPROVE_DETAIL_SUBTITLE} backHref="/absence/approve-leave" titleInNavBar />
 
       {isLoading ? (
         <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
       ) : (
         <>
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]} showsVerticalScrollIndicator={false}>
             {/* Leave-info card */}
             <View style={styles.card}>
               <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_DETAIL_INFO_SECTION}</ThemedText>
 
               <View style={styles.typeRow}>
-                <View style={styles.typeIconCircle}>
-                  <IconSymbol name={typeIcon} size={20} color={c.primary} />
+                <View style={[styles.typeIconCircle, { backgroundColor: c[typeAccent] }]}>
+                  <IconSymbol name={typeIcon} size={20} color={c.textOnPrimary} />
                 </View>
                 <ThemedText style={styles.infoType} numberOfLines={2}>
                   {typeLabel}
@@ -359,7 +362,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingBottom: 40,
   },
   card: {
-    marginHorizontal: 16,
     marginBottom: 12,
     backgroundColor: c.surface,
     borderRadius: 16,
@@ -391,7 +393,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: c.primarySoft,
   },
   infoType: {
     flex: 1,

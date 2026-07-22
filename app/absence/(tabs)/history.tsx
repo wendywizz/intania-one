@@ -4,35 +4,29 @@ import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   RefreshControl,
   StyleSheet,
   View,
 } from 'react-native';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
+import {
+  AbsenceListItem,
+  getAbsenceId,
+  getAbsenceType,
+  getStatusBadge,
+} from '@/components/absence/absence-list-item';
 import { ErrorState } from '@/components/error-state';
-import { CalendarDays, Inbox } from 'lucide-react-native';
+import { Inbox } from 'lucide-react-native';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TEXT } from '@/constants/text';
-import {
-  TYPE_ABSENCE_BIRTH,
-  TYPE_ABSENCE_BUSINESS,
-  TYPE_ABSENCE_HAJJ,
-  TYPE_ABSENCE_HELPMATE,
-  TYPE_ABSENCE_RELAX,
-  TYPE_ABSENCE_SICK,
-} from '@/constants/types';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import type { absence } from '@/models/types';
 import { historyData } from '@/services/absenceService';
-import { formatDateRange } from '@/utils/date-format';
 
 const HISTORY_PAGE_LENGTH = 10;
 
@@ -43,22 +37,10 @@ function getHasMore(currentCount: number, pageSize: number, totalCount?: number)
   return currentCount >= pageSize;
 }
 
-const absenceTypeLabels: Record<string, string> = {
-  [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
-  [TYPE_ABSENCE_BUSINESS]: TEXT.ABSENCE_BUSINESS_TITLE,
-  [TYPE_ABSENCE_BIRTH]: TEXT.ABSENCE_BIRTH_TITLE,
-  [TYPE_ABSENCE_HELPMATE]: TEXT.ABSENCE_BIRTH_TITLE,
-  [TYPE_ABSENCE_RELAX]: TEXT.ABSENCE_RELAX_TITLE,
-  [TYPE_ABSENCE_HAJJ]: TEXT.ABSENCE_HAJJ_TITLE,
-};
-
-const absenceTypeFields = ['absentType', 'absenceType', 'ABSENCE_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type'];
-const absenceTypeNameFields = ['absentTypeName', 'absenceTypeName', 'ABSENCE_type_name', 'typeName', 'type_name', 'leaveTypeName', 'leave_type_name'];
 const startDateFields = ['startDate', 'start_date', 'dateStart', 'date_start'];
-const endDateFields = ['endDate', 'end_date', 'dateEnd', 'date_end'];
 
-function getText(item: absence, fields: string[]) {
-  for (const field of fields) {
+function getStartDate(item: absence) {
+  for (const field of startDateFields) {
     const value = item[field];
     if (typeof value === 'string' && value.trim()) return value.trim();
     if (typeof value === 'number') return String(value);
@@ -66,33 +48,12 @@ function getText(item: absence, fields: string[]) {
   return '';
 }
 
-function getAbsenceId(item: absence) {
-  return getText(item, ['id', 'absenceId', 'ABSENCE_id', 'requestId', 'request_id']);
-}
-
-function getAbsenceType(item: absence) {
-  return getText(item, absenceTypeFields);
-}
-
-function getAbsenceTypeLabel(item: absence) {
-  const typeName = getText(item, absenceTypeNameFields);
-  const type = getAbsenceType(item);
-  return typeName || absenceTypeLabels[type] || (type ? `Absence type ${type}` : 'Absence');
-}
-
 function getAbsenceKey(item: absence, index: number) {
   return `${getAbsenceId(item) || getAbsenceType(item) || 'absence'}-${index}`;
 }
 
-function getDateRange(item: absence) {
-  const startDate = getText(item, startDateFields);
-  const endDate = getText(item, endDateFields);
-  const formatted = formatDateRange(startDate, endDate);
-  return formatted || '';
-}
-
 function getAbsenceTimestamp(item: absence) {
-  const ts = Date.parse(getText(item, startDateFields));
+  const ts = Date.parse(getStartDate(item));
   return Number.isNaN(ts) ? 0 : ts;
 }
 
@@ -100,59 +61,10 @@ function sortAbsenceHistory(items: absence[]) {
   return [...items].sort((a, b) => getAbsenceTimestamp(b) - getAbsenceTimestamp(a));
 }
 
-type IconName = 'cross.fill' | 'briefcase.fill' | 'sun.max.fill' | 'figure.child' | 'doc.text.fill';
-
-type IconStyle = { iconBg: string; iconColor: string; icon: IconName };
-
-const TYPE_ICON_STYLES: Record<string, IconStyle> = {
-  [TYPE_ABSENCE_SICK]: { iconBg: '#FFDAD7', iconColor: '#410005', icon: 'cross.fill' },
-  [TYPE_ABSENCE_BUSINESS]: { iconBg: '#DDE2F3', iconColor: '#161C28', icon: 'briefcase.fill' },
-  [TYPE_ABSENCE_RELAX]: { iconBg: '#DAE3F4', iconColor: '#131C28', icon: 'sun.max.fill' },
-  [TYPE_ABSENCE_BIRTH]: { iconBg: '#FFDAD7', iconColor: '#410005', icon: 'figure.child' },
-  [TYPE_ABSENCE_HELPMATE]: { iconBg: '#FFDAD7', iconColor: '#410005', icon: 'figure.child' },
-};
-
-const DEFAULT_ICON_STYLE: IconStyle = { iconBg: '#F2F3F7', iconColor: '#444D5B', icon: 'doc.text.fill' };
-
-function getIconStyle(type: string): IconStyle {
-  return TYPE_ICON_STYLES[type] ?? DEFAULT_ICON_STYLE;
-}
-
-type HistoryListItemProps = {
-  item: absence;
-  onPress: (item: absence) => void;
-};
-
-function HistoryListItem({ item, onPress }: HistoryListItemProps) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  const type = getAbsenceType(item);
-  const typeLabel = getAbsenceTypeLabel(item);
-  const dateRange = getDateRange(item);
-  const { iconColor, icon } = getIconStyle(type);
-
-  return (
-    <Pressable accessibilityRole="button" onPress={() => onPress(item)} style={styles.itemCard}>
-      <View style={styles.itemIconCircle}>
-        <IconSymbol name={icon} size={22} color={iconColor} />
-      </View>
-      <View style={styles.itemBody}>
-        <ThemedText style={styles.itemTitle}>{typeLabel}</ThemedText>
-        {dateRange ? (
-          <View style={styles.itemDateRow}>
-            <CalendarDays size={13} color={c.textMuted} />
-            <ThemedText style={styles.itemDate}>{dateRange}</ThemedText>
-          </View>
-        ) : null}
-      </View>
-      <IconSymbol name="chevron.right" size={16} color={c.textMuted} style={{ opacity: 0.4, alignSelf: 'center' }} />
-    </Pressable>
-  );
-}
-
 export default function HistoryScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const gutter = useScreenGutter();
   const { user: authUser } = useAuth();
   const pageSize = HISTORY_PAGE_LENGTH;
   const [items, setItems] = useState<absence[]>([]);
@@ -249,7 +161,7 @@ export default function HistoryScreen() {
     return (
       <FlatList
         style={styles.flatList}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingHorizontal: gutter }]}
         data={items}
         keyExtractor={getAbsenceKey}
         refreshControl={
@@ -257,7 +169,7 @@ export default function HistoryScreen() {
         }
         onEndReached={loadMoreItems}
         onEndReachedThreshold={0.5}
-        renderItem={({ item }) => <HistoryListItem item={item} onPress={openDetail} />}
+        renderItem={({ item }) => <AbsenceListItem item={item} badge={getStatusBadge(item)} onPress={openDetail} />}
         ListFooterComponent={
           isLoadingMore ? (
             <View style={styles.footerLoader}>
@@ -272,7 +184,7 @@ export default function HistoryScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_HISTORY_TITLE} backHref="/" />
+      <ScreenHeader title={TEXT.ABSENCE_HISTORY_TITLE} backHref="/" titleInNavBar />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
@@ -308,46 +220,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-    padding: 16,
-    paddingTop: 20,
+    paddingTop: 8,
     paddingBottom: 96,
-  },
-  itemCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    paddingVertical: 22,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
-  },
-  itemIconCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  itemBody: {
-    flex: 1,
-    gap: 2,
-  },
-  itemTitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: '600',
-    color: c.text,
-  },
-  itemDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 3,
-  },
-  itemDate: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: c.textMuted,
   },
   stateBox: {
     flex: 1,

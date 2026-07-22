@@ -1,6 +1,5 @@
 ﻿import { ArrowRight, Newspaper } from 'lucide-react-native';
 import { useFocusEffect } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
 import {
   FlatList,
@@ -14,7 +13,7 @@ import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { ErrorState } from '@/components/error-state';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingAnimate } from '@/components/loading-animate';
-import { NavTopBar } from '@/components/nav-top-bar';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
@@ -189,13 +188,7 @@ export default function NewsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <StatusBar style="light" />
-      <NavTopBar
-        title={TEXT.HOME_NEWS_SECTION_TITLE}
-        subtitle={TEXT.HOME_NEWS_SECTION_SUBTITLE}
-        moduleIcon="doc.text.fill"
-        showHomeButton
-      />
+      <ScreenHeader title={TEXT.HOME_NEWS_SECTION_TITLE} titleInNavBar />
       <View style={styles.content}>
         {renderContent()}
       </View>

@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -104,14 +105,14 @@ function useMStyles<T extends StyleSheet.NamedStyles<T>>(factory: (m: M) => T): 
   return useMemo(() => StyleSheet.create(factory(m)), [m, factory]);
 }
 
-// IBM Plex Sans Thai. Emphasis roles stay at Regular to keep the home screen
-// light — hierarchy comes from size and accent color rather than heavy strokes.
-// (IBM Plex Medium / SemiBold are available if a stronger scale is wanted.)
+// Sukhumvit Set. Emphasis roles stay at the body weight (Text) to keep the home
+// screen light — hierarchy comes from size and accent color rather than heavy
+// strokes. (Sukhumvit Medium / SemiBold are available if a stronger scale is wanted.)
 const F = {
-  light: 'IBMPlexSansThai_Rg',
-  regular: 'IBMPlexSansThai_Rg',
-  medium: 'IBMPlexSansThai_Rg',
-  semibold: 'IBMPlexSansThai_Rg',
+  light: 'SukhumvitSet_Light',
+  regular: 'SukhumvitSet_Text',
+  medium: 'SukhumvitSet_Text',
+  semibold: 'SukhumvitSet_Text',
 } as const;
 
 const D = {
@@ -892,23 +893,25 @@ export default function HomeScreen() {
         {/* ── Padded content ──────────────────────────────────────────────── */}
         <View style={styles.innerContent}>
 
-          {/* News section */}
-          <View style={styles.sectionHead}>
-            <View style={styles.sectionRow}>
-              <Text style={styles.sectionTitle}>{TEXT.HOME_NEWS_SECTION_TITLE}</Text>
-              {isNewsError ? null : (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => navPush('/news')}
-                  hitSlop={8}>
-                  <Text style={styles.seeAll}>{TEXT.HOME_SEE_ALL_THAI}</Text>
-                </Pressable>
-              )}
+          {/* News section — sits on a full-width primary band */}
+          <View style={styles.newsSection}>
+            <View style={styles.newsHead}>
+              <View style={styles.sectionRow}>
+                <Text style={styles.newsSectionTitle}>{TEXT.HOME_NEWS_SECTION_TITLE}</Text>
+                {isNewsError ? null : (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => navPush('/news')}
+                    hitSlop={8}
+                    style={({ pressed }) => [styles.newsSeeAllBtn, pressed && styles.pressed]}>
+                    <Text style={styles.newsSeeAll}>{TEXT.HOME_SEE_ALL_THAI}</Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
-          </View>
 
-          {/* News cards — horizontal scroll, break out of inner padding */}
-          <View style={styles.newsScrollOuter}>
+            {/* News cards — horizontal scroll, break out to the band edges */}
+            <View style={styles.newsScrollOuter}>
             {isNewsLoading ? (
               <View style={styles.newsLoadingWrap}>
                 <ActivityIndicator color={m.textMuted} />
@@ -924,14 +927,24 @@ export default function HomeScreen() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
+                decelerationRate="fast"
+                snapToInterval={newsCardWidth + 12}
+                snapToAlignment="start"
+                disableIntervalMomentum
+                style={Platform.OS === 'web' ? ({ scrollSnapType: 'x mandatory' } as any) : undefined}
                 contentContainerStyle={styles.newsScrollContent}>
                 {displayedNews.map((item, i) => (
                   <Pressable
                     key={getNewsKey(item, i)}
                     accessibilityRole="button"
-                    style={({ pressed }) => [styles.newsCard, { width: newsCardWidth }, pressed && styles.pressed]}
+                    style={({ pressed }) => [
+                      styles.newsCard,
+                      { width: newsCardWidth },
+                      Platform.OS === 'web' ? ({ scrollSnapAlign: 'start' } as any) : null,
+                      pressed && styles.pressed,
+                    ]}
                     onPress={() => openNews(item)}>
-                    <Text numberOfLines={3} style={styles.newsTitle}>{item.title}</Text>
+                    <Text numberOfLines={2} style={styles.newsTitle}>{item.title}</Text>
                     {item.pubDate ? (
                       <Text style={styles.newsDate}>{formatNewsDate(item.pubDate)}</Text>
                     ) : null}
@@ -939,6 +952,7 @@ export default function HomeScreen() {
                 ))}
               </ScrollView>
             )}
+            </View>
           </View>
 
           {/* Upcoming Shift section */}
@@ -1137,7 +1151,38 @@ const makeStyles = (m: M) => StyleSheet.create({
     color: m.accent,
   },
 
-  // News — break out of innerContent horizontal padding
+  // News — full-width primary band behind the section title + cards
+  newsSection: {
+    marginHorizontal: -D.pad,
+    backgroundColor: m.accent,
+    paddingHorizontal: D.pad,
+    paddingTop: 20,
+    paddingBottom: 22,
+  },
+  newsHead: {
+    marginBottom: 14,
+  },
+  newsSectionTitle: {
+    fontFamily: F.semibold,
+    fontSize: 16,
+    lineHeight: 21,
+    color: m.accentText,
+  },
+  newsSeeAllBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  newsSeeAll: {
+    fontFamily: F.medium,
+    fontSize: 13,
+    lineHeight: 18,
+    color: m.accentText,
+  },
+  // News cards break out to the band edges
   newsScrollOuter: {
     marginHorizontal: -D.pad,
     minHeight: 112,
@@ -1153,31 +1198,31 @@ const makeStyles = (m: M) => StyleSheet.create({
     gap: 12,
   },
   newsCard: {
-    backgroundColor: m.card,
+    backgroundColor: '#8A2626',
     borderRadius: 22,
     padding: 18,
     height: 112,
     gap: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: m.border,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
     justifyContent: 'flex-start',
-    shadowColor: m.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    shadowColor: '#4A0F11',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    elevation: 3,
   },
   newsTitle: {
     fontFamily: F.medium,
-    fontSize: 13,
-    lineHeight: 18,
-    color: m.text,
+    fontSize: 15,
+    lineHeight: 21,
+    color: m.accentText,
   },
   newsDate: {
     fontFamily: F.regular,
-    fontSize: 12,
-    lineHeight: 16,
-    color: m.textFaint,
+    fontSize: 13,
+    lineHeight: 17,
+    color: '#F1C40F',
   },
   newsEmptyCard: {
     backgroundColor: m.card,

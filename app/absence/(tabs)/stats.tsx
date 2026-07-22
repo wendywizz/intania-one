@@ -1,7 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
 import { ErrorState } from '@/components/error-state';
 import { Inbox } from 'lucide-react-native';
@@ -11,6 +11,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
@@ -83,7 +84,7 @@ const MONTH_NAMES_TH = [
   'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
 ];
 
-function formatBudgetDateLong(value: string) {
+function formatBudgetDateShort(value: string) {
   const [year, month, day] = value.split('-');
   if (!year || !month || !day) return value || '-';
   const monthName = MONTH_NAMES_TH[parseInt(month, 10) - 1] ?? month;
@@ -102,40 +103,32 @@ function getProgress(used: number, limit: number) {
   return Math.min(100, Math.max(0, Math.round((used / limit) * 100)));
 }
 
-function ProgressBar({ value, color }: { value: number; color?: string }) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <View style={styles.progressTrack}>
-      <View style={[styles.progressFill, { width: `${value}%` as `${number}%`, backgroundColor: color ?? c.primary }]} />
-    </View>
-  );
-}
-
+// Two-row general info card: work age + budget cycle.
 function InfoCard({ servantAge, budgetStartDate, budgetEndDate }: Pick<StatsData, 'servantAge' | 'budgetStartDate' | 'budgetEndDate'>) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   return (
-    <View style={styles.card}>
-      <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_STATS_GENERAL_SECTION}</ThemedText>
+    <View style={styles.infoCard}>
+      <ThemedText style={styles.cardHeader}>ข้อมูลทั่วไป</ThemedText>
+      <View style={styles.infoDivider} />
       <View style={styles.infoRow}>
-        <View style={styles.infoIconWrap}>
-          <IconSymbol name="person.fill" size={20} color={c.textMuted} />
+        <View style={styles.infoIconCircle}>
+          <IconSymbol name="person.fill" size={18} color={c.text} />
         </View>
-        <View style={styles.infoText}>
+        <View style={styles.infoCycleText}>
           <ThemedText style={styles.infoLabel}>{TEXT.ABSENCE_STATS_WORK_AGE_LABEL}</ThemedText>
-          <ThemedText style={styles.infoValue}>{servantAge} {TEXT.ABSENCE_STATS_WORK_AGE_UNIT}</ThemedText>
+          <ThemedText style={styles.infoValue}>{fmt(servantAge)} {TEXT.ABSENCE_STATS_WORK_AGE_UNIT}</ThemedText>
         </View>
       </View>
-      <View style={styles.cardDivider} />
+      <View style={styles.infoDivider} />
       <View style={styles.infoRow}>
-        <View style={styles.infoIconWrap}>
-          <IconSymbol name="calendar" size={18} color={c.textMuted} />
+        <View style={styles.infoIconCircle}>
+          <IconSymbol name="calendar" size={18} color={c.text} />
         </View>
-        <View style={styles.infoText}>
+        <View style={styles.infoCycleText}>
           <ThemedText style={styles.infoLabel}>{TEXT.ABSENCE_STATS_CYCLE_DATE_LABEL}</ThemedText>
-          <ThemedText style={styles.infoValue}>
-            {formatBudgetDateLong(budgetStartDate)} – {formatBudgetDateLong(budgetEndDate)}
+          <ThemedText style={styles.infoValue} numberOfLines={1}>
+            {formatBudgetDateShort(budgetStartDate)} – {formatBudgetDateShort(budgetEndDate)}
           </ThemedText>
         </View>
       </View>
@@ -143,158 +136,60 @@ function InfoCard({ servantAge, budgetStartDate, budgetEndDate }: Pick<StatsData
   );
 }
 
-function SummaryCard({ absenceUsedCount, absenceLimitCount, absenceUsedDays, absenceLimitDays }: Pick<StatsData, 'absenceUsedCount' | 'absenceLimitCount' | 'absenceUsedDays' | 'absenceLimitDays'>) {
+// Gauge tile: label + percentage ring on top, big used/total value below.
+function StatTile({ label, used, total, tint }: { label: string; used: number; total: number; tint: string }) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const pct = getProgress(absenceUsedDays, absenceLimitDays);
-  const countProgress = getProgress(absenceUsedCount, absenceLimitCount);
-  const daysProgress = getProgress(absenceUsedDays, absenceLimitDays);
-
+  const pct = getProgress(used, total);
   return (
-    <View style={styles.card}>
-      <View style={styles.summaryHeader}>
-        <View style={styles.summaryTitleBlock}>
-          <ThemedText style={styles.summaryTitle}>{TEXT.ABSENCE_STATS_ALL_ABSENCES}</ThemedText>
-          <ThemedText style={styles.summarySubtitle}>{TEXT.ABSENCE_STATS_USAGE_OVERVIEW}</ThemedText>
-        </View>
-        <View style={styles.percentCircle}>
-          <ThemedText style={styles.percentText}>{pct}%</ThemedText>
+    <View style={[styles.tile, { backgroundColor: tint, borderColor: tint }]}>
+      <View style={styles.tileHeader}>
+        <ThemedText style={[styles.tileLabel, { color: c.textOnPrimary }]} numberOfLines={2}>{label}</ThemedText>
+        <View style={[styles.tileRing, { borderColor: c.textOnPrimary }]}>
+          <ThemedText style={[styles.tileRingText, { color: c.textOnPrimary }]}>{pct}%</ThemedText>
         </View>
       </View>
-      <View style={styles.summaryTiles}>
-        <View style={styles.summaryTile}>
-          <ThemedText style={styles.tileLabel}>{TEXT.ABSENCE_STATS_OCCURRENCES}</ThemedText>
-          <View style={styles.tileValueRow}>
-            <ThemedText style={styles.tileValueBig}>{fmt(absenceUsedCount)}</ThemedText>
-            <ThemedText style={styles.tileValueDim}> /{fmt(absenceLimitCount)}</ThemedText>
-          </View>
-          <ProgressBar value={countProgress} />
-        </View>
-        <View style={styles.summaryTile}>
-          <ThemedText style={styles.tileLabel}>{TEXT.ABSENCE_STATS_TOTAL_DAYS_LABEL}</ThemedText>
-          <View style={styles.tileValueRow}>
-            <ThemedText style={styles.tileValueBig}>{fmt(absenceUsedDays)}</ThemedText>
-            <ThemedText style={styles.tileValueDim}> /{fmt(absenceLimitDays)}</ThemedText>
-          </View>
-          <ProgressBar value={daysProgress} />
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function DetailGridCard({ sickUsedCount, sickUsedDays, businessUsedCount, businessUsedDays }: Pick<StatsData, 'sickUsedCount' | 'sickUsedDays' | 'businessUsedCount' | 'businessUsedDays'>) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <View style={styles.gridRow}>
-      <View style={[styles.card, styles.gridCard]}>
-        <View style={styles.gridCardTop}>
-          <View style={styles.vacationIconBg}>
-            <IconSymbol name="cross.fill" size={18} color={c.primary} />
-          </View>
-          <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_SICK_TITLE}</ThemedText>
-          <IconSymbol name="chevron.right" size={12} color={c.textMuted} style={{ opacity: 0.4 }} />
-        </View>
-        <View style={styles.gridStats}>
-          <ThemedText style={styles.gridStatValue}>
-            <ThemedText style={styles.gridStatBold}>{fmt(sickUsedCount)}</ThemedText>
-            <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_TIMES}</ThemedText>
-          </ThemedText>
-          <ThemedText style={styles.gridStatSeparator}>·</ThemedText>
-          <ThemedText style={styles.gridStatValue}>
-            <ThemedText style={styles.gridStatBold}>{fmt(sickUsedDays)}</ThemedText>
-            <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_DAYS}</ThemedText>
-          </ThemedText>
-        </View>
-      </View>
-      <View style={[styles.card, styles.gridCard]}>
-        <View style={styles.gridCardTop}>
-          <View style={styles.vacationIconBg}>
-            <IconSymbol name="briefcase.fill" size={18} color={c.primary} />
-          </View>
-          <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_BUSINESS_TITLE}</ThemedText>
-          <IconSymbol name="chevron.right" size={12} color={c.textMuted} style={{ opacity: 0.4 }} />
-        </View>
-        <View style={styles.gridStats}>
-          <ThemedText style={styles.gridStatValue}>
-            <ThemedText style={styles.gridStatBold}>{fmt(businessUsedCount)}</ThemedText>
-            <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_TIMES}</ThemedText>
-          </ThemedText>
-          <ThemedText style={styles.gridStatSeparator}>·</ThemedText>
-          <ThemedText style={styles.gridStatValue}>
-            <ThemedText style={styles.gridStatBold}>{fmt(businessUsedDays)}</ThemedText>
-            <ThemedText style={styles.gridStatUnit}> {TEXT.ABSENCE_STATS_UNIT_DAYS}</ThemedText>
-          </ThemedText>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function VacationCard({ relaxUsedDays, relaxTotalYearDays, relaxStoreDays, relaxLimitDays }: Pick<StatsData, 'relaxUsedDays' | 'relaxTotalYearDays' | 'relaxStoreDays' | 'relaxLimitDays'>) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  const progress = getProgress(relaxUsedDays, relaxTotalYearDays);
-
-  return (
-    <View style={styles.card}>
-      <View style={styles.vacationHeader}>
-        <View style={styles.vacationIconBg}>
-          <IconSymbol name="sun.max.fill" size={16} color={c.primary} />
-        </View>
-        <View style={styles.vacationTitleBlock}>
-          <ThemedText style={styles.summaryTitle}>{TEXT.ABSENCE_RELAX_TITLE}</ThemedText>
-          <ThemedText style={styles.summarySubtitle}>{TEXT.ABSENCE_STATS_VACATION_ANNUAL}</ThemedText>
-        </View>
-      </View>
-      <View style={styles.vacationUsage}>
-        <View style={styles.vacationBigNum}>
-          <ThemedText style={styles.vacationNumBig}>{fmt(relaxUsedDays)} </ThemedText>
-          <ThemedText style={styles.vacationNumDim}>/ {fmt(relaxTotalYearDays)} {TEXT.ABSENCE_STATS_UNIT_DAYS}</ThemedText>
-        </View>
-        <View style={styles.usedBadge}>
-          <ThemedText style={styles.usedBadgeText}>{TEXT.ABSENCE_STATS_USED_THIS_YEAR}</ThemedText>
-        </View>
-      </View>
-      <ProgressBar value={progress} />
-      <View style={styles.vacationDetails}>
-        <View style={styles.vacationDetailRow}>
-          <ThemedText style={styles.vacationDetailLabel}>{TEXT.ABSENCE_STATS_DAYS_FROM_PREV_YEAR}</ThemedText>
-          <ThemedText style={styles.vacationDetailValue}>{fmt(relaxStoreDays)}</ThemedText>
-        </View>
-        <View style={styles.vacationDetailRow}>
-          <ThemedText style={styles.vacationDetailLabel}>{TEXT.ABSENCE_STATS_TOTAL_DAYS_THIS_YEAR}</ThemedText>
-          <ThemedText style={styles.vacationDetailValue}>{fmt(relaxTotalYearDays)}</ThemedText>
-        </View>
-        <View style={styles.vacationDetailRow}>
-          <ThemedText style={styles.vacationDetailLabel}>{TEXT.ABSENCE_STATS_MAX_ACCUMULATION}</ThemedText>
-          <ThemedText style={styles.vacationDetailValue}>{fmt(relaxLimitDays)}</ThemedText>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function LateCard({ lateUsedCount, lateLimitCount }: Pick<StatsData, 'lateUsedCount' | 'lateLimitCount'>) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  const lateProgress = getProgress(lateUsedCount, lateLimitCount);
-
-  return (
-    <View style={styles.card}>
-      <View style={styles.gridCardTop}>
-        <View style={styles.vacationIconBg}>
-          <IconSymbol name="clock.fill" size={18} color={c.primary} />
-        </View>
-        <ThemedText style={styles.gridCardTitle}>{TEXT.ABSENCE_STATS_LATE_TITLE}</ThemedText>
-        <IconSymbol name="chevron.right" size={12} color={c.textMuted} style={{ opacity: 0.4 }} />
-      </View>
-      <ThemedText style={styles.gridStatValue}>
-        <ThemedText style={styles.gridStatBold}>{fmt(lateUsedCount)}</ThemedText>
-        <ThemedText style={styles.gridStatUnit}> / {fmt(lateLimitCount)} {TEXT.ABSENCE_STATS_UNIT_TIMES}</ThemedText>
+      <ThemedText style={styles.tileValue}>
+        <ThemedText style={[styles.tileValueBig, { color: c.textOnPrimary }]}>{fmt(used)}</ThemedText>
+        <ThemedText style={[styles.tileValueDim, { color: c.textOnPrimary }]}>/{fmt(total)}</ThemedText>
       </ThemedText>
-      <ProgressBar value={lateProgress} />
+    </View>
+  );
+}
+
+type TypeRowIcon = 'cross.fill' | 'briefcase.fill' | 'sun.max.fill' | 'clock.fill';
+
+// File-upload style card row: neutral icon circle, title, and two colour-coded
+// metric chips on the trailing edge — how many times the user has been absent
+// (blue, matching the "count" tile) and for how many days (green, matching the
+// "days" tile). A chip is only shown when that metric applies to the type.
+function TypeRow({ icon, title, times, timesMax, days, daysMax }: { icon: TypeRowIcon; title: string; times?: number; timesMax?: number; days?: number; daysMax?: number }) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View style={styles.typeRow}>
+      <View style={styles.typeIconCircle}>
+        <IconSymbol name={icon} size={22} color={c.text} />
+      </View>
+      <ThemedText style={styles.typeTitle}>{title}</ThemedText>
+      <View style={styles.metrics}>
+        {times !== undefined ? (
+          <View style={[styles.metricChip, { backgroundColor: c.info }]}>
+            <ThemedText style={[styles.metricValue, { color: c.textOnPrimary }]}>
+              {timesMax !== undefined ? `${fmt(times)}/${fmt(timesMax)}` : fmt(times)}
+            </ThemedText>
+            <ThemedText style={[styles.metricUnit, { color: c.textOnPrimary }]}>{TEXT.ABSENCE_STATS_UNIT_TIMES}</ThemedText>
+          </View>
+        ) : null}
+        {days !== undefined ? (
+          <View style={[styles.metricChip, { backgroundColor: c.success }]}>
+            <ThemedText style={[styles.metricValue, { color: c.textOnPrimary }]}>
+              {daysMax !== undefined ? `${fmt(days)}/${fmt(daysMax)}` : fmt(days)}
+            </ThemedText>
+            <ThemedText style={[styles.metricUnit, { color: c.textOnPrimary }]}>{TEXT.ABSENCE_STATS_UNIT_DAYS}</ThemedText>
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -302,6 +197,7 @@ function LateCard({ lateUsedCount, lateLimitCount }: Pick<StatsData, 'lateUsedCo
 export default function StatsScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const gutter = useScreenGutter();
   const { user: authUser } = useAuth();
   const [stats, setStats] = useState<StatsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -347,10 +243,13 @@ export default function StatsScreen() {
       return <EmptyState icon={Inbox} message={TEXT.ABSENCE_STATS_NO_DATA} />;
     }
 
+    const usedCount = stats.sickUsedCount + stats.businessUsedCount;
+    const usedDays = stats.sickUsedDays + stats.businessUsedDays;
+
     return (
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadStats(true)} />}
       >
@@ -359,35 +258,50 @@ export default function StatsScreen() {
           budgetStartDate={stats.budgetStartDate}
           budgetEndDate={stats.budgetEndDate}
         />
-        <SummaryCard
-          absenceUsedCount={stats.sickUsedCount + stats.businessUsedCount}
-          absenceLimitCount={ABSENCE_MAX_TIMES}
-          absenceUsedDays={stats.sickUsedDays + stats.businessUsedDays}
-          absenceLimitDays={ABSENCE_MAX_DAYS}
-        />
-        <DetailGridCard
-          sickUsedCount={stats.sickUsedCount}
-          sickUsedDays={stats.sickUsedDays}
-          businessUsedCount={stats.businessUsedCount}
-          businessUsedDays={stats.businessUsedDays}
-        />
-        <VacationCard
-          relaxUsedDays={stats.relaxUsedDays}
-          relaxTotalYearDays={stats.relaxTotalYearDays}
-          relaxStoreDays={stats.relaxStoreDays}
-          relaxLimitDays={stats.relaxLimitDays}
-        />
-        <LateCard
-          lateUsedCount={stats.lateUsedCount}
-          lateLimitCount={stats.lateLimitCount}
-        />
+
+        <View style={styles.tileRow}>
+          <StatTile label={TEXT.ABSENCE_STATS_OCCURRENCES} used={usedCount} total={ABSENCE_MAX_TIMES} tint={c.info} />
+          <StatTile label={TEXT.ABSENCE_STATS_TOTAL_DAYS_LABEL} used={usedDays} total={ABSENCE_MAX_DAYS} tint={c.success} />
+        </View>
+
+        <View style={styles.typeListCard}>
+          <ThemedText style={styles.cardHeader}>ข้อมูลการลา</ThemedText>
+          <View style={styles.rowDivider} />
+          <TypeRow
+            icon="cross.fill"
+            title={TEXT.ABSENCE_SICK_TITLE}
+            times={stats.sickUsedCount}
+            days={stats.sickUsedDays}
+          />
+          <View style={styles.rowDivider} />
+          <TypeRow
+            icon="briefcase.fill"
+            title={TEXT.ABSENCE_BUSINESS_TITLE}
+            times={stats.businessUsedCount}
+            days={stats.businessUsedDays}
+          />
+          <View style={styles.rowDivider} />
+          <TypeRow
+            icon="sun.max.fill"
+            title={TEXT.ABSENCE_RELAX_TITLE}
+            days={stats.relaxUsedDays}
+            daysMax={stats.relaxTotalYearDays}
+          />
+          <View style={styles.rowDivider} />
+          <TypeRow
+            icon="clock.fill"
+            title={TEXT.ABSENCE_STATS_LATE_TITLE}
+            times={stats.lateUsedCount}
+            timesMax={stats.lateLimitCount}
+          />
+        </View>
       </ScrollView>
     );
   };
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_STATS_TITLE} backHref="/" />
+      <ScreenHeader title={TEXT.ABSENCE_STATS_TITLE} backHref="/" titleInNavBar />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
@@ -396,7 +310,7 @@ export default function StatsScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: c.background,
   },
   content: {
     flex: 1,
@@ -405,293 +319,197 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingTop: 24,
-    gap: 16,
+    paddingTop: 28,
     paddingBottom: 96,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '700',
-    color: c.text,
+    gap: 12,
   },
 
-  // shared card
-  card: {
+  // shared soft card look
+  infoCard: {
     backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(223, 191, 189, 0.3)',
-    padding: 16,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
     shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
     elevation: 1,
-    gap: 8,
   },
-
-  // info card
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
+    paddingVertical: 12,
   },
-  infoIconWrap: {
-    width: 32,
+  infoIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: c.surfaceMuted,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  infoText: {
+  infoCycleText: {
     flex: 1,
     gap: 2,
   },
   infoLabel: {
     fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '600',
+    lineHeight: 19,
     color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
   },
   infoValue: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 20,
     color: c.text,
+    fontFamily: AppFonts.psuBold,
   },
-  cardDivider: {
-    height: 1,
-    backgroundColor: 'rgba(223, 191, 189, 0.2)',
-    marginVertical: 4,
-  },
-
-  // summary card
-  summaryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  summaryTitleBlock: {
-    flex: 1,
-    gap: 4,
-    marginRight: 12,
-  },
-  summaryTitle: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '700',
-    color: c.text,
-  },
-  summarySubtitle: {
-    fontSize: 12,
-    lineHeight: 18,
-    color: c.textMuted,
-  },
-  percentCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: c.surface,
-    borderWidth: 4,
-    borderColor: c.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  percentText: {
-    fontSize: 10,
-    lineHeight: 14,
-    fontWeight: '600',
-    color: c.primary,
-  },
-  summaryTiles: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
-  },
-  summaryTile: {
-    flex: 1,
-    backgroundColor: c.surfaceMuted,
-    borderRadius: 8,
-    padding: 8,
-    gap: 6,
-  },
-  tileLabel: {
-    fontSize: 10,
-    lineHeight: 14,
-    fontWeight: '600',
-    color: c.textMuted,
-  },
-  tileValueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  tileValueBig: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '600',
-    color: c.primary,
-  },
-  tileValueDim: {
-    fontSize: 12,
-    lineHeight: 18,
-    color: c.textMuted,
+  infoDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: c.border,
   },
 
-  // progress bar
-  progressTrack: {
-    height: 4,
-    backgroundColor: c.primarySoft,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
-  },
-
-  // grid row
-  gridRow: {
+  // gauge tiles
+  tileRow: {
     flexDirection: 'row',
     gap: 12,
   },
-  gridCard: {
+  tile: {
     flex: 1,
-    gap: 4,
+    backgroundColor: c.surface,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
     padding: 16,
+    gap: 14,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
   },
-  gridCardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  gridCardTitle: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '600',
-    color: c.text,
-  },
-  gridStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
-  },
-  gridStatSeparator: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: c.textFaint,
-  },
-  gridStatValue: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: c.text,
-  },
-  gridStatBold: {
-    fontWeight: '700',
-    color: c.primary,
-  },
-  gridStatUnit: {
-    fontWeight: '400',
-    color: c.text,
-  },
-
-  // vacation card
-  vacationHeader: {
+  tileHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    justifyContent: 'space-between',
     gap: 8,
   },
-  vacationIconBg: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: 'rgba(179, 57, 57, 0.1)',
+  tileLabel: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 17,
+    color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
+    opacity: 0.9,
+  },
+  tileRing: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: c.primary,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  vacationTitleBlock: {
-    flex: 1,
-    gap: 2,
-  },
-  vacationUsage: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginTop: 4,
-  },
-  vacationBigNum: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  vacationNumBig: {
-    fontSize: 28,
-    lineHeight: 36,
-    fontWeight: '700',
+  tileRingText: {
+    fontSize: 11,
+    lineHeight: 13,
     color: c.primary,
+    fontFamily: AppFonts.psuBold,
   },
-  vacationNumDim: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '600',
-    color: c.textMuted,
+  tileValue: {
+    marginTop: 2,
   },
-  usedBadge: {
-    backgroundColor: c.surfaceMuted,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginBottom: 4,
-  },
-  usedBadgeText: {
-    fontSize: 10,
-    lineHeight: 14,
-    fontWeight: '600',
-    color: c.textMuted,
-  },
-  vacationDetails: {
-    backgroundColor: c.surfaceMuted,
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginTop: 4,
-  },
-  vacationDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(223, 191, 189, 0.3)',
-  },
-  vacationDetailLabel: {
-    fontSize: 14,
-    lineHeight: 20,
+  tileValueBig: {
+    fontSize: 30,
+    lineHeight: 36,
     color: c.text,
+    fontFamily: AppFonts.psuBold,
   },
-  vacationDetailValue: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '600',
-    color: c.text,
+  tileValueDim: {
+    fontSize: 18,
+    lineHeight: 24,
+    color: c.textMuted,
+    fontFamily: AppFonts.psuBold,
+    opacity: 0.8,
   },
 
-  // states
-  stateBox: {
-    flex: 1,
+  // leave-type list
+  cardHeader: {
+    fontSize: 15,
+    lineHeight: 21,
+    color: c.text,
+    fontFamily: AppFonts.psuBold,
+    paddingTop: 16,
+    paddingBottom: 14,
+  },
+  typeListCard: {
+    backgroundColor: c.surface,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    paddingHorizontal: 16,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
+  },
+  typeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 26,
+  },
+  rowDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: c.border,
+  },
+  typeIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: c.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    gap: 8,
+    flexShrink: 0,
   },
-  stateTitle: {
+  typeTitle: {
+    flex: 1,
     fontSize: 16,
-    fontWeight: '600',
+    lineHeight: 21,
     color: c.text,
-    textAlign: 'center',
+    fontFamily: AppFonts.psuBold,
   },
-  errorText: {
-    fontSize: 14,
+  metrics: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
+  metricChip: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  metricValue: {
+    fontSize: 16,
     lineHeight: 20,
-    color: c.danger,
-    textAlign: 'center',
+    fontFamily: AppFonts.psuBold,
+  },
+  metricUnit: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: AppFonts.psuRegular,
   },
 });

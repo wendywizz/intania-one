@@ -186,6 +186,10 @@ export const TEXT = {
   ABSENCE_POLICY_NOTE_LABEL: 'นโยบายการลา',
   ABSENCE_POLICY_NOTE_TEXT: 'การยื่นลาป่วยและลากิจส่วนตัวต้องรวมกันไม่เกิน 18 ครั้งและไม่เกิน 45 วันต่อปีงบประมาณ',
 
+  // absence - Pending approval (blocks a new request while one is awaiting approval)
+  ABSENCE_PENDING_APPROVAL_MESSAGE: 'ท่านมีรายการอนุมัติลาค้างอยู่',
+  ABSENCE_VIEW_PENDING_APPROVAL: 'ดูรายการรออนุมัติ',
+
   // absence - Pending tab
   ABSENCE_PENDING_TITLE: 'รออนุมัติ',
   ABSENCE_PENDING_SUBTITLE: 'ติดตามสถานะของคำขอการลาที่ส่งแล้ว',

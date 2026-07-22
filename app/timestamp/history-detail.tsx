@@ -1,10 +1,9 @@
 import { useLocalSearchParams, type Href } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { useMemo } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
-import { NavTopBar } from "@/components/nav-top-bar";
+import { ScreenHeader } from "@/components/screen-header";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
@@ -152,12 +151,10 @@ export default function TimestampHistoryDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <StatusBar style="light" />
-      <NavTopBar
+      <ScreenHeader
         title={typeLabel}
-        subtitle={TEXT.TIMESTAMP_APPROVE_DETAIL_SUBTITLE}
-        moduleIcon="clock.fill"
         backHref={{ pathname: "/timestamp/forgot-timestamp", params: { tab: "history" } } as Href}
+        titleInNavBar
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

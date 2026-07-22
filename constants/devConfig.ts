@@ -10,7 +10,7 @@
 // Repair Computer
 //export const DEV_STAFF_ID: string = '0024028'; // ฉัน
 //export const DEV_STAFF_ID: string = '0000335'; // พี่ปิ
-//export const DEV_STAFF_ID: string = '0000340'; // พี่หนี
+export const DEV_STAFF_ID: string = '0000340'; // พี่หนี
 //export const DEV_STAFF_ID: string = '0047773'; // โบ้
 //export const DEV_STAFF_ID: string = '0024025'; // พี่วัช
 //export const DEV_STAFF_ID: string = '0047785'; // บี
@@ -18,3 +18,4 @@
 //export const DEV_STAFF_ID: string = '0000297'; // มนตรี
 //export const DEV_STAFF_ID: string = '0008284'; // นิคม
 //export const DEV_STAFF_ID: string = '0000301'; // พี่อ้อ
+//export const DEV_STAFF_ID: string = '0011688'; // พี่คมเนต

@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { ScreenHeader } from "@/components/screen-header";
@@ -26,6 +26,7 @@ function firstParam(value?: string | string[]) {
 export default function ApproveReasonScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const gutter = useScreenGutter();
   const params = useLocalSearchParams<{ detail?: string; status?: string }>();
   const detail = firstParam(params.detail);
   const status: "1" | "2" = firstParam(params.status) === "2" ? "2" : "1";
@@ -89,10 +90,11 @@ export default function ApproveReasonScreen() {
       <ScreenHeader
         title={isApprove ? TEXT.ABSENCE_APPROVE_ACCEPT : TEXT.ABSENCE_APPROVE_REJECT}
         backHref="/absence/pending"
+        titleInNavBar
       />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.card}>
@@ -116,7 +118,7 @@ export default function ApproveReasonScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingHorizontal: gutter }]}>
         <Pressable
           accessibilityRole="button"
           disabled={isSubmitting}
@@ -181,7 +183,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   scrollContent: {
-    padding: 16,
     paddingTop: 20,
     paddingBottom: 24,
   },
@@ -225,7 +226,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: c.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: c.border,
-    paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 28,
   },

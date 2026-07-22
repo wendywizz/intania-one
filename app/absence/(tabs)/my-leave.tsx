@@ -2,14 +2,15 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Inbox } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
 import {
+  AbsenceListItem,
+  PENDING_BADGE,
   getAbsenceId,
   getAbsenceType,
-  LeaveCard,
-  PENDING_BADGE,
-} from '@/components/absence/leave-card';
+  getStatusBadge,
+} from '@/components/absence/absence-list-item';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -44,6 +45,7 @@ function getEditPathname(type: string) {
 export default function MyLeaveScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const gutter = useScreenGutter();
   const { user: authUser } = useAuth();
   const userId = authUser?.staffId || USER_ID;
   const params = useLocalSearchParams<{ tab?: string }>();
@@ -149,14 +151,14 @@ export default function MyLeaveScreen() {
     return (
       <FlatList
         style={styles.list}
-        contentContainerStyle={data.length ? styles.listContent : styles.listEmptyContent}
+        contentContainerStyle={[data.length ? styles.listContent : styles.listEmptyContent, { paddingHorizontal: gutter }]}
         data={data}
         keyExtractor={(item, index) => `${getAbsenceId(item) || 'leave'}-${index}`}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadData(true)} />}
         renderItem={({ item }) => (
-          <LeaveCard
+          <AbsenceListItem
             item={item}
-            badge={isPending ? PENDING_BADGE : null}
+            badge={isPending ? PENDING_BADGE : getStatusBadge(item)}
             onPress={isPending ? openEdit : openView}
           />
         )}
@@ -172,7 +174,7 @@ export default function MyLeaveScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_MY_LEAVE_TAB} backHref="/" />
+      <ScreenHeader title={TEXT.ABSENCE_MY_LEAVE_TAB} backHref="/" titleInNavBar />
 
       <View style={styles.topTabBar}>
         {tabs.map((tab) => {
@@ -220,7 +222,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   topTabIndicator: { height: 3, width: 40, borderRadius: 2, backgroundColor: 'transparent' },
   topTabIndicatorActive: { backgroundColor: c.primary },
   list: { flex: 1 },
-  listContent: { gap: 12, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 },
+  listContent: { paddingTop: 8, paddingBottom: 20 },
   listEmptyContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyState: { alignItems: 'center', justifyContent: 'center', gap: 10, padding: 24 },
   emptyText: { fontSize: 14, lineHeight: 20, color: c.textMuted, textAlign: 'center' },

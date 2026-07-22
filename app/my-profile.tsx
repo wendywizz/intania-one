@@ -3,14 +3,13 @@ import { Bell, Camera, ChevronRight, Images, Mail, MapPin, Phone, Trash2, User }
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppToast } from '@/components/app-toast';
 import { LoadingAnimate } from '@/components/loading-animate';
-import { NavTopBar } from '@/components/nav-top-bar';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
@@ -229,12 +228,10 @@ export default function MyProfileScreen() {
 
   return (
     <ThemedView style={styles.container} lightColor={c.background} darkColor={c.background}>
-      <StatusBar style="light" />
-      <NavTopBar
+      <ScreenHeader
         title={TEXT.PROFILE_TITLE}
-        subtitle={TEXT.PROFILE_SUBTITLE}
-        moduleIcon="person.circle.fill"
         backHref="/"
+        titleInNavBar
         rightContent={
           <Pressable
             accessibilityRole="button"
@@ -242,7 +239,7 @@ export default function MyProfileScreen() {
             onPress={() => router.push('/notification')}
             style={styles.bellBtn}
           >
-            <Bell size={22} color={c.navBarText} />
+            <Bell size={22} color={c.text} />
             {unreadCount > 0 ? <View style={styles.bellBadge} /> : null}
           </Pressable>
         }

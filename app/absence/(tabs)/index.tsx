@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
@@ -42,26 +42,32 @@ const absenceMenus: AbsenceMenuItem[] = [
 export default function ChooseAbsenceScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const gutter = useScreenGutter();
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_TITLE} backHref="/" />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <ThemedText style={styles.subtitle}>{TEXT.ABSENCE_CHOOSE_SUBTITLE}</ThemedText>
-
+      <ScreenHeader title="ยื่นลา" backHref="/" titleInNavBar />
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]} showsVerticalScrollIndicator={false}>
+        <View style={styles.intro}>
+          <ThemedText style={styles.screenTitle}>เลือกประเภทการลา</ThemedText>
+          <ThemedText style={styles.screenDesc}>
+            เลือกประเภทการลาที่ต้องการยื่น ระบบจะนำคุณไปยังแบบฟอร์ม
+            สำหรับกรอกรายละเอียดและส่งคำขอลาของคุณ
+          </ThemedText>
+        </View>
         <View style={styles.cardList}>
           {absenceMenus.map((menu) => (
             <Link key={menu.title} href={menu.href} asChild>
               <Pressable accessibilityRole="button" style={styles.card}>
                 <View style={styles.iconBg}>
-                  <IconSymbol name={menu.icon} size={28} color={c.primary} />
+                  <IconSymbol name={menu.icon} size={22} color={c.text} />
                 </View>
                 <View style={styles.cardText}>
                   <ThemedText style={styles.cardTitle}>{menu.title}</ThemedText>
-                  <ThemedText style={styles.cardDesc} numberOfLines={2}>
+                  <ThemedText style={styles.cardDesc} numberOfLines={1}>
                     {menu.description}
                   </ThemedText>
                 </View>
-                <IconSymbol name="chevron.right" size={18} color={c.textFaint} style={{ alignSelf: 'center' }} />
+                <IconSymbol name="chevron.right" size={18} color={c.textFaint} />
               </Pressable>
             </Link>
           ))}
@@ -74,17 +80,25 @@ export default function ChooseAbsenceScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: c.background,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 0,
+    paddingTop: 28,
     paddingBottom: 32,
-    gap: 20,
   },
-  subtitle: {
+  intro: {
+    gap: 8,
+    marginBottom: 20,
+  },
+  screenTitle: {
+    fontSize: 22,
+    lineHeight: 28,
+    color: c.text,
+    fontFamily: AppFonts.psuBold,
+  },
+  screenDesc: {
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
@@ -93,20 +107,25 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   card: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     backgroundColor: c.surface,
-    borderRadius: 20,
-    paddingVertical: 24,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    paddingVertical: 22,
     paddingHorizontal: 16,
-    gap: 16,
+    gap: 14,
     shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 1,
   },
   iconBg: {
     width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: c.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -116,14 +135,14 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 3,
   },
   cardTitle: {
-    fontSize: 16,
-    lineHeight: 21,
+    fontSize: 17,
+    lineHeight: 23,
     color: c.text,
     fontFamily: AppFonts.psuBold,
   },
   cardDesc: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 19,
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },

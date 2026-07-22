@@ -12,7 +12,7 @@ import {
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
-import { NavTopBar } from "@/components/nav-top-bar";
+import { ScreenHeader } from "@/components/screen-header";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { AppFonts } from "@/constants/fonts";
@@ -99,11 +99,10 @@ export default function TimestampApproveReasonScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar
+      <ScreenHeader
         title={firstParam(params.type) || TEXT.TIMESTAMP_APPROVE_TITLE}
-        subtitle={isApprove ? TEXT.TIMESTAMP_APPROVE_ACCEPT : TEXT.TIMESTAMP_APPROVE_REJECT}
-        moduleIcon="clock.fill"
         backHref={{ pathname: "/timestamp/approve-detail", params: { forgetId } } as Href}
+        titleInNavBar
       />
 
       <ScrollView

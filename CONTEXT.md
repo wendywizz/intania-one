@@ -129,6 +129,12 @@ About Push Notification the app can receive notification every environment such 
 - After the user confirms, show the loading/prefix animation and wait 1000ms before sending the request.
 - After receiving the response data, wait 1500ms before continuing to the next operation.
 
+# Theming & Colors
+- All colors — font/text color, background color, border color, icon color, everything — must come from the color variables in `constants/theme.ts`. Never hardcode hex values (e.g. `#ffffff`, `#000`) in components or screens.
+- Consume the palette via `useColors()` (inline) or `useThemedStyles((c) => …)` (StyleSheet). Reference semantic roles (`c.surface`, `c.text`, `c.primary`, `c.border`, `c.textMuted`, `c.success`/`c.danger`/`c.warning`/`c.info`, `c.amethyst`/`c.carrot`, …) so screens flip correctly between light and dark.
+- The brand primary is `#B33939`. If a needed color is missing, add it to the `AppColors` type + `LightColors`/`DarkColors` in `constants/theme.ts` (and mirror it in `DESIGN.md`) — do not invent a one-off hex in the component.
+- The legacy indigo palette (`ColorPalette` / `SemanticColors` / `useDesignSystem`) has been removed; do not reintroduce it.
+
 # Other
 - Bottom tab navigation: Screens inside a bottom tab menu must load data only when their tab is active. Do not load data for inactive tabs.
 - If the data display as ListItems that have multiple line. The app should not load all data to display in one time. Just display like pagination when scroll down and get more data

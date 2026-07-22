@@ -1,6 +1,6 @@
 import { router, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
 import { useColors } from '@/constants/theme';
@@ -19,6 +19,8 @@ type NavTopBarProps = {
   rightContent?: ReactNode;
   backgroundColor?: string;
   contentColor?: string;
+  /** Optional style override for the title text (e.g. a larger font size). */
+  titleStyle?: StyleProp<TextStyle>;
 };
 
 export function NavTopBar({
@@ -32,6 +34,7 @@ export function NavTopBar({
   rightContent,
   backgroundColor,
   contentColor,
+  titleStyle,
 }: NavTopBarProps) {
   const insets = useSafeAreaInsets();
   const c = useColors();
@@ -67,8 +70,8 @@ export function NavTopBar({
             accessibilityLabel={TEXT.SHARED_BACK_THAI}
             accessibilityRole="button"
             onPress={goBack}
-            style={[styles.iconButton, { backgroundColor: `${barContent}14` }]}>
-            <IconSymbol name="arrow.left" size={22} color={barContent} />
+            style={styles.iconButton}>
+            <IconSymbol name="chevron.left" size={26} color={barContent} />
           </Pressable>
         ) : (
           <View style={styles.iconButtonSpacer} />
@@ -82,7 +85,7 @@ export function NavTopBar({
           </View>
         ) : null}
         <View style={styles.textContainer}>
-          <ThemedText lightColor={barContent} darkColor={barContent} type="defaultSemiBold" numberOfLines={1} style={styles.title}>
+          <ThemedText lightColor={barContent} darkColor={barContent} type="defaultSemiBold" numberOfLines={1} style={[styles.title, titleStyle]}>
             {title}
           </ThemedText>
           {subtitle ? (
@@ -102,7 +105,6 @@ export function NavTopBar({
             onPress={() => navReplace('/')}
             style={({ pressed }) => [
               styles.iconButton,
-              { backgroundColor: `${barContent}14` },
               pressed ? styles.homeButtonPressed : undefined,
             ]}>
             <IconSymbol name="house.fill" size={22} color={barContent} />

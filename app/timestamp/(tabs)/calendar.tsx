@@ -2,14 +2,13 @@ import { ArrowRight, ChevronLeft, ChevronRight, Clock, LogIn, LogOut } from 'luc
 import moment from 'moment';
 import 'moment/locale/th';
 import { router, useFocusEffect } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
-import { NavTopBar } from '@/components/nav-top-bar';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
@@ -523,13 +522,7 @@ export default function TimestampCalendarScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <StatusBar style="light" />
-      <NavTopBar
-        title={TEXT.TIMESTAMP_TITLE}
-        subtitle={TEXT.TIMESTAMP_CALENDAR_TAB}
-        moduleIcon="calendar-range"
-        backHref="/"
-      />
+      <ScreenHeader title={TEXT.TIMESTAMP_TITLE} backHref="/" titleInNavBar />
       <View style={styles.content}>{renderBody()}</View>
     </ThemedView>
   );

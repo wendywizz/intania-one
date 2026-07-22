@@ -61,7 +61,7 @@ type ErrorStateProps = {
   children?: ReactNode;
 };
 
-function ActionButton({ action }: { action: ErrorStateAction }) {
+function ActionButton({ action, compact }: { action: ErrorStateAction; compact?: boolean }) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const isPrimary = (action.variant ?? 'primary') === 'primary';
@@ -75,6 +75,7 @@ function ActionButton({ action }: { action: ErrorStateAction }) {
       onPress={action.onPress}
       style={({ pressed }) => [
         styles.button,
+        compact && styles.buttonCompact,
         isPrimary ? styles.buttonPrimary : styles.buttonSecondary,
         pressed && styles.buttonPressed,
         action.loading && styles.buttonDisabled,
@@ -154,7 +155,11 @@ export function ErrorState({
       {resolvedActions.length ? (
         <View style={styles.actions}>
           {resolvedActions.map((action, index) => (
-            <ActionButton key={`${action.label}-${index}`} action={action} />
+            <ActionButton
+              key={`${action.label}-${index}`}
+              action={action}
+              compact={resolvedActions.length === 1}
+            />
           ))}
         </View>
       ) : null}
@@ -212,6 +217,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 8,
     borderRadius: 12,
     paddingHorizontal: 20,
+  },
+  // A lone action shouldn't stretch full width — size it to its content.
+  buttonCompact: {
+    flexGrow: 0,
+    flexBasis: 'auto',
+    paddingHorizontal: 32,
   },
   buttonPrimary: {
     backgroundColor: c.primary,

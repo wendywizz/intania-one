@@ -1,6 +1,6 @@
 import { ConfirmModal } from '@/components/notice-repair/confirm-modal';
 import { MaterialItemCard } from '@/components/notice-repair/material-item-card';
-import { NavTopBar } from '@/components/nav-top-bar';
+import { ScreenHeader } from '@/components/screen-header';
 import { useToast } from '@/components/toast-provider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -609,12 +609,10 @@ export default function NoticeRepairDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar
+      <ScreenHeader
         title={TEXT.NOTICE_REPAIR__TITLE}
-        subtitle={TEXT.NOTICE_REPAIR_DETAIL_TITLE}
-        moduleIcon="wrench.fill"
-        showHomeButton
         onBackPress={handleBackPress}
+        titleInNavBar
       />
 
       {renderContent()}

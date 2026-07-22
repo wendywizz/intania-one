@@ -5,7 +5,7 @@ import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
-import { NavTopBar } from "@/components/nav-top-bar";
+import { ScreenHeader } from "@/components/screen-header";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
@@ -165,12 +165,7 @@ export default function TimestampApproveDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar
-        title={typeLabel}
-        subtitle={TEXT.TIMESTAMP_APPROVE_DETAIL_SUBTITLE}
-        moduleIcon="clock.fill"
-        backHref="/timestamp/approve"
-      />
+      <ScreenHeader title={typeLabel} backHref="/timestamp/approve" titleInNavBar />
 
       {isLoading ? (
         <LoadingAnimate

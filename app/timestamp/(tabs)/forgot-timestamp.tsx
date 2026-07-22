@@ -1,10 +1,9 @@
 import { useLocalSearchParams } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
-import { NavTopBar } from "@/components/nav-top-bar";
+import { ScreenHeader } from "@/components/screen-header";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { TimestampForgotList } from "@/components/timestamp/timestamp-forgot-list";
@@ -35,13 +34,7 @@ export default function ForgotTimestampScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <StatusBar style="light" />
-      <NavTopBar
-        title={TEXT.TIMESTAMP_TITLE}
-        subtitle={activeTab === "history" ? TEXT.TIMESTAMP_FORGOT_HISTORY_SUBTITLE : TEXT.TIMESTAMP_LIST_SUBTITLE}
-        moduleIcon="clock.fill"
-        backHref="/"
-      />
+      <ScreenHeader title={TEXT.TIMESTAMP_TITLE} backHref="/" titleInNavBar />
 
       <View style={styles.topTabBar}>
         {TABS.map((tab) => {

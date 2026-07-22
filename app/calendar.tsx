@@ -8,7 +8,6 @@ import {
     RefreshControl,
     ScrollView,
     StyleSheet,
-    useWindowDimensions,
     View,
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
@@ -91,11 +90,7 @@ function splitSourceName(name: string) {
 export default function CalendarScreen() {
   const c = useColors();
   const { isDarkMode } = useTheme();
-  const { height } = useWindowDimensions();
   const styles = useThemedStyles(makeStyles);
-  // Scale the screen title with the device height (clamped) so it feels
-  // proportional on both short and tall screens.
-  const titleSize = Math.round(Math.min(26, Math.max(20, height * 0.028)));
   const [sources, setSources] = useState<CalendarSource[]>([]);
   const [selectedSource, setSelectedSource] = useState<CalendarSource>();
   const [selectedDate, setSelectedDate] = useState(todayKey);
@@ -303,7 +298,8 @@ export default function CalendarScreen() {
       <ThemedView style={styles.container}>
         <StatusBar style={isDarkMode ? "light" : "dark"} />
         <NavTopBar
-          title=""
+          title={TEXT.CALENDAR_TITLE}
+          titleStyle={{ fontSize: 20, lineHeight: 26 }}
           backHref="/"
           backgroundColor={c.background}
           contentColor={c.text}
@@ -322,7 +318,8 @@ export default function CalendarScreen() {
       <ThemedView style={styles.container}>
         <StatusBar style={isDarkMode ? "light" : "dark"} />
         <NavTopBar
-          title=""
+          title={TEXT.CALENDAR_TITLE}
+          titleStyle={{ fontSize: 20, lineHeight: 26 }}
           backHref="/"
           backgroundColor={c.background}
           contentColor={c.text}
@@ -342,7 +339,8 @@ export default function CalendarScreen() {
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
       <NavTopBar
-        title=""
+        title={TEXT.CALENDAR_TITLE}
+        titleStyle={{ fontSize: 20, lineHeight: 26 }}
         backHref="/"
         backgroundColor={c.background}
         contentColor={c.text}
@@ -350,11 +348,6 @@ export default function CalendarScreen() {
 
       {/* Fixed calendar panel */}
       <View style={styles.calendarPane}>
-        {/* Screen title, shown in the content instead of the top bar */}
-        <ThemedText style={[styles.pageTitle, { fontSize: titleSize, lineHeight: titleSize + 6 }]}>
-          {TEXT.CALENDAR_TITLE}
-        </ThemedText>
-
         {/* Source selector card */}
         <Pressable
           accessibilityRole="button"
@@ -381,7 +374,7 @@ export default function CalendarScreen() {
           onRequestClose={() => setSourceModalOpen(false)}
         >
           <Pressable style={styles.backdrop} onPress={() => setSourceModalOpen(false)}>
-            <Pressable>
+            <Pressable style={styles.modalWrap}>
               <View style={styles.selectModal}>
                 <View style={styles.modalHeader}>
                   <ThemedText style={styles.modalTitle} type="defaultSemiBold">
@@ -526,13 +519,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
     gap: 12,
-  },
-  pageTitle: {
-    fontSize: 26,
-    lineHeight: 32,
-    color: c.text,
-    fontFamily: AppFonts.psuBold,
-    marginBottom: 16,
   },
   sourceCard: {
     flexDirection: "row",
@@ -745,7 +731,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.45)",
-    padding: 40,
+    padding: 24,
+  },
+  modalWrap: {
+    width: "100%",
+    maxWidth: 460,
   },
   selectModal: {
     width: "100%",

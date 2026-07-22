@@ -1,10 +1,9 @@
 import { useLocalSearchParams } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
-import { NavTopBar } from "@/components/nav-top-bar";
+import { ScreenHeader } from "@/components/screen-header";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { TimestampApprovalList } from "@/components/timestamp/timestamp-approval-list";
@@ -33,17 +32,7 @@ export default function TimestampApproveScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <StatusBar style="light" />
-      <NavTopBar
-        title={TEXT.TIMESTAMP_APPROVE_TITLE}
-        subtitle={
-          activeTab === "history"
-            ? TEXT.TIMESTAMP_APPROVE_HISTORY_TAB
-            : TEXT.TIMESTAMP_APPROVE_SUBTITLE
-        }
-        moduleIcon="checkmark.circle.fill"
-        backHref="/"
-      />
+      <ScreenHeader title={TEXT.TIMESTAMP_APPROVE_TITLE} backHref="/" titleInNavBar />
 
       <View style={styles.topTabBar}>
         {TABS.map((tab) => {

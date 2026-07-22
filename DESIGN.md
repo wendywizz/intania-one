@@ -37,6 +37,30 @@ colors:
   info: '#3498db'
   danger: '#e74c3c'
   warning: '#f1c40f'
+  # Flat UI (Defo) palette — https://flatuicolors.com/palette/defo
+  turquoise: '#1abc9c'
+  emerald: '#2ecc71'
+  peter-river: '#3498db'
+  amethyst: '#9b59b6'
+  wet-asphalt: '#34495e'
+  green-sea: '#16a085'
+  nephritis: '#27ae60'
+  belize-hole: '#2980b9'
+  wisteria: '#8e44ad'
+  midnight-blue: '#2c3e50'
+  sun-flower: '#f1c40f'
+  carrot: '#e67e22'
+  alizarin: '#e74c3c'
+  clouds: '#ecf0f1'
+  concrete: '#95a5a6'
+  orange: '#f39c12'
+  pumpkin: '#d35400'
+  pomegranate: '#c0392b'
+  silver: '#bdc3c7'
+  asbestos: '#7f8c8d'
+  # Extra named accents
+  pico8-pink: '#fd79a8'
+  prunus-avium: '#e84393'
   primary-fixed: '#ffdad7'
   primary-fixed-dim: '#ffb3ae'
   on-primary-fixed: '#410005'
@@ -125,7 +149,8 @@ This design system utilizes a "High-Value Interaction" color strategy.
 - **Secondary (rgba(20, 20, 20, 0.08)):** The subtle neutral fill used behind circular icon buttons — matching the nav-top-bar back button background (the text color `#141414` at ~8% opacity). Used for low-emphasis, tappable icon affordances.
 - **Inverse (#2e3134):** The inverse surface — a dark slate used for inverted UI (e.g. snackbars, tooltips, high-contrast surfaces) and to ground content against the light canvas.
 - **Neutrals:** A spectrum of cool grays provides the scaffolding for the interface, creating clear boundaries between content sections without adding visual noise.
-- **Semantic Colors:** Success, Warning, and Error colors are slightly desaturated to maintain harmony with the deep primary red.
+- **Semantic Colors:** The status roles map directly onto Flat UI (Defo) swatches — **Success → Emerald (#2ecc71)**, **Warning → Sun Flower (#f1c40f)**, **Danger → Alizarin (#e74c3c)**, **Info → Peter River (#3498db)** — referenced by name in `constants/theme.ts` so the mapping stays explicit in both light and dark.
+- **Flat UI (Defo) Palette:** The full 20-swatch [Flat UI Colors "Defo"](https://flatuicolors.com/palette/defo) set is available as named tokens (Turquoise, Emerald, Peter River, Amethyst, Wet Asphalt, Green Sea, Nephritis, Belize Hole, Wisteria, Midnight Blue, Sun Flower, Carrot, Alizarin, Clouds, Concrete, Orange, Pumpkin, Pomegranate, Silver, Asbestos). These are fixed named swatches (identical in light and dark) for categorization, charts, highlights, or illustration — use sparingly so they never compete with the primary red.
 
 ## Typography
 Inter is the foundation of this design system, chosen for its exceptional legibility in data-dense mobile environments. 
@@ -137,6 +162,8 @@ Inter is the foundation of this design system, chosen for its exceptional legibi
 The system utilizes an 8px grid (with a 4px half-step for micro-adjustments). 
 - **Mobile Grid:** A fluid 4-column layout with 16px side margins and 16px gutters.
 - **Vertical Rhythm:** Elements within a card should use `sm` (8px) spacing, while the gap between distinct cards or sections should use `md` (16px) or `lg` (24px).
+- **Screen edge → content gutter (responsive by width):** The horizontal spacing between the screen edge and all section content is **responsive to the viewport width**, not a fixed value. Use `useScreenGutter()` from `constants/theme.ts`: `round(clamp(20, width × 0.062, 32))` — i.e. min **20px** on small phones, growing to a max of **32px** on large screens. Apply it inline on each screen's content container (`contentContainerStyle={[styles.content, { paddingHorizontal: gutter }]}`); cards may bleed to this gutter and keep their own internal padding. This gutter must be uniform across every screen within a module.
+- **Screen title → content gap (responsive by height):** The vertical spacing between the screen title and the content section below it is **responsive to the viewport height**. `ScreenHeader` applies `useScreenTitleGap()`: `round(clamp(16, height × 0.028, 32))` — min **16px** on short screens, up to **32px** on tall screens — as the title's bottom spacing, so the header breathes proportionally on any device.
 - **Safe Areas:** Strict adherence to mobile safe areas is required, ensuring that floating action buttons or bottom navigation menus do not interfere with OS-level gestures.
 
 ## Elevation & Depth

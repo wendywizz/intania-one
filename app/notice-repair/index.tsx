@@ -1,5 +1,5 @@
 import { LoadingAnimate } from '@/components/loading-animate';
-import { NavTopBar } from '@/components/nav-top-bar';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TEXT } from '@/constants/text';
@@ -68,11 +68,7 @@ export default function NoticeRepairIndexScreen() {
   if (noAccess) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar
-          title={TEXT.NOTICE_REPAIR__TITLE}
-          subtitle={TEXT.NOTICE_REPAIR_LIST_SUBTITLE}
-          moduleIcon="wrench.fill"
-        />
+        <ScreenHeader title={TEXT.NOTICE_REPAIR__TITLE} backHref="/" titleInNavBar />
         <View style={styles.center}>
           <ThemedText style={styles.noAccessTitle}>{TEXT.NOTICE_REPAIR_NO_ACCESS_TITLE}</ThemedText>
           <ThemedText style={styles.noAccessMessage}>{TEXT.NOTICE_REPAIR_NO_ACCESS_MESSAGE}</ThemedText>

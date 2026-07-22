@@ -2,20 +2,24 @@ import { useFocusEffect } from 'expo-router';
 import { Inbox } from 'lucide-react-native';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
+import {
+  AbsenceListItem,
+  PENDING_BADGE,
+  getAbsenceId,
+  getAbsenceType,
+} from '@/components/absence/absence-list-item';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TEXT } from '@/constants/text';
 import {
   TYPE_ABSENCE_BIRTH,
   TYPE_ABSENCE_BUSINESS,
-  TYPE_ABSENCE_HAJJ,
   TYPE_ABSENCE_RELAX,
   TYPE_ABSENCE_SICK,
 } from '@/constants/types';
@@ -24,50 +28,6 @@ import { useAuth } from '@/context/AuthContext';
 import type { absence } from '@/models/types';
 import { approvingWaitingData, waitingData } from '@/services/absenceService';
 import { navPush } from '@/utils/navigation';
-import { formatDateRange } from '@/utils/date-format';
-
-const absenceTypeLabels: Record<string, string> = {
-  [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
-  [TYPE_ABSENCE_BUSINESS]: TEXT.ABSENCE_BUSINESS_TITLE,
-  [TYPE_ABSENCE_BIRTH]: TEXT.ABSENCE_BIRTH_TITLE,
-  [TYPE_ABSENCE_RELAX]: TEXT.ABSENCE_RELAX_TITLE,
-  [TYPE_ABSENCE_HAJJ]: TEXT.ABSENCE_HAJJ_TITLE,
-};
-
-const absenceTypeFields = ['absentType', 'absenceType', 'typeAbsence', 'ABSENCE_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type'];
-const absenceTypeNameFields = ['absentTypeName', 'absenceTypeName', 'ABSENCE_type_name', 'typeName', 'type_name', 'leaveTypeName', 'leave_type_name'];
-const startDateFields = ['startDate', 'start_date', 'dateStart', 'date_start'];
-const endDateFields = ['endDate', 'end_date', 'dateEnd', 'date_end'];
-
-function getText(item: absence, fields: string[]) {
-  for (const field of fields) {
-    const value = item[field];
-    if (typeof value === 'string' && value.trim()) return value.trim();
-    if (typeof value === 'number') return String(value);
-  }
-  return '';
-}
-
-function getAbsenceId(item: absence) {
-  return getText(item, ['id', 'absenceId', 'ABSENCE_id', 'requestId', 'request_id']);
-}
-
-function getAbsenceType(item: absence) {
-  return getText(item, absenceTypeFields);
-}
-
-function getAbsenceTypeLabel(item: absence) {
-  const typeName = getText(item, absenceTypeNameFields);
-  const type = getAbsenceType(item);
-  return typeName || absenceTypeLabels[type] || (type ? `Absence type ${type}` : 'Absence');
-}
-
-function getDateRange(item: absence) {
-  const startDate = getText(item, startDateFields);
-  const endDate = getText(item, endDateFields);
-  const formatted = formatDateRange(startDate, endDate);
-  return formatted ? `Date: ${formatted}` : '';
-}
 
 function getEditPathname(type: string) {
   switch (type) {
@@ -79,76 +39,11 @@ function getEditPathname(type: string) {
   }
 }
 
-type IconName = 'cross.fill' | 'briefcase.fill' | 'sun.max.fill' | 'figure.child' | 'doc.text.fill';
-
-function getTypeIcon(type: string): IconName {
-  switch (type) {
-    case TYPE_ABSENCE_SICK: return 'cross.fill';
-    case TYPE_ABSENCE_BUSINESS: return 'briefcase.fill';
-    case TYPE_ABSENCE_RELAX: return 'sun.max.fill';
-    case TYPE_ABSENCE_BIRTH: return 'figure.child';
-    default: return 'doc.text.fill';
-  }
-}
-
-function getRequesterName(item: absence) {
-  return getText(item, ['name', 'staffName', 'staff_name', 'fullname', 'fullName']);
-}
-
-type RequestCardProps = {
-  item: absence;
-  name: string;
-  onPress?: (item: absence) => void;
-};
-
-// One card shape shared by both "รออนุมัติลา" and "อนุมัติผู้ยื่นลา" so their
-// details render identically: name (bold), leave type, date range and badge.
-function RequestCard({ item, name, onPress }: RequestCardProps) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  const type = getAbsenceType(item);
-  const typeLabel = getText(item, ['approveName']) || getAbsenceTypeLabel(item);
-  const dateRange = getDateRange(item);
-  const icon = getTypeIcon(type);
-
-  const body = (
-    <View style={styles.itemRow}>
-      <View style={styles.itemIconCircle}>
-        <IconSymbol name={icon} size={20} color={c.primary} />
-      </View>
-      <View style={styles.itemBody}>
-        {name ? (
-          <ThemedText style={styles.itemRequester} numberOfLines={1}>
-            {name}
-          </ThemedText>
-        ) : null}
-        <ThemedText style={styles.itemTitle}>{typeLabel}</ThemedText>
-        {dateRange ? (
-          <ThemedText style={styles.itemDate}>{dateRange}</ThemedText>
-        ) : null}
-      </View>
-      <View style={styles.pendingBadge}>
-        <ThemedText style={styles.pendingBadgeText}>{TEXT.ABSENCE_PENDING_BADGE}</ThemedText>
-      </View>
-    </View>
-  );
-
-  if (onPress) {
-    return (
-      <Pressable accessibilityRole="button" onPress={() => onPress(item)} style={styles.itemCard}>
-        {body}
-      </Pressable>
-    );
-  }
-
-  return <View style={styles.itemCard}>{body}</View>;
-}
-
 type PendingTab = 'approve' | 'mine';
 
 export default function PendingScreen() {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const gutter = useScreenGutter();
   const { user: authUser } = useAuth();
   const [items, setItems] = useState<{ remain: absence | null; cancel: absence | null }>({
     remain: null,
@@ -236,8 +131,8 @@ export default function PendingScreen() {
       style={styles.sectionScroll}
       contentContainerStyle={
         hasItems
-          ? [styles.sectionListContent, topGap ? styles.sectionListNoHeader : null]
-          : styles.sectionEmptyContent
+          ? [styles.sectionListContent, topGap ? styles.sectionListNoHeader : null, { paddingHorizontal: gutter }]
+          : [styles.sectionEmptyContent, { paddingHorizontal: gutter }]
       }
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadData(true)} />}
     >
@@ -264,16 +159,15 @@ export default function PendingScreen() {
     // Having any approval item means this user is a boss → show both tabs.
     // Otherwise they are a general user → only their own "อนุมัติผู้ยื่นลา".
     const isBoss = approving.length > 0;
-    const ownName = authUser?.name ?? '';
 
     const mineList = renderList(
       mineCount > 0,
       <>
         {items.remain ? (
-          <RequestCard item={items.remain} name={ownName} onPress={openDetail} />
+          <AbsenceListItem item={items.remain} badge={PENDING_BADGE} showDetails onPress={openDetail} />
         ) : null}
         {items.cancel ? (
-          <RequestCard item={items.cancel} name={ownName} onPress={openDetail} />
+          <AbsenceListItem item={items.cancel} badge={PENDING_BADGE} showDetails onPress={openDetail} />
         ) : null}
       </>,
       !isBoss,
@@ -287,10 +181,11 @@ export default function PendingScreen() {
     const approveList = renderList(
       approving.length > 0,
       approving.map((item, index) => (
-        <RequestCard
+        <AbsenceListItem
           key={getAbsenceId(item) || `approve-${index}`}
           item={item}
-          name={getRequesterName(item)}
+          badge={PENDING_BADGE}
+          showDetails
           onPress={openApproval}
         />
       )),
@@ -332,7 +227,7 @@ export default function PendingScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_PENDING_TITLE} backHref="/" />
+      <ScreenHeader title={TEXT.ABSENCE_PENDING_TITLE} backHref="/" titleInNavBar />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
@@ -455,15 +350,13 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flex: 1,
   },
   sectionListContent: {
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingTop: 8,
     paddingBottom: 20,
   },
-  // General-user view has no section header, so give the first card room below
-  // the navbar.
+  // General-user view has no section header; match the history screen's spacing
+  // between the navbar and the first item.
   sectionListNoHeader: {
-    paddingTop: 20,
+    paddingTop: 8,
   },
   sectionEmptyContent: {
     flexGrow: 1,
@@ -471,71 +364,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     padding: 24,
-  },
-  itemCard: {
-    backgroundColor: c.surface,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  itemIconCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    backgroundColor: c.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  itemBody: {
-    flex: 1,
-    gap: 2,
-  },
-  itemTitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: c.text,
-  },
-  itemRequester: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontWeight: '700',
-    color: c.text,
-  },
-  itemDate: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: c.textMuted,
-  },
-  itemStep: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '500',
-    color: c.textMuted,
-  },
-  pendingBadge: {
-    backgroundColor: c.surfaceMuted,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  pendingBadgeText: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '500',
-    color: c.textMuted,
   },
   stateBox: {
     flex: 1,

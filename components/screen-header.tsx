@@ -6,7 +6,7 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts } from '@/constants/fonts';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useColors, useScreenGutter, useScreenTitleGap, useThemedStyles } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 
 type ScreenHeaderProps = {
@@ -21,6 +21,8 @@ type ScreenHeaderProps = {
   titleTrailing?: ReactNode;
   /** Horizontal padding of the big title, to align it with the screen content. */
   titlePaddingHorizontal?: number;
+  /** Render the title inside the top nav bar instead of as a large content title. */
+  titleInNavBar?: boolean;
 };
 
 // Shared screen header used across the app: a status bar + a minimal nav bar
@@ -36,11 +38,15 @@ export function ScreenHeader({
   showHomeButton,
   rightContent,
   titleTrailing,
-  titlePaddingHorizontal = 16,
+  titlePaddingHorizontal,
+  titleInNavBar,
 }: ScreenHeaderProps) {
   const c = useColors();
   const { isDarkMode } = useTheme();
   const { height } = useWindowDimensions();
+  const gutter = useScreenGutter();
+  const titlePad = titlePaddingHorizontal ?? gutter;
+  const titleGap = useScreenTitleGap();
   const styles = useThemedStyles(makeStyles);
   // Scale the title with device height (clamped) so it stays proportional.
   const titleSize = Math.round(Math.min(26, Math.max(20, height * 0.028)));
@@ -49,7 +55,8 @@ export function ScreenHeader({
     <>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <NavTopBar
-        title=""
+        title={titleInNavBar ? title : ''}
+        titleStyle={titleInNavBar ? { fontSize: 20, lineHeight: 26 } : undefined}
         backHref={backHref}
         onBackPress={onBackPress}
         showBackButton={showBackButton}
@@ -58,12 +65,20 @@ export function ScreenHeader({
         backgroundColor={c.surface}
         contentColor={c.text}
       />
-      <View style={[styles.titleRow, { paddingHorizontal: titlePaddingHorizontal }]}>
-        <ThemedText style={[styles.title, { fontSize: titleSize, lineHeight: titleSize + 6 }]}>
-          {title}
-        </ThemedText>
-        {titleTrailing}
-      </View>
+      {titleInNavBar ? (
+        titleTrailing ? (
+          <View style={[styles.titleRow, { paddingHorizontal: titlePad, paddingBottom: titleGap, paddingTop: 0 }]}>
+            {titleTrailing}
+          </View>
+        ) : null
+      ) : (
+        <View style={[styles.titleRow, { paddingHorizontal: titlePad, paddingBottom: titleGap }]}>
+          <ThemedText style={[styles.title, { fontSize: titleSize, lineHeight: titleSize + 6 }]}>
+            {title}
+          </ThemedText>
+          {titleTrailing}
+        </View>
+      )}
     </>
   );
 }

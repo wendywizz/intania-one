@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { SemanticColors } from '@/constants/theme';
 import { ThemeContext } from '@/context/theme-context';
 
 // Re-exported so existing `@/context/ThemeContext` imports keep working.
@@ -74,13 +73,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const colors = isDarkMode ? SemanticColors.dark : SemanticColors.light;
-
   if (!isLoaded) return null;
 
   return (
     <ThemeContext.Provider
-      value={{ isDarkMode, isAutoTheme, colors, toggleDarkMode, toggleAutoTheme }}
+      value={{ isDarkMode, isAutoTheme, toggleDarkMode, toggleAutoTheme }}
     >
       {children}
     </ThemeContext.Provider>

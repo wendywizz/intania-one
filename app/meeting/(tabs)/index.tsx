@@ -1,6 +1,5 @@
 ﻿import { CalendarDays, CalendarX, ChevronRight, MapPin } from 'lucide-react-native';
 import { TEXT } from "@/constants/text";
-import { StatusBar } from "expo-status-bar";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -15,7 +14,8 @@ import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
-import { NavTopBar } from "@/components/nav-top-bar";
+import { MeetingListItem } from "@/components/meeting/meeting-list-item";
+import { ScreenHeader } from "@/components/screen-header";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { AppFonts } from "@/constants/fonts";
@@ -86,55 +86,6 @@ function groupByDate(meetings: Meeting[], ascending: boolean): ListRow[] {
   return rows;
 }
 
-function MeetingCard({ meeting }: { meeting: Meeting }) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  const title = getText(meeting, titleFields) || "Meeting";
-  const date = getText(meeting, dateFields);
-  const time = getText(meeting, timeFields);
-  const place = getText(meeting, placeFields);
-  const meetingNo = getText(meeting, meetingNoFields);
-  const timeStr = formatTimeOnly(date) || formatTimeOnly(time);
-
-  function handlePress() {
-    router.push({
-      pathname: '/meeting/detail',
-      params: {
-        m_id: String(meeting.m_id ?? ''),
-        main_id: String(meeting.main_id ?? ''),
-        name: title,
-        date,
-        room: place,
-        meeting_no: meetingNo,
-      },
-    });
-  }
-
-  return (
-    <Pressable style={styles.itemCard} onPress={handlePress} accessibilityRole="button">
-      <View style={styles.itemRow}>
-        <View style={[styles.timeBox, timeStr ? styles.timeBoxHasTime : styles.timeBoxNoTime]}>
-          {timeStr ? (
-            <ThemedText style={styles.timeText}>{timeStr}</ThemedText>
-          ) : (
-            <CalendarDays size={20} color={c.textMuted} />
-          )}
-        </View>
-        <View style={styles.itemBody}>
-          <ThemedText style={styles.itemTitle} numberOfLines={2}>{title}</ThemedText>
-          {place ? (
-            <View style={styles.metaRow}>
-              <MapPin size={13} color={c.textMuted} />
-              <ThemedText style={styles.metaText} numberOfLines={1}>{place}</ThemedText>
-            </View>
-          ) : null}
-        </View>
-        <ChevronRight size={20} color={c.textFaint} style={styles.chevron} />
-      </View>
-    </Pressable>
-  );
-}
-
 export default function TodayMeetingScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
@@ -171,13 +122,7 @@ export default function TodayMeetingScreen() {
   if (isLoading) {
     return (
       <ThemedView style={styles.container}>
-        <StatusBar style="light" />
-        <NavTopBar
-          title={TEXT.MEETING_HEADER_TITLE}
-          subtitle={TEXT.MEETING_TODAY}
-          moduleIcon="calendar"
-          backHref="/"
-        />
+        <ScreenHeader title={TEXT.MEETING_HEADER_TITLE} backHref="/" titleInNavBar />
         <LoadingAnimate title={TEXT.MEETING_LOADING_MEETINGS} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
       </ThemedView>
     );
@@ -186,13 +131,7 @@ export default function TodayMeetingScreen() {
   if (error) {
     return (
       <ThemedView style={styles.container}>
-        <StatusBar style="light" />
-        <NavTopBar
-          title={TEXT.MEETING_HEADER_TITLE}
-          subtitle={TEXT.MEETING_TODAY}
-          moduleIcon="calendar"
-          backHref="/"
-        />
+        <ScreenHeader title={TEXT.MEETING_HEADER_TITLE} backHref="/" titleInNavBar />
         <ErrorState
           title={TEXT.SHARED_SOMETHING_WENT_WRONG}
           message={error}
@@ -204,13 +143,7 @@ export default function TodayMeetingScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <StatusBar style="light" />
-      <NavTopBar
-        title={TEXT.MEETING_HEADER_TITLE}
-        subtitle={TEXT.MEETING_TODAY}
-        moduleIcon="calendar"
-        backHref="/"
-      />
+      <ScreenHeader title={TEXT.MEETING_HEADER_TITLE} backHref="/" titleInNavBar />
       <FlatList<ListRow>
         contentContainerStyle={styles.listContent}
         data={rows}
@@ -231,7 +164,7 @@ export default function TodayMeetingScreen() {
               </View>
             );
           }
-          return <MeetingCard meeting={row.meeting} />;
+          return <MeetingListItem meeting={row.meeting} />;
         }}
         ItemSeparatorComponent={({ leadingItem }: { leadingItem: ListRow }) =>
           leadingItem.type === "date-header" ? null : <View style={styles.separator} />
@@ -276,12 +209,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingBottom: 8,
   },
   dateHeaderText: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 18,
     fontFamily: AppFonts.psuBold,
-    color: c.text,
+    color: c.textMuted,
   },
-  separator: { height: 10 },
+  separator: { height: 0 },
   itemCard: {
     backgroundColor: c.surface,
     borderRadius: 20,

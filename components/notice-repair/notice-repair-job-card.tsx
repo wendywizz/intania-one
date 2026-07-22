@@ -119,9 +119,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   cardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   chevron: { alignSelf: 'center' },
   iconBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: c.primarySoft,

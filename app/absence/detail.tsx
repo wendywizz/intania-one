@@ -5,12 +5,13 @@ import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
+import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { UserAvatar } from '@/components/user-avatar';
 import { AppFonts } from '@/constants/fonts';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 import { TEXT } from '@/constants/text';
 import {
   TYPE_ABSENCE_BIRTH,
@@ -322,6 +323,7 @@ function PersonRow({ name, position, staffId }: StaffEntry) {
 export default function absenceDetailScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const gutter = useScreenGutter();
   const params = useLocalSearchParams<{ id?: string; item?: string; type?: string; backHref?: string }>();
   const initialItem = useMemo(() => parseItem(params.item), [params.item]);
   const [item, setItem] = useState<absence>(initialItem);
@@ -414,7 +416,7 @@ export default function absenceDetailScreen() {
   if (isLoading) {
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={typeLabel} backHref={backHref} titlePaddingHorizontal={32} />
+        <ScreenHeader title={typeLabel} backHref={backHref} titleInNavBar />
         <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
       </ThemedView>
     );
@@ -422,26 +424,22 @@ export default function absenceDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader
-        title={typeLabel}
-        backHref={backHref}
-        titlePaddingHorizontal={32}
-        titleTrailing={
-          statusBadge ? (
-            <View style={[styles.statusBadge, { backgroundColor: statusBadge.bg }]}>
-              <ThemedText style={[styles.statusText, { color: statusBadge.color }]}>
-                {statusLabel}
-              </ThemedText>
-            </View>
-          ) : null
-        }
-      />
+      <ScreenHeader title={typeLabel} backHref={backHref} titleInNavBar />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]} showsVerticalScrollIndicator={false}>
         {/* Leave-info section */}
-        <View style={styles.card}>
-          <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_DETAIL_INFO_SECTION}</ThemedText>
-
+        <SectionCard
+          title={TEXT.ABSENCE_DETAIL_INFO_SECTION}
+          trailing={
+            statusBadge ? (
+              <View style={[styles.statusBadge, { backgroundColor: statusBadge.bg }]}>
+                <ThemedText style={[styles.statusText, { color: statusBadge.color }]}>
+                  {statusLabel}
+                </ThemedText>
+              </View>
+            ) : null
+          }
+        >
           <View style={styles.infoBody}>
             <InfoRow label={TEXT.ABSENCE_LEAVE_DATE_LABEL} value={dateText} icon="calendar" />
             <InfoRow
@@ -454,20 +452,18 @@ export default function absenceDetailScreen() {
             <InfoRow label={TEXT.ABSENCE_CONTACT_CHANNEL_LABEL} value={contact} icon="phone.fill" />
             <InfoRow label={TEXT.ABSENCE_TRAVEL_DETAIL_LABEL} value={travelDetail} icon="mappin" />
           </View>
-        </View>
+        </SectionCard>
 
         {/* Requester card (shows the person who filed the leave) */}
         {requester.name ? (
-          <View style={styles.card}>
-            <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_REQUESTER_LABEL}</ThemedText>
+          <SectionCard title={TEXT.ABSENCE_REQUESTER_LABEL}>
             <PersonRow name={requester.name} position={requester.position} staffId={requester.staffId} />
-          </View>
+          </SectionCard>
         ) : null}
 
         {/* Delegate card */}
         {agentEntries.length ? (
-          <View style={styles.card}>
-            <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_DELEGATE_LABEL}</ThemedText>
+          <SectionCard title={TEXT.ABSENCE_DELEGATE_LABEL}>
             {agentEntries.map((agent, index) => (
               <PersonRow
                 key={`${agent.name}-${index}`}
@@ -476,13 +472,12 @@ export default function absenceDetailScreen() {
                 staffId={agent.staffId}
               />
             ))}
-          </View>
+          </SectionCard>
         ) : null}
 
         {/* Attachment card (read-only view of the uploaded file) */}
         {fileUploadLink ? (
-          <View style={styles.card}>
-            <ThemedText style={styles.sectionTitle}>{attachmentTitle}</ThemedText>
+          <SectionCard title={attachmentTitle}>
             <Pressable
               accessibilityRole="link"
               onPress={handleOpenUploadedFile}
@@ -499,7 +494,7 @@ export default function absenceDetailScreen() {
               </View>
               <IconSymbol name="chevron.right" size={18} color={c.textFaint} />
             </Pressable>
-          </View>
+          </SectionCard>
         ) : null}
 
         {error ? <ThemedText style={styles.errorText}>{error}</ThemedText> : null}
@@ -511,23 +506,12 @@ export default function absenceDetailScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: c.background,
   },
   scrollContent: {
-    paddingTop: 4,
+    paddingTop: 28,
     paddingBottom: 40,
-  },
-  card: {
-    marginHorizontal: 32,
-    marginBottom: 12,
-    paddingVertical: 16,
     gap: 12,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '600',
-    color: c.textMuted,
   },
   infoHeader: {
     flexDirection: 'row',
@@ -578,7 +562,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 9999,
     paddingHorizontal: 12,
     paddingVertical: 5,
-    alignSelf: 'flex-start',
+    flexShrink: 0,
   },
   statusText: {
     fontFamily: AppFonts.psuBold,
@@ -615,15 +599,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: c.surface,
-    borderRadius: 20,
     paddingVertical: 18,
-    paddingHorizontal: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    elevation: 4,
   },
   agentDivider: {
     height: StyleSheet.hairlineWidth,

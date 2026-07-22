@@ -13,7 +13,7 @@ import {
     TextInput,
     View,
 } from "react-native";
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
 import { AgentSelectField } from "@/components/agent-select-field";
 import { AppToast } from "@/components/app-toast";
@@ -21,6 +21,7 @@ import { DatePickerField } from "@/components/date-picker-field";
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ScreenHeader } from "@/components/screen-header";
+import { SectionCard } from "@/components/section-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { UserAvatar } from "@/components/user-avatar";
@@ -396,6 +397,7 @@ function SelectField({
 export default function RelaxScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const gutter = useScreenGutter();
   const { user: authUser } = useAuth();
   const params = useLocalSearchParams<{
     id?: string;
@@ -854,7 +856,7 @@ export default function RelaxScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_RELAX_TITLE} backHref={backHref} />
+        <ScreenHeader title={TEXT.ABSENCE_RELAX_TITLE} backHref={backHref} titleInNavBar />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -868,24 +870,39 @@ export default function RelaxScreen() {
 
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_RELAX_TITLE} backHref={backHref} />
-        <ErrorState
-          variant={shouldShowRetry ? "error" : "empty"}
-          title={shouldShowRetry ? TEXT.SHARED_ERROR_TITLE_THAI : TEXT.ABSENCE_CANNOT_REQUEST_TITLE}
-          message={initialError}
-          onRetry={shouldShowRetry ? loadInitialabsenceData : undefined}
-          onBack={() => navReplace("/absence")}
-        />
+        <ScreenHeader title={TEXT.ABSENCE_RELAX_TITLE} backHref={backHref} titleInNavBar />
+        {shouldShowRetry ? (
+          <ErrorState
+            variant="error"
+            title={TEXT.SHARED_ERROR_TITLE_THAI}
+            message={initialError}
+            onRetry={loadInitialabsenceData}
+            onBack={() => navReplace("/absence")}
+          />
+        ) : (
+          <ErrorState
+            variant="empty"
+            title={TEXT.ABSENCE_CANNOT_REQUEST_TITLE}
+            message={TEXT.ABSENCE_PENDING_APPROVAL_MESSAGE}
+            actions={[
+              {
+                label: TEXT.ABSENCE_VIEW_PENDING_APPROVAL,
+                onPress: () => navReplace("/absence/pending"),
+                variant: "primary",
+              },
+            ]}
+          />
+        )}
       </ThemedView>
     );
   }
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_RELAX_TITLE} backHref={backHref} />
+      <ScreenHeader title={TEXT.ABSENCE_RELAX_TITLE} backHref={backHref} titleInNavBar />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
         keyboardShouldPersistTaps="handled"
       >
         {maxRelaxDays !== null ? (
@@ -904,7 +921,8 @@ export default function RelaxScreen() {
           </View>
         ) : null}
 
-        <View style={styles.formCard}>
+        {/* Approver */}
+        <SectionCard>
           <SelectField
             label={TEXT.ABSENCE_APPROVER_LABEL}
             placeholder={TEXT.ABSENCE_APPROVER_PLACEHOLDER}
@@ -923,7 +941,10 @@ export default function RelaxScreen() {
               setOpenSelect(null);
             }}
           />
+        </SectionCard>
 
+        {/* Absence date */}
+        <SectionCard>
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>
               {TEXT.ABSENCE_LEAVE_DATE_LABEL}
@@ -977,7 +998,10 @@ export default function RelaxScreen() {
               </ThemedText>
             ) : null}
           </View>
+        </SectionCard>
 
+        {/* Contact and reason */}
+        <SectionCard>
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>
               {TEXT.ABSENCE_CONTACT_CHANNEL_LABEL}
@@ -1004,7 +1028,10 @@ export default function RelaxScreen() {
               </ThemedText>
             ) : null}
           </View>
+        </SectionCard>
 
+        {/* Agent */}
+        <SectionCard>
           <AgentSelectField
             options={availableAgentOptions}
             selectedAgents={selectedAgents}
@@ -1019,7 +1046,7 @@ export default function RelaxScreen() {
             onSelect={handleSelectAgent}
             onRemove={handleRemoveAgent}
           />
-        </View>
+        </SectionCard>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -1222,15 +1249,14 @@ export default function RelaxScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: c.background,
   },
   scrollContent: {
     paddingTop: 16,
     paddingBottom: 24,
+    gap: 14,
   },
-  formCard: {
-    marginHorizontal: 32,
-  },
+  formCard: {},
   policyCard: {
     flexDirection: "row",
     gap: 12,
@@ -1238,8 +1264,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 14,
     padding: 16,
   },
   policyIconWrap: {
@@ -1250,14 +1274,14 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 4,
   },
   policyTitle: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 21,
     fontWeight: "600",
     color: c.info,
   },
   policyText: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
     color: c.textMuted,
   },
   stateContent: {

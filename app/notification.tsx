@@ -6,7 +6,7 @@ import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from 're
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { NavTopBar } from '@/components/nav-top-bar';
-import { BellOff } from 'lucide-react-native';
+import { Bell, BellOff } from 'lucide-react-native';
 import { EmptyState } from '@/components/empty-state';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -53,7 +53,9 @@ function NotificationItem({ item, onPress }: { item: PushNotificationHistoryItem
       style={({ pressed }) => [styles.itemPressable, pressed && styles.itemPressed]}
     >
       <View style={[styles.itemCard, isUnread && styles.itemCardUnread]}>
-        {isUnread && <View style={styles.unreadIndicator} />}
+        <View style={[styles.iconCircle, isUnread && styles.iconCircleUnread]}>
+          <Bell size={18} color={isUnread ? c.textOnPrimary : c.primary} />
+        </View>
         <View style={styles.itemContent}>
           <View style={styles.itemTitleRow}>
             <ThemedText style={[styles.itemTitle, isUnread && styles.itemTitleUnread]} numberOfLines={2}>

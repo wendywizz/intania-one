@@ -26,6 +26,7 @@ import CalendarRange from 'lucide-react-native/dist/cjs/icons/calendar-range';
 import Calendar from 'lucide-react-native/dist/cjs/icons/calendar';
 import ChartBar from 'lucide-react-native/dist/cjs/icons/chart-bar';
 import ChevronDown from 'lucide-react-native/dist/cjs/icons/chevron-down';
+import ChevronLeft from 'lucide-react-native/dist/cjs/icons/chevron-left';
 import ChevronRight from 'lucide-react-native/dist/cjs/icons/chevron-right';
 import MapPin from 'lucide-react-native/dist/cjs/icons/map-pin';
 import Phone from 'lucide-react-native/dist/cjs/icons/phone';
@@ -67,6 +68,7 @@ import { OpaqueColorValue, StyleProp, ViewStyle } from 'react-native';
 const MAPPING = {
   // Navigation / UI
   'arrow.left': ArrowLeft,
+  'chevron.left': ChevronLeft,
   'chevron.left.forwardslash.chevron.right': Code,
   'chevron.right': ChevronRight,
   'chevron.down': ChevronDown,

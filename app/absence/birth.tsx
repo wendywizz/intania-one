@@ -13,13 +13,14 @@ import {
     TextInput,
     View,
 } from "react-native";
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ScreenHeader } from "@/components/screen-header";
+import { SectionCard } from "@/components/section-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { UserAvatar } from "@/components/user-avatar";
@@ -228,6 +229,7 @@ function SelectField({
 export default function BirthScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const gutter = useScreenGutter();
   const { user: authUser } = useAuth();
   const params = useLocalSearchParams<{ id?: string; mode?: string }>();
   const routeEditId = Array.isArray(params.id) ? params.id[0] : params.id ?? "";
@@ -470,7 +472,7 @@ export default function BirthScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} />
+        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} titleInNavBar />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -480,123 +482,142 @@ export default function BirthScreen() {
   }
 
   if (initialError) {
+    const shouldShowRetry = isRetryableInitialError(initialError);
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} />
-        <ErrorState
-          variant={isRetryableInitialError(initialError) ? "error" : "empty"}
-          title={
-            isRetryableInitialError(initialError)
-              ? TEXT.SHARED_ERROR_TITLE_THAI
-              : TEXT.ABSENCE_CANNOT_REQUEST_TITLE
-          }
-          message={initialError}
-          onRetry={
-            isRetryableInitialError(initialError) ? loadInitialabsenceData : undefined
-          }
-          onBack={() => navReplace("/absence")}
-        />
+        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} titleInNavBar />
+        {shouldShowRetry ? (
+          <ErrorState
+            variant="error"
+            title={TEXT.SHARED_ERROR_TITLE_THAI}
+            message={initialError}
+            onRetry={loadInitialabsenceData}
+            onBack={() => navReplace("/absence")}
+          />
+        ) : (
+          <ErrorState
+            variant="empty"
+            title={TEXT.ABSENCE_CANNOT_REQUEST_TITLE}
+            message={TEXT.ABSENCE_PENDING_APPROVAL_MESSAGE}
+            actions={[
+              {
+                label: TEXT.ABSENCE_VIEW_PENDING_APPROVAL,
+                onPress: () => navReplace("/absence/pending"),
+                variant: "primary",
+              },
+            ]}
+          />
+        )}
       </ThemedView>
     );
   }
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} />
+      <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} titleInNavBar />
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingHorizontal: gutter }]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.formCard}>
           <View style={styles.form}>
-            <SelectField
-              label={TEXT.ABSENCE_APPROVER_LABEL}
-              placeholder={TEXT.ABSENCE_APPROVER_PLACEHOLDER}
-              value={approver}
-              options={approverOptions}
-              isOpen={isApproverOpen}
-              hasError={Boolean(validationErrors.approver)}
-              errorMessage={validationErrors.approver}
-              onToggle={() => setIsApproverOpen((isOpen) => !isOpen)}
-              onSelect={(value, option) => {
-                setApprover(value);
-                setApproverStaffId(option?.staffId ?? "");
-                clearValidationError("approver");
-                setIsApproverOpen(false);
-              }}
-            />
-
-            <View style={styles.field}>
-              <ThemedText style={styles.fieldLabel}>
-                {TEXT.ABSENCE_LEAVE_DATE_LABEL}
-              </ThemedText>
-              <View style={styles.dateRow}>
-                <DatePickerField
-                  label={TEXT.ABSENCE_START_DATE_LABEL}
-                  hideLabel
-                  value={startDate}
-                  onChange={(date) => {
-                    setStartDate(date);
-                    if (endDate && startOfDay(endDate) < startOfDay(date)) {
-                      setEndDate(null);
-                    } else if (endDate) {
-                      clearValidationError("date");
-                    }
-                  }}
-                  hasError={Boolean(displayedDateError)}
-                />
-                <DatePickerField
-                  label={TEXT.ABSENCE_END_DATE_LABEL}
-                  hideLabel
-                  value={endDate}
-                  minimumDate={minimumEndDate}
-                  highlightedStartDate={startDate}
-                  hasError={Boolean(displayedDateError)}
-                  onChange={(date) => {
-                    setEndDate(date);
-                    if (startDate) {
-                      clearValidationError("date");
-                    }
-                  }}
-                />
-              </View>
-              <ThemedText
-                style={[
-                  styles.hint,
-                  displayedDateError ? styles.errorText : undefined,
-                ]}
-              >
-                {displayedDateError || TEXT.ABSENCE_SELECT_DATE_HINT}
-              </ThemedText>
-            </View>
-
-            <View style={styles.field}>
-              <ThemedText style={styles.fieldLabel}>
-                {TEXT.ABSENCE_CONTACT_CHANNEL_LABEL}
-              </ThemedText>
-              <TextInput
-                onChangeText={(value) => {
-                  setContact(value);
-                  if (value.trim()) {
-                    clearValidationError("contact");
-                  }
+            {/* Approver */}
+            <SectionCard>
+              <SelectField
+                label={TEXT.ABSENCE_APPROVER_LABEL}
+                placeholder={TEXT.ABSENCE_APPROVER_PLACEHOLDER}
+                value={approver}
+                options={approverOptions}
+                isOpen={isApproverOpen}
+                hasError={Boolean(validationErrors.approver)}
+                errorMessage={validationErrors.approver}
+                onToggle={() => setIsApproverOpen((isOpen) => !isOpen)}
+                onSelect={(value, option) => {
+                  setApprover(value);
+                  setApproverStaffId(option?.staffId ?? "");
+                  clearValidationError("approver");
+                  setIsApproverOpen(false);
                 }}
-                placeholder={TEXT.ABSENCE_CONTACT_CHANNEL_PLACEHOLDER}
-                placeholderTextColor="#8A969C"
-                style={[
-                  styles.input,
-                  validationErrors.contact ? styles.inputError : undefined,
-                  webNoOutline,
-                ]}
-                value={contact}
               />
-              {validationErrors.contact ? (
-                <ThemedText style={styles.fieldError}>
-                  {validationErrors.contact}
+            </SectionCard>
+
+            {/* Absence date */}
+            <SectionCard>
+              <View style={styles.field}>
+                <ThemedText style={styles.fieldLabel}>
+                  {TEXT.ABSENCE_LEAVE_DATE_LABEL}
                 </ThemedText>
-              ) : null}
-            </View>
+                <View style={styles.dateRow}>
+                  <DatePickerField
+                    label={TEXT.ABSENCE_START_DATE_LABEL}
+                    hideLabel
+                    value={startDate}
+                    onChange={(date) => {
+                      setStartDate(date);
+                      if (endDate && startOfDay(endDate) < startOfDay(date)) {
+                        setEndDate(null);
+                      } else if (endDate) {
+                        clearValidationError("date");
+                      }
+                    }}
+                    hasError={Boolean(displayedDateError)}
+                  />
+                  <DatePickerField
+                    label={TEXT.ABSENCE_END_DATE_LABEL}
+                    hideLabel
+                    value={endDate}
+                    minimumDate={minimumEndDate}
+                    highlightedStartDate={startDate}
+                    hasError={Boolean(displayedDateError)}
+                    onChange={(date) => {
+                      setEndDate(date);
+                      if (startDate) {
+                        clearValidationError("date");
+                      }
+                    }}
+                  />
+                </View>
+                <ThemedText
+                  style={[
+                    styles.hint,
+                    displayedDateError ? styles.errorText : undefined,
+                  ]}
+                >
+                  {displayedDateError || TEXT.ABSENCE_SELECT_DATE_HINT}
+                </ThemedText>
+              </View>
+            </SectionCard>
+
+            {/* Contact and reason */}
+            <SectionCard>
+              <View style={styles.field}>
+                <ThemedText style={styles.fieldLabel}>
+                  {TEXT.ABSENCE_CONTACT_CHANNEL_LABEL}
+                </ThemedText>
+                <TextInput
+                  onChangeText={(value) => {
+                    setContact(value);
+                    if (value.trim()) {
+                      clearValidationError("contact");
+                    }
+                  }}
+                  placeholder={TEXT.ABSENCE_CONTACT_CHANNEL_PLACEHOLDER}
+                  placeholderTextColor="#8A969C"
+                  style={[
+                    styles.input,
+                    validationErrors.contact ? styles.inputError : undefined,
+                    webNoOutline,
+                  ]}
+                  value={contact}
+                />
+                {validationErrors.contact ? (
+                  <ThemedText style={styles.fieldError}>
+                    {validationErrors.contact}
+                  </ThemedText>
+                ) : null}
+              </View>
+            </SectionCard>
 
             <View style={isEditMode ? styles.actionRow : undefined}>
               <Pressable
@@ -774,10 +795,9 @@ export default function BirthScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: c.background,
   },
   content: {
-    paddingHorizontal: 32,
     paddingTop: 16,
     paddingBottom: 24,
   },
@@ -804,6 +824,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   formCard: {},
   form: {
     marginTop: 4,
+    gap: 14,
   },
   field: {
     paddingHorizontal: 0,

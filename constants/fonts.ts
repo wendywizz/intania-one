@@ -1,10 +1,10 @@
-// IBM Plex Sans Thai — applied app-wide. Registered in app/_layout.
-// (Only Regular/Medium/SemiBold/Bold weights are bundled; "light" maps to
-// Regular since no Light weight is loaded.)
+// Sukhumvit Set — applied app-wide. Registered in app/_layout.
+// (Thin/Light/Text/Medium/SemiBold/Bold weights are bundled; "italic" maps to
+// the nearest upright weight since no italic is loaded.)
 export const AppFonts = {
-  psuRegular: 'IBMPlexSansThai_Rg',
-  psuLight: 'IBMPlexSansThai_Rg',
-  psuItalic: 'IBMPlexSansThai_Rg',
-  psuBold: 'IBMPlexSansThai_Bd',
-  psuBoldItalic: 'IBMPlexSansThai_Bd',
+  psuRegular: 'SukhumvitSet_Text',
+  psuLight: 'SukhumvitSet_Light',
+  psuItalic: 'SukhumvitSet_Text',
+  psuBold: 'SukhumvitSet_Bd',
+  psuBoldItalic: 'SukhumvitSet_Bd',
 } as const;

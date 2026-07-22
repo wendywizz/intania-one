@@ -2,16 +2,15 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Inbox } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
 import {
+  AbsenceListItem,
+  PENDING_BADGE,
   getAbsenceId,
   getAbsenceType,
-  getRequesterName,
-  LeaveCard,
-  PENDING_BADGE,
-  statusBadge,
-} from '@/components/absence/leave-card';
+  getStatusBadge,
+} from '@/components/absence/absence-list-item';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -30,18 +29,10 @@ type ApproveTab = 'pending' | 'history';
 // Approval history is paginated 10 at a time (infinite scroll).
 const PAGE_SIZE = 10;
 
-function getText(item: absence, fields: string[]) {
-  for (const field of fields) {
-    const value = item[field];
-    if (typeof value === 'string' && value.trim()) return value.trim();
-    if (typeof value === 'number') return String(value);
-  }
-  return '';
-}
-
 export default function ApproveLeaveScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const gutter = useScreenGutter();
   const { user: authUser } = useAuth();
   const userId = authUser?.staffId || USER_ID;
   const params = useLocalSearchParams<{ tab?: string }>();
@@ -158,15 +149,14 @@ export default function ApproveLeaveScreen() {
     return (
       <FlatList
         style={styles.list}
-        contentContainerStyle={data.length ? styles.listContent : styles.listEmptyContent}
+        contentContainerStyle={[data.length ? styles.listContent : styles.listEmptyContent, { paddingHorizontal: gutter }]}
         data={data}
         keyExtractor={(item, index) => `${getAbsenceId(item) || 'approve'}-${index}`}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadData(true)} />}
         renderItem={({ item }) => (
-          <LeaveCard
+          <AbsenceListItem
             item={item}
-            name={getRequesterName(item)}
-            badge={isPending ? PENDING_BADGE : statusBadge(getText(item, ['status']))}
+            badge={isPending ? PENDING_BADGE : getStatusBadge(item)}
             onPress={isPending ? openApproval : openView}
           />
         )}
@@ -191,7 +181,7 @@ export default function ApproveLeaveScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_APPROVE_LEAVE_TAB} backHref="/" />
+      <ScreenHeader title={TEXT.ABSENCE_APPROVE_LEAVE_TAB} backHref="/" titleInNavBar />
 
       <View style={styles.topTabBar}>
         {tabs.map((tab) => {
@@ -239,7 +229,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   topTabIndicator: { height: 3, width: 40, borderRadius: 2, backgroundColor: 'transparent' },
   topTabIndicatorActive: { backgroundColor: c.primary },
   list: { flex: 1 },
-  listContent: { gap: 12, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 },
+  listContent: { paddingTop: 8, paddingBottom: 20 },
   listEmptyContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   footerLoader: { paddingVertical: 16, alignItems: 'center' },
   emptyState: { alignItems: 'center', justifyContent: 'center', gap: 10, padding: 24 },

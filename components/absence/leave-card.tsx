@@ -5,6 +5,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { type AppColors, useColors, useThemedStyles } from "@/constants/theme";
+import { getAbsenceTypeAccent } from "@/constants/absence-visual";
 import {
   TYPE_ABSENCE_BIRTH,
   TYPE_ABSENCE_BUSINESS,
@@ -100,11 +101,12 @@ export function LeaveCard({ item, name, badge, onPress }: LeaveCardProps) {
   const typeLabel = getText(item, ['approveName']) || getAbsenceTypeLabel(item);
   const dateRange = getDateRange(item);
   const icon = getTypeIcon(type);
+  const accent = getAbsenceTypeAccent(type);
 
   const body = (
     <View style={styles.itemRow}>
-      <View style={styles.itemIconCircle}>
-        <IconSymbol name={icon} size={20} color={c.primary} />
+      <View style={[styles.itemIconCircle, { backgroundColor: c[accent] }]}>
+        <IconSymbol name={icon} size={20} color={c.textOnPrimary} />
       </View>
       <View style={styles.itemBody}>
         {name ? (
@@ -140,7 +142,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
-    paddingVertical: 20,
+    paddingVertical: 28,
     paddingHorizontal: 16,
     shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 3 },
@@ -156,8 +158,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   itemIconCircle: {
     width: 46,
     height: 46,
-    borderRadius: 14,
-    backgroundColor: c.primarySoft,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
