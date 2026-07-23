@@ -1,11 +1,11 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { TEXT } from '@/constants/text';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ListCard } from '@/components/ui/list-card';
 import type { RepairComputer } from '@/models/types';
 import { getRepairComputerTypeIcon } from '@/utils/category-icon';
 import { formatDateTime } from '@/utils/date-format';
@@ -68,62 +68,18 @@ export function RepairComputerJobListItem({ job, fallbackTitle = TEXT.REPAIR_COM
   const badgeStyle = getRepairStatusBadgeStyle(statusId);
 
   const content = (
-    <Pressable accessibilityRole="button" disabled={!onPress} onPress={() => onPress?.(job)}>
-      <ThemedView style={styles.itemCard} lightColor="#FFFFFF" darkColor="#151718">
-        <View style={styles.itemRow}>
-          {/* Leading category icon. When a repair type is defined it uses the
-              branded red style; otherwise a related generic icon in grey. */}
-          <View style={[styles.iconBox, repairType ? undefined : styles.iconBoxMuted]}>
-            <IconSymbol name={categoryIcon} size={22} color={repairType ? '#922124' : '#9CA3AF'} />
-          </View>
-
-          <View style={styles.itemBody}>
-            <View style={styles.itemHeader}>
-              <ThemedText type="defaultSemiBold" style={styles.itemTitle} numberOfLines={2}>
-                {jobTitle}
-              </ThemedText>
-              {statusLabel ? (
-                <View style={[styles.statusBadge, { backgroundColor: badgeStyle.background }]}>
-                  <ThemedText style={[styles.statusText, { color: badgeStyle.text }]}>
-                    {statusLabel}
-                  </ThemedText>
-                </View>
-              ) : null}
-            </View>
-
-            {supplyCode ? (
-              <View style={styles.codeRow}>
-                <ThemedText style={styles.codeLabel}>
-                  {TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL}{' '}
-                </ThemedText>
-                <ThemedText style={styles.codeValue}>{supplyCode}</ThemedText>
-              </View>
-            ) : null}
-
-            {repairTypeName ? (
-              <View style={styles.codeRow}>
-                <ThemedText style={styles.codeLabel}>
-                  {TEXT.REPAIR_COMPUTER_REPAIR_TYPE_LABEL}{' '}
-                </ThemedText>
-                <ThemedText style={styles.repairTypeValue}>{repairTypeName}</ThemedText>
-              </View>
-            ) : null}
-
-            {informDate ? (
-              <View style={styles.dateRow}>
-                <IconSymbol name="calendar" size={13} color={c.textMuted} />
-                <ThemedText style={styles.itemMeta}>{informDate}</ThemedText>
-              </View>
-            ) : null}
-          </View>
-
-          {/* Navigable indicator */}
-          {onPress ? (
-            <IconSymbol name="chevron.right" size={18} color={c.textFaint} style={styles.chevron} />
-          ) : null}
-        </View>
-      </ThemedView>
-    </Pressable>
+    <ListCard
+      onPress={onPress ? () => onPress(job) : undefined}
+      icon={<IconSymbol name={categoryIcon} size={22} color={repairType ? '#922124' : '#9CA3AF'} />}
+      iconBackground={repairType ? c.primarySoft : c.border}
+      title={jobTitle}
+      badge={statusLabel ? { text: statusLabel, bg: badgeStyle.background, color: badgeStyle.text } : null}
+      meta={[
+        { label: TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL, text: supplyCode },
+        { label: TEXT.REPAIR_COMPUTER_REPAIR_TYPE_LABEL, text: repairTypeName },
+        { icon: <IconSymbol name="calendar" size={13} color={c.textMuted} />, text: informDate },
+      ]}
+    />
   );
 
   if (!onDelete) {
@@ -146,97 +102,6 @@ export function RepairComputerJobListItem({ job, fallbackTitle = TEXT.REPAIR_COM
 }
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
-  itemCard: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(223, 191, 189, 0.3)',
-    padding: 16,
-    gap: 8,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: c.primarySoft,
-  },
-  iconBoxMuted: {
-    backgroundColor: c.border,
-  },
-  itemBody: {
-    flex: 1,
-    gap: 8,
-  },
-  chevron: {
-    alignSelf: 'center',
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  itemTitle: {
-    flex: 1,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  statusBadge: {
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    flexShrink: 0,
-    marginTop: 1,
-  },
-  statusText: {
-    fontSize: 11,
-    lineHeight: 16,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-  codeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  codeLabel: {
-    color: c.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  codeValue: {
-    color: c.primary,
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '600',
-  },
-  repairTypeValue: {
-    color: c.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '500',
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  itemMeta: {
-    color: c.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
-  },
   deleteAction: {
     width: 96,
     alignItems: 'center',

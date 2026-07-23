@@ -1,10 +1,9 @@
 import { router, useFocusEffect } from "expo-router";
-import { ChevronRight, Clock, Inbox, LogIn, LogOut } from "lucide-react-native";
+import { Clock, Inbox, LogIn, LogOut } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   RefreshControl,
   StyleSheet,
   View,
@@ -17,8 +16,7 @@ const PAGE_SIZE = 10;
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
-import { ThemedText } from "@/components/themed-text";
-import { AppFonts } from "@/constants/fonts";
+import { ListCard } from "@/components/ui/list-card";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
@@ -44,7 +42,6 @@ function getTypeIcon(item: { inTime?: string | number | null; outTime?: string |
 
 function ApprovalCard({ item }: { item: TimestampApproval }) {
   const c = useColors();
-  const styles = useThemedStyles(makeStyles);
   const dateValue = String(item.stampDate ?? "");
   const dateLabel = dateValue ? formatFullDate(dateValue) : "";
   const { Icon: TypeIcon, color: typeColor, bg: typeBg } = getTypeIcon(item);
@@ -60,37 +57,16 @@ function ApprovalCard({ item }: { item: TimestampApproval }) {
   };
 
   return (
-    <Pressable
-      accessibilityRole="button"
+    <ListCard
       onPress={handlePress}
-      style={({ pressed }) => (pressed ? styles.itemPressed : undefined)}
-    >
-      <View style={styles.itemCard}>
-        <View style={[styles.iconCircle, { backgroundColor: typeBg }]}>
-          <TypeIcon size={18} color={typeColor} />
-        </View>
-        <View style={styles.itemInfo}>
-          <ThemedText style={styles.itemName} numberOfLines={1}>
-            {String(item.approveName ?? TEXT.TIMESTAMP_FORGOT_TAB)}
-          </ThemedText>
-          {dateLabel ? (
-            <ThemedText style={styles.itemDate}>{dateLabel}</ThemedText>
-          ) : null}
-          <View style={styles.infoDivider} />
-          <ThemedText style={styles.itemType} numberOfLines={1}>
-            {String(item.name ?? "")}
-          </ThemedText>
-        </View>
-        <View style={styles.itemRight}>
-          <View style={styles.pendingBadge}>
-            <ThemedText style={styles.pendingBadgeText}>
-              {TEXT.TIMESTAMP_PENDING_BADGE}
-            </ThemedText>
-          </View>
-          <ChevronRight size={16} color="#8B716F" />
-        </View>
-      </View>
-    </Pressable>
+      icon={<TypeIcon size={18} color={typeColor} />}
+      iconBackground={typeBg}
+      title={String(item.approveName ?? TEXT.TIMESTAMP_FORGOT_TAB)}
+      titleNumberOfLines={1}
+      date={dateLabel || undefined}
+      meta={[{ text: String(item.name ?? "") }]}
+      badge={{ text: TEXT.TIMESTAMP_PENDING_BADGE, bg: c.warningSoft, color: "#92400E" }}
+    />
   );
 }
 
@@ -196,8 +172,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    padding: 16,
-    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 16,
   },
   listContentEmpty: {
     flexGrow: 1,
@@ -210,92 +187,5 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
-  },
-  itemCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(223,191,189,0.3)",
-    padding: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  itemPressed: {
-    opacity: 0.72,
-  },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: c.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  itemInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  infoDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: c.border,
-    marginVertical: 5,
-  },
-  itemName: {
-    fontSize: 15,
-    lineHeight: 21,
-    fontWeight: "600",
-    color: c.text,
-    fontFamily: AppFonts.psuBold,
-  },
-  itemType: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: c.textMuted,
-    fontFamily: AppFonts.psuRegular,
-  },
-  itemDate: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: c.textMuted,
-    fontFamily: AppFonts.psuRegular,
-  },
-  itemRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    flexShrink: 0,
-  },
-  pendingBadge: {
-    backgroundColor: c.warningSoft,
-    borderRadius: 9999,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  pendingBadgeText: {
-    color: "#92400E",
-    fontSize: 10,
-    fontWeight: "700",
-    fontFamily: AppFonts.psuBold,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    padding: 24,
-  },
-  emptyText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: c.textMuted,
-    textAlign: "center",
-    fontFamily: AppFonts.psuRegular,
   },
 });

@@ -7,11 +7,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
@@ -20,6 +20,7 @@ import { NavTopBar } from '@/components/nav-top-bar';
 import { EmptyState } from '@/components/empty-state';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PHOTO_BASE_URL } from '@/constants/endpoints';
 import { AppFonts } from '@/constants/fonts';
 import { useTheme } from '@/context/ThemeContext';
 import type { Person } from '@/models/types';
@@ -98,6 +99,14 @@ function getPersonResponsePhoto(person: Person) {
     if (typeof base64 === 'string' && base64.trim()) {
       return `data:image/jpeg;base64,${base64.trim()}`;
     }
+  }
+
+  // The search response often has no `photo` field — fall back to the staff photo
+  // endpoint keyed by staff id (same source the other screens use). If it 404s,
+  // the Image's onError swaps in the placeholder.
+  const staffId = person.staffId ? String(person.staffId).trim() : '';
+  if (staffId) {
+    return `${PHOTO_BASE_URL}${staffId}.jpg`;
   }
 
   return '';
@@ -186,11 +195,7 @@ function PersonSearchListItem({ item }: { item: Person }) {
 export default function PersonSearchScreen() {
   const c = useColors();
   const { isDarkMode } = useTheme();
-  const { height } = useWindowDimensions();
   const styles = useThemedStyles(makeStyles);
-  // Scale the screen title with the device height (clamped) so it feels
-  // proportional on both short and tall screens.
-  const titleSize = Math.round(Math.min(26, Math.max(20, height * 0.028)));
   const [keyword, setKeyword] = useState('');
   const [results, setResults] = useState<Person[]>([]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -315,17 +320,13 @@ export default function PersonSearchScreen() {
     <ThemedView style={styles.container}>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <NavTopBar
-        title=""
+        title={TEXT.PERSON_SEARCH_TITLE}
         backHref="/"
-        backgroundColor={c.background}
+        backgroundColor={c.surface}
         contentColor={c.text}
       />
 
       <View style={styles.content}>
-        <ThemedText style={[styles.pageTitle, { fontSize: titleSize, lineHeight: titleSize + 6 }]}>
-          {TEXT.PERSON_SEARCH_TITLE}
-        </ThemedText>
-
         {/* Search field */}
         <View style={styles.searchCard}>
           <Search size={18} color={c.textMuted} />
@@ -338,7 +339,8 @@ export default function PersonSearchScreen() {
             placeholder={TEXT.SHARED_SEARCH_NAME_PLACEHOLDER}
             placeholderTextColor={c.textFaint}
             returnKeyType="search"
-            style={styles.input}
+            // react-native-web draws a black focus outline on inputs; remove it.
+            style={[styles.input, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]}
             value={keyword}
           />
           {isLoading ? <ActivityIndicator color={c.primary} size="small" /> : null}
@@ -412,7 +414,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 20,
   },
   pageTitle: {
     fontSize: 26,
@@ -511,32 +513,32 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   // ─── Person card ─────────────────────────────────────────────────
   listItemRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
-    paddingVertical: 20,
     paddingHorizontal: 16,
+    paddingVertical: 20,
     backgroundColor: c.surface,
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   avatarWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: c.surfaceMuted,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
   },
   avatar: {
-    width: 48,
-    height: 48,
+    width: 40,
+    height: 40,
   },
   avatarPlaceholder: {
     backgroundColor: c.surfaceMuted,

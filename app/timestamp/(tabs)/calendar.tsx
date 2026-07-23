@@ -1,4 +1,4 @@
-import { ArrowRight, ChevronLeft, ChevronRight, Clock, LogIn, LogOut } from 'lucide-react-native';
+import { ArrowRight, Clock, LogIn, LogOut } from 'lucide-react-native';
 import moment from 'moment';
 import 'moment/locale/th';
 import { router, useFocusEffect } from 'expo-router';
@@ -11,6 +11,8 @@ import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { MonthCalendar } from '@/components/ui';
+import { DAY_STATUS_STYLE, type DayStatus } from '@/constants/calendar-status';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { USER_ID } from '@/constants/user';
@@ -23,22 +25,12 @@ import {
 
 moment.locale('th');
 
-type DayStatus = 'present' | 'incomplete' | 'absent' | 'leave' | 'holiday' | 'none';
-
-const WEEKDAY_LABELS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+// Day-status colours are shared app-wide (this calendar is the source of truth).
+const STATUS_STYLE = DAY_STATUS_STYLE;
 
 // Late arrival (ABSENCE.timestamp.flag_in = 2) is orthogonal to day status — a
 // present day can still be flagged late — so it gets its own amber marker.
 const LATE_COLOR = '#EA580C';
-
-const STATUS_STYLE: Record<DayStatus, { bg: string; dot: string }> = {
-  present: { bg: '#E6F4EA', dot: '#1E7E34' },
-  incomplete: { bg: '#FEF3E2', dot: '#B45309' },
-  absent: { bg: '#FDECEC', dot: '#B3261E' },
-  leave: { bg: '#EEF0FF', dot: '#5B5BD6' },
-  holiday: { bg: '#EFF1F5', dot: '#9AA0AA' },
-  none: { bg: 'transparent', dot: 'transparent' },
-};
 
 // ABSENCE.absence_type code -> Thai label (falls back to a generic "ลา").
 const LEAVE_TYPE_LABELS: Record<string, string> = {
@@ -267,85 +259,56 @@ export default function TimestampCalendarScreen() {
 
   const selectedData = selectedDay ? byDay.get(selectedDay) : undefined;
 
-  const monthHeader = (
-    <View style={styles.monthHeader}>
-      <Pressable accessibilityRole="button" onPress={goToPreviousMonth} style={styles.monthNavButton}>
-        <ChevronLeft size={22} color={c.primary} />
-      </Pressable>
-      <ThemedText style={styles.monthLabel}>{monthLabel}</ThemedText>
-      <Pressable accessibilityRole="button" onPress={goToNextMonth} style={styles.monthNavButton}>
-        <ChevronRight size={22} color={c.primary} />
-      </Pressable>
-    </View>
-  );
+  // Per-day status/data keyed by day number, so the shared calendar's date-based
+  // `renderDay` can look each day up.
+  const cellByDay = useMemo(() => {
+    const map = new Map<number, CalendarCell>();
+    cells.forEach((cell) => {
+      if (cell.day !== null) map.set(cell.day, cell);
+    });
+    return map;
+  }, [cells]);
 
-  const renderGrid = () => (
-    <View style={styles.card}>
-      <View style={styles.weekRow}>
-        {WEEKDAY_LABELS.map((label, index) => (
-          <View key={label} style={styles.weekCell}>
-            <ThemedText
-              style={[
-                styles.weekLabel,
-                (index === 0 || index === 6) && styles.weekendLabel,
-              ]}
-            >
-              {label}
-            </ThemedText>
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.grid}>
-        {cells.map((cell) => {
-          if (cell.day === null) {
-            return <View key={cell.key} style={styles.dayCell} />;
-          }
-          const statusStyle = STATUS_STYLE[cell.status];
-          const isSelected = cell.day === selectedDay;
-          return (
-            <Pressable
-              key={cell.key}
-              accessibilityRole="button"
-              onPress={() => setSelectedDay(cell.day)}
-              style={styles.dayCell}
-            >
-              <View
-                style={[
-                  styles.dayInner,
-                  { backgroundColor: statusStyle.bg },
-                  cell.isToday && styles.dayToday,
-                  isSelected && styles.daySelected,
-                ]}
-              >
-                <ThemedText
-                  style={[
-                    styles.dayNumber,
-                    cell.isWeekend && styles.dayNumberWeekend,
-                    isSelected && styles.dayNumberSelected,
-                  ]}
-                >
-                  {cell.day}
-                </ThemedText>
-                {cell.status !== 'none' ? (
-                  <View style={[styles.dayDot, { backgroundColor: statusStyle.dot }]} />
-                ) : (
-                  <View style={styles.dayDotPlaceholder} />
-                )}
-                {cell.data?.isLate ? (
-                  <View style={styles.lateBadge}>
-                    <ThemedText style={styles.lateBadgeText}>
-                      {TEXT.TIMESTAMP_CALENDAR_LATE_SHORT}
-                    </ThemedText>
-                  </View>
-                ) : null}
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
+  const renderDay = (date: Date) => {
+    const cell = cellByDay.get(date.getDate());
+    if (!cell || cell.day === null) return null;
+    const statusStyle = STATUS_STYLE[cell.status];
+    const isSelected = cell.day === selectedDay;
+    return (
+      <Pressable accessibilityRole="button" onPress={() => setSelectedDay(cell.day)}>
+        <View
+          style={[
+            styles.dayInner,
+            { backgroundColor: statusStyle.bg },
+            cell.isToday && styles.dayToday,
+            isSelected && styles.daySelected,
+          ]}
+        >
+          <ThemedText
+            style={[
+              styles.dayNumber,
+              cell.isWeekend && styles.dayNumberWeekend,
+              isSelected && styles.dayNumberSelected,
+            ]}
+          >
+            {cell.day}
+          </ThemedText>
+          {cell.status !== 'none' ? (
+            <View style={[styles.dayDot, { backgroundColor: statusStyle.dot }]} />
+          ) : (
+            <View style={styles.dayDotPlaceholder} />
+          )}
+          {cell.data?.isLate ? (
+            <View style={styles.lateBadge}>
+              <ThemedText style={styles.lateBadgeText}>
+                {TEXT.TIMESTAMP_CALENDAR_LATE_SHORT}
+              </ThemedText>
+            </View>
+          ) : null}
+        </View>
+      </Pressable>
+    );
+  };
 
   const openRequestForm = useCallback((dayData: TimestampCalendarDay) => {
     router.push({
@@ -512,8 +475,15 @@ export default function TimestampCalendarScreen() {
           </View>
         ) : null}
 
-        {monthHeader}
-        {renderGrid()}
+        <MonthCalendar
+          style={styles.calendarCard}
+          visibleMonth={new Date(year, month - 1, 1)}
+          monthLabel={monthLabel}
+          onPrevMonth={goToPreviousMonth}
+          onNextMonth={goToNextMonth}
+          colorWeekendLabels
+          renderDay={renderDay}
+        />
         {legend}
         {renderSelectedDetail()}
       </ScrollView>
@@ -522,7 +492,7 @@ export default function TimestampCalendarScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.TIMESTAMP_TITLE} backHref="/" titleInNavBar />
+      <ScreenHeader title={TEXT.TIMESTAMP_CALENDAR_TAB} backHref="/" titleInNavBar />
       <View style={styles.content}>{renderBody()}</View>
     </ThemedView>
   );
@@ -583,65 +553,22 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
-  monthHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  monthNavButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: c.surface,
-    borderWidth: 1,
-    borderColor: 'rgba(223,191,189,0.4)',
-  },
-  monthLabel: {
-    fontSize: 17,
-    lineHeight: 24,
-    fontWeight: '700',
-    color: c.primary,
-    fontFamily: AppFonts.psuBold,
-  },
-  card: {
+  // The whole picker (header + grid) is one bordered component; the header sits
+  // flush on top of the grid with no gap.
+  calendarCard: {
     backgroundColor: c.surface,
     borderRadius: 16,
-    padding: 10,
     borderWidth: 1,
-    borderColor: 'rgba(223,191,189,0.25)',
+    borderColor: c.border,
+    overflow: 'hidden',
     shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
   },
-  weekRow: {
-    flexDirection: 'row',
-    paddingBottom: 6,
-  },
-  weekCell: {
-    width: `${100 / 7}%`,
-    alignItems: 'center',
-  },
-  weekLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: c.textMuted,
-    fontFamily: AppFonts.psuBold,
-  },
-  weekendLabel: {
-    color: c.primary,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  dayCell: {
-    width: `${100 / 7}%`,
-    padding: 2,
-  },
+  // The inner day pill; the shared MonthCalendar provides the card, primary
+  // header band, weekday row and 1/7 grid columns around it.
   dayInner: {
     borderRadius: 10,
     minHeight: 52,

@@ -8,7 +8,8 @@ import { ScreenHeader } from '@/components/screen-header';
 import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { DetailInfoCard } from '@/components/ui/detail-info-card';
 import { UserAvatar } from '@/components/user-avatar';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
@@ -205,22 +206,6 @@ function getApproverInfo(item: absence): StaffEntry {
   return { name: posName, position: '' };
 }
 
-// The person who filed the leave — the server returns a serialized `requester`
-// object (name + position + uni staff id for the photo); fall back to the
-// top-level name when it is absent.
-function getRequesterInfo(item: absence): StaffEntry {
-  const record = item as Record<string, unknown>;
-  const req = record.requester;
-  if (req && typeof req === 'object' && !Array.isArray(req)) {
-    return { name: getStaffName(req), position: getStaffPosition(req), staffId: getStaffId(req) };
-  }
-  return {
-    name: getText(item, ['name', 'fullname', 'staffName', 'staff_name']),
-    position: '',
-    staffId: getText(item, ['uniStaffId', 'uni_staff_id']),
-  };
-}
-
 function getAgentEntries(item: absence): StaffEntry[] {
   const rawValue =
     item.selectedAgents ??
@@ -289,23 +274,6 @@ function getStatusBadge(status: string): { bg: string; color: string } {
   return { bg: '#FDECEC', color: '#B33939' };
 }
 
-// A stacked "label above value" row inside the leave-info card. Hidden when the
-// value is empty so records with fewer fields still look clean.
-function InfoRow({ label, value, icon }: { label: string; value: string; icon?: IconSymbolName }) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  if (!value) return null;
-  return (
-    <View style={styles.infoRow}>
-      {icon ? <IconSymbol name={icon} size={22} color={c.inverse} /> : null}
-      <View style={styles.infoRowText}>
-        <ThemedText style={styles.infoLabel}>{label}</ThemedText>
-        <ThemedText style={styles.infoValue}>{value}</ThemedText>
-      </View>
-    </View>
-  );
-}
-
 // Avatar + name + position row used by both the approver and delegate cards.
 function PersonRow({ name, position, staffId }: StaffEntry) {
   const styles = useThemedStyles(makeStyles);
@@ -346,7 +314,7 @@ export default function absenceDetailScreen() {
   const endDate = getText(item, ['endDate', 'end_date', 'dateEnd', 'date_end']);
   const dateText = formatDateRange(startDate, endDate);
   const leaveDay = getText(item, ['numDays', 'num_days', 'absentDays', 'absent_days', 'absenceDays', 'ABSENCE_days', 'leaveDay', 'leave_day', 'days', 'day']);
-  const requester = getRequesterInfo(item);
+  const approver = getApproverInfo(item);
   const agentEntries = getAgentEntries(item);
   const reason = getText(item, ['reason', 'detail', 'description']);
   const halfDay = getDisplayHalfDay(getText(item, ['partFlag', 'part_flag', 'startpart', 'half_day', 'halfDay']));
@@ -428,7 +396,7 @@ export default function absenceDetailScreen() {
 
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]} showsVerticalScrollIndicator={false}>
         {/* Leave-info section */}
-        <SectionCard
+        <DetailInfoCard
           title={TEXT.ABSENCE_DETAIL_INFO_SECTION}
           trailing={
             statusBadge ? (
@@ -439,25 +407,24 @@ export default function absenceDetailScreen() {
               </View>
             ) : null
           }
-        >
-          <View style={styles.infoBody}>
-            <InfoRow label={TEXT.ABSENCE_LEAVE_DATE_LABEL} value={dateText} icon="calendar" />
-            <InfoRow
-              label={TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL}
-              value={leaveDay ? `${leaveDay} ${TEXT.ABSENCE_DAY_UNIT}` : ''}
-              icon="calendar-range"
-            />
-            <InfoRow label={TEXT.ABSENCE_HALF_DAY_LABEL} value={halfDay} icon="calendar-clock" />
-            <InfoRow label={TEXT.ABSENCE_REASON_LABEL} value={reason} icon="list.bullet" />
-            <InfoRow label={TEXT.ABSENCE_CONTACT_CHANNEL_LABEL} value={contact} icon="phone.fill" />
-            <InfoRow label={TEXT.ABSENCE_TRAVEL_DETAIL_LABEL} value={travelDetail} icon="mappin" />
-          </View>
-        </SectionCard>
+          rows={[
+            { label: TEXT.ABSENCE_LEAVE_DATE_LABEL, value: dateText, icon: 'calendar' },
+            {
+              label: TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL,
+              value: leaveDay ? `${leaveDay} ${TEXT.ABSENCE_DAY_UNIT}` : '',
+              icon: 'calendar-range',
+            },
+            { label: TEXT.ABSENCE_HALF_DAY_LABEL, value: halfDay, icon: 'calendar-clock' },
+            { label: TEXT.ABSENCE_REASON_LABEL, value: reason, icon: 'list.bullet' },
+            { label: TEXT.ABSENCE_CONTACT_CHANNEL_LABEL, value: contact, icon: 'phone.fill' },
+            { label: TEXT.ABSENCE_TRAVEL_DETAIL_LABEL, value: travelDetail, icon: 'mappin' },
+          ]}
+        />
 
-        {/* Requester card (shows the person who filed the leave) */}
-        {requester.name ? (
-          <SectionCard title={TEXT.ABSENCE_REQUESTER_LABEL}>
-            <PersonRow name={requester.name} position={requester.position} staffId={requester.staffId} />
+        {/* Approver card */}
+        {approver.name ? (
+          <SectionCard title={TEXT.ABSENCE_APPROVER_LABEL}>
+            <PersonRow name={approver.name} position={approver.position} staffId={approver.staffId} />
           </SectionCard>
         ) : null}
 
@@ -568,32 +535,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontFamily: AppFonts.psuBold,
     fontSize: 12,
     lineHeight: 16,
-  },
-  infoBody: {
-    gap: 0,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
-  },
-  infoRowText: {
-    flex: 1,
-    gap: 2,
-  },
-  infoLabel: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: c.textFaint,
-  },
-  infoValue: {
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 15,
-    lineHeight: 22,
-    color: c.text,
   },
   personCard: {
     flexDirection: 'row',

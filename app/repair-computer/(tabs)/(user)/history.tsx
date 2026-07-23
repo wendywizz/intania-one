@@ -251,9 +251,7 @@ export default function RepairComputerHistoryScreen() {
   return (
     <ThemedView style={styles.container}>
             <NavTopBar
-              title={TEXT.REPAIR_COMPUTER_TITLE}
-              subtitle={TEXT.REPAIR_COMPUTER_REPAIR_HISTORY}
-              moduleIcon="history"
+              title={TEXT.SHARED_HISTORY}
               backHref="/"
             />
 
@@ -279,9 +277,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-    gap: 10,
     paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingTop: 24,
     paddingBottom: 16,
   },
   stateContent: {

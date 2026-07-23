@@ -1,6 +1,6 @@
-import { ChevronRight, Clock, Inbox, Info, LogIn, LogOut } from 'lucide-react-native';
+import { CalendarDays, Clock, Inbox, LogIn, LogOut } from 'lucide-react-native';
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -14,6 +14,8 @@ import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ThemedText } from "@/components/themed-text";
+import { ListCard, type ListCardBadge } from "@/components/ui/list-card";
+import { TipAlert } from "@/components/ui/tip-alert";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
@@ -22,7 +24,7 @@ import {
   getTimestampData,
   type Timestamp,
 } from "@/services/timestampService";
-import { formatDateRange, formatFullDate } from "@/utils/date-format";
+import { formatFullDate } from "@/utils/date-format";
 
 const APPEAL_DOCUMENT_MESSAGE = TEXT.TIMESTAMP_APPEAL_DOCUMENT;
 
@@ -166,46 +168,23 @@ function TimestampItem({ item }: { item: Timestamp }) {
     } as Parameters<typeof router.push>[0]);
   };
 
+  const badge: ListCardBadge | null = alreadyRequested
+    ? { text: TEXT.TIMESTAMP_PENDING_BADGE, bg: c.warningSoft, color: "#92400E" }
+    : canOpenDetail
+      ? { text: TEXT.TIMESTAMP_ACTION_REQUIRED, bg: c.primary, color: c.textOnPrimary }
+      : null;
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={!canOpenDetail}
-      onPress={handlePress}
-      style={({ pressed }) => (pressed && canOpenDetail ? styles.itemPressed : undefined)}
-    >
-      <View style={[styles.itemCard, isUnavailable && styles.itemCardUnavailable]}>
-        <View style={styles.itemRow}>
-          <View style={[styles.iconCircle, { backgroundColor: typeBg }]}>
-            <TypeIcon size={18} color={typeColor} />
-          </View>
-          <View style={styles.itemInfo}>
-            <ThemedText style={styles.itemTitle}>{getItemTitle(item)}</ThemedText>
-            {dateLabel ? (
-              <ThemedText style={styles.itemDate}>{dateLabel}</ThemedText>
-            ) : null}
-          </View>
-          {alreadyRequested ? (
-            <View style={styles.itemRight}>
-              <View style={styles.pendingBadge}>
-                <ThemedText style={styles.pendingBadgeText}>{TEXT.TIMESTAMP_PENDING_BADGE}</ThemedText>
-              </View>
-              <ChevronRight size={16} color="#8B716F" />
-            </View>
-          ) : canOpenDetail ? (
-            <View style={styles.itemRight}>
-              <View style={styles.actionBadge}>
-                <ThemedText style={styles.actionBadgeText}>{TEXT.TIMESTAMP_ACTION_REQUIRED}</ThemedText>
-              </View>
-              <ChevronRight size={16} color="#8B716F" />
-            </View>
-          ) : null}
-        </View>
-        {showAppealDocumentMessage ? (
-          <ThemedText style={styles.appealMessage}>{APPEAL_DOCUMENT_MESSAGE}</ThemedText>
-        ) : null}
-      </View>
-    </Pressable>
+    <ListCard
+      onPress={canOpenDetail ? handlePress : undefined}
+      icon={<TypeIcon size={18} color={typeColor} />}
+      iconBackground={typeBg}
+      title={getItemTitle(item)}
+      badge={badge}
+      showChevron={false}
+      meta={dateLabel ? [{ icon: <CalendarDays size={13} color={c.textMuted} />, text: dateLabel }] : []}
+      style={isUnavailable ? styles.unavailableCard : undefined}
+    />
   );
 }
 
@@ -214,6 +193,7 @@ export function TimestampForgotList() {
   const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const [items, setItems] = useState<Timestamp[]>([]);
+  const [cycle, setCycle] = useState({ start: "", end: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -231,8 +211,10 @@ export function TimestampForgotList() {
       try {
         const result = await getTimestampData(staffId, currentYear);
         setItems(sortItemsByDateDesc(result.data));
+        setCycle({ start: result.cycleStart, end: result.cycleEnd });
       } catch (loadError) {
         setItems([]);
+        setCycle({ start: "", end: "" });
         setError(
           loadError instanceof Error
             ? loadError.message
@@ -252,34 +234,33 @@ export function TimestampForgotList() {
     }, [loadItems]),
   );
 
-  const pendingCount = items.filter(isStatusTrue).length;
+  // Company attendance cycle shown as an info alert (in place of the old static
+  // description). Prefer the start/end dates the API returns; if absent, fall
+  // back to the span of the returned days.
+  const cycleText = useMemo(() => {
+    const range = (start: string, end: string) =>
+      start && end ? (start === end ? start : `${start} - ${end}`) : start || end;
 
-  const listHeader = (
+    if (cycle.start || cycle.end) {
+      return range(
+        cycle.start ? formatFullDate(cycle.start) : "",
+        cycle.end ? formatFullDate(cycle.end) : "",
+      );
+    }
+
+    const dated = items
+      .map((item) => getItemDateValue(item))
+      .filter(Boolean)
+      .sort((a, b) => Date.parse(a) - Date.parse(b));
+    if (!dated.length) return "";
+    return range(formatFullDate(dated[0]), formatFullDate(dated[dated.length - 1]));
+  }, [cycle, items]);
+
+  const listHeader = cycleText ? (
     <View style={styles.listHeader}>
-      <View style={styles.welcomeSection}>
-        <ThemedText style={styles.welcomeSubtitle}>
-          คุณมี {pendingCount} คำขอที่รอดำเนินการ
-        </ThemedText>
-        <ThemedText style={styles.cycleText}>
-          {TEXT.TIMESTAMP_COMPANY_CYCLE_LABEL}: {formatDateRange(`${currentYear - 1}-10-01`, `${currentYear}-09-30`)}
-        </ThemedText>
-      </View>
-
-      <View style={styles.noteBox}>
-        <View style={styles.noteIconWrap}>
-          <Info size={20} color={c.info} />
-        </View>
-        <View style={styles.noteBody}>
-          <ThemedText style={styles.noteTitle}>
-            {TEXT.TIMESTAMP_NOTE_LABEL}
-          </ThemedText>
-          <ThemedText style={styles.noteText}>
-            {TEXT.TIMESTAMP_NOTE_TEXT}
-          </ThemedText>
-        </View>
-      </View>
+      <TipAlert title={TEXT.TIMESTAMP_CYCLE_LABEL} message={cycleText} />
     </View>
-  );
+  ) : null;
 
   if (isLoading) {
     return (
@@ -327,62 +308,15 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-    padding: 16,
-    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 16,
   },
   listHeader: {
-    gap: 12,
-    paddingBottom: 4,
+    paddingBottom: 12,
   },
-  welcomeSection: {
-    gap: 4,
-  },
-  welcomeSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: c.textMuted,
-    fontFamily: AppFonts.psuRegular,
-  },
-  cycleText: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: c.textMuted,
-    fontFamily: AppFonts.psuRegular,
-  },
-  noteBox: {
-    flexDirection: "row",
-    gap: 12,
-    backgroundColor: c.infoSoft,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    borderRadius: 12,
-    padding: 16,
-  },
-  noteIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: c.infoSoft,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  noteBody: {
-    flex: 1,
-    gap: 4,
-  },
-  noteTitle: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: "600",
-    color: c.info,
-    fontFamily: AppFonts.psuBold,
-  },
-  noteText: {
-    fontSize: 12,
-    lineHeight: 18,
-    color: c.textMuted,
-    fontFamily: AppFonts.psuRegular,
+  unavailableCard: {
+    borderColor: "rgba(223,191,189,0.2)",
   },
   itemCard: {
     backgroundColor: c.surface,

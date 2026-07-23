@@ -133,6 +133,28 @@ function normalizeTimestampItem(data: unknown): Timestamp {
   return {};
 }
 
+// Candidate field names for the company attendance-cycle start / end dates that
+// the response's `data` object may carry alongside the `item` array.
+const CYCLE_START_FIELDS = [
+  "date_start", "dateStart", "start_date", "startDate",
+  "cycle_start", "cycleStart", "begin_date", "beginDate", "from_date", "fromDate",
+];
+const CYCLE_END_FIELDS = [
+  "date_end", "dateEnd", "end_date", "endDate",
+  "cycle_end", "cycleEnd", "finish_date", "finishDate", "to_date", "toDate",
+];
+
+function pickDateField(data: unknown, fields: string[]): string {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return "";
+  const record = data as Record<string, unknown>;
+  for (const field of fields) {
+    const value = record[field];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && value) return String(value);
+  }
+  return "";
+}
+
 export async function getTimestampData(
   staffId: string,
   currentYear: number,
@@ -144,8 +166,11 @@ export async function getTimestampData(
   const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
   ensureSuccess(jsonData);
 
+  const raw = jsonData.data;
   return {
-    data: normalizeTimestampData(jsonData.data),
+    data: normalizeTimestampData(raw),
+    cycleStart: pickDateField(raw, CYCLE_START_FIELDS),
+    cycleEnd: pickDateField(raw, CYCLE_END_FIELDS),
     message: String(jsonData.message ?? ""),
   };
 }

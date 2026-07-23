@@ -1,10 +1,7 @@
 import {
   BookOpen,
-  CalendarDays,
   ChevronDown,
   ChevronRight,
-  Clock,
-  MapPin,
   X,
 } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -33,6 +30,7 @@ import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { DetailInfoCard } from '@/components/ui/detail-info-card';
 import { AppFonts } from '@/constants/fonts';
 import { ENDPOINTS } from '@/constants/endpoints';
 import { TEXT } from '@/constants/text';
@@ -182,12 +180,25 @@ function getPdfFilename(url: string): string {
 
 // ─── Shared Components ────────────────────────────────────────────────────────
 
-function NumberBadge({ label, dim }: { label: string; dim?: boolean }) {
-  const c = useColors();
+function NumberBadge({
+  label,
+  dim,
+  variant = 'solid',
+}: {
+  label: string;
+  dim?: boolean;
+  /** 'solid' = filled primary (topics); 'soft' = tinted (subtopics). */
+  variant?: 'solid' | 'soft';
+}) {
   const styles = useThemedStyles(makeStyles);
+  const soft = variant === 'soft';
   return (
-    <View style={[styles.numberBadge, dim && styles.numberBadgeDim]}>
-      <ThemedText style={[styles.numberBadgeText, dim && styles.numberBadgeTextDim]}>{label}</ThemedText>
+    <View style={[styles.numberBadge, soft && styles.numberBadgeSoft, dim && styles.numberBadgeDim]}>
+      <ThemedText
+        style={[styles.numberBadgeText, soft && styles.numberBadgeTextSoft, dim && styles.numberBadgeTextDim]}
+      >
+        {label}
+      </ThemedText>
     </View>
   );
 }
@@ -199,6 +210,7 @@ function PdfCard({
   pdfPages,
   expandable,
   expanded,
+  transparent,
   onPress,
 }: {
   index?: string;
@@ -207,13 +219,20 @@ function PdfCard({
   pdfPages?: number;
   expandable?: boolean;
   expanded?: boolean;
+  /** Drop the card's own background so a tinted parent (the subtopic expand
+   * section) shows through. */
+  transparent?: boolean;
   onPress: () => void;
 }) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const filename = getPdfFilename(pdfUrl);
   return (
-    <Pressable style={styles.pdfCard} onPress={onPress} accessibilityRole="button">
+    <Pressable
+      style={[styles.pdfCard, transparent ? styles.pdfCardTransparent : undefined]}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
       <View style={styles.pdfBadge}>
         <ThemedText style={styles.pdfBadgeText}>PDF</ThemedText>
       </View>
@@ -252,6 +271,7 @@ function AgendaItemRow({
         title={item.topic ?? ''}
         pdfUrl={item.pdf_url!}
         pdfPages={item.pdf_pages}
+        transparent
         onPress={() => onOpenPdf(item.pdf_url!)}
       />
     );
@@ -298,9 +318,13 @@ function SubtopicRow({
             else onOpenPdf(sub.pdf_url!);
           }}
         />
-        {open && items.map((item, i) => (
-          <AgendaItemRow key={item.record_id ?? i} item={item} onOpenPdf={onOpenPdf} />
-        ))}
+        {open && (
+          <View style={styles.subtopicExpand}>
+            {items.map((item, i) => (
+              <AgendaItemRow key={item.record_id ?? i} item={item} onOpenPdf={onOpenPdf} />
+            ))}
+          </View>
+        )}
       </View>
     );
   }
@@ -313,7 +337,7 @@ function SubtopicRow({
         accessibilityRole="button"
         disabled={!hasItems}
       >
-        <NumberBadge label={sub.index ?? '?'} />
+        <NumberBadge label={sub.index ?? '?'} variant="soft" />
         <ThemedText style={[styles.rowText, styles.subtopicText]} numberOfLines={0}>
           {sub.topic ?? ''}
         </ThemedText>
@@ -321,9 +345,13 @@ function SubtopicRow({
           ? (open ? <ChevronDown size={15} color={c.textFaint} /> : <ChevronRight size={15} color={c.textFaint} />)
           : null}
       </Pressable>
-      {open && items.map((item, i) => (
-        <AgendaItemRow key={item.record_id ?? i} item={item} onOpenPdf={onOpenPdf} />
-      ))}
+      {open && (
+        <View style={styles.subtopicExpand}>
+          {items.map((item, i) => (
+            <AgendaItemRow key={item.record_id ?? i} item={item} onOpenPdf={onOpenPdf} />
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -455,73 +483,48 @@ export default function MeetingDetailScreen() {
       <NavTopBar title={TEXT.MEETING_AGENDA_TITLE} showBackButton onBackPress={() => router.back()} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Hero card */}
-        <View style={styles.heroCard}>
-          <View style={styles.heroBody}>
-            {meeting_no ? (
-              <View style={styles.meetingNoChip}>
-                <ThemedText style={styles.meetingNoText}>ครั้งที่ {meeting_no}</ThemedText>
-              </View>
-            ) : null}
-            <ThemedText style={styles.heroTitle}>{name || 'ไม่ระบุชื่อ'}</ThemedText>
-            {(formattedDate || room) ? (
-              <View style={styles.heroMeta}>
-                {formattedDate ? (() => {
-                  const [datePart, timePart] = formattedDate.split(' • ');
-                  return (
-                    <>
-                      <View style={styles.heroMetaRow}>
-                        <CalendarDays size={14} color={c.primary} />
-                        <ThemedText style={styles.heroMetaLabel}>วันที่</ThemedText>
-                        <ThemedText style={styles.heroMetaValue}>{datePart}</ThemedText>
-                      </View>
-                      {timePart ? (
-                        <View style={styles.heroMetaRow}>
-                          <Clock size={14} color={c.primary} />
-                          <ThemedText style={styles.heroMetaLabel}>เวลา</ThemedText>
-                          <ThemedText style={styles.heroMetaValue}>{timePart}</ThemedText>
-                        </View>
-                      ) : null}
-                    </>
-                  );
-                })() : null}
-                {room ? (
-                  <View style={styles.heroMetaRow}>
-                    <MapPin size={14} color={c.primary} />
-                    <ThemedText style={styles.heroMetaLabel}>สถานที่</ThemedText>
-                    <ThemedText style={styles.heroMetaValue}>{room}</ThemedText>
-                  </View>
-                ) : null}
-              </View>
-            ) : null}
-          </View>
-        </View>
+        {/* Meeting info — shared detail card (same style as absence/detail) */}
+        {(() => {
+          const [datePart, timePart] = formattedDate ? formattedDate.split(' • ') : ['', ''];
+          return (
+            <DetailInfoCard
+              title={TEXT.MEETING_DETAIL_INFO_SECTION}
+              style={styles.infoCard}
+              rows={[
+                { label: TEXT.MEETING_DETAIL_TOPIC_LABEL, value: name, icon: 'doc.text.fill' },
+                { label: TEXT.MEETING_DETAIL_NO_LABEL, value: meeting_no, icon: 'list.bullet' },
+                { label: TEXT.MEETING_DETAIL_DATE_LABEL, value: datePart, icon: 'calendar' },
+                { label: TEXT.MEETING_DETAIL_TIME_LABEL, value: timePart, icon: 'calendar-clock' },
+                { label: TEXT.MEETING_DETAIL_ROOM_LABEL, value: room, icon: 'mappin' },
+              ]}
+            />
+          );
+        })()}
 
         {/* Agenda */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>{TEXT.MEETING_AGENDA_SECTION}</ThemedText>
-            {(() => {
-              const activeCount = topics.filter(
-                t => (t.subtopics?.length ?? 0) > 0 || !!(t.has_pdf && t.pdf_url)
-              ).length;
-              return activeCount > 0 ? (
-                <View style={styles.countBadge}>
-                  <ThemedText style={styles.countBadgeText}>
-                    {activeCount}{TEXT.MEETING_TOPICS_COUNT}
-                  </ThemedText>
-                </View>
-              ) : null;
-            })()}
-          </View>
-
           {topics.length > 0 ? (
             <View style={styles.card}>
+              <View style={styles.agendaCardHeader}>
+                <ThemedText style={styles.sectionTitle}>{TEXT.MEETING_AGENDA_SECTION}</ThemedText>
+                {(() => {
+                  const activeCount = topics.filter(
+                    t => (t.subtopics?.length ?? 0) > 0 || !!(t.has_pdf && t.pdf_url)
+                  ).length;
+                  return activeCount > 0 ? (
+                    <View style={styles.countBadge}>
+                      <ThemedText style={styles.countBadgeText}>
+                        {activeCount}{TEXT.MEETING_TOPICS_COUNT}
+                      </ThemedText>
+                    </View>
+                  ) : null;
+                })()}
+              </View>
               {topics.map((topic, i) => (
                 <TopicRow
                   key={topic.record_id ?? i}
                   topic={topic}
-                  isFirst={i === 0}
+                  isFirst={false}
                   onOpenPdf={handleOpenPdf}
                 />
               ))}
@@ -597,76 +600,20 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
   scrollContent: { paddingBottom: 48 },
 
-  // ── Hero card ─────────────────────────────────────────────────────────────
-  heroCard: {
+  // ── Meeting info card (shared DetailInfoCard) ─────────────────────────────
+  infoCard: {
     marginHorizontal: 16,
-    marginTop: 16,
-    backgroundColor: c.surface,
-    borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    overflow: 'hidden',
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
-  },
-  heroBody: {
-    padding: 16,
-    gap: 10,
-  },
-  meetingNoChip: {
-    alignSelf: 'flex-start',
-    backgroundColor: c.primarySoft,
-    borderRadius: 9999,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  meetingNoText: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 12,
-    color: c.primary,
-  },
-  heroTitle: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 20,
-    lineHeight: 28,
-    color: c.text,
-  },
-  heroMeta: {
-    borderTopWidth: 1,
-    borderTopColor: c.border,
-    paddingTop: 12,
-    gap: 8,
-  },
-  heroMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  heroMetaLabel: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 13,
-    lineHeight: 20,
-    color: c.textMuted,
-    width: 76,
-    flexShrink: 0,
-  },
-  heroMetaValue: {
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 13,
-    lineHeight: 20,
-    color: c.text,
-    flex: 1,
+    marginTop: 20,
   },
 
   // ── Section ───────────────────────────────────────────────────────────────
-  section: { paddingHorizontal: 16, paddingTop: 20, gap: 10 },
-  sectionHeader: {
+  section: { paddingHorizontal: 16, paddingTop: 20 },
+  agendaCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   sectionTitle: {
     fontFamily: AppFonts.psuBold,
@@ -697,14 +644,18 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   // ── Number badge (shared across all levels) ───────────────────────────────
   numberBadge: {
     backgroundColor: c.primary,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
     minWidth: 28,
+    height: 28,
+    borderRadius: 14,
+    paddingHorizontal: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     flexShrink: 0,
   },
   numberBadgeDim: {
+    backgroundColor: c.borderStrong,
+  },
+  numberBadgeSoft: {
     backgroundColor: c.borderStrong,
   },
   numberBadgeText: {
@@ -715,6 +666,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   numberBadgeTextDim: {
     color: c.textFaint,
+  },
+  numberBadgeTextSoft: {
+    color: c.text,
   },
 
   // ── Topic row (level 1) ───────────────────────────────────────────────────
@@ -752,6 +706,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     gap: 12,
+  },
+  pdfCardTransparent: {
+    backgroundColor: 'transparent',
   },
   pdfBadge: {
     backgroundColor: c.primary,
@@ -801,11 +758,17 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textMuted,
   },
 
+  // ── Subtopic expanded section — a darker shade of the subtopic row's grey
+  //    (surfaceAlt) so the expanded items read as nested beneath it.
+  subtopicExpand: {
+    backgroundColor: c.borderStrong,
+  },
+
   // ── Agenda item row without PDF (level 3) ─────────────────────────────────
   itemRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: c.border,
+    backgroundColor: 'transparent',
     borderTopWidth: 1,
     borderTopColor: c.border,
     paddingVertical: 10,

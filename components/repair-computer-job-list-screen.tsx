@@ -317,8 +317,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-    gap: 10,
-    paddingTop: 12,
+    paddingTop: 24,
     paddingHorizontal: 16,
     paddingBottom: 16,
   },

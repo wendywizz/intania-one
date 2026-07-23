@@ -170,7 +170,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   title: {
-    fontSize: 16,
+    fontSize: 20,
+    lineHeight: 26,
     fontWeight: '600',
   },
   subtitle: {

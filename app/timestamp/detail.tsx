@@ -2,7 +2,7 @@
   DateTimePickerAndroid,
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import { Clock, Info } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
 import { router, useLocalSearchParams, type Href } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -22,8 +22,10 @@ import { AppToast } from "@/components/app-toast";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ModalSelectField } from "@/components/modal-select-field";
 import { NavTopBar } from "@/components/nav-top-bar";
+import { SectionCard } from "@/components/section-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { UserAvatar } from "@/components/user-avatar";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
@@ -48,16 +50,26 @@ type Approver = {
   position_name?: string;
   staffId?: string | number;
   staff_id?: string | number;
+  uniStaffId?: string | number;
+  uni_staff_id?: string | number;
 };
 
 type ApproverOption = {
   label: string;
+  position: string;
+  name: string;
   staffId: string;
+  /** University staff id used for the personnel photo. */
+  photoId: string;
   value: string;
 };
 
 type ValidationErrors = Partial<Record<"approver" | "time" | "reason", string>>;
 const REDIRECT_DELAY_MS = 1500;
+
+// Remove the browser focus outline on web so active inputs match the borderless
+// underline style (RN Web only; no-op on native).
+const webNoOutline: object | null = Platform.OS === "web" ? { outlineStyle: "none" } : null;
 
 const stampTypeFields = new Set(["stampType", "stamp_type"]);
 const dateFields = new Set([
@@ -104,30 +116,42 @@ function getNestedList(item: Timestamp, fields: string[]) {
   return [];
 }
 
-function getApproverLabel(approver: Approver) {
+function getApproverParts(approver: Approver) {
   const firstName = String(
     approver.firstNameTH ?? approver.first_name_th ?? "",
   ).trim();
   const lastName = String(
     approver.lastNameTH ?? approver.last_name_th ?? "",
   ).trim();
-  const fullName = `${firstName} ${lastName}`.trim();
-  const positionName = String(
+  const name = `${firstName} ${lastName}`.trim();
+  const position = String(
     approver.positionName ?? approver.position_name ?? "",
   ).trim();
+  return { position, name };
+}
 
-  return [positionName, fullName].filter(Boolean).join(" - ") ||
+function getApproverLabel(approver: Approver) {
+  const { position, name } = getApproverParts(approver);
+  return [position, name].filter(Boolean).join(" - ") ||
     String(approver.staffId ?? approver.staff_id ?? "");
 }
 
 function getApproverOptions(item: Timestamp): ApproverOption[] {
   return getNestedList(item, ["approverList", "approver_list"])
     .map((entry) => entry as Approver)
-    .map((approver) => ({
-      label: getApproverLabel(approver),
-      staffId: String(approver.staffId ?? approver.staff_id ?? "").trim(),
-      value: String(approver.positionId ?? approver.position_id ?? "").trim(),
-    }))
+    .map((approver) => {
+      const { position, name } = getApproverParts(approver);
+      return {
+        label: getApproverLabel(approver),
+        position,
+        name,
+        staffId: String(approver.staffId ?? approver.staff_id ?? "").trim(),
+        photoId: String(
+          approver.uniStaffId ?? approver.uni_staff_id ?? approver.staffId ?? approver.staff_id ?? "",
+        ).trim(),
+        value: String(approver.positionId ?? approver.position_id ?? "").trim(),
+      };
+    })
     .filter((option) => option.label && option.value);
 }
 
@@ -281,8 +305,11 @@ export default function TimestampDetailScreen() {
   const [toastType, setToastType] = useState<"success" | "error" | "">("");
   const approverOptions = useMemo(() => getApproverOptions(item), [item]);
   const requestUserLabel = getRequestUserLabel(item);
-  const selectedApproverLabel =
-    approverOptions.find((option) => option.value === approver)?.label ?? "";
+  const requesterPhotoId = getFirstItemValue(item, [
+    "uniStaffId", "uni_staff_id", "staffId", "staff_id",
+  ]);
+  const selectedApprover = approverOptions.find((option) => option.value === approver);
+  const selectedApproverLabel = selectedApprover?.label ?? "";
   const staffId = authUser?.staffId || USER_ID;
   const forgetId = getFirstItemValue(initialItem, forgetIdFields);
   const isEditMode = Boolean(forgetId);
@@ -555,28 +582,8 @@ export default function TimestampDetailScreen() {
       );
     }
 
-    const contextTitle =
-      type === "in" ? TEXT.TIMESTAMP_CONTEXT_IN_TITLE : type === "out" ? TEXT.TIMESTAMP_CONTEXT_OUT_TITLE : TEXT.TIMESTAMP_TITLE;
-    const contextDesc =
-      type === "in"
-        ? TEXT.TIMESTAMP_CONTEXT_IN_DESC
-        : type === "out"
-          ? TEXT.TIMESTAMP_CONTEXT_OUT_DESC
-          : TEXT.TIMESTAMP_CONTEXT_DEFAULT_DESC;
-
     return (
       <View>
-        {/* Context header card */}
-        <View style={styles.contextCard}>
-          <View style={styles.contextIconCircle}>
-            <Clock size={22} color={c.primary} />
-          </View>
-          <View style={styles.contextText}>
-            <ThemedText style={styles.contextTitle}>{contextTitle}</ThemedText>
-            <ThemedText style={styles.contextDesc}>{contextDesc}</ThemedText>
-          </View>
-        </View>
-
         {error ? (
           <View style={styles.errorContent}>
             <ThemedText style={[styles.errorText, styles.errorMessage]}>
@@ -598,14 +605,8 @@ export default function TimestampDetailScreen() {
           </View>
         ) : null}
 
-        <View style={styles.formCard}>
-        <View style={styles.form}>
-          {forgetTypeLabel ? (
-            <ThemedText type="defaultSemiBold" style={styles.forgetTypeLabel}>
-              {forgetTypeLabel}
-            </ThemedText>
-          ) : null}
-
+        {/* Approver section */}
+        <SectionCard style={styles.sectionCard}>
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>{TEXT.TIMESTAMP_FIELD_APPROVER}</ThemedText>
             <Pressable
@@ -613,17 +614,29 @@ export default function TimestampDetailScreen() {
               onPress={() => setIsApproverOpen(true)}
               style={[
                 styles.inputButton,
+                webNoOutline,
                 validationErrors.approver ? styles.inputError : undefined,
               ]}
             >
-              <ThemedText
-                style={[
-                  styles.inputButtonText,
-                  !selectedApproverLabel ? styles.placeholder : undefined,
-                ]}
-              >
-                {selectedApproverLabel || TEXT.TIMESTAMP_SELECT_APPROVER}
-              </ThemedText>
+              {selectedApprover?.photoId ? (
+                <UserAvatar staffId={selectedApprover.photoId} size={36} />
+              ) : null}
+              {selectedApprover ? (
+                <View style={styles.selectValueCol}>
+                  <ThemedText style={styles.selectPosition} numberOfLines={1}>
+                    {selectedApprover.position || selectedApprover.label}
+                  </ThemedText>
+                  {selectedApprover.name ? (
+                    <ThemedText style={styles.selectName} numberOfLines={1}>
+                      {selectedApprover.name}
+                    </ThemedText>
+                  ) : null}
+                </View>
+              ) : (
+                <ThemedText style={[styles.inputButtonText, styles.placeholder]}>
+                  {TEXT.TIMESTAMP_SELECT_APPROVER}
+                </ThemedText>
+              )}
               <ThemedText style={styles.chevron}>⌄</ThemedText>
             </Pressable>
             {validationErrors.approver ? (
@@ -632,21 +645,22 @@ export default function TimestampDetailScreen() {
               </ThemedText>
             ) : null}
           </View>
+        </SectionCard>
 
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>{TEXT.TIMESTAMP_FIELD_EMPLOYEE_NAME}</ThemedText>
-            <ThemedText style={styles.requestUserText}>
-              {requestUserLabel || "-"}
+        {/* Time section (includes the forgot-timestamp type name) */}
+        <SectionCard style={styles.sectionCard}>
+          {forgetTypeLabel ? (
+            <ThemedText type="defaultSemiBold" style={styles.forgetTypeLabel}>
+              {forgetTypeLabel}
             </ThemedText>
-          </View>
-
+          ) : null}
           <View style={styles.dateTimeRow}>
             <View style={[styles.field, styles.dateField]}>
               <ThemedText style={styles.fieldLabel}>{TEXT.TIMESTAMP_FIELD_ORIGINAL_DATE}</ThemedText>
               {displayTimestamp ? (
                 <TextInput
                   editable={false}
-                  style={[styles.textInput, styles.readOnlyDateInput]}
+                  style={[styles.textInput, styles.readOnlyDateInput, webNoOutline]}
                   value={displayTimestamp}
                 />
               ) : null}
@@ -661,7 +675,8 @@ export default function TimestampDetailScreen() {
                     placeholder={TEXT.TIMESTAMP_HOUR}
                     title={TEXT.TIMESTAMP_HOUR}
                     value={selectedTime ? formatTime(selectedTime).slice(0, 2) : ""}
-                    width={60}
+                    width={56}
+                    buttonStyle={[styles.timeSelectButton, webNoOutline]}
                     onSelect={(value) => setWebTimePart("hour", value)}
                   />
                   <ThemedText style={styles.webTimeSeparator}>:</ThemedText>
@@ -671,7 +686,8 @@ export default function TimestampDetailScreen() {
                     placeholder={TEXT.TIMESTAMP_MINUTE}
                     title={TEXT.TIMESTAMP_MINUTE}
                     value={selectedTime ? formatTime(selectedTime).slice(3, 5) : ""}
-                    width={60}
+                    width={56}
+                    buttonStyle={[styles.timeSelectButton, webNoOutline]}
                     onSelect={(value) => setWebTimePart("minute", value)}
                   />
                 </View>
@@ -729,14 +745,10 @@ export default function TimestampDetailScreen() {
               ) : null}
             </View>
           </View>
+        </SectionCard>
 
-          <View style={styles.guidanceNote}>
-            <Info size={14} color="rgba(146,33,36,0.7)" />
-            <ThemedText style={styles.guidanceNoteText}>
-              {TEXT.TIMESTAMP_GUIDANCE_NOTE}
-            </ThemedText>
-          </View>
-
+        {/* Reason section */}
+        <SectionCard style={styles.sectionCard}>
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>{TEXT.TIMESTAMP_REASON_LABEL}</ThemedText>
             <TextInput
@@ -754,6 +766,7 @@ export default function TimestampDetailScreen() {
               style={[
                 styles.textInput,
                 styles.reasonInput,
+                webNoOutline,
                 validationErrors.reason ? styles.inputError : undefined,
               ]}
               textAlignVertical="top"
@@ -765,8 +778,7 @@ export default function TimestampDetailScreen() {
               </ThemedText>
             ) : null}
           </View>
-        </View>
-        </View>
+        </SectionCard>
       </View>
     );
   };
@@ -799,7 +811,11 @@ export default function TimestampDetailScreen() {
             darkColor="#FFFFFF"
             type="defaultSemiBold"
           >
-            {isSubmitting ? TEXT.TIMESTAMP_SUBMITTING : TEXT.TIMESTAMP_SUBMIT}
+            {isSubmitting
+              ? TEXT.TIMESTAMP_SUBMITTING
+              : isEditMode
+                ? TEXT.TIMESTAMP_UPDATE
+                : TEXT.TIMESTAMP_SUBMIT}
           </ThemedText>
         </Pressable>
         {isEditMode ? (
@@ -847,12 +863,11 @@ export default function TimestampDetailScreen() {
                 </ThemedText>
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
                   onPress={() => setIsApproverOpen(false)}
                   style={styles.closeButton}
                 >
-                  <ThemedText type="defaultSemiBold">
-                    {TEXT.SHARED_CLOSE_THAI}
-                  </ThemedText>
+                  <X size={20} color={c.text} />
                 </Pressable>
               </View>
 
@@ -868,9 +883,17 @@ export default function TimestampDetailScreen() {
                       onPress={() => handleSelectApprover(option)}
                       style={styles.option}
                     >
-                      <ThemedText style={styles.optionText}>
-                        {option.label}
-                      </ThemedText>
+                      <UserAvatar staffId={option.photoId} size={36} />
+                      <View style={styles.optionTextCol}>
+                        <ThemedText style={styles.optionPosition} numberOfLines={2}>
+                          {option.position || option.label}
+                        </ThemedText>
+                        {option.name ? (
+                          <ThemedText style={styles.optionName} numberOfLines={1}>
+                            {option.name}
+                          </ThemedText>
+                        ) : null}
+                      </View>
                     </Pressable>
                   ))
                 ) : (
@@ -1070,10 +1093,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontFamily: AppFonts.psuRegular,
   },
   fieldLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    color: c.textMuted,
+    fontSize: 15,
+    lineHeight: 20,
+    color: c.text,
     fontFamily: AppFonts.psuBold,
   },
   guidanceNote: {
@@ -1114,6 +1136,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  sectionCard: {
+    marginBottom: 12,
+  },
   form: {
     gap: 25,
     marginTop: 8,
@@ -1126,22 +1151,40 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 8,
   },
   inputButton: {
-    minHeight: 48,
+    minHeight: 40,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
-    paddingHorizontal: 14,
+    gap: 8,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
   inputError: {
-    borderColor: c.danger,
+    borderBottomWidth: 1.5,
+    borderBottomColor: c.danger,
   },
   inputButtonText: {
     flex: 1,
     color: c.text,
+    fontSize: 16,
+    fontFamily: AppFonts.psuRegular,
+  },
+  selectValueCol: {
+    flex: 1,
+    gap: 2,
+  },
+  selectPosition: {
+    fontSize: 15,
+    lineHeight: 20,
+    color: c.text,
+    fontFamily: AppFonts.psuBold,
+  },
+  selectName: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
   },
   dateTimeRow: {
     flexDirection: "row",
@@ -1160,12 +1203,21 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     minWidth: 0,
   },
   webTimePicker: {
-    minHeight: 48,
+    minHeight: 40,
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
     gap: 8,
-    paddingTop: 2,
+  },
+  // Underline look for the hour/minute selects — matches the approver dropdown.
+  timeSelectButton: {
+    minHeight: 40,
+    borderWidth: 0,
+    borderRadius: 0,
+    backgroundColor: "transparent",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
+    paddingHorizontal: 0,
   },
   webTimeSeparator: {
     color: c.text,
@@ -1193,33 +1245,41 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: c.info,
   },
   chevron: {
-    color: c.info,
-    fontSize: 16,
-    lineHeight: 20,
+    color: c.textMuted,
+    fontSize: 18,
+    lineHeight: 24,
     marginLeft: 8,
   },
   textInput: {
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.surface,
     color: c.text,
     fontFamily: AppFonts.psuRegular,
-    fontSize: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    fontSize: 16,
+    lineHeight: 22,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
   reasonInput: {
-    minHeight: 72,
+    minHeight: 52,
+    textAlignVertical: "top",
   },
   readOnlyDateInput: {
+    minHeight: 40,
     color: c.textMuted,
-    backgroundColor: c.surfaceAlt,
   },
   requestUserText: {
+    flex: 1,
     color: c.text,
     fontSize: 14,
     lineHeight: 20,
+  },
+  personRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  inlineAvatar: {
+    marginRight: 8,
   },
   errorContent: {
     marginTop: 16,
@@ -1374,11 +1434,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 16,
   },
   closeButton: {
-    minHeight: 40,
+    width: 40,
+    height: 40,
+    alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.infoSoft,
-    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: `${c.text}14`,
   },
   optionScroll: {
     maxHeight: 420,
@@ -1388,7 +1449,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   option: {
     minHeight: 48,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
@@ -1397,8 +1460,25 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 12,
   },
   optionText: {
+    flex: 1,
     color: c.text,
     lineHeight: 20,
+  },
+  optionTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  optionPosition: {
+    color: c.text,
+    fontSize: 15,
+    lineHeight: 20,
+    fontFamily: AppFonts.psuBold,
+  },
+  optionName: {
+    color: c.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: AppFonts.psuRegular,
   },
   emptyOption: {
     color: c.textMuted,

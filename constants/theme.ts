@@ -106,6 +106,7 @@ export type AppColors = {
   // Brand
   primary: string;         // brand accent / primary actions
   primarySoft: string;     // soft brand tint (icon circles, chips)
+  primaryDeep: string;     // deep brand red (home news cards, calendar nav buttons)
   // Top navigation bar
   navBar: string;
   navBarText: string;
@@ -164,6 +165,7 @@ export const LightColors: AppColors = {
   borderStrong: '#D3D8DE',
   primary: '#B33939',
   primarySoft: '#F7EBEB',
+  primaryDeep: '#8A2626',
   navBar: '#FFFFFF',
   navBarText: '#141414',
   success: Defo.emerald,    successSoft: '#E9F9F0',
@@ -193,6 +195,7 @@ export const DarkColors: AppColors = {
   borderStrong: '#333E47',
   primary: '#E07A7A',
   primarySoft: 'rgba(224,122,122,0.18)',
+  primaryDeep: '#7A2E2E',
   navBar: '#161C21',
   navBarText: '#F3F4F6',
   success: Defo.emerald,    successSoft: 'rgba(46,204,113,0.16)',

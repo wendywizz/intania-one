@@ -4,8 +4,10 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ScreenHeader } from "@/components/screen-header";
+import { SectionCard } from "@/components/section-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { DetailInfoCard } from "@/components/ui/detail-info-card";
 import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
 import { UserAvatar } from "@/components/user-avatar";
 import { AppFonts } from "@/constants/fonts";
@@ -59,35 +61,6 @@ function getStatusBadge(status: string): { bg: string; color: string } {
   return { bg: "#FEF3C7", color: "#92400E" };
 }
 
-// A boxed field cell (rounded light box). `wide` cells span the full row; the
-// rest pack two-per-row in a wrapping grid.
-function InfoCell({
-  label,
-  value,
-  icon,
-  wide,
-}: {
-  label: string;
-  value: string;
-  icon?: IconSymbolName;
-  wide?: boolean;
-}) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  if (!value) return null;
-  return (
-    <View style={[styles.cell, wide ? styles.cellWide : styles.cellHalf]}>
-      <ThemedText style={styles.cellLabel}>{label}</ThemedText>
-      <View style={styles.cellValueRow}>
-        {icon ? <IconSymbol name={icon} size={16} color={c.primary} /> : null}
-        <ThemedText style={styles.cellValue} numberOfLines={2}>
-          {value}
-        </ThemedText>
-      </View>
-    </View>
-  );
-}
-
 function PersonRow({
   name,
   position,
@@ -107,6 +80,35 @@ function PersonRow({
         {name ? <ThemedText style={styles.personName}>{name}</ThemedText> : null}
         {position ? <ThemedText style={styles.personPosition}>{position}</ThemedText> : null}
       </View>
+    </View>
+  );
+}
+
+// The approval decision rows (date, comment) rendered under the approver in the
+// same card, using the DetailInfoCard row look.
+function DecisionRows({
+  rows,
+}: {
+  rows: { label: string; value: string; icon?: IconSymbolName }[];
+}) {
+  const c = useColors();
+  const styles = useThemedStyles(makeStyles);
+  const visible = rows.filter((row) => row.value);
+  if (!visible.length) return null;
+  return (
+    <View style={styles.decisionBlock}>
+      {visible.map((row, index) => (
+        <View
+          key={row.label}
+          style={[styles.detailRow, index === visible.length - 1 ? styles.detailRowLast : undefined]}
+        >
+          {row.icon ? <IconSymbol name={row.icon} size={22} color={c.inverse} /> : null}
+          <View style={styles.detailRowText}>
+            <ThemedText style={styles.detailRowLabel}>{row.label}</ThemedText>
+            <ThemedText style={styles.detailRowValue}>{row.value}</ThemedText>
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
@@ -158,67 +160,53 @@ export default function TimestampHistoryDetailScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Miss-timestamp info card */}
-        <View style={styles.card}>
-          <ThemedText style={styles.sectionTitle}>{TEXT.TIMESTAMP_RECORD_INFO_SECTION}</ThemedText>
-
-          <View style={styles.infoHeader}>
-            <View style={styles.typeIconCircle}>
-              <IconSymbol name="clock.fill" size={22} color={c.primary} />
-            </View>
-            <ThemedText style={styles.infoType} numberOfLines={2}>
-              {typeLabel}
-            </ThemedText>
-            {statusName ? (
+        {/* Miss-timestamp info — same titled card + icon/label/value rows as the
+            absence detail screen. */}
+        <DetailInfoCard
+          title={TEXT.TIMESTAMP_RECORD_INFO_SECTION}
+          trailing={
+            statusName ? (
               <View style={[styles.statusBadge, { backgroundColor: statusBadge.bg }]}>
                 <ThemedText style={[styles.statusText, { color: statusBadge.color }]}>
                   {statusName}
                 </ThemedText>
               </View>
-            ) : null}
-          </View>
+            ) : null
+          }
+          rows={[
+            { label: TEXT.TIMESTAMP_APPROVE_STAMP_DATE_LABEL, value: stampDateLabel, icon: "calendar" },
+            // "ขาดงาน" (stampType "all") misses both stamps, so show in & out on
+            // one combined row instead of two separate ones.
+            ...(stampType === "all"
+              ? [{
+                  label: TEXT.TIMESTAMP_APPROVE_IN_OUT_TIME_LABEL,
+                  value: [inTime, outTime].filter(Boolean).join(" - "),
+                  icon: "clock.fill" as const,
+                }]
+              : [
+                  { label: TEXT.TIMESTAMP_APPROVE_IN_TIME_LABEL, value: inTime, icon: "clock.fill" as const },
+                  { label: TEXT.TIMESTAMP_APPROVE_OUT_TIME_LABEL, value: outTime, icon: "clock.fill" as const },
+                ]),
+            { label: TEXT.TIMESTAMP_APPROVE_WRITE_DATE_LABEL, value: writeDateLabel, icon: "calendar" },
+            { label: TEXT.TIMESTAMP_APPROVE_REASON_LABEL, value: reason, icon: "list.bullet" },
+          ]}
+        />
 
-          <View style={styles.infoGrid}>
-            <InfoCell label={TEXT.TIMESTAMP_APPROVE_STAMP_DATE_LABEL} value={stampDateLabel} icon="calendar" wide />
-            <InfoCell label={TEXT.TIMESTAMP_APPROVE_IN_TIME_LABEL} value={inTime} icon="clock.fill" />
-            <InfoCell label={TEXT.TIMESTAMP_APPROVE_OUT_TIME_LABEL} value={outTime} icon="clock.fill" />
-            <InfoCell label={TEXT.TIMESTAMP_APPROVE_REASON_LABEL} value={reason} wide />
-          </View>
-        </View>
-
-        {/* Requester card */}
-        {requesterName || requesterPosition || requesterDept ? (
-          <View style={styles.card}>
-            <ThemedText style={styles.sectionTitle}>{TEXT.TIMESTAMP_APPROVE_REQUESTER_LABEL}</ThemedText>
-            <PersonRow
-              name={requesterName}
-              position={[requesterPosition, requesterDept].filter(Boolean).join(" · ")}
-              staffId={requesterStaffId}
-            />
-            {writeDateLabel ? (
-              <View style={styles.infoGrid}>
-                <InfoCell label={TEXT.TIMESTAMP_APPROVE_WRITE_DATE_LABEL} value={writeDateLabel} icon="calendar" wide />
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-
-        {/* Approver card */}
+        {/* Approver + the approval decision in one section */}
         {approverName || approverPosition || decisionDateLabel || decisionReason ? (
-          <View style={styles.card}>
-            <ThemedText style={styles.sectionTitle}>{TEXT.TIMESTAMP_FIELD_APPROVER}</ThemedText>
+          <SectionCard title={TEXT.TIMESTAMP_FIELD_APPROVER}>
             <PersonRow
               name={approverName || approverPosition}
               position={approverName ? approverPosition : ""}
               staffId={approverStaffId}
             />
-            {decisionDateLabel || decisionReason ? (
-              <View style={styles.infoGrid}>
-                <InfoCell label={TEXT.TIMESTAMP_APPROVE_DECISION_DATE_LABEL} value={decisionDateLabel} icon="calendar" wide />
-                <InfoCell label={TEXT.TIMESTAMP_APPROVE_COMMENT_LABEL} value={decisionReason} wide />
-              </View>
-            ) : null}
-          </View>
+            <DecisionRows
+              rows={[
+                { label: TEXT.TIMESTAMP_APPROVE_DECISION_DATE_LABEL, value: decisionDateLabel, icon: "calendar" },
+                { label: TEXT.TIMESTAMP_APPROVE_COMMENT_LABEL, value: decisionReason, icon: "text.bubble" },
+              ]}
+            />
+          </SectionCard>
         ) : null}
       </ScrollView>
     </ThemedView>
@@ -231,8 +219,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: c.background,
   },
   scrollContent: {
+    paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 40,
+    gap: 12,
   },
   card: {
     marginHorizontal: 16,
@@ -337,5 +327,38 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: c.textMuted,
+  },
+  // Decision rows (date, comment) shown under the approver — same look as the
+  // DetailInfoCard rows, with a divider separating them from the person.
+  decisionBlock: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.border,
+    marginTop: 4,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
+  },
+  detailRowLast: {
+    borderBottomWidth: 0,
+  },
+  detailRowText: {
+    flex: 1,
+    gap: 2,
+  },
+  detailRowLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: c.textFaint,
+  },
+  detailRowValue: {
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 15,
+    lineHeight: 22,
+    color: c.text,
   },
 });

@@ -1,4 +1,5 @@
 ﻿import { Calendar } from 'lucide-react-native';
+import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
@@ -13,7 +14,7 @@ import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import type { News } from '@/models/types';
 import { staffNewsFeed } from '@/services/newsService';
-import { formatDateTime } from '@/utils/date-format';
+import { formatNewsDateTime } from '@/utils/date-format';
 
 function getParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -42,6 +43,22 @@ function decodeHtmlEntities(value: string) {
 
     return namedEntities[normalizedCode] ?? entity;
   });
+}
+
+// Pull <img src="…"> URLs out of the news HTML so they can be shown (stripHtml
+// discards the tags). Protocol-relative URLs are upgraded to https.
+function extractImages(html: string): string[] {
+  const urls: string[] = [];
+  const regex = /<img[^>]+src=["']([^"']+)["']/gi;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(html)) !== null) {
+    let src = match[1].trim();
+    if (src.startsWith('//')) src = `https:${src}`;
+    if ((/^https?:\/\//i.test(src) || src.startsWith('data:')) && !urls.includes(src)) {
+      urls.push(src);
+    }
+  }
+  return urls;
 }
 
 function stripHtml(value: string) {
@@ -120,13 +137,14 @@ export default function NewsDetailScreen() {
   }, [initialNews]);
 
   const paragraphs = splitParagraphs(news.description ?? '');
-  const date = news.pubDate ? formatDateTime(news.pubDate) : '';
+  const images = useMemo(() => extractImages(news.description ?? ''), [news.description]);
+  const date = news.pubDate ? formatNewsDateTime(news.pubDate) : '';
   const metaItems = [news.category, date].filter(Boolean);
 
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title="News Detail" showHomeButton />
+      <NavTopBar title={TEXT.NEWS_DETAIL_TITLE} showHomeButton />
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -148,6 +166,17 @@ export default function NewsDetailScreen() {
 
             {/* Accent line */}
             <View style={styles.accentLine} />
+
+            {/* Images embedded in the news content */}
+            {images.map((uri, index) => (
+              <Image
+                key={`${uri}-${index}`}
+                source={{ uri }}
+                style={styles.newsImage}
+                contentFit="cover"
+                transition={200}
+              />
+            ))}
 
             {/* Body paragraphs */}
             {paragraphs.length > 0 ? (
@@ -216,6 +245,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     width: 48,
     borderRadius: 9999,
     backgroundColor: c.primary,
+  },
+  newsImage: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: 10,
+    backgroundColor: c.surfaceMuted,
   },
   paragraph: {
     fontSize: 15,

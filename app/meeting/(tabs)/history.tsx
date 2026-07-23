@@ -185,7 +185,7 @@ export default function MeetingHistoryScreen() {
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
-  listContent: { flexGrow: 1, padding: 16, paddingBottom: 32 },
+  listContent: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 24, paddingBottom: 32 },
   headerCard: {
     backgroundColor: c.surface,
     borderRadius: 20,

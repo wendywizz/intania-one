@@ -343,7 +343,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flexGrow: 1,
     gap: 10,
     paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingTop: 24,
     paddingBottom: 16,
   },
   itemCard: {

@@ -243,7 +243,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   topTabTextActive: { color: c.primary },
   topTabIndicator: { height: 3, width: 28, borderRadius: 2, backgroundColor: 'transparent' },
   topTabIndicatorActive: { backgroundColor: c.primary },
-  list: { paddingVertical: 6 },
+  list: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 16 },
   emptyContainer: { flexGrow: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyText: { fontSize: 15, color: c.textFaint, textAlign: 'center' },

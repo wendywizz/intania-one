@@ -1,11 +1,9 @@
 import { CalendarDays } from 'lucide-react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { AppFonts } from '@/constants/fonts';
+import { ListCard } from '@/components/ui/list-card';
 import { TEXT } from '@/constants/text';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useColors } from '@/constants/theme';
 import {
   TYPE_ABSENCE_BIRTH,
   TYPE_ABSENCE_BUSINESS,
@@ -136,122 +134,24 @@ type AbsenceListItemProps = {
 // badge).
 export function AbsenceListItem({ item, badge, onPress, showDetails }: AbsenceListItemProps) {
   const c = useColors();
-  const styles = useThemedStyles(makeStyles);
   const type = getAbsenceType(item);
   const typeLabel = getAbsenceTypeLabel(item);
   const dateRange = getDateRange(item);
   const icon = getTypeIcon(type);
-  const meta = showDetails ? getMetaRows(item) : [];
+  const metaRows = showDetails ? getMetaRows(item) : [];
 
-  const body = (
-    <>
-      <View style={styles.iconCircle}>
-        <IconSymbol name={icon} size={22} color={c.text} />
-      </View>
-      <View style={styles.body}>
-        <ThemedText style={styles.title}>{typeLabel}</ThemedText>
-        {dateRange ? (
-          <View style={styles.dateRow}>
-            <CalendarDays size={13} color={c.textMuted} />
-            <ThemedText style={styles.date}>{dateRange}</ThemedText>
-          </View>
-        ) : null}
-        {meta.map((m) => (
-          <ThemedText key={m.label} style={styles.meta} numberOfLines={1}>
-            <ThemedText style={styles.metaLabel}>{m.label} </ThemedText>
-            {m.value}
-          </ThemedText>
-        ))}
-      </View>
-      {badge ? (
-        <View style={[styles.badge, { backgroundColor: badge.bg }]}>
-          <ThemedText style={[styles.badgeText, { color: badge.color }]}>{badge.text}</ThemedText>
-        </View>
-      ) : (
-        <IconSymbol name="chevron.right" size={18} color={c.textFaint} />
-      )}
-    </>
+  return (
+    <ListCard
+      onPress={onPress ? () => onPress(item) : undefined}
+      icon={<IconSymbol name={icon} size={22} color={c.text} />}
+      iconBackground={c.surfaceMuted}
+      title={typeLabel}
+      badge={badge ? { text: badge.text, bg: badge.bg, color: badge.color } : null}
+      showChevron={!badge}
+      meta={[
+        ...(dateRange ? [{ icon: <CalendarDays size={13} color={c.textMuted} />, text: dateRange }] : []),
+        ...metaRows.map((m) => ({ label: m.label, text: m.value })),
+      ]}
+    />
   );
-
-  if (onPress) {
-    return (
-      <Pressable accessibilityRole="button" onPress={() => onPress(item)} style={styles.row}>
-        {body}
-      </Pressable>
-    );
-  }
-  return <View style={styles.row}>{body}</View>;
 }
-
-const makeStyles = (c: AppColors) => StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: c.border,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: c.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  body: {
-    flex: 1,
-    gap: 3,
-  },
-  title: {
-    fontSize: 15,
-    lineHeight: 20,
-    color: c.text,
-    fontFamily: AppFonts.psuBold,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 3,
-  },
-  date: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: c.textMuted,
-    fontFamily: AppFonts.psuRegular,
-  },
-  meta: {
-    fontSize: 12,
-    lineHeight: 17,
-    color: c.text,
-    fontFamily: AppFonts.psuRegular,
-    marginTop: 2,
-  },
-  metaLabel: {
-    color: c.textMuted,
-    fontFamily: AppFonts.psuBold,
-  },
-  badge: {
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    flexShrink: 0,
-    alignSelf: 'flex-start',
-  },
-  badgeText: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontFamily: AppFonts.psuBold,
-  },
-});

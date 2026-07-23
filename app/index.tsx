@@ -20,6 +20,7 @@ import { TEXT } from '@/constants/text';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { PillButton } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import type { AuthUser, ExamTask, News } from '@/models/types';
@@ -417,9 +418,20 @@ function UpcomingShiftSection({ data, loading, upcomingExams, absenceApproval, t
 }
 
 const makeShiftStyles = (m: M) => StyleSheet.create({
-  // Section container — no card chrome; title + items sit on the canvas.
+  // Full-width band behind the whole section (like the news band): breaks out of
+  // the page padding and fills a shade darker than the canvas, so the title +
+  // cards sit on one grouped zone rather than floating on the background.
+  // A negative top margin fully cancels the inter-section gap so this band's top
+  // edge butts directly against the news band; the larger vertical padding gives
+  // it its own internal breathing room instead.
   coverCard: {
     gap: 14,
+    marginHorizontal: -D.pad,
+    marginTop: -40,
+    backgroundColor: m.fill,
+    paddingHorizontal: D.pad,
+    paddingTop: 32,
+    paddingBottom: 38,
   },
   coverTitle: {
     fontFamily: F.semibold,
@@ -899,13 +911,11 @@ export default function HomeScreen() {
               <View style={styles.sectionRow}>
                 <Text style={styles.newsSectionTitle}>{TEXT.HOME_NEWS_SECTION_TITLE}</Text>
                 {isNewsError ? null : (
-                  <Pressable
-                    accessibilityRole="button"
+                  <PillButton
+                    label={TEXT.HOME_SEE_ALL_THAI}
+                    variant="onAccent"
                     onPress={() => navPush('/news')}
-                    hitSlop={8}
-                    style={({ pressed }) => [styles.newsSeeAllBtn, pressed && styles.pressed]}>
-                    <Text style={styles.newsSeeAll}>{TEXT.HOME_SEE_ALL_THAI}</Text>
-                  </Pressable>
+                  />
                 )}
               </View>
             </View>
@@ -958,7 +968,9 @@ export default function HomeScreen() {
           {/* Upcoming Shift section */}
           <UpcomingShiftSection data={activeSummary} loading={isActiveSummaryLoading} upcomingExams={upcomingExams} absenceApproval={absenceApproval} timestampApproval={timestampApproval} />
 
-          {/* Menu section */}
+          {/* Menu section — matches the upcoming band's vertical padding and sits
+              flush beneath it. */}
+          <View style={styles.menuSection}>
           <View style={styles.sectionHead}>
             <Text style={styles.sectionTitle}>{TEXT.HOME_MENU_SECTION_TITLE}</Text>
           </View>
@@ -974,6 +986,7 @@ export default function HomeScreen() {
                 <Text numberOfLines={2} style={styles.menuLabel}>{item.title}</Text>
               </Pressable>
             ))}
+          </View>
           </View>
 
         </View>
@@ -1128,6 +1141,16 @@ const makeStyles = (m: M) => StyleSheet.create({
     gap: 40,
   },
 
+  // Menu section wrapper — mirrors the upcoming band's vertical padding and sits
+  // flush beneath it (marginTop cancels the inter-section gap). The inner gap:40
+  // keeps the original title↔grid spacing intact alongside sectionHead's -26.
+  menuSection: {
+    marginTop: -40,
+    paddingTop: 32,
+    paddingBottom: 38,
+    gap: 40,
+  },
+
   // Title + decorative rule as one unit. The negative margin keeps the larger
   // inter-section gap spacing sections apart, not the title from its content.
   sectionHead: {
@@ -1183,8 +1206,10 @@ const makeStyles = (m: M) => StyleSheet.create({
     color: m.accentText,
   },
   // News cards break out to the band edges
+  // Keep the horizontal scroll inside the section's normal gutter so the first
+  // card lines up with the section title (was full-bleed, which pushed the first
+  // card hard against the screen edge on web).
   newsScrollOuter: {
-    marginHorizontal: -D.pad,
     minHeight: 112,
   },
   newsLoadingWrap: {
@@ -1194,7 +1219,7 @@ const makeStyles = (m: M) => StyleSheet.create({
     justifyContent: 'center',
   },
   newsScrollContent: {
-    paddingHorizontal: D.pad,
+    paddingRight: 4,
     gap: 12,
   },
   newsCard: {

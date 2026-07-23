@@ -2,7 +2,7 @@ import { X } from "lucide-react-native";
 import { TEXT } from "@/constants/text";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { navReplace } from "@/utils/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Modal,
@@ -17,6 +17,7 @@ import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/c
 
 import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
+import { useHolidays } from "@/hooks/use-holidays";
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ScreenHeader } from "@/components/screen-header";
@@ -237,6 +238,7 @@ export default function BirthScreen() {
     (Array.isArray(params.mode) ? params.mode[0] : params.mode) === "edit" ||
     Boolean(routeEditId);
   const userId = authUser?.staffId || USER_ID;
+  const holidays = useHolidays(userId);
   const backHref = isEditMode ? "/absence/pending" : "/absence";
   const [initialabsenceData, setInitialabsenceData] = useState<absence | null>(
     null,
@@ -329,13 +331,19 @@ export default function BirthScreen() {
       ? TEXT.ABSENCE_VALIDATION_END_DATE_AFTER_START
       : "";
   const displayedDateError = dateError || validationErrors.date || "";
+  // Make sure holidays for the whole selected range are loaded so the day count
+  // can exclude them.
+  useEffect(() => {
+    holidays.ensureRange(startDate, endDate);
+  }, [startDate, endDate, holidays.ensureRange]);
+
   const leaveDayCount = useMemo(() => {
     if (!startDate || !endDate || dateError) {
       return null;
     }
 
-    return getWeekdayLeaveDayCount(startDate, endDate, false);
-  }, [dateError, endDate, startDate]);
+    return getWeekdayLeaveDayCount(startDate, endDate, false, holidays.isHoliday);
+  }, [dateError, endDate, startDate, holidays.isHoliday]);
 
   const handleSubmit = useCallback(() => {
     if (isSubmitting || isRemoving) {
@@ -472,7 +480,7 @@ export default function BirthScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} titleInNavBar />
+        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -485,7 +493,7 @@ export default function BirthScreen() {
     const shouldShowRetry = isRetryableInitialError(initialError);
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} titleInNavBar />
+        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
         {shouldShowRetry ? (
           <ErrorState
             variant="error"
@@ -514,7 +522,7 @@ export default function BirthScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} titleInNavBar />
+      <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
 
       <ScrollView
         contentContainerStyle={[styles.content, { paddingHorizontal: gutter }]}
@@ -553,6 +561,8 @@ export default function BirthScreen() {
                     label={TEXT.ABSENCE_START_DATE_LABEL}
                     hideLabel
                     value={startDate}
+                    holidays={holidays.holidaySet}
+                    onVisibleMonthChange={holidays.ensureMonth}
                     onChange={(date) => {
                       setStartDate(date);
                       if (endDate && startOfDay(endDate) < startOfDay(date)) {
@@ -569,6 +579,8 @@ export default function BirthScreen() {
                     value={endDate}
                     minimumDate={minimumEndDate}
                     highlightedStartDate={startDate}
+                    holidays={holidays.holidaySet}
+                    onVisibleMonthChange={holidays.ensureMonth}
                     hasError={Boolean(displayedDateError)}
                     onChange={(date) => {
                       setEndDate(date);
@@ -828,7 +840,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   field: {
     paddingHorizontal: 0,
-    paddingVertical: 20,
+    paddingVertical: 12,
     gap: 10,
   },
   fieldLabel: {

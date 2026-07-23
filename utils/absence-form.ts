@@ -8,6 +8,7 @@ export function getWeekdayLeaveDayCount(
   startDate: Date,
   endDate: Date,
   hasHalfDay: boolean,
+  isHoliday?: (date: Date) => boolean,
 ) {
   const startDay = startOfDay(startDate);
   const endDay = startOfDay(endDate);
@@ -19,8 +20,10 @@ export function getWeekdayLeaveDayCount(
     currentDay.setDate(currentDay.getDate() + 1)
   ) {
     const dayOfWeek = currentDay.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+    // Leave days exclude weekends (Sat/Sun) and public holidays.
+    if (!isWeekend && !isHoliday?.(currentDay)) {
       fullDayCount += 1;
     }
   }

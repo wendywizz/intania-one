@@ -154,7 +154,6 @@ export default function NotificationScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={c.primary} />}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={<EmptyState icon={BellOff} message="No notifications" />}
         renderItem={({ item }) => (
           <NotificationItem item={item} onPress={() => openNotification(item)} />
@@ -166,7 +165,7 @@ export default function NotificationScreen() {
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1 },
-  listContent: { flexGrow: 1, paddingVertical: 8, paddingBottom: 40 },
+  listContent: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 24, paddingBottom: 40 },
 
   clearBtn: { paddingHorizontal: 10, paddingVertical: 4 },
   clearBtnPressed: { opacity: 0.6 },
@@ -176,32 +175,41 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textOnPrimary,
   },
 
-  separator: {
-    height: 1,
-    backgroundColor: c.border,
-    marginHorizontal: 24,
-    marginVertical: 4,
-  },
-
   itemPressable: {},
-  itemPressed: { backgroundColor: c.surfaceAlt },
+  itemPressed: { opacity: 0.72 },
 
   itemCard: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
     backgroundColor: c.surface,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: c.border,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   itemCardUnread: {
     backgroundColor: c.primarySoft,
+    borderColor: c.primarySoft,
   },
 
-  unreadIndicator: {
-    width: 3,
-    borderRadius: 2,
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: c.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  iconCircleUnread: {
     backgroundColor: c.primary,
-    marginRight: 12,
-    alignSelf: 'stretch',
   },
 
   itemContent: { flex: 1, gap: 4 },

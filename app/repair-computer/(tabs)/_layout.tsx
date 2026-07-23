@@ -224,7 +224,8 @@ export default function RepairComputerTabLayout() {
             name="(user)/queue"
             options={{
               title: TEXT.REPAIR_COMPUTER_QUEUE,
-              href: visibleFor(PRIVILEGE_RC_USER),
+              // Hidden from the informer (user) role's tab bar.
+              href: null,
               tabBarIcon: ({ color }) => <IconSymbol size={28} name="tray.fill" color={color} />,
             }}
           />

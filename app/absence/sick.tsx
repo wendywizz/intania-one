@@ -1,5 +1,5 @@
 ﻿import { TEXT } from "@/constants/text";
-import { CloudUpload, Eye, Info, Paperclip, X } from 'lucide-react-native';
+import { CloudUpload, Eye, Paperclip, X } from 'lucide-react-native';
 import * as DocumentPicker from "expo-document-picker";
 import { Image } from "expo-image";
 import { openBrowserAsync } from "expo-web-browser";
@@ -22,6 +22,8 @@ import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/c
 
 import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
+import { TipAlert } from "@/components/ui/tip-alert";
+import { useHolidays } from "@/hooks/use-holidays";
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ScreenHeader } from "@/components/screen-header";
@@ -530,6 +532,7 @@ export default function SickScreen() {
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "">("");
   const userId = authUser?.staffId || USER_ID;
+  const holidays = useHolidays(userId);
   const maximumStartDate = useMemo(() => startOfDay(new Date()), []);
   const editItem = loadedEditItem ?? routeEditItem;
   const editId = getItemText(editItem, [
@@ -695,13 +698,19 @@ export default function SickScreen() {
         : "";
   const displayedDateError =
     startDateError || dateError || validationErrors.date || "";
+  // Make sure holidays for the whole selected range are loaded so the day count
+  // can exclude them.
+  useEffect(() => {
+    holidays.ensureRange(startDate, endDate);
+  }, [startDate, endDate, holidays.ensureRange]);
+
   const leaveDayCount = useMemo(() => {
     if (!startDate || !endDate || startDateError || dateError) {
       return null;
     }
 
-    return getWeekdayLeaveDayCount(startDate, endDate, Number(halfDay) > 0);
-  }, [dateError, endDate, halfDay, startDate, startDateError]);
+    return getWeekdayLeaveDayCount(startDate, endDate, Number(halfDay) > 0, holidays.isHoliday);
+  }, [dateError, endDate, halfDay, startDate, startDateError, holidays.isHoliday]);
 
   const handlePickFile = useCallback(async () => {
     const result = await DocumentPicker.getDocumentAsync({
@@ -906,7 +915,7 @@ export default function SickScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} titleInNavBar />
+        <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -920,7 +929,7 @@ export default function SickScreen() {
 
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} titleInNavBar />
+        <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
         {shouldShowRetry ? (
           <ErrorState
             variant="error"
@@ -949,25 +958,17 @@ export default function SickScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} titleInNavBar />
+      <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.policyCard}>
-          <View style={styles.policyIconWrap}>
-            <Info size={20} color="#0A6E8A" />
-          </View>
-          <View style={styles.policyBody}>
-            <ThemedText style={styles.policyTitle}>
-              {TEXT.ABSENCE_POLICY_NOTE_LABEL}
-            </ThemedText>
-            <ThemedText style={styles.policyText}>
-              {TEXT.ABSENCE_POLICY_NOTE_TEXT}
-            </ThemedText>
-          </View>
-        </View>
+        <TipAlert
+          title={TEXT.ABSENCE_POLICY_NOTE_LABEL}
+          message={TEXT.ABSENCE_POLICY_NOTE_TEXT}
+          style={styles.policyCard}
+        />
 
         {/* Approver */}
         <SectionCard>
@@ -1003,6 +1004,8 @@ export default function SickScreen() {
                 hideLabel
                 value={startDate}
                 maximumDate={maximumStartDate}
+                holidays={holidays.holidaySet}
+                onVisibleMonthChange={holidays.ensureMonth}
                 onChange={(date) => {
                   setStartDate(date);
                   if (
@@ -1024,6 +1027,8 @@ export default function SickScreen() {
                 minimumDate={minimumEndDate}
                 maximumDate={maximumStartDate}
                 highlightedStartDate={startDate}
+                holidays={holidays.holidaySet}
+                onVisibleMonthChange={holidays.ensureMonth}
                 hasError={Boolean(displayedDateError)}
                 onChange={(date) => {
                   setEndDate(date);
@@ -1416,16 +1421,11 @@ export default function SickScreen() {
             </ThemedText>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
               onPress={() => setIsImageViewerVisible(false)}
               style={styles.imageViewerCloseButton}
             >
-              <ThemedText
-                lightColor="#FFFFFF"
-                darkColor="#FFFFFF"
-                type="defaultSemiBold"
-              >
-                {TEXT.SHARED_CLOSE_THAI}
-              </ThemedText>
+              <X size={22} color="#FFFFFF" />
             </Pressable>
           </View>
           <Pressable
@@ -1485,7 +1485,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   field: {
     paddingHorizontal: 0,
-    paddingVertical: 20,
+    paddingVertical: 12,
     gap: 10,
   },
   fieldNoBorder: {
@@ -1783,32 +1783,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     textDecorationLine: "underline",
   },
   policyCard: {
-    flexDirection: "row",
-    gap: 12,
-    backgroundColor: c.infoSoft,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    borderRadius: 12,
     marginBottom: 14,
-    padding: 16,
-  },
-  policyIconWrap: {
-    flexShrink: 0,
-  },
-  policyBody: {
-    flex: 1,
-    gap: 4,
-  },
-  policyTitle: {
-    fontSize: 15,
-    lineHeight: 21,
-    fontWeight: "600",
-    color: c.info,
-  },
-  policyText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: c.textMuted,
   },
   bottomSpacer: {
     height: 100,
@@ -1899,11 +1874,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 16,
   },
   imageViewerCloseButton: {
-    minHeight: 40,
-    paddingHorizontal: 16,
+    width: 40,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
+    borderRadius: 20,
     backgroundColor: "rgba(255, 255, 255, 0.15)",
   },
   imageViewerBody: {

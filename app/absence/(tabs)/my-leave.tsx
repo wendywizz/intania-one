@@ -202,7 +202,7 @@ export default function MyLeaveScreen() {
 }
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
+  container: { flex: 1, backgroundColor: c.background },
   content: { flex: 1 },
   topTabBar: {
     flexDirection: 'row',
@@ -222,7 +222,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   topTabIndicator: { height: 3, width: 40, borderRadius: 2, backgroundColor: 'transparent' },
   topTabIndicatorActive: { backgroundColor: c.primary },
   list: { flex: 1 },
-  listContent: { paddingTop: 8, paddingBottom: 20 },
+  listContent: { paddingTop: 24, paddingBottom: 20 },
   listEmptyContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyState: { alignItems: 'center', justifyContent: 'center', gap: 10, padding: 24 },
   emptyText: { fontSize: 14, lineHeight: 20, color: c.textMuted, textAlign: 'center' },

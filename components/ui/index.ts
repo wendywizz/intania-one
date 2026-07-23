@@ -15,3 +15,6 @@ export { ListItem } from './list-item';
 export { ConfirmDialog } from './confirm-dialog';
 export { Sheet } from './sheet';
 export { Collapsible } from './collapsible';
+export { MonthCalendar, type MonthCalendarProps } from './month-calendar';
+export { EventTimelineItem, type EventTimelineItemProps } from './event-timeline-item';
+export { PillButton, type PillButtonProps, type PillButtonVariant } from './pill-button';

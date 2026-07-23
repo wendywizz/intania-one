@@ -1,5 +1,6 @@
+import { X } from "lucide-react-native";
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { TEXT } from "@/constants/text";
@@ -18,6 +19,8 @@ type ModalSelectFieldProps = {
   title: string;
   value: string;
   width?: number;
+  /** Override the trigger button style (e.g. an underline field look). */
+  buttonStyle?: StyleProp<ViewStyle>;
   onSelect: (value: string) => void;
 };
 
@@ -28,6 +31,7 @@ export function ModalSelectField({
   title,
   value,
   width,
+  buttonStyle,
   onSelect,
 }: ModalSelectFieldProps) {
   const c = useColors();
@@ -45,6 +49,7 @@ export function ModalSelectField({
         style={[
           styles.button,
           width ? { width } : undefined,
+          buttonStyle,
           hasError ? styles.inputError : undefined,
         ]}
       >
@@ -67,12 +72,11 @@ export function ModalSelectField({
                 </ThemedText>
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
                   onPress={close}
                   style={styles.closeButton}
                 >
-                  <ThemedText type="defaultSemiBold">
-                    {TEXT.SHARED_CLOSE_THAI}
-                  </ThemedText>
+                  <X size={20} color={c.text} />
                 </Pressable>
               </View>
 
@@ -162,11 +166,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 16,
   },
   closeButton: {
-    minHeight: 40,
+    width: 40,
+    height: 40,
+    alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.infoSoft,
-    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: `${c.text}14`,
   },
   optionScroll: {
     maxHeight: 420,

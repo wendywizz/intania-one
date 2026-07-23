@@ -236,7 +236,7 @@ export default function PendingScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: c.background,
   },
   headerSection: {
     paddingHorizontal: 24,
@@ -350,13 +350,13 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flex: 1,
   },
   sectionListContent: {
-    paddingTop: 8,
+    paddingTop: 24,
     paddingBottom: 20,
   },
   // General-user view has no section header; match the history screen's spacing
   // between the navbar and the first item.
   sectionListNoHeader: {
-    paddingTop: 8,
+    paddingTop: 24,
   },
   sectionEmptyContent: {
     flexGrow: 1,

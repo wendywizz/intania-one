@@ -221,39 +221,6 @@ export function TimestampHistoryList() {
     }, [loadItems]),
   );
 
-  const approvedCount = items.filter((i) => getHistoryItemStatus(i) === "approved").length;
-  const rejectedCount = items.filter((i) => getHistoryItemStatus(i) === "rejected").length;
-
-  const listHeader = (
-    <View style={styles.listHeader}>
-      <View style={styles.statsCard}>
-        <ThemedText style={styles.statsHeading}>{TEXT.SHARED_HISTORY}</ThemedText>
-        <ThemedText style={styles.statsSubtitle}>
-          {TEXT.TIMESTAMP_HISTORY_SUBTITLE}
-        </ThemedText>
-
-        <ThemedText style={styles.cycleLabel}>{TEXT.TIMESTAMP_COMPANY_CYCLE_LABEL}</ThemedText>
-        <ThemedText style={styles.cycleValue}>
-          {formatDateRange(`${currentYear - 1}-10-01`, `${currentYear}-09-30`)}
-        </ThemedText>
-
-        <View style={styles.statsDivider} />
-
-        <View style={styles.statsRow}>
-          <View style={styles.statCell}>
-            <ThemedText style={styles.statLabel}>{TEXT.TIMESTAMP_TOTAL_APPROVED}</ThemedText>
-            <ThemedText style={styles.statCountApproved}>{approvedCount}</ThemedText>
-          </View>
-          <View style={styles.statsVerticalDivider} />
-          <View style={styles.statCell}>
-            <ThemedText style={styles.statLabel}>{TEXT.TIMESTAMP_TOTAL_REJECTED}</ThemedText>
-            <ThemedText style={styles.statCountRejected}>{rejectedCount}</ThemedText>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-
   if (isLoading) {
     return (
       <View style={styles.stateContainer}>
@@ -296,7 +263,6 @@ export function TimestampHistoryList() {
         />
       }
       renderItem={({ item }) => <TimestampHistoryItem item={item} />}
-      ListHeaderComponent={listHeader}
       ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.SHARED_NO_HISTORY} />}
       ListFooterComponent={
         items.length > 0 ? (
@@ -317,7 +283,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 16,
     gap: 12,
   },
   listHeader: {
@@ -411,7 +379,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(223,191,189,0.3)",
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 22,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,

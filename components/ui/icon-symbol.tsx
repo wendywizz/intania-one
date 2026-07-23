@@ -42,6 +42,7 @@ import Inbox from 'lucide-react-native/dist/cjs/icons/inbox';
 import Info from 'lucide-react-native/dist/cjs/icons/info';
 import Laptop from 'lucide-react-native/dist/cjs/icons/laptop';
 import List from 'lucide-react-native/dist/cjs/icons/list';
+import MessageSquareText from 'lucide-react-native/dist/cjs/icons/message-square-text';
 import Plus from 'lucide-react-native/dist/cjs/icons/plus';
 import Search from 'lucide-react-native/dist/cjs/icons/search';
 import Send from 'lucide-react-native/dist/cjs/icons/send';
@@ -95,6 +96,7 @@ const MAPPING = {
   'briefcase.fill': Briefcase,
   'doc.text.fill': FileText,
   'list.bullet': List,
+  'text.bubble': MessageSquareText,
   'magnifyingglass': Search,
   'tray.fill': Inbox,
   'wrench.fill': Wrench,

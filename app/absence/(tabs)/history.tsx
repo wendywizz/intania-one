@@ -193,7 +193,7 @@ export default function HistoryScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: c.background,
   },
   pageTitleSection: {
     paddingHorizontal: 16,
@@ -220,7 +220,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-    paddingTop: 8,
+    paddingTop: 24,
     paddingBottom: 96,
   },
   stateBox: {

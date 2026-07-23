@@ -336,9 +336,7 @@ export default function RepairComputerCurrentJobScreen() {
   return (
     <ThemedView style={styles.container}>
                         <NavTopBar
-        title={TEXT.REPAIR_COMPUTER_TITLE}
-        subtitle={TEXT.REPAIR_COMPUTER_CURRENT_JOB}
-        moduleIcon="wrench.fill"
+        title={TEXT.REPAIR_COMPUTER_CURRENT_JOB}
         backHref="/"
       />
 
@@ -422,9 +420,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-    gap: 10,
     paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingTop: 24,
     paddingBottom: 80,
   },
   stateContent: {

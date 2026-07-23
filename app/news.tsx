@@ -1,7 +1,8 @@
-﻿import { ArrowRight, Newspaper } from 'lucide-react-native';
+﻿import { ArrowRight, Calendar, Newspaper } from 'lucide-react-native';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -16,30 +17,20 @@ import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PillButton } from '@/components/ui';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import type { News } from '@/models/types';
 import { staffNewsFeed } from '@/services/newsService';
-import { formatDateTime } from '@/utils/date-format';
+import { formatNewsDateTime } from '@/utils/date-format';
 import { navPush } from '@/utils/navigation';
+
+// The feed returns every item at once (no server paging), so we reveal it in
+// pages client-side as the user scrolls to the end.
+const PAGE_SIZE = 8;
 
 function getNewsKey(item: News, index: number) {
   return `${String(item.guid || item.link || item.title)}-${index}`;
-}
-
-function getExcerpt(html: string, maxLength = 140): string {
-  const text = html
-    .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (text.length <= maxLength) return text;
-  return `${text.slice(0, maxLength).trim()}…`;
 }
 
 type NewsListItemProps = {
@@ -50,8 +41,7 @@ type NewsListItemProps = {
 function NewsListItem({ item, onPress }: NewsListItemProps) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const date = item.pubDate ? formatDateTime(item.pubDate) : '';
-  const excerpt = item.description ? getExcerpt(item.description) : '';
+  const date = item.pubDate ? formatNewsDateTime(item.pubDate) : '';
 
   return (
     <Pressable
@@ -60,28 +50,27 @@ function NewsListItem({ item, onPress }: NewsListItemProps) {
       style={({ pressed }) => (pressed ? styles.cardPressed : undefined)}
     >
       <View style={styles.newsCard}>
-        <View style={styles.cardMeta}>
-          {item.category ? (
-            <ThemedText style={styles.categoryTag}>
-              {item.category.toUpperCase()}
-            </ThemedText>
-          ) : null}
-          {date ? (
-            <ThemedText style={styles.dateText}>{date}</ThemedText>
-          ) : null}
-        </View>
+        {item.category ? (
+          <ThemedText style={styles.categoryTag}>
+            {item.category.toUpperCase()}
+          </ThemedText>
+        ) : null}
         <ThemedText style={styles.newsTitle} numberOfLines={2}>
           {item.title}
         </ThemedText>
-        {excerpt ? (
-          <ThemedText style={styles.newsExcerpt} numberOfLines={3}>
-            {excerpt}
-          </ThemedText>
+        {date ? (
+          <View style={styles.dateRow}>
+            <Calendar size={13} color={c.textMuted} />
+            <ThemedText style={styles.dateText}>{date}</ThemedText>
+          </View>
         ) : null}
-        <View style={styles.readMoreRow}>
-          <ThemedText style={styles.readMoreText}>Read more</ThemedText>
-          <ArrowRight size={14} color={c.primary} />
-        </View>
+        <PillButton
+          style={styles.readMoreButton}
+          label={TEXT.NEWS_READ_MORE}
+          onPress={() => onPress(item)}
+          variant="soft"
+          trailing={<ArrowRight size={14} color={c.primary} />}
+        />
       </View>
     </Pressable>
   );
@@ -91,6 +80,8 @@ export default function NewsScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const [newsItems, setNewsItems] = useState<News[]>([]);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -106,6 +97,8 @@ export default function NewsScreen() {
     try {
       const items = await staffNewsFeed();
       setNewsItems(items);
+      // Start each (re)load at the first page.
+      setVisibleCount(PAGE_SIZE);
     } catch (err) {
       setError(err instanceof Error ? err.message : TEXT.HOME_NO_NEWS_MESSAGE);
     } finally {
@@ -113,6 +106,23 @@ export default function NewsScreen() {
       setIsRefreshing(false);
     }
   }, []);
+
+  const visibleNews = useMemo(
+    () => newsItems.slice(0, visibleCount),
+    [newsItems, visibleCount],
+  );
+  const hasMore = visibleCount < newsItems.length;
+
+  const handleEndReached = useCallback(() => {
+    if (isLoadingMore || visibleCount >= newsItems.length) return;
+    // Brief delay so the footer spinner is visible and it reads as "loading
+    // more", even though the next page is already in memory.
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setVisibleCount((count) => Math.min(count + PAGE_SIZE, newsItems.length));
+      setIsLoadingMore(false);
+    }, 250);
+  }, [isLoadingMore, visibleCount, newsItems.length]);
 
   useFocusEffect(
     useCallback(() => {
@@ -134,23 +144,11 @@ export default function NewsScreen() {
     } as Parameters<typeof navPush>[0]);
   }, []);
 
-  const listHeader = (
-    <View style={styles.listHeader}>
-      <ThemedText style={styles.listHeading}>Latest Updates</ThemedText>
-      <ThemedText style={styles.listSubheading}>
-        Stay informed about the latest happenings within HR Connect.
-      </ThemedText>
-    </View>
-  );
-
   const renderContent = () => {
     if (isLoading) {
       return (
         <View style={styles.stateContainer}>
-          <LoadingAnimate
-            title={TEXT.HOME_LOADING_NEWS_TITLE}
-            desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
-          />
+          <LoadingAnimate title="" desc="" />
         </View>
       );
     }
@@ -169,7 +167,7 @@ export default function NewsScreen() {
       <FlatList
         style={styles.flatList}
         contentContainerStyle={styles.listContent}
-        data={newsItems}
+        data={visibleNews}
         keyExtractor={getNewsKey}
         refreshControl={
           <RefreshControl
@@ -180,7 +178,15 @@ export default function NewsScreen() {
         renderItem={({ item }) => (
           <NewsListItem item={item} onPress={openNews} />
         )}
-        ListHeaderComponent={listHeader}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={
+          hasMore ? (
+            <View style={styles.footerLoader}>
+              <ActivityIndicator color={c.primary} />
+            </View>
+          ) : null
+        }
         ListEmptyComponent={<EmptyState icon={Newspaper} message={TEXT.HOME_NO_NEWS_MESSAGE} />}
       />
     );
@@ -207,27 +213,15 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   flatList: {
     flex: 1,
   },
-  listHeader: {
-    gap: 6,
-    paddingBottom: 8,
-  },
-  listHeading: {
-    fontSize: 20,
-    lineHeight: 28,
-    fontWeight: '700',
-    color: c.text,
-    fontFamily: AppFonts.psuBold,
-  },
-  listSubheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: c.textMuted,
-    fontFamily: AppFonts.psuRegular,
-  },
   listContent: {
     flexGrow: 1,
     padding: 16,
     gap: 16,
+  },
+  footerLoader: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   newsCard: {
     backgroundColor: c.surface,
@@ -245,11 +239,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   cardPressed: {
     opacity: 0.75,
   },
-  cardMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   categoryTag: {
     fontSize: 12,
     fontWeight: '500',
@@ -257,34 +246,25 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.primary,
     fontFamily: AppFonts.psuBold,
   },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   dateText: {
     fontSize: 12,
     lineHeight: 16,
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
+  readMoreButton: {
+    alignSelf: 'flex-end',
+  },
   newsTitle: {
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '600',
     color: c.text,
-    fontFamily: AppFonts.psuBold,
-  },
-  newsExcerpt: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: c.textMuted,
-    fontFamily: AppFonts.psuRegular,
-  },
-  readMoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  readMoreText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: c.primary,
     fontFamily: AppFonts.psuBold,
   },
   stateContainer: {

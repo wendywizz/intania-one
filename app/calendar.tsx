@@ -1,4 +1,4 @@
-﻿import { ChevronDown, ChevronLeft, ChevronRight, MapPin, CalendarX } from 'lucide-react-native';
+﻿import { ChevronDown, ChevronLeft, ChevronRight, CalendarX, X } from 'lucide-react-native';
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -11,8 +11,26 @@ import {
     View,
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
-import { Calendar, type DateData } from "react-native-calendars";
+import { Calendar, LocaleConfig, type DateData } from "react-native-calendars";
 import type { MarkedDates } from "react-native-calendars/src/types";
+
+// Render the library calendar in Thai (weekday names row). Month/year come from
+// the custom header, but the Su–Sa row uses these — matching the timestamp and
+// absence calendars' Thai abbreviations.
+LocaleConfig.locales.th = {
+  monthNames: [
+    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+  ],
+  monthNamesShort: [
+    "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+    "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
+  ],
+  dayNames: ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"],
+  dayNamesShort: ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."],
+  today: "วันนี้",
+};
+LocaleConfig.defaultLocale = "th";
 
 import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
@@ -21,6 +39,7 @@ import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { UserAvatar } from "@/components/user-avatar";
 import { ThemedView } from "@/components/themed-view";
+import { EventTimelineItem } from "@/components/ui";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { useTheme } from "@/context/ThemeContext";
@@ -30,10 +49,6 @@ import {
     type CalendarEvent,
     type CalendarSource,
 } from "@/services/executiveCalendarService";
-
-// Rotating accent dots for the event list — a small, tasteful set that reads
-// clearly against the white panel (brand red, amber, green).
-const EVENT_COLORS = ["#B33939", "#E8842B", "#2E9E7B"] as const;
 
 const todayKey = toDateKey(new Date());
 
@@ -57,11 +72,6 @@ function formatSelectedDate(dateKey: string) {
   });
 }
 
-function getEventColor(isAllDay: boolean, index: number): string {
-  if (isAllDay) return EVENT_COLORS[0];
-  return EVENT_COLORS[index % EVENT_COLORS.length];
-}
-
 function formatMonthTitle(dateKey: string) {
   return new Date(`${dateKey}T00:00:00`).toLocaleDateString("th-TH", {
     month: "long",
@@ -69,9 +79,8 @@ function formatMonthTitle(dateKey: string) {
 }
 
 function formatYearTitle(dateKey: string) {
-  return new Date(`${dateKey}T00:00:00`).toLocaleDateString("th-TH", {
-    year: "numeric",
-  });
+  // Plain Buddhist-era year (no "พ.ศ." prefix), matching the timestamp calendar.
+  return String(new Date(`${dateKey}T00:00:00`).getFullYear() + 543);
 }
 
 // Split the source name into the executive position and the parenthetical
@@ -157,21 +166,31 @@ export default function CalendarScreen() {
   }, [loadEvents, selectedSource, visibleMonth]);
 
   const markedDates = useMemo<MarkedDates>(() => {
+    // Days with events get a soft filled cell + a dot, mirroring the timestamp
+    // calendar (whose status days are a soft background pill + dot).
     const marks = events.reduce<MarkedDates>((acc, event) => {
-      acc[event.date] = { marked: true, dotColor: c.primary };
+      acc[event.date] = {
+        marked: true,
+        dotColor: c.primary,
+        customStyles: {
+          container: { backgroundColor: c.primarySoft, borderRadius: 10 },
+        },
+      };
       return acc;
     }, {});
     marks[selectedDate] = {
       ...(marks[selectedDate] ?? {}),
       selected: true,
-      // Hide the event dot while the day is selected — the filled circle is
+      // Hide the event dot while the day is selected — the filled cell is
       // enough; the dot under it looks noisy.
       marked: false,
-      selectedColor: c.primary,
-      selectedTextColor: c.textOnPrimary,
+      customStyles: {
+        container: { backgroundColor: c.primary, borderRadius: 10 },
+        text: { color: c.textOnPrimary },
+      },
     };
     return marks;
-  }, [events, selectedDate, c.primary, c.textOnPrimary]);
+  }, [events, selectedDate, c.primary, c.primarySoft, c.textOnPrimary]);
 
   const selectedEvents = useMemo(
     () => events.filter((event) => event.date === selectedDate),
@@ -191,6 +210,10 @@ export default function CalendarScreen() {
       dotColor: c.primary,
       selectedDotColor: c.textOnPrimary,
       arrowColor: c.textMuted,
+      // Drop the library's default 10px padding around each arrow so the header
+      // band height matches the timestamp calendar (arrow circle + band padding
+      // only, no extra hit-area padding inflating the row).
+      arrowStyle: { padding: 0 },
       monthTextColor: c.text,
       textDayFontFamily: AppFonts.psuRegular,
       textMonthFontFamily: AppFonts.psuBold,
@@ -198,6 +221,40 @@ export default function CalendarScreen() {
       textDayFontSize: 13,
       textMonthFontSize: 18,
       textDayHeaderFontSize: 12,
+      // Color ONLY the month/arrows row (the library's inner `header` sub-style)
+      // primary — the weekday-names row below stays on the white card, matching
+      // the timestamp calendar. `marginHorizontal:-5` cancels the calendar
+      // container's 5px side padding so the band reaches the card edge (clipped
+      // flush by the card's overflow:hidden).
+      "stylesheet.calendar.header": {
+        header: {
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          backgroundColor: c.primary,
+          marginTop: 0,
+          marginHorizontal: -5,
+          paddingHorizontal: 12,
+          paddingVertical: 12,
+        },
+      },
+      // Make each day a full-width rounded cell (not the library's default narrow
+      // 32×32 box) so the event fill spans the column and contains the dot inside
+      // it — matching the timestamp calendar's day pills.
+      "stylesheet.day.basic": {
+        base: {
+          width: "90%",
+          height: 36,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        text: {
+          marginTop: 0,
+          fontSize: 13,
+          fontFamily: AppFonts.psuRegular,
+          color: c.text,
+        },
+      },
     }),
     [c],
   );
@@ -205,11 +262,8 @@ export default function CalendarScreen() {
   const renderCalendarHeader = useCallback(
     () => (
       <View style={styles.calHeader}>
-        <ThemedText style={styles.calHeaderMonth}>
-          {formatMonthTitle(visibleMonth)}
-        </ThemedText>
-        <ThemedText style={styles.calHeaderYear}>
-          {formatYearTitle(visibleMonth)}
+        <ThemedText style={styles.calHeaderLabel}>
+          {`${formatMonthTitle(visibleMonth)} ${formatYearTitle(visibleMonth)}`}
         </ThemedText>
       </View>
     ),
@@ -220,13 +274,13 @@ export default function CalendarScreen() {
     (direction: "left" | "right") => (
       <View style={styles.calArrow}>
         {direction === "left" ? (
-          <ChevronLeft size={18} color={c.textMuted} />
+          <ChevronLeft size={20} color={c.textOnPrimary} />
         ) : (
-          <ChevronRight size={18} color={c.textMuted} />
+          <ChevronRight size={20} color={c.textOnPrimary} />
         )}
       </View>
     ),
-    [styles, c.textMuted],
+    [styles, c.textOnPrimary],
   );
 
   const handleMonthChange = (date: DateData) => {
@@ -261,35 +315,24 @@ export default function CalendarScreen() {
     }
   };
 
-  const renderEvent = ({ item, index }: { item: CalendarEvent; index: number }) => {
-    const color = getEventColor(item.isAllDay, index);
+  const renderEvent = ({ item }: { item: CalendarEvent }) => {
+    // Gutter time: start on top, end below as a compact range; all-day events
+    // show the localized "ทั้งวัน" label instead.
     const startTime = !item.isAllDay && item.startTime ? item.startTime : null;
     const endTime =
       !item.isAllDay && item.endTime && item.endTime !== item.startTime
         ? item.endTime
         : null;
     const timeLabel = item.isAllDay
-      ? "ALL DAY"
-      : [startTime, endTime].filter(Boolean).join(" - ");
+      ? TEXT.CALENDAR_ALL_DAY
+      : [startTime, endTime].filter(Boolean).join("\n");
 
     return (
-      <View style={styles.eventRow}>
-        <View style={styles.eventMetaRow}>
-          <View style={[styles.eventDot, { backgroundColor: color }]} />
-          <ThemedText style={styles.eventTime}>{timeLabel || "—"}</ThemedText>
-        </View>
-        <ThemedText style={styles.eventTitle} numberOfLines={2}>
-          {item.title || "—"}
-        </ThemedText>
-        {item.location ? (
-          <View style={styles.locationRow}>
-            <MapPin size={12} color={c.textMuted} style={styles.locationIcon} />
-            <ThemedText style={styles.locationText} numberOfLines={2}>
-              {item.location}
-            </ThemedText>
-          </View>
-        ) : null}
-      </View>
+      <EventTimelineItem
+        time={timeLabel}
+        title={item.title || "—"}
+        location={item.location}
+      />
     );
   };
 
@@ -298,10 +341,10 @@ export default function CalendarScreen() {
       <ThemedView style={styles.container}>
         <StatusBar style={isDarkMode ? "light" : "dark"} />
         <NavTopBar
-          title={TEXT.CALENDAR_TITLE}
+          title={TEXT.CALENDAR_HEADER_TITLE}
           titleStyle={{ fontSize: 20, lineHeight: 26 }}
           backHref="/"
-          backgroundColor={c.background}
+          backgroundColor={c.surface}
           contentColor={c.text}
         />
         <LoadingAnimate
@@ -318,10 +361,10 @@ export default function CalendarScreen() {
       <ThemedView style={styles.container}>
         <StatusBar style={isDarkMode ? "light" : "dark"} />
         <NavTopBar
-          title={TEXT.CALENDAR_TITLE}
+          title={TEXT.CALENDAR_HEADER_TITLE}
           titleStyle={{ fontSize: 20, lineHeight: 26 }}
           backHref="/"
-          backgroundColor={c.background}
+          backgroundColor={c.surface}
           contentColor={c.text}
         />
         <ErrorState
@@ -337,12 +380,12 @@ export default function CalendarScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
       <NavTopBar
         title={TEXT.CALENDAR_TITLE}
         titleStyle={{ fontSize: 20, lineHeight: 26 }}
         backHref="/"
-        backgroundColor={c.background}
+        backgroundColor={c.surface}
         contentColor={c.text}
       />
 
@@ -382,12 +425,11 @@ export default function CalendarScreen() {
                   </ThemedText>
                   <Pressable
                     accessibilityRole="button"
+                    accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
                     onPress={() => setSourceModalOpen(false)}
                     style={styles.closeBtn}
                   >
-                    <ThemedText style={styles.closeBtnText} type="defaultSemiBold">
-                      {TEXT.SHARED_CLOSE_THAI}
-                    </ThemedText>
+                    <X size={20} color={c.text} />
                   </Pressable>
                 </View>
                 <ScrollView
@@ -440,7 +482,7 @@ export default function CalendarScreen() {
             <Calendar
               current={selectedDate}
               markedDates={markedDates}
-              markingType="dot"
+              markingType="custom"
               onDayPress={(date) => setSelectedDate(date.dateString)}
               onMonthChange={handleMonthChange}
               renderHeader={renderCalendarHeader}
@@ -451,57 +493,55 @@ export default function CalendarScreen() {
         )}
       </View>
 
-      {/* Scrollable events list — a single card (outer view holds the shadow,
-          inner clips content so only one border ever shows) */}
-      <View style={styles.eventCardShadow}>
-        <View style={styles.eventCard}>
-          {/* Selected-date header, now part of the events section */}
-          <View style={styles.dateHeader}>
-            <ThemedText style={styles.dateHeaderText}>
-              {formatSelectedDate(selectedDate)}
-            </ThemedText>
-          </View>
-          <FlatList
-            style={styles.eventList}
-            data={selectedEvents}
-            keyExtractor={(item, index) => `${String(item.id || "event")}-${index}`}
-            renderItem={renderEvent}
-            contentContainerStyle={styles.eventListContent}
-            ItemSeparatorComponent={() => <View style={styles.eventSeparator} />}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                tintColor={c.primary}
-                colors={[c.primary]}
-              />
-            }
-            ListHeaderComponent={
-              loadingEvents ? (
+      {/* Selected-date events — timeline rows on the background, matching the
+          meeting lists (shared EventTimelineItem). */}
+      <View style={styles.eventsPane}>
+        <FlatList
+          style={styles.eventList}
+          data={selectedEvents}
+          keyExtractor={(item, index) => `${String(item.id || "event")}-${index}`}
+          renderItem={renderEvent}
+          contentContainerStyle={styles.eventListContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={c.primary}
+              colors={[c.primary]}
+            />
+          }
+          ListHeaderComponent={
+            <>
+              <View style={styles.dateHeader}>
+                <ThemedText style={styles.dateHeaderText}>
+                  {formatSelectedDate(selectedDate)}
+                </ThemedText>
+              </View>
+              {loadingEvents ? (
                 <LoadingAnimate
                   fill={false}
                   title={TEXT.SHARED_LOADING_DATA_TITLE}
                   desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
                 />
-              ) : null
-            }
-            ListEmptyComponent={
-              loadingEvents ? null : errorMessage ? (
-                <View style={styles.errorBox}>
-                  <ThemedText style={styles.errorTitle}>
-                    {TEXT.SHARED_UNABLE_TO_COMPLETE}
-                  </ThemedText>
-                  <ThemedText style={styles.errorDetail}>{errorMessage}</ThemedText>
-                  <Pressable style={styles.retryBtn} onPress={handleRefresh}>
-                    <ThemedText style={styles.retryBtnText}>{TEXT.SHARED_RETRY}</ThemedText>
-                  </Pressable>
-                </View>
-              ) : (
-                <EmptyState icon={CalendarX} message={TEXT.SHARED_EMPTY_DATA} />
-              )
-            }
-          />
-        </View>
+              ) : null}
+            </>
+          }
+          ListEmptyComponent={
+            loadingEvents ? null : errorMessage ? (
+              <View style={styles.errorBox}>
+                <ThemedText style={styles.errorTitle}>
+                  {TEXT.SHARED_UNABLE_TO_COMPLETE}
+                </ThemedText>
+                <ThemedText style={styles.errorDetail}>{errorMessage}</ThemedText>
+                <Pressable style={styles.retryBtn} onPress={handleRefresh}>
+                  <ThemedText style={styles.retryBtnText}>{TEXT.SHARED_RETRY}</ThemedText>
+                </Pressable>
+              </View>
+            ) : (
+              <EmptyState icon={CalendarX} message={TEXT.SHARED_EMPTY_DATA} />
+            )
+          }
+        />
       </View>
     </ThemedView>
   );
@@ -517,7 +557,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   calendarPane: {
     backgroundColor: c.background,
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 20,
     gap: 12,
   },
   sourceCard: {
@@ -566,124 +606,51 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 2,
   },
-  calHeaderMonth: {
-    fontSize: 15,
-    lineHeight: 20,
-    color: c.text,
-    fontFamily: AppFonts.psuRegular,
-  },
-  calHeaderYear: {
-    fontSize: 11,
-    lineHeight: 14,
-    color: c.textFaint,
-    fontFamily: AppFonts.psuRegular,
+  // Single-line "month year" label matching the timestamp calendar header.
+  calHeaderLabel: {
+    fontSize: 14,
+    lineHeight: 19,
+    fontWeight: "700",
+    color: c.textOnPrimary,
+    fontFamily: AppFonts.psuBold,
   },
   calArrow: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: c.surfaceMuted,
+    backgroundColor: c.primaryDeep,
   },
+  // Date label above the timeline — same size/weight/colour as the meeting
+  // date headers.
   dateHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   dateHeaderText: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
     color: c.textMuted,
     fontFamily: AppFonts.psuBold,
   },
 
-  // ─── Events list ─────────────────────────────────────────────────
-  // One card: the outer view carries the soft shadow + rounded background, the
-  // inner view clips the list to the radius so only its single border shows
-  // (no doubled edge where dividers/content meet the card border).
-  eventCardShadow: {
+  // ─── Events list (shared EventTimelineItem on the background) ─────
+  eventsPane: {
     flex: 1,
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 16,
-    borderRadius: 20,
-    backgroundColor: c.surface,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
-  },
-  eventCard: {
-    flex: 1,
-    borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    overflow: "hidden",
+    paddingHorizontal: 16,
   },
   eventList: {
     flex: 1,
   },
   eventListContent: {
     flexGrow: 1,
-    paddingTop: 8,
-    paddingBottom: 6,
-  },
-  eventSeparator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: c.border,
-  },
-  eventRow: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    gap: 6,
-  },
-  eventMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  eventDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  eventTime: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: c.textMuted,
-    fontFamily: AppFonts.psuRegular,
-    letterSpacing: 0.3,
-  },
-  eventTitle: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontFamily: AppFonts.psuRegular,
-    color: c.text,
-  },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 4,
-  },
-  locationIcon: {
-    marginTop: 4,
-  },
-  locationText: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-    color: c.textMuted,
-    fontFamily: AppFonts.psuRegular,
+    paddingBottom: 24,
   },
 
   // ─── Empty / error states ────────────────────────────────────────
   errorBox: {
     marginVertical: 16,
-    marginHorizontal: 16,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
@@ -762,14 +729,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.text,
   },
   closeBtn: {
-    height: 36,
+    width: 40,
+    height: 40,
+    alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: c.surfaceMuted,
-    paddingHorizontal: 12,
-  },
-  closeBtnText: {
-    color: c.textMuted,
+    borderRadius: 20,
+    backgroundColor: `${c.text}14`,
   },
   optionScroll: {
     maxHeight: 360,

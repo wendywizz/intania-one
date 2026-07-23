@@ -1,12 +1,10 @@
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ListCard } from '@/components/ui/list-card';
 import { TEXT } from '@/constants/text';
 import type { NoticeRepairJob } from '@/models/types';
 import { getCategoryIcon } from '@/utils/category-icon';
 import { formatDateOnly } from '@/utils/date-format';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useColors } from '@/constants/theme';
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   '001': { bg: '#EFF6FF', text: '#2563EB' },
@@ -45,120 +43,24 @@ type Props = {
 
 export function NoticeRepairJobCard({ job, onPress }: Props) {
   const c = useColors();
-  const styles = useThemedStyles(makeStyles);
   const badge = statusBadge(job);
   // ID hidden for now (kept in `job.repair_id` for upcoming update/remove actions).
   // const number = job.repair_number ? `#${job.repair_number}` : `${job.repair_id}`;
   const location = [job.repair_place, job.building_name].filter(Boolean).join(' · ');
   const dateRaw = job.repair_inform_date_th || job.repair_inform_date;
-  const dateText = dateRaw ? formatDateOnly(dateRaw) : null;
+  const dateText = dateRaw ? formatDateOnly(dateRaw) : '';
   const categoryIcon = getCategoryIcon(job.work_category_name);
 
   return (
-    <Pressable accessibilityRole="button" onPress={() => onPress(job)}>
-      <ThemedView style={styles.card} lightColor="#FFFFFF" darkColor="#151718">
-        <View style={styles.cardRow}>
-          {/* Leading category icon */}
-          <View style={styles.iconBox}>
-            <IconSymbol name={categoryIcon} size={22} color={c.primary} />
-          </View>
-
-          <View style={styles.content}>
-            {/* Header: ประเภทงาน + สถานะ (หมายเลขงาน/ID ซ่อนไว้) */}
-            <View style={styles.header}>
-              <ThemedText type="defaultSemiBold" style={styles.title} numberOfLines={2}>
-                {job.work_category_name || '-'}
-              </ThemedText>
-              {!!badge.label && (
-                <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
-                  <ThemedText style={[styles.statusText, { color: badge.text }]} numberOfLines={1}>
-                    {badge.label}
-                  </ThemedText>
-                </View>
-              )}
-            </View>
-
-            {/* สถานที่ */}
-            {!!location && (
-              <View style={styles.metaRow}>
-                <ThemedText style={styles.metaValue} numberOfLines={1}>{location}</ThemedText>
-              </View>
-            )}
-
-            {/* วันที่แจ้ง */}
-            {!!dateText && (
-              <View style={styles.dateRow}>
-                <IconSymbol name="calendar" size={13} color={c.textMuted} />
-                <ThemedText style={styles.metaText}>{dateText}</ThemedText>
-              </View>
-            )}
-          </View>
-
-          {/* Navigable indicator */}
-          <IconSymbol name="chevron.right" size={18} color={c.textFaint} style={styles.chevron} />
-        </View>
-      </ThemedView>
-    </Pressable>
+    <ListCard
+      onPress={() => onPress(job)}
+      icon={<IconSymbol name={categoryIcon} size={22} color={c.primary} />}
+      title={job.work_category_name || '-'}
+      badge={badge.label ? { text: badge.label, bg: badge.bg, color: badge.text } : null}
+      meta={[
+        { text: location },
+        { icon: <IconSymbol name="calendar" size={13} color={c.textMuted} />, text: dateText },
+      ]}
+    />
   );
 }
-
-const makeStyles = (c: AppColors) => StyleSheet.create({
-  card: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(223, 191, 189, 0.3)',
-    padding: 16,
-    marginHorizontal: 12,
-    marginVertical: 6,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  chevron: { alignSelf: 'center' },
-  iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: c.primarySoft,
-  },
-  content: { flex: 1, gap: 8 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  title: {
-    flex: 1,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  statusBadge: {
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    flexShrink: 0,
-    marginTop: 1,
-    maxWidth: '45%',
-  },
-  statusText: {
-    fontSize: 11,
-    lineHeight: 16,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  metaLabel: { color: c.textMuted, fontSize: 13, lineHeight: 18 },
-  metaValue: { color: c.textMuted, fontSize: 13, lineHeight: 18, fontWeight: '500', flexShrink: 1 },
-  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  metaText: { color: c.textMuted, fontSize: 13, lineHeight: 18 },
-});

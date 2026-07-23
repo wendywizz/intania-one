@@ -34,7 +34,7 @@ export default function ForgotTimestampScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.TIMESTAMP_TITLE} backHref="/" titleInNavBar />
+      <ScreenHeader title={TEXT.TIMESTAMP_FORGOT_TAB} backHref="/" titleInNavBar />
 
       <View style={styles.topTabBar}>
         {TABS.map((tab) => {

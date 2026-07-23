@@ -72,6 +72,26 @@ export function formatNewsDate(value: string) {
   return hasTime ? `${base} - ${m.format('HH:mm')}` : base;
 }
 
+// Thai news datetime, e.g. "27 มีนาคม 2569 - 11:20 น." — same RFC-2822/timezone
+// handling as formatNewsDate, but Thai month + Buddhist year + a "น." suffix.
+export function formatNewsDateTime(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return value;
+
+  let m = parseDateTime(trimmed);
+  if (!m) {
+    const rfc = moment(trimmed, moment.RFC_2822, true);
+    const parsed = rfc.isValid() ? rfc : moment(new Date(trimmed));
+    if (!parsed.isValid()) return value;
+    m = parsed.utcOffset(420); // Asia/Bangkok (no DST)
+  }
+
+  m.locale('th');
+  const hasTime = /\d{1,2}:\d{2}/.test(trimmed);
+  const base = `${m.format('D MMMM')} ${beYear(m)}`;
+  return hasTime ? `${base} - ${m.format('HH:mm')} น.` : base;
+}
+
 export function formatDateOnly(value: string) {
   const m = parseDateTime(value);
   if (!m) return value.split(/[T ]/)[0] || value;

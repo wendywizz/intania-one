@@ -7,7 +7,6 @@ import {
   Pressable,
   RefreshControl,
   StyleSheet,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
@@ -176,49 +175,47 @@ function ExamCard({
   }
 
   return (
-    <View style={[styles.examCard, dateStatus === 'past' && styles.examCardPast]}>
-      <View style={styles.examCardBody}>
-        <View style={styles.examCardHeader}>
-          <ThemedText style={[styles.roomName, dateStatus === 'past' && styles.textPast]}>{roomName}</ThemedText>
-          <View style={[
-            styles.statusBadge,
-            dateStatus === 'past' && styles.statusBadgePast,
-            dateStatus === 'today' && styles.statusBadgeToday,
-            dateStatus === 'incoming' && styles.statusBadgeIncoming,
-          ]}>
-            <ThemedText style={styles.statusBadgeText}>{statusLabel}</ThemedText>
-          </View>
-        </View>
-
-        <View style={styles.examMeta}>
-          {dateLabel ? (
-            <View style={styles.metaRow}>
-              <View style={[styles.metaIconBox, dateStatus === 'past' && styles.metaIconBoxPast]}>
-                <CalendarDays size={14} color={dateStatus === 'past' ? c.textFaint : c.primary} />
-              </View>
-              <ThemedText style={[styles.metaText, dateStatus === 'past' && styles.textPast]}>{dateLabel}</ThemedText>
-            </View>
-          ) : null}
-          {timeFromLabel ? (
-            <View style={styles.metaRow}>
-              <View style={[styles.metaIconBox, dateStatus === 'past' && styles.metaIconBoxPast]}>
-                <Clock size={14} color={dateStatus === 'past' ? c.textFaint : c.primary} />
-              </View>
-              <ThemedText style={[styles.metaText, dateStatus === 'past' && styles.textPast]}>{timeRange}</ThemedText>
-            </View>
-          ) : null}
-        </View>
+    <Pressable
+      accessibilityRole="button"
+      onPress={handleViewDetails}
+      style={({ pressed }) => [
+        styles.examCard,
+        dateStatus === 'past' && styles.examCardPast,
+        pressed && styles.examCardPressed,
+      ]}
+    >
+      <View style={[styles.iconCircle, dateStatus === 'past' && styles.iconCirclePast]}>
+        <CalendarDays size={18} color={dateStatus === 'past' ? c.textFaint : c.primary} />
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        onPress={handleViewDetails}
-        style={[styles.viewDetailsButton, dateStatus === 'past' && styles.viewDetailsButtonPast]}
-      >
-        <ThemedText style={[styles.viewDetailsText, dateStatus === 'past' && styles.textPast]}>{TEXT.EXAMINAR_VIEW_DETAILS}</ThemedText>
-        <ChevronRight size={16} color={dateStatus === 'past' ? c.textFaint : c.primary} />
-      </Pressable>
-    </View>
+      <View style={styles.examCardBody}>
+        <ThemedText style={[styles.roomName, dateStatus === 'past' && styles.textPast]} numberOfLines={1}>{roomName}</ThemedText>
+        {dateLabel ? (
+          <View style={styles.metaRow}>
+            <CalendarDays size={13} color={c.textMuted} />
+            <ThemedText style={[styles.metaText, dateStatus === 'past' && styles.textPast]} numberOfLines={1}>{dateLabel}</ThemedText>
+          </View>
+        ) : null}
+        {timeFromLabel ? (
+          <View style={styles.metaRow}>
+            <Clock size={13} color={c.textMuted} />
+            <ThemedText style={[styles.metaText, dateStatus === 'past' && styles.textPast]} numberOfLines={1}>{timeRange}</ThemedText>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={styles.examCardRight}>
+        <View style={[
+          styles.statusBadge,
+          dateStatus === 'past' && styles.statusBadgePast,
+          dateStatus === 'today' && styles.statusBadgeToday,
+          dateStatus === 'incoming' && styles.statusBadgeIncoming,
+        ]}>
+          <ThemedText style={styles.statusBadgeText}>{statusLabel}</ThemedText>
+        </View>
+        <ChevronRight size={16} color={c.textFaint} />
+      </View>
+    </Pressable>
   );
 }
 
@@ -227,13 +224,9 @@ function ExamCard({
 export default function ExaminarListScreen() {
   const c = useColors();
   const { isDarkMode } = useTheme();
-  const { height } = useWindowDimensions();
   const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId ?? '';
-  // Scale the screen title with the device height (clamped) so it feels
-  // proportional on both short and tall screens.
-  const titleSize = Math.round(Math.min(26, Math.max(20, height * 0.028)));
 
   const [year, setYear] = useState(String(currentYear));
   const [term, setTerm] = useState('1');
@@ -276,15 +269,12 @@ export default function ExaminarListScreen() {
     <ThemedView style={styles.container}>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <NavTopBar
-        title=""
+        title={TEXT.EXAMINAR_HEADER_TITLE}
         backHref="/"
-        backgroundColor={c.background}
+        backgroundColor={c.surface}
         contentColor={c.text}
       />
       <View style={styles.content}>
-        <ThemedText style={[styles.pageTitle, { fontSize: titleSize, lineHeight: titleSize + 6 }]}>
-          {TEXT.EXAMINAR_HEADER_TITLE}
-        </ThemedText>
         <FilterBar
           year={year} term={term} period={period}
           onYearChange={setYear}
@@ -390,39 +380,56 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
 
   // Exam card
   examCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
     backgroundColor: c.surface,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: c.border,
-    overflow: 'hidden',
+    paddingHorizontal: 16,
+    paddingVertical: 22,
     shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   examCardPast: {
-    backgroundColor: c.border,
-    opacity: 0.85,
+    opacity: 0.7,
   },
-  examCardBody: { padding: 16, gap: 10 },
-  examCardHeader: {
+  examCardPressed: {
+    opacity: 0.72,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: c.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  iconCirclePast: {
+    backgroundColor: c.surfaceMuted,
+  },
+  examCardBody: { flex: 1, gap: 3 },
+  examCardRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
+    gap: 6,
+    flexShrink: 0,
   },
   roomName: {
     fontFamily: AppFonts.psuBold,
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 21,
     color: c.text,
-    flex: 1,
   },
   statusBadge: {
     borderRadius: 9999,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
   statusBadgeIncoming: { backgroundColor: c.primary },
   statusBadgeToday: { backgroundColor: c.success },
@@ -433,44 +440,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textOnPrimary,
   },
 
-  examMeta: { gap: 6 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  metaIconBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: c.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   metaText: {
     fontFamily: AppFonts.psuRegular,
-    fontSize: 14,
-    lineHeight: 20,
-    color: c.text,
+    fontSize: 13,
+    lineHeight: 18,
+    color: c.textMuted,
   },
 
   // Past (grey) overrides
   textPast: { color: c.textFaint },
-  metaIconBoxPast: { backgroundColor: c.surfaceMuted },
-  viewDetailsButtonPast: { borderTopColor: c.border },
-
-  // View Details button
-  viewDetailsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 12,
-    backgroundColor: c.surfaceMuted,
-    borderTopWidth: 1,
-    borderTopColor: c.border,
-  },
-  viewDetailsText: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 14,
-    color: c.primary,
-  },
 
   // Empty / Error
   emptyWrap: { alignItems: 'center', paddingTop: 60, gap: 12 },

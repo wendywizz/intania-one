@@ -1,11 +1,4 @@
-import {
-  Building2,
-  CalendarDays,
-  ChevronRight,
-  Clock,
-  Hash,
-  Users,
-} from 'lucide-react-native';
+import { Hash, Users } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -22,10 +15,12 @@ import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { DetailInfoCard } from '@/components/ui/detail-info-card';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import type { ExamDetail, ExamStaff, ExamSubject } from '@/models/types';
 import { PHOTO_BASE_URL } from '@/constants/endpoints';
+import { useAuth } from '@/context/AuthContext';
 import { getExamDetail } from '@/services/examinarService';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -96,59 +91,34 @@ function HeroSection({
   term: string;
   period: string;
 }) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
   const roomName = getField(detail as Record<string, unknown>, 'room_name', 'room', 'room_id') || TEXT.SHARED_EMPTY_DATA;
   const date = getField(detail as Record<string, unknown>, 'date_label', 'date', 'exam_date');
   const timeFrom = getField(detail as Record<string, unknown>, 'time_from_label', 'time_from', 'timeFrom', 'start_time');
   const timeTo = getField(detail as Record<string, unknown>, 'time_to_label', 'time_to', 'timeTo', 'end_time');
   const rawTimeFrom = getField(detail as Record<string, unknown>, 'time_from', 'timeFrom', 'start_time');
   const rawTimeTo = getField(detail as Record<string, unknown>, 'time_to', 'timeTo', 'end_time');
-  const timeRange = timeTo ? `${timeFrom} - ${timeTo}` : timeFrom;
+  const timeFromTo = timeTo ? `${timeFrom} - ${timeTo}` : timeFrom;
   const duration = calcDuration(rawTimeFrom, rawTimeTo);
+  const timeRange = timeFromTo ? `${timeFromTo}${duration ? ` (${duration})` : ''}` : '';
   const termLabel = getTermLabel(detail.term ?? term);
   const periodLabel = getPeriodLabel(detail.period ?? period);
   const yearValue = detail.year ?? year;
 
+  // Same "titled card + icon/label/value rows" layout as the absence detail screen.
   return (
-    <View style={styles.hero}>
-      <View style={styles.heroVenueLabelRow}>
-        <View style={styles.heroIconBox}>
-          <Building2 size={18} color={c.primary} />
-        </View>
-        <ThemedText style={styles.heroVenueLabel}>{TEXT.EXAMINAR_VENUE_LABEL}</ThemedText>
-      </View>
-
-      <ThemedText style={styles.heroRoomName}>{roomName}</ThemedText>
-
-      <View style={styles.heroMetaContainer}>
-        {date || timeRange ? (
-          <View style={styles.heroMetaRow}>
-            <View style={styles.heroMetaIconBox}>
-              <CalendarDays size={16} color={c.primary} />
-            </View>
-            <View style={styles.heroMetaTexts}>
-              {date ? <ThemedText style={styles.heroMetaMain}>{date}</ThemedText> : null}
-              {timeRange ? (
-                <ThemedText style={styles.heroMetaSub}>
-                  {timeRange}{duration ? ` (${duration})` : ''}
-                </ThemedText>
-              ) : null}
-            </View>
-          </View>
-        ) : null}
-
-        <View style={[styles.heroMetaRow, styles.heroMetaRowBordered]}>
-          <View style={styles.heroMetaIconBox}>
-            <Clock size={16} color={c.primary} />
-          </View>
-          <View style={styles.heroMetaTexts}>
-            <ThemedText style={styles.heroMetaMain}>{`${yearValue} | ${termLabel}`}</ThemedText>
-            <ThemedText style={styles.heroMetaSub}>{periodLabel}</ThemedText>
-          </View>
-        </View>
-      </View>
-    </View>
+    <DetailInfoCard
+      title={TEXT.EXAMINAR_EXAM_INFO_TITLE}
+      rows={[
+        { label: TEXT.EXAMINAR_VENUE_LABEL, value: roomName, icon: 'mappin' },
+        { label: TEXT.EXAMINAR_DATE_LABEL, value: date, icon: 'calendar' },
+        { label: TEXT.EXAMINAR_TIME_LABEL, value: timeRange, icon: 'calendar-clock' },
+        {
+          label: TEXT.EXAMINAR_SEMESTER_LABEL,
+          value: `${yearValue} | ${termLabel} | ${periodLabel}`,
+          icon: 'calendar-range',
+        },
+      ]}
+    />
   );
 }
 
@@ -171,7 +141,6 @@ function SubjectItem({ subject, isFirst }: { subject: ExamSubject; isFirst: bool
           ) : null}
           <ThemedText style={styles.subjectName} numberOfLines={2}>{subjectName || TEXT.SHARED_EMPTY_DATA}</ThemedText>
         </View>
-        <ChevronRight size={14} color="#c22c27" />
       </View>
 
       <View style={styles.subjectMeta}>
@@ -232,6 +201,8 @@ function StaffItem({ staff, isFirst }: { staff: ExamStaff; isFirst: boolean }) {
 export default function ExaminarDetailScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const { user: authUser } = useAuth();
+  const authStaffId = authUser?.staffId ?? '';
   const params = useLocalSearchParams<{
     year: string;
     term: string;
@@ -298,7 +269,14 @@ export default function ExaminarDetailScreen() {
 
   const d = detail as Record<string, unknown>;
   const subjects: ExamSubject[] = (Array.isArray(d.class_data) ? d.class_data : []) as ExamSubject[];
-  const staffList: ExamStaff[] = (Array.isArray(d.staff_data) ? d.staff_data : []) as ExamStaff[];
+  const rawStaff: ExamStaff[] = (Array.isArray(d.staff_data) ? d.staff_data : []) as ExamStaff[];
+  // Put the signed-in user's own row first (Array.sort is stable, so the rest
+  // keep their original order).
+  const staffList = [...rawStaff].sort((a, b) => {
+    const aid = getField(a as Record<string, unknown>, 'staff_id', 'staffid', 'staffId', 'id');
+    const bid = getField(b as Record<string, unknown>, 'staff_id', 'staffid', 'staffId', 'id');
+    return (aid === authStaffId ? 0 : 1) - (bid === authStaffId ? 0 : 1);
+  });
 
   return (
     <ThemedView style={styles.container}>
@@ -306,50 +284,50 @@ export default function ExaminarDetailScreen() {
       <NavTopBar title={TEXT.EXAMINAR_DETAIL_HEADER_TITLE} showBackButton onBackPress={() => router.back()} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <HeroSection detail={detail} year={year} term={term} period={period} />
+        <View style={styles.section}>
+          <HeroSection detail={detail} year={year} term={term} period={period} />
+        </View>
 
         {/* Subject List */}
         <View style={styles.section}>
-          <View style={styles.sectionHeadingRow}>
-            <ThemedText style={styles.sectionHeading}>{TEXT.EXAMINAR_SUBJECT_LIST_HEADING}</ThemedText>
-            {subjects.length > 0 ? (
-              <View style={styles.countBadge}>
-                <ThemedText style={styles.countBadgeText}>{subjects.length}{TEXT.EXAMINAR_SUBJECTS_COUNT}</ThemedText>
-              </View>
-            ) : null}
-          </View>
-
-          {subjects.length > 0 ? (
-            <View style={styles.card}>
-              {subjects.map((subject, i) => (
-                <SubjectItem key={i} subject={subject} isFirst={i === 0} />
-              ))}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <ThemedText style={styles.sectionHeading}>{TEXT.EXAMINAR_SUBJECT_LIST_HEADING}</ThemedText>
+              {subjects.length > 0 ? (
+                <View style={styles.countBadge}>
+                  <ThemedText style={styles.countBadgeText}>{subjects.length}{TEXT.EXAMINAR_SUBJECTS_COUNT}</ThemedText>
+                </View>
+              ) : null}
             </View>
-          ) : (
-            <ThemedText style={styles.emptySection}>{TEXT.EXAMINAR_NO_SUBJECTS}</ThemedText>
-          )}
+            {subjects.length > 0 ? (
+              subjects.map((subject, i) => (
+                <SubjectItem key={i} subject={subject} isFirst={i === 0} />
+              ))
+            ) : (
+              <ThemedText style={styles.emptySection}>{TEXT.EXAMINAR_NO_SUBJECTS}</ThemedText>
+            )}
+          </View>
         </View>
 
         {/* Staff List */}
         <View style={styles.section}>
-          <View style={styles.sectionHeadingRow}>
-            <ThemedText style={styles.sectionHeading}>{TEXT.EXAMINAR_PARTNERS_HEADING}</ThemedText>
-            {staffList.length > 0 ? (
-              <View style={styles.countBadge}>
-                <ThemedText style={styles.countBadgeText}>{staffList.length}{TEXT.EXAMINAR_STAFF_COUNT}</ThemedText>
-              </View>
-            ) : null}
-          </View>
-
-          {staffList.length > 0 ? (
-            <View style={styles.card}>
-              {staffList.map((staff, i) => (
-                <StaffItem key={i} staff={staff} isFirst={i === 0} />
-              ))}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <ThemedText style={styles.sectionHeading}>{TEXT.EXAMINAR_PARTNERS_HEADING}</ThemedText>
+              {staffList.length > 0 ? (
+                <View style={styles.countBadge}>
+                  <ThemedText style={styles.countBadgeText}>{staffList.length}{TEXT.EXAMINAR_STAFF_COUNT}</ThemedText>
+                </View>
+              ) : null}
             </View>
-          ) : (
-            <ThemedText style={styles.emptySection}>{TEXT.EXAMINAR_NO_STAFF}</ThemedText>
-          )}
+            {staffList.length > 0 ? (
+              staffList.map((staff, i) => (
+                <StaffItem key={i} staff={staff} isFirst={i === 0} />
+              ))
+            ) : (
+              <ThemedText style={styles.emptySection}>{TEXT.EXAMINAR_NO_STAFF}</ThemedText>
+            )}
+          </View>
         </View>
       </ScrollView>
     </ThemedView>
@@ -362,81 +340,22 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
   scrollContent: { paddingBottom: 40 },
 
-  // Hero
-  hero: {
-    backgroundColor: c.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: c.border,
-    padding: 20,
-    paddingTop: 16,
-    gap: 8,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.04)',
-  },
-  heroVenueLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  heroIconBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: c.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroVenueLabel: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 12,
-    letterSpacing: 1.2,
-    color: c.textMuted,
-  },
-  heroRoomName: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 28,
-    lineHeight: 36,
-    color: c.text,
-  },
-  heroMetaContainer: { gap: 0 },
-  heroMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    paddingVertical: 10,
-  },
-  heroMetaRowBordered: {
-    borderTopWidth: 1,
-    borderTopColor: c.border,
-  },
-  heroMetaIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: c.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  heroMetaTexts: { flex: 1, gap: 2 },
-  heroMetaMain: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 16,
-    lineHeight: 22,
-    color: c.text,
-  },
-  heroMetaSub: {
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 14,
-    lineHeight: 20,
-    color: c.textMuted,
-  },
-
   // Section
-  section: { paddingHorizontal: 16, paddingTop: 20, gap: 10 },
-  sectionHeadingRow: {
+  section: { paddingHorizontal: 16, paddingTop: 16 },
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: c.border,
   },
   sectionHeading: {
     fontFamily: AppFonts.psuBold,
-    fontSize: 16,
+    fontSize: 15,
+    lineHeight: 21,
     color: c.text,
   },
   countBadge: {
