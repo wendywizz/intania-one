@@ -69,7 +69,7 @@ export default function ForemanHistoryScreen() {
     return (
       <RepairComputerJobListScreen
         key="supply"
-        title={TEXT.REPAIR_COMPUTER_REPAIR_HISTORY}
+        title={TEXT.SHARED_HISTORY}
         emptyMessage={TEXT.SHARED_NO_HISTORY}
         errorMessage={TEXT.SHARED_UNABLE_TO_LOAD_HISTORY}
         loadingTitle={TEXT.SHARED_LOADING_HISTORY}
@@ -85,7 +85,7 @@ export default function ForemanHistoryScreen() {
   return (
     <RepairComputerJobListScreen
       key="job"
-      title={TEXT.REPAIR_COMPUTER_REPAIR_HISTORY}
+      title={TEXT.SHARED_HISTORY}
       emptyMessage={TEXT.SHARED_NO_HISTORY}
       errorMessage={TEXT.SHARED_UNABLE_TO_LOAD_HISTORY}
       loadingTitle={TEXT.SHARED_LOADING_HISTORY}

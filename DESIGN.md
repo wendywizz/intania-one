@@ -188,5 +188,16 @@ A **Rounded (0.5rem)** logic is applied to balance professional structure with m
 - **Progress Bars:** For onboarding or performance tracks, use the Primary Red for the fill and a light gray for the track.
 - All components should support dark theme
 
+## Theming Convention (Engineering) — single source of truth
+**`constants/theme.ts` is the single source of truth for every visual value.** No screen or component may hardcode a color. Every element — **font color, background color, icon color, border/divider line, and card/section surface** — must reference a token from `constants/theme.ts` so light/dark themes stay correct and the palette can change in one place.
+
+- **How to consume:** `const c = useColors();` for inline values (`color={c.text}`, `backgroundColor={c.primary}`), and `useThemedStyles((c) => StyleSheet.create({...}))` for `StyleSheet` blocks. Both resolve to the active light/dark palette automatically.
+- **No hardcoded hex / rgba** in `.tsx` files — not in `style={}`, not in `StyleSheet.create`, not as component props. This includes `#FFFFFF`: white text/icon on a colored fill must use **`c.textOnPrimary`** (it is `#FFFFFF` in both themes), never a literal.
+- **Token map (common):** screen background → `c.background`; cards/sheets → `c.surface`; muted fills / icon circles → `c.surfaceMuted` / `c.primarySoft`; body text → `c.text`; secondary text → `c.textMuted` / `c.textFaint`; brand/CTA → `c.primary`; text/icon on a colored fill → `c.textOnPrimary`; borders & divider lines → `c.border`; semantic → `c.success` / `c.warning` / `c.danger` / `c.info`.
+- **Button backgrounds** come from the token that matches intent: primary action → `c.primary`, positive/accept → `c.success`, destructive/reject → `c.danger`, neutral/info → `c.info`. Prefer the shared `Button` component's `variant` (`primary` / `secondary` / `ghost` / `danger`) which already maps to these tokens.
+- **Lines & card sections:** dividers/hairlines use `borderColor: c.border` (never a literal `#eee`); card surfaces use the shared `SectionCard` / `DetailInfoCard`, which are already tokenized.
+- **Fonts:** use `AppFonts` from `constants/fonts.ts` (never a raw family string). App-wide typeface is **Sarabun** — titles/emphasis use SemiBold (`AppFonts.psuBold`), general text uses Regular (`AppFonts.psuRegular`).
+- **Reference:** `app/repair-computer/worker-job-detail.tsx` is fully tokenized (no literals) — use it as the pattern for new screens.
+
 ## Config file
 The color and font size should keep in file "constants/theme.ts" don't create another file

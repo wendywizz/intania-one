@@ -14,6 +14,7 @@ import {
   REPAIR_COMPUTER_DEFAULT_ROLE,
   type RepairComputerRole,
 } from '@/constants/types';
+import { AppFonts } from '@/constants/fonts';
 import { useColors } from '@/constants/theme';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
@@ -190,16 +191,20 @@ export default function RepairComputerTabLayout() {
       <View style={styles.container}>
         <Tabs
           screenOptions={{
-            tabBarActiveTintColor: c.primary,
             headerShown: false,
             tabBarButton: HapticTab,
+            tabBarActiveTintColor: '#FFFFFF',
+            tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
             tabBarStyle: {
+              backgroundColor: c.primary,
+              borderTopColor: c.primary,
               height: 68,
               paddingBottom: 10,
               paddingTop: 6,
             },
             tabBarLabelStyle: {
               fontSize: 11,
+              fontFamily: AppFonts.psuRegular,
             },
           }}>
           {/* User tabs - only shown if highest role is user */}

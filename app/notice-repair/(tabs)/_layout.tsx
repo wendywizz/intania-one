@@ -2,6 +2,7 @@ import { HapticTab } from '@/components/haptic-tab';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AppFonts } from '@/constants/fonts';
 import { useColors } from '@/constants/theme';
 import { TEXT } from '@/constants/text';
 import {
@@ -107,18 +108,18 @@ export default function NoticeRepairTabLayout() {
 
   const visibleFor = (role: NoticeRepairRole) => (currentRole === role ? undefined : null);
 
-  const tint = c.primary;
   const isRedirecting = !isChecking && Boolean(getRoleRoute(pathname)) && getRoleRoute(pathname) !== currentRole;
 
   return (
     <NoticeRepairRoleProvider currentRole={currentRole} availableRoles={availableRoles} staffId={staffId}>
       <View style={styles.container}>
         <Tabs screenOptions={{
-          tabBarActiveTintColor: tint,
           headerShown: false,
           tabBarButton: HapticTab,
-          tabBarStyle: { height: 68, paddingBottom: 10, paddingTop: 6 },
-          tabBarLabelStyle: { fontSize: 11 },
+          tabBarActiveTintColor: '#FFFFFF',
+          tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
+          tabBarStyle: { backgroundColor: c.primary, borderTopColor: c.primary, height: 68, paddingBottom: 10, paddingTop: 6 },
+          tabBarLabelStyle: { fontSize: 11, fontFamily: AppFonts.psuRegular },
         }}>
           {/* ── Informer ── */}
           {/* inform is reached via the FAB on the current-job screen, not a tab,

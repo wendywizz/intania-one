@@ -185,6 +185,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   right: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'center',
     gap: 6,
     flexShrink: 0,
   },

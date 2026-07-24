@@ -13,9 +13,11 @@ import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
+import { SectionCard } from "@/components/section-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { DetailInfoCard } from "@/components/ui/detail-info-card";
+import { PersonListCard, type PersonListEntry } from "@/components/ui/person-list-card";
 import type { RepairComputer } from "@/models/types";
 import { getPersonPhoto } from "@/services/personService";
 import { getJobDetail } from "@/services/repairComputerService";
@@ -76,19 +78,7 @@ function RowDetail({ description, title }: { description: string; title: string 
   );
 }
 
-function SectionCard({ children, title }: { children: ReactNode; title: string }) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <ThemedView style={styles.sectionCard} lightColor="#FFFFFF" darkColor="#151718">
-      <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-        {title}
-      </ThemedText>
-      {children}
-    </ThemedView>
-  );
-}
-
+// Avatar + name + role/meta row, matching the absence detail person rows.
 function PersonSummaryCard({
   fallbackTitle,
   id,
@@ -102,33 +92,27 @@ function PersonSummaryCard({
   name: string;
   role?: string;
 }) {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const staffId = normalizeStaffId(id);
   const [photoFailed, setPhotoFailed] = useState(false);
   const showPhoto = Boolean(staffId) && !photoFailed;
-  const fallbackInitial = (name || fallbackTitle).trim().charAt(0).toUpperCase();
+  const position = [role, meta].filter(Boolean).join(" · ");
 
   return (
-    <View style={styles.personCard}>
-      {showPhoto ? (
-        <Image
-          onError={() => setPhotoFailed(true)}
-          source={{ uri: getPersonPhoto({ staffId }) }}
-          style={styles.personPhoto}
-        />
-      ) : (
-        <Image source={USER_PLACEHOLDER} style={styles.personPhoto} />
-      )}
+    <View style={styles.personRow}>
+      <Image
+        onError={() => setPhotoFailed(true)}
+        source={showPhoto ? { uri: getPersonPhoto({ staffId }) } : USER_PLACEHOLDER}
+        style={styles.personAvatar}
+      />
       <View style={styles.personText}>
-        <ThemedText type="defaultSemiBold" style={styles.personName} numberOfLines={2}>
+        <ThemedText style={styles.personName} numberOfLines={2}>
           {name || fallbackTitle}
         </ThemedText>
-        {role ? (
-          <ThemedText style={styles.personRole} numberOfLines={1}>{role}</ThemedText>
-        ) : null}
-        {meta ? (
-          <ThemedText style={styles.personMeta} numberOfLines={2}>{meta}</ThemedText>
+        {position ? (
+          <ThemedText style={styles.personPosition} numberOfLines={2}>
+            {position}
+          </ThemedText>
         ) : null}
       </View>
     </View>
@@ -197,7 +181,17 @@ export default function JobHistoryDetailScreen() {
   const workerName = getJobText(data, workerNameFields);
   const workerId = getJobText(data, workerIdFields);
   const badgeStyle = getRepairStatusBadgeStyle(statusId);
-  const hasAssignedStaff = Boolean(workerName || workerId || foremanName || foremanId);
+  // Foreman role (reached from the foreman history / manage-job flows): the
+  // viewer is the foreman, so their own row is hidden and the card is retitled.
+  const isForemanRole = /foreman|manage-job/.test(backHref);
+  const isWorkerRole = /worker/.test(backHref);
+  // Informer role: the viewer is the reporter, so their own "informer" card is
+  // redundant and hidden.
+  const isInformerRole = !isForemanRole && !isWorkerRole;
+  // In the assignment card, hide the viewer's own row (foreman hides foreman,
+  // worker hides worker).
+  const showWorker = !isWorkerRole && Boolean(workerName || workerId);
+  const showForeman = !isForemanRole && Boolean(foremanName || foremanId);
 
   const renderContent = () => {
     if (isLoading) {
@@ -229,16 +223,10 @@ export default function JobHistoryDetailScreen() {
 
     return (
       <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false}>
-        <ThemedView style={styles.summaryCard} lightColor="#FFFFFF" darkColor="#151718">
-          <View style={styles.summaryHeader}>
-            <View style={styles.summaryTitleBlock}>
-              <ThemedText style={styles.summaryKicker}>
-                {TEXT.REPAIR_COMPUTER_JOB_DETAIL}
-              </ThemedText>
-              <ThemedText type="subtitle" style={styles.summaryTitle}>
-                {repairTypeName || detail || TEXT.REPAIR_COMPUTER_JOB_DETAIL}
-              </ThemedText>
-            </View>
+        {/* Job info — titled card + icon/label/value rows, like absence detail. */}
+        <DetailInfoCard
+          title={TEXT.REPAIR_COMPUTER_JOB_DETAIL}
+          trailing={
             <View style={[styles.statusBadge, { backgroundColor: badgeStyle.background }]}>
               <ThemedText
                 style={[styles.statusBadgeText, { color: badgeStyle.text }]}
@@ -247,76 +235,53 @@ export default function JobHistoryDetailScreen() {
                 {statusName}
               </ThemedText>
             </View>
-          </View>
+          }
+          rows={[
+            { label: TEXT.REPAIR_COMPUTER_DETAIL, value: repairTypeName, icon: "wrench.fill" },
+            { label: TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL, value: supplyCode, icon: "doc.text.fill" },
+            {
+              label: TEXT.REPAIR_COMPUTER_INFORM_DATE_LABEL,
+              value: informDateTime ? formatDateTime(informDateTime) : "",
+              icon: "calendar",
+            },
+            { label: TEXT.REPAIR_COMPUTER_DETAIL_LABEL, value: detail, icon: "text.bubble" },
+          ]}
+        />
 
-          {informDateTime ? (
-            <View style={styles.summaryMetaGrid}>
-              <View style={styles.summaryMetaItem}>
-                <IconSymbol name="calendar" size={15} color={c.textMuted} />
-                <ThemedText style={styles.summaryMetaText} numberOfLines={2}>
-                  {formatDateTime(informDateTime)}
-                </ThemedText>
-              </View>
-            </View>
-          ) : null}
-        </ThemedView>
-
-        <SectionCard title="User Inform">
-          <PersonSummaryCard
-            fallbackTitle="User"
-            id={requesterId}
-            meta={deptName ? `${TEXT.SHARED_DEPARTMENT_LABEL} ${deptName}` : undefined}
-            name={requesterName}
-          />
-          <View style={styles.detailGrid}>
-            <RowDetail
-              title={TEXT.REPAIR_COMPUTER_PHONE_LABEL}
-              description={phone || TEXT_NONE}
+        {!isInformerRole ? (
+          <SectionCard title={TEXT.REPAIR_COMPUTER_INFORMER_SECTION}>
+            <PersonSummaryCard
+              fallbackTitle="User"
+              id={requesterId}
+              meta={[deptName, phone].filter(Boolean).join(" · ") || undefined}
+              name={requesterName}
             />
-            {informDateTime ? (
-              <RowDetail
-                title={TEXT.REPAIR_COMPUTER_INFORM_DATE_LABEL}
-                description={formatDateTime(informDateTime)}
-              />
-            ) : null}
-          </View>
-        </SectionCard>
-
-        <SectionCard title={TEXT.REPAIR_COMPUTER_DETAIL}>
-          <RowDetail title="Job Type" description={repairTypeName || TEXT_NONE} />
-          <RowDetail
-            title={TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL}
-            description={supplyCode || TEXT_RC_NO_SUPPLYCODE}
-          />
-          <View style={styles.descriptionBox}>
-            <ThemedText style={styles.rowTitle}>
-              {TEXT.REPAIR_COMPUTER_DETAIL_LABEL}
-            </ThemedText>
-            <ThemedText style={styles.longDescription}>
-              {detail || TEXT_NONE}
-            </ThemedText>
-          </View>
-        </SectionCard>
-
-        {hasAssignedStaff ? (
-          <SectionCard title={TEXT.REPAIR_COMPUTER_ASSIGN_CONFIRM}>
-            {(workerName || workerId) ? (
-              <PersonSummaryCard
-                fallbackTitle="Worker"
-                id={workerId}
-                name={workerName}
-                role="Worker"
-              />
-            ) : null}
-            {(foremanName || foremanId) ? (
-              <PersonSummaryCard
-                fallbackTitle={TEXT.REPAIR_COMPUTER_FOREMAN}
-                id={foremanId}
-                name={foremanName}
-                role={TEXT.REPAIR_COMPUTER_FOREMAN}
-              />
-            ) : null}
           </SectionCard>
+        ) : null}
+
+        {showWorker || showForeman ? (
+          <PersonListCard
+            title={TEXT.REPAIR_COMPUTER_JOB_ASSIGNMENT}
+            showCount={false}
+            people={[
+              ...(showWorker
+                ? [{
+                    key: "worker",
+                    name: workerName || TEXT.REPAIR_COMPUTER_WORKER,
+                    subtitle: TEXT.REPAIR_COMPUTER_WORKER,
+                    photoStaffId: normalizeStaffId(workerId),
+                  } as PersonListEntry]
+                : []),
+              ...(showForeman
+                ? [{
+                    key: "foreman",
+                    name: foremanName || TEXT.REPAIR_COMPUTER_FOREMAN,
+                    subtitle: TEXT.REPAIR_COMPUTER_FOREMAN,
+                    photoStaffId: normalizeStaffId(foremanId),
+                  } as PersonListEntry]
+                : []),
+            ]}
+          />
         ) : null}
       </ScrollView>
     );
@@ -325,18 +290,11 @@ export default function JobHistoryDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={TEXT.REPAIR_COMPUTER_TITLE}
-        subtitle={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_ID_LABEL} ${jobId}` : undefined}
-        moduleIcon="laptop"
+        title={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_NO_PREFIX}${jobId}` : TEXT.REPAIR_COMPUTER_TITLE}
         onBackPress={handleBackPress}
         showBackButton
       />
       <View style={styles.content}>
-        <View style={styles.panelHeader}>
-          <ThemedText type="subtitle" numberOfLines={1}>
-            {TEXT.REPAIR_COMPUTER_REPAIR_HISTORY}
-          </ThemedText>
-        </View>
         <View style={styles.panel}>
           {renderContent()}
         </View>
@@ -488,13 +446,36 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 20,
     lineHeight: 26,
   },
+  personRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  personAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: c.surfaceMuted,
+  },
   personText: {
     flex: 1,
     minWidth: 0,
+    gap: 3,
   },
   personName: {
     fontSize: 15,
     lineHeight: 21,
+    color: c.text,
+    fontWeight: "700",
+  },
+  personPosition: {
+    color: c.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  personDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: c.border,
   },
   personRole: {
     color: c.primary,

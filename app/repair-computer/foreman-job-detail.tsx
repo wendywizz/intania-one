@@ -13,12 +13,16 @@ import {
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
+import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { FloatingActionBar } from "@/components/floating-action-bar";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
+import { SectionCard } from "@/components/section-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { ConfirmDialog, IconSymbol } from "@/components/ui";
+import { ConfirmDialog } from "@/components/ui";
+import { DetailInfoCard } from "@/components/ui/detail-info-card";
+import { PersonListCard } from "@/components/ui/person-list-card";
 import {
     REPAIR_STATUS_APPROVAL_REJECTED,
     REPAIR_STATUS_FORWARD_FOREMAN,
@@ -138,30 +142,7 @@ function normalizeStaffId(staffId: string) {
   return /^\d+$/.test(staffId) ? staffId.padStart(7, "0") : staffId;
 }
 
-function SectionCard({
-  children,
-  title,
-  right,
-}: {
-  children: ReactNode;
-  title: string;
-  right?: ReactNode;
-}) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <ThemedView style={styles.sectionCard} lightColor="#FFFFFF" darkColor="#151718">
-      <View style={styles.sectionHeader}>
-        <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-          {title}
-        </ThemedText>
-        {right ?? null}
-      </View>
-      {children}
-    </ThemedView>
-  );
-}
-
+// Avatar + name + role/meta row, matching the absence detail person rows.
 function PersonSummaryCard({
   fallbackTitle,
   id,
@@ -175,36 +156,26 @@ function PersonSummaryCard({
   name: string;
   role?: string;
 }) {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const staffId = normalizeStaffId(id);
   const [photoFailed, setPhotoFailed] = useState(false);
   const showPhoto = Boolean(staffId) && !photoFailed;
-  const fallbackInitial = (name || fallbackTitle).trim().charAt(0).toUpperCase();
+  const position = [role, meta].filter(Boolean).join(" · ");
 
   return (
-    <View style={styles.personCard}>
-      {showPhoto ? (
-        <Image
-          onError={() => setPhotoFailed(true)}
-          source={{ uri: getPersonPhoto({ staffId }) }}
-          style={styles.personPhoto}
-        />
-      ) : (
-        <Image source={USER_PLACEHOLDER} style={styles.personPhoto} />
-      )}
+    <View style={styles.personRow}>
+      <Image
+        onError={() => setPhotoFailed(true)}
+        source={showPhoto ? { uri: getPersonPhoto({ staffId }) } : USER_PLACEHOLDER}
+        style={styles.personAvatar}
+      />
       <View style={styles.personText}>
-        <ThemedText type="defaultSemiBold" style={styles.personName} numberOfLines={2}>
+        <ThemedText style={styles.personName} numberOfLines={2}>
           {name || fallbackTitle}
         </ThemedText>
-        {role ? (
-          <ThemedText style={styles.personRole} numberOfLines={1}>
-            {role}
-          </ThemedText>
-        ) : null}
-        {meta ? (
-          <ThemedText style={styles.personMeta} numberOfLines={2}>
-            {meta}
+        {position ? (
+          <ThemedText style={styles.personPosition} numberOfLines={2}>
+            {position}
           </ThemedText>
         ) : null}
       </View>
@@ -326,15 +297,15 @@ export default function ForemanJobDetailScreen() {
   const getConfirmContent = (action: ForemanCurrentJobAction) => {
     if (action === "forwardReject") {
       return {
-        title: "Confirm Reject Job",
-        message: "Do you want to reject this forwarded job?",
+        title: TEXT.REPAIR_COMPUTER_REJECT_JOB_CONFIRM_TITLE,
+        message: TEXT.REPAIR_COMPUTER_REJECT_CONFIRM_MESSAGE,
         submit: () => foremanForwardReject(jobId || ""),
       };
     }
 
     return {
-      title: "Confirm Close Job",
-      message: "Do you want to close this repair computer job?",
+      title: TEXT.REPAIR_COMPUTER_CLOSE_CONFIRM_TITLE,
+      message: TEXT.REPAIR_COMPUTER_CLOSE_CONFIRM_MESSAGE,
       submit: () => foremanCloseJob(jobId || ""),
     };
   };
@@ -409,16 +380,10 @@ export default function ForemanJobDetailScreen() {
 
     return (
       <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false}>
-        <ThemedView style={styles.summaryCard} lightColor="#FFFFFF" darkColor="#151718">
-          <View style={styles.summaryHeader}>
-            <View style={styles.summaryTitleBlock}>
-              <ThemedText style={styles.summaryKicker}>
-                {TEXT.REPAIR_COMPUTER_JOB_DETAIL}
-              </ThemedText>
-              <ThemedText type="subtitle" style={styles.summaryTitle}>
-                {repairTypeName || detail || TEXT.REPAIR_COMPUTER_JOB_DETAIL}
-              </ThemedText>
-            </View>
+        {/* Job info — titled card + icon/label/value rows, like absence detail. */}
+        <DetailInfoCard
+          title={TEXT.REPAIR_COMPUTER_JOB_DETAIL}
+          trailing={
             <View style={[styles.statusBadge, { backgroundColor: badgeStyle.background }]}>
               <ThemedText
                 style={[styles.statusBadgeText, { color: badgeStyle.text }]}
@@ -427,89 +392,60 @@ export default function ForemanJobDetailScreen() {
                 {statusName}
               </ThemedText>
             </View>
-          </View>
+          }
+          rows={[
+            { label: TEXT.REPAIR_COMPUTER_DETAIL, value: repairTypeName, icon: "wrench.fill" },
+            { label: TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL, value: supplyCode, icon: "doc.text.fill" },
+            {
+              label: TEXT.REPAIR_COMPUTER_INFORM_DATE_LABEL,
+              value: informDateTime ? formatDateTime(informDateTime) : "",
+              icon: "calendar",
+            },
+            { label: TEXT.REPAIR_COMPUTER_DETAIL_LABEL, value: detail, icon: "text.bubble" },
+          ]}
+        />
 
-          <View style={styles.summaryMetaGrid}>
-            <View style={styles.summaryMetaItem}>
-              <IconSymbol name="calendar" size={15} color={c.textMuted} />
-              <ThemedText style={styles.summaryMetaText} numberOfLines={2}>
-                {informDateTime ? formatDateTime(informDateTime) : TEXT_NONE}
-              </ThemedText>
-            </View>
-          </View>
-        </ThemedView>
-
-        <SectionCard title="User Inform">
+        <SectionCard title={TEXT.REPAIR_COMPUTER_INFORMER_SECTION}>
           <PersonSummaryCard
-            fallbackTitle="User"
+            fallbackTitle={TEXT.REPAIR_COMPUTER_INFORMER_NAME}
             id={requesterId}
-            meta={`${TEXT.SHARED_DEPARTMENT_LABEL} ${deptName || TEXT_NONE}`}
+            meta={[deptName, phone].filter(Boolean).join(" · ") || TEXT_NONE}
             name={requesterName}
           />
-          <View style={styles.detailGrid}>
-            <RowDetail title={TEXT.REPAIR_COMPUTER_PHONE_LABEL} description={phone || TEXT_NONE} />
-            <RowDetail
-              title={TEXT.REPAIR_COMPUTER_INFORM_DATE_LABEL}
-              description={informDateTime ? formatDateTime(informDateTime) : TEXT_NONE}
-            />
-          </View>
         </SectionCard>
 
-        <SectionCard title={TEXT.REPAIR_COMPUTER_DETAIL}>
-          <RowDetail
-            title="Job Type"
-            description={repairTypeName || TEXT_NONE}
+        {/* A forwarded job (4.3) shows only the foreman who forwarded it. */}
+        {status !== REPAIR_STATUS_NEW_JOB &&
+        showAssignedWorker &&
+        status !== REPAIR_STATUS_FORWARD_FOREMAN &&
+        (workerName || workerId) ? (
+          <PersonListCard
+            title={TEXT.REPAIR_COMPUTER_JOB_ASSIGNMENT}
+            showCount={false}
+            people={[
+              {
+                key: "worker",
+                name: workerName || TEXT.REPAIR_COMPUTER_WORKER,
+                subtitle: TEXT.REPAIR_COMPUTER_WORKER,
+                photoStaffId: normalizeStaffId(workerId),
+              },
+            ]}
           />
-          <RowDetail
-            title={TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL}
-            description={supplyCode || TEXT_RC_NO_SUPPLYCODE}
-          />
-          <View style={styles.descriptionBox}>
-            <ThemedText style={styles.rowTitle}>
-              {TEXT.REPAIR_COMPUTER_DETAIL_LABEL}
-            </ThemedText>
-            <ThemedText style={styles.longDescription}>
-              {detail || TEXT_NONE}
-            </ThemedText>
-          </View>
-        </SectionCard>
+        ) : null}
 
-        {status !== REPAIR_STATUS_NEW_JOB && showAssignedWorker ? (
-          <SectionCard title={TEXT.REPAIR_COMPUTER_ASSIGN_CONFIRM}>
-            {/* A forwarded job (4.3) shows only the foreman who forwarded it. */}
-            {status !== REPAIR_STATUS_FORWARD_FOREMAN && (workerName || workerId) ? (
-              <PersonSummaryCard
-                fallbackTitle="Worker"
-                id={workerId}
-                name={workerName}
-                role="Worker"
-              />
-            ) : null}
-            {foremanName || foremanId ? (
-              <PersonSummaryCard
-                fallbackTitle={TEXT.REPAIR_COMPUTER_FOREMAN}
-                id={foremanId}
-                name={foremanName}
-                role={
-                  status === REPAIR_STATUS_FORWARD_FOREMAN
-                    ? "ผู้ส่งต่องาน"
-                    : TEXT.REPAIR_COMPUTER_FOREMAN
-                }
-              />
-            ) : null}
-            {status === REPAIR_STATUS_WORKER_REJECT ? (
-              <RowDetail
-                title={TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL}
-                description={rejectDetail || TEXT_NONE}
-              />
-            ) : null}
-          </SectionCard>
+        {status === REPAIR_STATUS_WORKER_REJECT ? (
+          <DetailInfoCard
+            title={TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL}
+            rows={[
+              { label: TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL, value: rejectDetail, icon: "text.bubble" },
+            ]}
+          />
         ) : null}
 
         {isSupplyFlow ? (
-          <SectionCard
-            title="Request Supply"
-            right={
+          <DetailInfoCard
+            title={TEXT.REPAIR_COMPUTER_REQUEST_SUPPLY}
+            trailing={
               hasApprovalResult ? (
                 <View
                   style={[
@@ -522,33 +458,27 @@ export default function ForemanJobDetailScreen() {
                     darkColor="#FFFFFF"
                     style={styles.approvalBadgeText}
                   >
-                    {isApproved ? "เห็นชอบ" : "ไม่เห็นชอบ"}
+                    {isApproved ? TEXT.REPAIR_COMPUTER_SUPPLY_APPROVED : TEXT.REPAIR_COMPUTER_SUPPLY_NOT_APPROVED}
                   </ThemedText>
                 </View>
               ) : (
                 <View style={[styles.approvalBadge, styles.approvalBadgePending]}>
                   <ThemedText style={styles.approvalBadgePendingText}>
-                    รอการอนุมัติ
+                    {TEXT.REPAIR_COMPUTER_SUPPLY_WAIT_APPROVAL}
                   </ThemedText>
                 </View>
               )
             }
-          >
-            {requestSupplyDate ? (
-              <RowDetail
-                title="Request date"
-                description={formatDateTime(requestSupplyDate)}
-              />
-            ) : null}
-            <View style={styles.descriptionBox}>
-              <ThemedText style={styles.rowTitle}>Request detail</ThemedText>
-              <ThemedText style={styles.longDescription}>
-                {requestSupplyDetail || TEXT_NONE}
-              </ThemedText>
-            </View>
-          </SectionCard>
+            rows={[
+              {
+                label: TEXT.REPAIR_COMPUTER_REQUEST_DATE_LABEL,
+                value: requestSupplyDate ? formatDateTime(requestSupplyDate) : "",
+                icon: "calendar",
+              },
+              { label: TEXT.REPAIR_COMPUTER_REQUEST_DETAIL_LABEL, value: requestSupplyDetail, icon: "text.bubble" },
+            ]}
+          />
         ) : null}
-
       </ScrollView>
     );
   };
@@ -580,7 +510,7 @@ export default function ForemanJobDetailScreen() {
                 darkColor="#FFFFFF"
                 type="defaultSemiBold"
               >
-                Accept
+                {TEXT.REPAIR_COMPUTER_ACCEPT}
               </ThemedText>
             </Pressable>
 
@@ -602,7 +532,7 @@ export default function ForemanJobDetailScreen() {
                 darkColor="#FFFFFF"
                 type="defaultSemiBold"
               >
-                Reject
+                {TEXT.REPAIR_COMPUTER_REJECT}
               </ThemedText>
             </Pressable>
           </View>
@@ -626,7 +556,7 @@ export default function ForemanJobDetailScreen() {
               style={[styles.approveButton, isSubmitting ? styles.disabledButton : undefined]}
             >
               <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                Accept
+                {TEXT.REPAIR_COMPUTER_ACCEPT}
               </ThemedText>
             </Pressable>
 
@@ -642,7 +572,7 @@ export default function ForemanJobDetailScreen() {
               style={[styles.rejectButton, isSubmitting ? styles.disabledButton : undefined]}
             >
               <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                Reject
+                {TEXT.REPAIR_COMPUTER_REJECT}
               </ThemedText>
             </Pressable>
           </View>
@@ -678,7 +608,7 @@ export default function ForemanJobDetailScreen() {
                   type="defaultSemiBold"
                   style={styles.actionButtonText}
                 >
-                  Fwd Worker
+                  {TEXT.REPAIR_COMPUTER_FORWARD_WORKER}
                 </ThemedText>
               </Pressable>
 
@@ -702,7 +632,7 @@ export default function ForemanJobDetailScreen() {
                   type="defaultSemiBold"
                   style={styles.actionButtonText}
                 >
-                  Fwd Foreman
+                  {TEXT.REPAIR_COMPUTER_FORWARD_FOREMAN}
                 </ThemedText>
               </Pressable>
             </View>
@@ -722,7 +652,7 @@ export default function ForemanJobDetailScreen() {
                 type="defaultSemiBold"
                 style={styles.actionButtonText}
               >
-                Close Job
+                {TEXT.REPAIR_COMPUTER_CLOSE_JOB}
               </ThemedText>
             </Pressable>
           </View>
@@ -749,7 +679,7 @@ export default function ForemanJobDetailScreen() {
               style={[styles.acceptButton, isSubmitting ? styles.disabledButton : undefined]}
             >
               <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                Assign Job
+                {TEXT.REPAIR_COMPUTER_ASSIGN_JOB}
               </ThemedText>
             </Pressable>
 
@@ -760,7 +690,7 @@ export default function ForemanJobDetailScreen() {
               style={[styles.rejectButton, isSubmitting ? styles.disabledButton : undefined]}
             >
               <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-                Reject Job
+                {TEXT.REPAIR_COMPUTER_REJECT_JOB}
               </ThemedText>
             </Pressable>
           </View>
@@ -778,19 +708,12 @@ export default function ForemanJobDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={TEXT.REPAIR_COMPUTER_TITLE}
-        subtitle={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_ID_LABEL} ${jobId}` : undefined}
-        moduleIcon="laptop"
+        title={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_NO_PREFIX}${jobId}` : TEXT.REPAIR_COMPUTER_TITLE}
         onBackPress={handleBackPress}
         showBackButton
       />
 
       <View style={styles.content}>
-        <View style={styles.panelHeader}>
-          <ThemedText type="subtitle" numberOfLines={1}>
-            {pageTitle}
-          </ThemedText>
-        </View>
         <View style={styles.panel}>
           {renderContent()}
         </View>
@@ -807,13 +730,14 @@ export default function ForemanJobDetailScreen() {
         visible={Boolean(confirmContent)}
         title={confirmContent?.title ?? ""}
         message={confirmContent?.message}
-        confirmLabel="Yes"
-        cancelLabel="No"
+        confirmLabel={TEXT.SHARED_YES}
+        cancelLabel={TEXT.SHARED_NO}
         destructive={confirmAction === "forwardReject"}
         loading={isSubmitting}
         onConfirm={handleConfirmAction}
         onCancel={() => setConfirmAction(null)}
       />
+      <SubmittingOverlay visible={isSubmitting} />
     </ThemedView>
   );
 }
@@ -993,13 +917,32 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 20,
     lineHeight: 26,
   },
+  personRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  personAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: c.surfaceMuted,
+  },
   personText: {
     flex: 1,
     minWidth: 0,
+    gap: 3,
   },
   personName: {
     fontSize: 15,
     lineHeight: 21,
+    color: c.text,
+    fontWeight: "700",
+  },
+  personPosition: {
+    color: c.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
   },
   personRole: {
     color: c.primary,

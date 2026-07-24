@@ -59,22 +59,6 @@ export const Fonts = Platform.select({
   },
 });
 
-/**
- * Flat palette used by the navigation theme (formerly constants/colors.ts).
- */
-export const colors = {
-  primary: '#B33939',
-  background: '#F4F6F8',
-  surface: '#FFFFFF',
-  text: '#141414',
-  mutedText: '#8D8E92',
-  border: '#E3E6EA',
-  success: '#2f9e44',
-  warning: '#f08c00',
-  danger: '#C0392B',
-  iconCircleBorder: '#FFFFFF', // White ring for the nav top-bar module icon circle
-};
-
 // ============ APP SEMANTIC PALETTE (light + dark) ============
 /**
  * The single palette every screen should theme against. Keys are semantic
@@ -209,6 +193,23 @@ export const DarkColors: AppColors = {
   overlay: 'rgba(0,0,0,0.6)',
   shadow: '#000000',
   skeleton: '#232B32',
+};
+
+/**
+ * Flat palette used by the navigation theme (formerly constants/colors.ts).
+ */
+export const colors = {
+  primary: '#B33939',
+  background: '#F4F6F8',
+  surface: '#FFFFFF',
+  text: '#141414',
+  mutedText: '#8D8E92',
+  border: '#E3E6EA',
+  success: Defo.emerald,
+  warning: Defo.sunFlower,
+  danger: Defo.alizarin,
+  info: Defo.peterRiver,
+  iconCircleBorder: '#FFFFFF', // White ring for the nav top-bar module icon circle
 };
 
 /** Active semantic palette for the current theme. */

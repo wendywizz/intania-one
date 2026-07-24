@@ -1,4 +1,4 @@
-import { ArrowRight, Clock, LogIn, LogOut } from 'lucide-react-native';
+import { ArrowRight, CalendarDays, Clock, LogIn, LogOut } from 'lucide-react-native';
 import moment from 'moment';
 import 'moment/locale/th';
 import { router, useFocusEffect } from 'expo-router';
@@ -325,7 +325,10 @@ export default function TimestampCalendarScreen() {
   const renderSelectedDetail = () => {
     if (!selectedDay) {
       return (
-        <ThemedText style={styles.hintText}>{TEXT.TIMESTAMP_CALENDAR_HINT}</ThemedText>
+        <View style={styles.emptyDetail}>
+          <CalendarDays size={44} color={c.textFaint} strokeWidth={1.5} />
+          <ThemedText style={styles.hintText}>{TEXT.TIMESTAMP_CALENDAR_HINT}</ThemedText>
+        </View>
       );
     }
     const selectedMoment = moment({ year, month: month - 1, day: selectedDay });
@@ -778,5 +781,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
     paddingVertical: 8,
+  },
+  emptyDetail: {
+    minHeight: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 32,
   },
 });

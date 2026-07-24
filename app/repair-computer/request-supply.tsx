@@ -4,6 +4,7 @@ import { StyleSheet, View } from "react-native";
 import { type AppColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
+import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { FloatingActionBar } from "@/components/floating-action-bar";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -102,18 +103,18 @@ export default function RequestSupplyScreen() {
       <View style={styles.content}>
         <Card style={styles.panel}>
           <View style={styles.titleBlock}>
-            <ThemedText type="subtitle">Request Supply</ThemedText>
+            <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_REQUEST_SUPPLY}</ThemedText>
             <ThemedText style={styles.titleDescription}>
-              Describe the parts or equipment you need. The request is sent to the
-              foreman for approval.
+              {TEXT.REPAIR_COMPUTER_REQUEST_SUPPLY_DESC}
             </ThemedText>
           </View>
 
           <TextField
-            label="Supply request detail"
+            label={TEXT.REPAIR_COMPUTER_REQUEST_DETAIL_LABEL}
             required
             multiline
-            numberOfLines={3}
+            numberOfLines={2}
+            style={{ minHeight: 60 }}
             value={detail}
             onChangeText={(value) => {
               setDetail(value);
@@ -121,22 +122,22 @@ export default function RequestSupplyScreen() {
                 setValidationError("");
               }
             }}
-            placeholder="Supply request detail"
+            placeholder={TEXT.REPAIR_COMPUTER_REQUEST_DETAIL_LABEL}
             error={validationError}
           />
         </Card>
       </View>
 
       <FloatingActionBar disabled={isSubmitting}>
-        <Button title="Submit" fullWidth onPress={handleOpenConfirm} />
+        <Button title={TEXT.REPAIR_COMPUTER_SUBMIT} fullWidth onPress={handleOpenConfirm} />
       </FloatingActionBar>
 
       <ConfirmDialog
         visible={isConfirmOpen}
-        title="Confirm Request Supply"
-        message="Do you want to send this supply request to the foreman?"
-        confirmLabel="Yes"
-        cancelLabel="No"
+        title={TEXT.REPAIR_COMPUTER_REQUEST_SUPPLY_CONFIRM_TITLE}
+        message={TEXT.REPAIR_COMPUTER_REQUEST_SUPPLY_CONFIRM_MESSAGE}
+        confirmLabel={TEXT.SHARED_YES}
+        cancelLabel={TEXT.SHARED_NO}
         loading={isSubmitting}
         onConfirm={handleConfirm}
         onCancel={() => setIsConfirmOpen(false)}
@@ -146,6 +147,7 @@ export default function RequestSupplyScreen() {
         message={toastMessage}
         type={toastType === "error" ? "error" : "success"}
       />
+      <SubmittingOverlay visible={isSubmitting} />
     </ThemedView>
   );
 }

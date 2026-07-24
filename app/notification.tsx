@@ -11,6 +11,8 @@ import { EmptyState } from '@/components/empty-state';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
+import { TEXT } from '@/constants/text';
+import { useTheme } from '@/context/ThemeContext';
 import {
   clearNotificationHistory,
   getNotificationHistory,
@@ -18,17 +20,6 @@ import {
   type PushNotificationHistoryItem,
 } from '@/services/notificationService';
 import { navPush } from '@/utils/navigation';
-
-const D = {
-  bg: '#ffffff',
-  surface: '#ffffff',
-  text: '#191C1F',
-  mutedText: '#6B7280',
-  border: '#E5E7EB',
-  primary: '#B33939',
-  unreadBg: '#FFFAFA',
-  unreadBorder: '#F4C7C3',
-} as const;
 
 function formatRelativeTime(value: string) {
   const m = moment(value);
@@ -78,6 +69,7 @@ function NotificationItem({ item, onPress }: { item: PushNotificationHistoryItem
 
 export default function NotificationScreen() {
   const c = useColors();
+  const { isDarkMode } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const [items, setItems] = useState<PushNotificationHistoryItem[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -113,12 +105,12 @@ export default function NotificationScreen() {
 
   const handleClearAll = () => {
     Alert.alert(
-      'ล้างการแจ้งเตือน',
-      'ต้องการลบการแจ้งเตือนทั้งหมดใช่หรือไม่?',
+      TEXT.NOTIFICATION_CLEAR_CONFIRM_TITLE,
+      TEXT.NOTIFICATION_CLEAR_CONFIRM_MESSAGE,
       [
-        { text: 'ยกเลิก', style: 'cancel' },
+        { text: TEXT.CANCEL, style: 'cancel' },
         {
-          text: 'ล้างทั้งหมด',
+          text: TEXT.NOTIFICATION_CLEAR_ALL,
           style: 'destructive',
           onPress: async () => {
             await clearNotificationHistory();
@@ -130,20 +122,20 @@ export default function NotificationScreen() {
   };
 
   return (
-    <ThemedView style={styles.container} lightColor={c.surface}>
-      <StatusBar style="light" />
+    <ThemedView style={styles.container}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <NavTopBar
-        title="Notifications"
-        showHomeButton={false}
+        title={TEXT.NOTIFICATION_TITLE}
+        showHomeButton
         rightContent={
           items.length > 0 ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="ล้างการแจ้งเตือนทั้งหมด"
+              accessibilityLabel={TEXT.NOTIFICATION_CLEAR_ALL_ACCESSIBILITY_LABEL}
               onPress={handleClearAll}
               style={({ pressed }) => [styles.clearBtn, pressed && styles.clearBtnPressed]}
             >
-              <ThemedText style={styles.clearBtnText}>Clear all</ThemedText>
+              <ThemedText style={styles.clearBtnText}>{TEXT.NOTIFICATION_CLEAR_ALL}</ThemedText>
             </Pressable>
           ) : undefined
         }
@@ -154,7 +146,7 @@ export default function NotificationScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={c.primary} />}
-        ListEmptyComponent={<EmptyState icon={BellOff} message="No notifications" />}
+        ListEmptyComponent={<EmptyState icon={BellOff} message={TEXT.NOTIFICATION_EMPTY} />}
         renderItem={({ item }) => (
           <NotificationItem item={item} onPress={() => openNotification(item)} />
         )}

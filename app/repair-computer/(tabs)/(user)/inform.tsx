@@ -3,21 +3,31 @@ import { router, useFocusEffect } from "expo-router";
 import { navReplace } from "@/utils/navigation";
 import { useCallback, useState } from "react";
 import {
+    Platform,
     ScrollView,
     StyleSheet,
+    TextInput,
     View,
 } from "react-native";
-import { type AppColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
+import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { FloatingActionBar } from "@/components/floating-action-bar";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
+import { SectionCard } from "@/components/section-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Button, ConfirmDialog, TextField } from "@/components/ui";
+import { Button, ConfirmDialog } from "@/components/ui";
+import { TipAlert } from "@/components/ui/tip-alert";
+import { AppFonts } from "@/constants/fonts";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
+
+// Remove the default focus outline on web so active inputs match the
+// borderless underline style (RN Web only; no-op on native).
+const webNoOutline: any = Platform.OS === "web" ? { outlineStyle: "none" } : null;
 import {
     addRepairComputerJob,
     checkCanInform,
@@ -44,6 +54,7 @@ function getCanInform(data: unknown) {
 }
 
 export default function RepairComputerInformScreen() {
+  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
@@ -80,7 +91,7 @@ export default function RepairComputerInformScreen() {
           const isAllowed = getCanInform(result);
           setCanInform(isAllowed);
           setCanInformMessage(
-            isAllowed ? "" : "You still have a repair computer job remain.",
+            isAllowed ? "" : TEXT.REPAIR_COMPUTER_JOB_REMAIN_MESSAGE,
           );
         } catch (error) {
           if (!isActive) {
@@ -91,7 +102,7 @@ export default function RepairComputerInformScreen() {
           setCanInformMessage(
             error instanceof Error
               ? error.message
-              : "You still have a repair computer job remain.",
+              : TEXT.REPAIR_COMPUTER_JOB_REMAIN_MESSAGE,
           );
         } finally {
           if (isActive) {
@@ -128,11 +139,11 @@ export default function RepairComputerInformScreen() {
     const nextErrors: ValidationErrors = {};
 
     if (!detail.trim()) {
-      nextErrors.detail = "Detail is required";
+      nextErrors.detail = TEXT.REPAIR_COMPUTER_DETAIL_REQUIRED;
     }
 
     if (!phone.trim()) {
-      nextErrors.phone = "Phone is required";
+      nextErrors.phone = TEXT.REPAIR_COMPUTER_PHONE_REQUIRED;
     }
 
     setValidationErrors(nextErrors);
@@ -195,54 +206,96 @@ export default function RepairComputerInformScreen() {
         />
       ) : canInform ? (
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.heading}>
-            <ThemedText type="subtitle">
-              {TEXT.REPAIR_COMPUTER_NEW_REQUEST}
-            </ThemedText>
-            <ThemedText style={styles.headingDescription}>
-              {TEXT.REPAIR_COMPUTER_NEW_REQUEST_DESCRIPTION}
-            </ThemedText>
-          </View>
+          <TipAlert
+            title={TEXT.REPAIR_COMPUTER_NEW_REQUEST}
+            message={TEXT.REPAIR_COMPUTER_NEW_REQUEST_DESCRIPTION}
+            style={styles.policyCard}
+          />
 
-          <View style={styles.formFields}>
-            <TextField
-              label={TEXT.REPAIR_COMPUTER_DETAIL}
-              required
-              multiline
-              numberOfLines={4}
-              value={detail}
-              onChangeText={(value) => {
-                setDetail(value);
-                clearValidationError("detail");
-              }}
-              placeholder="Describe the problem in detail..."
-              error={validationErrors.detail}
-            />
+          {/* Detail */}
+          <SectionCard>
+            <View style={styles.field}>
+              <ThemedText style={styles.fieldLabel}>
+                {TEXT.REPAIR_COMPUTER_DETAIL}
+                <ThemedText style={styles.requiredMark}> *</ThemedText>
+              </ThemedText>
+              <TextInput
+                multiline
+                numberOfLines={2}
+                value={detail}
+                onChangeText={(value) => {
+                  setDetail(value);
+                  clearValidationError("detail");
+                }}
+                placeholder={TEXT.REPAIR_COMPUTER_DETAIL_PLACEHOLDER}
+                placeholderTextColor={c.textFaint}
+                style={[
+                  styles.input,
+                  styles.textArea,
+                  validationErrors.detail ? styles.inputError : undefined,
+                  webNoOutline,
+                ]}
+              />
+              {validationErrors.detail ? (
+                <ThemedText style={styles.fieldError}>
+                  {validationErrors.detail}
+                </ThemedText>
+              ) : null}
+            </View>
+          </SectionCard>
 
-            <TextField
-              label={TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
-              optional
-              value={supplyCode}
-              onChangeText={setSupplyCode}
-              placeholder="e.g. PC-12345"
-            />
+          {/* Supply code */}
+          <SectionCard>
+            <View style={styles.field}>
+              <ThemedText style={styles.fieldLabel}>
+                {TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
+                <ThemedText style={styles.optionalMark}>
+                  {" "}
+                  {TEXT.REPAIR_COMPUTER_OPTIONAL}
+                </ThemedText>
+              </ThemedText>
+              <TextInput
+                value={supplyCode}
+                onChangeText={setSupplyCode}
+                placeholder={TEXT.REPAIR_COMPUTER_SUPPLY_CODE_PLACEHOLDER}
+                placeholderTextColor={c.textFaint}
+                style={[styles.input, webNoOutline]}
+              />
+            </View>
+          </SectionCard>
 
-            <TextField
-              label={TEXT.REPAIR_COMPUTER_PHONE}
-              required
-              keyboardType="phone-pad"
-              value={phone}
-              onChangeText={(value) => {
-                setPhone(value);
-                clearValidationError("phone");
-              }}
-              placeholder="+66 (0)00 000-0000"
-              error={validationErrors.phone}
-            />
-          </View>
+          {/* Phone */}
+          <SectionCard>
+            <View style={styles.field}>
+              <ThemedText style={styles.fieldLabel}>
+                {TEXT.REPAIR_COMPUTER_PHONE}
+                <ThemedText style={styles.requiredMark}> *</ThemedText>
+              </ThemedText>
+              <TextInput
+                keyboardType="phone-pad"
+                value={phone}
+                onChangeText={(value) => {
+                  setPhone(value);
+                  clearValidationError("phone");
+                }}
+                placeholder={TEXT.REPAIR_COMPUTER_PHONE_PLACEHOLDER}
+                placeholderTextColor={c.textFaint}
+                style={[
+                  styles.input,
+                  validationErrors.phone ? styles.inputError : undefined,
+                  webNoOutline,
+                ]}
+              />
+              {validationErrors.phone ? (
+                <ThemedText style={styles.fieldError}>
+                  {validationErrors.phone}
+                </ThemedText>
+              ) : null}
+            </View>
+          </SectionCard>
         </ScrollView>
       ) : (
         <View style={styles.content}>
@@ -284,9 +337,9 @@ export default function RepairComputerInformScreen() {
 
       <ConfirmDialog
         visible={showConfirm}
-        title={TEXT.REPAIR_COMPUTER_INFORM}
-        message="Are you sure you want to submit this repair computer request?"
-        confirmLabel="Confirm"
+        title={TEXT.REPAIR_COMPUTER_NEW_REQUEST}
+        message={TEXT.REPAIR_COMPUTER_SUBMIT_CONFIRM_MESSAGE}
+        confirmLabel={TEXT.REPAIR_COMPUTER_SUBMIT_REQUEST}
         cancelLabel={TEXT.CANCEL}
         onConfirm={handleConfirm}
         onCancel={() => setShowConfirm(false)}
@@ -296,6 +349,7 @@ export default function RepairComputerInformScreen() {
         message={toastMessage}
         type={toastType === "error" ? "error" : "success"}
       />
+      <SubmittingOverlay visible={isSubmitting} />
     </ThemedView>
   );
 }
@@ -310,16 +364,58 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     padding: 16,
     paddingBottom: 32,
   },
-  heading: {
-    gap: 6,
+  scrollContent: {
+    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 120,
+    gap: 14,
   },
-  headingDescription: {
+  policyCard: {
+    marginBottom: 0,
+  },
+  field: {
+    paddingHorizontal: 0,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  fieldLabel: {
+    fontSize: 15,
+    lineHeight: 20,
+    color: c.text,
+    fontFamily: AppFonts.psuBold,
+  },
+  requiredMark: {
+    color: c.danger,
+    fontFamily: AppFonts.psuBold,
+  },
+  optionalMark: {
     color: c.textMuted,
     fontSize: 13,
-    lineHeight: 19,
+    fontFamily: AppFonts.psuRegular,
   },
-  formFields: {
-    gap: 16,
+  input: {
+    minHeight: 40,
+    color: c.text,
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 16,
+    lineHeight: 22,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
+  },
+  textArea: {
+    minHeight: 60,
+    textAlignVertical: "top",
+  },
+  inputError: {
+    borderBottomWidth: 1.5,
+    borderBottomColor: c.danger,
+  },
+  fieldError: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: c.danger,
   },
   messagePanel: {
     borderRadius: 12,

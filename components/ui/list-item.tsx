@@ -72,7 +72,7 @@ export function ListItem({
           {trailingText}
         </Text>
       ) : null}
-      {resolvedTrailingIcon ? <IconSymbol name={resolvedTrailingIcon} size={18} color={c.textFaint} /> : null}
+      {resolvedTrailingIcon ? <IconSymbol name={resolvedTrailingIcon} size={18} color={c.textFaint} style={styles.trailingIcon} /> : null}
     </>
   );
 
@@ -107,6 +107,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   leading: { alignItems: 'center', justifyContent: 'center' },
+  trailingIcon: { alignSelf: 'center' },
   iconCircle: { height: 40, width: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, gap: 2 },
   title: { fontSize: 15, lineHeight: 20, fontFamily: AppFonts.psuBold },

@@ -313,9 +313,7 @@ export default function RepairComputerQueueScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={TEXT.REPAIR_COMPUTER_TITLE}
-        subtitle={TEXT.REPAIR_COMPUTER_WORKER_QUEUE}
-        moduleIcon="tray.fill"
+        title={TEXT.REPAIR_COMPUTER_QUEUE}
         backHref="/"
       />
 

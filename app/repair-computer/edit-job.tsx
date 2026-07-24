@@ -426,7 +426,7 @@ export default function RepairComputerEditJobScreen() {
               </ThemedText>
 
               <View style={styles.field}>
-                <ThemedText type="defaultSemiBold">Job Type</ThemedText>
+                <ThemedText type="defaultSemiBold">{TEXT.REPAIR_COMPUTER_JOB_TYPE}</ThemedText>
                 <ThemedText style={styles.readOnlyValue}>
                   {repairTypeName || "-"}
                 </ThemedText>
@@ -475,10 +475,10 @@ export default function RepairComputerEditJobScreen() {
               darkColor="#151718"
             >
               <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-                User Inform
+                {TEXT.REPAIR_COMPUTER_INFORMER_SECTION}
               </ThemedText>
               <PersonDetailCard
-                fallbackTitle="User"
+                fallbackTitle={TEXT.REPAIR_COMPUTER_INFORMER_NAME}
                 id={requesterId}
                 meta={`${TEXT.REPAIR_COMPUTER_PHONE}: ${phone || "-"}`}
                 name={requesterName}
@@ -506,6 +506,7 @@ export default function RepairComputerEditJobScreen() {
               label={TEXT.REPAIR_COMPUTER_DETAIL}
               multiline
               numberOfLines={2}
+              style={{ minHeight: 60 }}
               value={detail}
               onChangeText={setDetail}
               placeholder={TEXT.REPAIR_COMPUTER_DETAIL}
@@ -705,10 +706,10 @@ export default function RepairComputerEditJobScreen() {
 
       <ConfirmDialog
         visible={isWorkerAcceptConfirmOpen}
-        title="Confirm Accept"
-        message="Do you want to accept this repair computer job?"
-        confirmLabel="Yes"
-        cancelLabel="No"
+        title={TEXT.REPAIR_COMPUTER_ACCEPT_CONFIRM_TITLE}
+        message={TEXT.REPAIR_COMPUTER_ACCEPT_CONFIRM_MESSAGE}
+        confirmLabel={TEXT.SHARED_YES}
+        cancelLabel={TEXT.SHARED_NO}
         loading={isWorkerActionSubmitting}
         onConfirm={handleWorkerAccept}
         onCancel={() => setIsWorkerAcceptConfirmOpen(false)}
@@ -716,10 +717,10 @@ export default function RepairComputerEditJobScreen() {
 
       <ConfirmDialog
         visible={isWorkerCloseConfirmOpen}
-        title="Confirm Close Job"
-        message="Do you want to close this repair computer job?"
-        confirmLabel="Yes"
-        cancelLabel="No"
+        title={TEXT.REPAIR_COMPUTER_CLOSE_CONFIRM_TITLE}
+        message={TEXT.REPAIR_COMPUTER_CLOSE_CONFIRM_MESSAGE}
+        confirmLabel={TEXT.SHARED_YES}
+        cancelLabel={TEXT.SHARED_NO}
         loading={isWorkerActionSubmitting}
         onConfirm={handleWorkerCloseJob}
         onCancel={() => setIsWorkerCloseConfirmOpen(false)}

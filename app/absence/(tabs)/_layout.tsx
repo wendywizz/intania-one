@@ -5,6 +5,7 @@ import { HapticTab } from '@/components/haptic-tab';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
@@ -70,6 +71,7 @@ export default function absenceTabLayout() {
         },
         tabBarLabelStyle: {
           fontSize: 11,
+          fontFamily: AppFonts.psuRegular,
         },
       }}>
       <Tabs.Screen

@@ -106,14 +106,12 @@ function useMStyles<T extends StyleSheet.NamedStyles<T>>(factory: (m: M) => T): 
   return useMemo(() => StyleSheet.create(factory(m)), [m, factory]);
 }
 
-// Sukhumvit Set. Emphasis roles stay at the body weight (Text) to keep the home
-// screen light — hierarchy comes from size and accent color rather than heavy
-// strokes. (Sukhumvit Medium / SemiBold are available if a stronger scale is wanted.)
+// Sarabun. General text uses Regular; titles/emphasis use SemiBold.
 const F = {
-  light: 'SukhumvitSet_Light',
-  regular: 'SukhumvitSet_Text',
-  medium: 'SukhumvitSet_Text',
-  semibold: 'SukhumvitSet_Text',
+  light: 'Sarabun_Lt',
+  regular: 'Sarabun_Rg',
+  medium: 'Sarabun_Rg',
+  semibold: 'Sarabun_Sb',
 } as const;
 
 const D = {
@@ -198,6 +196,8 @@ type ShiftSub = {
 type UpcomingShiftSectionProps = {
   data: ActiveSummaryData | null;
   loading: boolean;
+  error: boolean;
+  onReload: () => void;
   upcomingExams: ExamTask[];
   absenceApproval: { show: boolean; count: number };
   timestampApproval: { show: boolean; count: number };
@@ -231,7 +231,7 @@ function ShiftGroupCard({ title, icon, subs }: { title: string; icon: IconName; 
   );
 }
 
-function UpcomingShiftSection({ data, loading, upcomingExams, absenceApproval, timestampApproval }: UpcomingShiftSectionProps) {
+function UpcomingShiftSection({ data, loading, error, onReload, upcomingExams, absenceApproval, timestampApproval }: UpcomingShiftSectionProps) {
   const m = useMinimal();
   const s = useMStyles(makeShiftStyles);
   const tiles: ShiftTile[] = [];
@@ -358,6 +358,20 @@ function UpcomingShiftSection({ data, loading, upcomingExams, absenceApproval, t
       {loading ? (
         <View style={s.stateWrap}>
           <ActivityIndicator color={m.textMuted} />
+        </View>
+      ) : error ? (
+        <View style={s.errorWrap}>
+          <View style={s.stateWrap}>
+            <IconSymbol name="exclamationmark.triangle.fill" size={22} color={m.textFaint} />
+            <Text style={s.emptyText}>{TEXT.HOME_SHIFT_LOAD_ERROR}</Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onReload}
+            style={({ pressed }) => [s.reloadBtn, pressed && s.reloadBtnPressed]}>
+            <IconSymbol name="arrow.triangle.2.circlepath" size={16} color={m.accent} />
+            <Text style={s.reloadBtnText}>{TEXT.SHARED_RETRY}</Text>
+          </Pressable>
         </View>
       ) : repairSubs.length === 0 && absenceSubs.length <= 1 && tiles.length === 0 ? (
         <View style={s.stateWrap}>
@@ -588,6 +602,29 @@ const makeShiftStyles = (m: M) => StyleSheet.create({
     lineHeight: 20,
     color: m.textMuted,
   },
+  errorWrap: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 4,
+  },
+  reloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: m.accentSoft,
+  },
+  reloadBtnPressed: {
+    opacity: 0.7,
+  },
+  reloadBtnText: {
+    fontFamily: F.semibold,
+    fontSize: 13,
+    lineHeight: 18,
+    color: m.accent,
+  },
 });
 
 export default function HomeScreen() {
@@ -613,6 +650,7 @@ export default function HomeScreen() {
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [activeSummary, setActiveSummary] = useState<ActiveSummaryData | null>(null);
   const [isActiveSummaryLoading, setIsActiveSummaryLoading] = useState(false);
+  const [isActiveSummaryError, setIsActiveSummaryError] = useState(false);
   const [upcomingExams, setUpcomingExams] = useState<ExamTask[]>([]);
   const [absenceApproval, setAbsenceApproval] = useState<{ show: boolean; count: number }>({
     show: false,
@@ -693,13 +731,16 @@ export default function HomeScreen() {
       if (!staffId) return;
 
       setIsActiveSummaryLoading(true);
+      setIsActiveSummaryError(false);
       void getActiveSummary(staffId, userId).then((data) => {
         if (!isActive) return;
         setActiveSummary(data);
+        setIsActiveSummaryError(false);
         setIsActiveSummaryLoading(false);
       }).catch(() => {
         if (!isActive) return;
         setActiveSummary(null);
+        setIsActiveSummaryError(true);
         setIsActiveSummaryLoading(false);
       });
 
@@ -726,6 +767,26 @@ export default function HomeScreen() {
     }, [authUser]),
   );
 
+  const reloadActiveSummary = useCallback(() => {
+    const staffId = String(authUser?.staffId ?? '').trim();
+    const userId = String(authUser?.userId ?? authUser?.staffId ?? '').trim();
+    if (!staffId) return;
+
+    setIsActiveSummaryLoading(true);
+    setIsActiveSummaryError(false);
+    getActiveSummary(staffId, userId)
+      .then((data) => {
+        setActiveSummary(data);
+        setIsActiveSummaryError(false);
+        setIsActiveSummaryLoading(false);
+      })
+      .catch(() => {
+        setActiveSummary(null);
+        setIsActiveSummaryError(true);
+        setIsActiveSummaryLoading(false);
+      });
+  }, [authUser]);
+
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
     const staffId = String(authUser?.staffId ?? '').trim();
@@ -737,7 +798,9 @@ export default function HomeScreen() {
         .catch(() => { setNewsItems([]); setIsNewsError(true); }),
       getUnreadNotificationCount().then(setUnreadCount).catch(() => {}),
       staffId
-        ? getActiveSummary(staffId, userId).then(setActiveSummary).catch(() => setActiveSummary(null))
+        ? getActiveSummary(staffId, userId)
+            .then((data) => { setActiveSummary(data); setIsActiveSummaryError(false); })
+            .catch(() => { setActiveSummary(null); setIsActiveSummaryError(true); })
         : Promise.resolve(),
       staffId
         ? listExamTasks({ staff_id: staffId, ...getCurrentExamParams() })
@@ -966,7 +1029,7 @@ export default function HomeScreen() {
           </View>
 
           {/* Upcoming Shift section */}
-          <UpcomingShiftSection data={activeSummary} loading={isActiveSummaryLoading} upcomingExams={upcomingExams} absenceApproval={absenceApproval} timestampApproval={timestampApproval} />
+          <UpcomingShiftSection data={activeSummary} loading={isActiveSummaryLoading} error={isActiveSummaryError} onReload={reloadActiveSummary} upcomingExams={upcomingExams} absenceApproval={absenceApproval} timestampApproval={timestampApproval} />
 
           {/* Menu section — matches the upcoming band's vertical padding and sits
               flush beneath it. */}

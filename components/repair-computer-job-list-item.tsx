@@ -70,12 +70,12 @@ export function RepairComputerJobListItem({ job, fallbackTitle = TEXT.REPAIR_COM
   const content = (
     <ListCard
       onPress={onPress ? () => onPress(job) : undefined}
-      icon={<IconSymbol name={categoryIcon} size={22} color={repairType ? '#922124' : '#9CA3AF'} />}
-      iconBackground={repairType ? c.primarySoft : c.border}
+      icon={<IconSymbol name={categoryIcon} size={22} color={c.text} />}
+      iconBackground={c.surfaceMuted}
       title={jobTitle}
       badge={statusLabel ? { text: statusLabel, bg: badgeStyle.background, color: badgeStyle.text } : null}
       meta={[
-        { label: TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL, text: supplyCode },
+        { icon: <IconSymbol name="tag.fill" size={13} color={c.textMuted} />, text: supplyCode },
         { label: TEXT.REPAIR_COMPUTER_REPAIR_TYPE_LABEL, text: repairTypeName },
         { icon: <IconSymbol name="calendar" size={13} color={c.textMuted} />, text: informDate },
       ]}

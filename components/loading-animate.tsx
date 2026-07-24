@@ -1,11 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
 import { useColors } from '@/constants/theme';
-import { TEXT } from '@/constants/text';
 
 type LoadingAnimateProps = {
+  /** Kept for compatibility; the loader no longer renders any text. */
   title?: string;
   desc?: string;
   fill?: boolean;
@@ -14,13 +13,8 @@ type LoadingAnimateProps = {
 
 // Minimalist loader: a single thin ring with one accent arc that rotates
 // continuously. Theme-aware — the track uses the border token, the arc the
-// brand accent — so it reads the same on light and dark surfaces.
-export function LoadingAnimate({
-  title = TEXT.SHARED_LOADING_DATA_TITLE,
-  desc = TEXT.SHARED_PLEASE_WAIT_A_MOMENT,
-  fill = true,
-  style,
-}: LoadingAnimateProps) {
+// brand accent — so it reads the same on light and dark surfaces. No text.
+export function LoadingAnimate({ fill = true, style }: LoadingAnimateProps) {
   const c = useColors();
   const spin = useRef(new Animated.Value(0)).current;
 
@@ -59,12 +53,6 @@ export function LoadingAnimate({
           },
         ]}
       />
-      {title ? (
-        <ThemedText style={[styles.title, { color: c.textMuted }]}>{title}</ThemedText>
-      ) : null}
-      {desc ? (
-        <ThemedText style={[styles.message, { color: c.textFaint }]}>{desc}</ThemedText>
-      ) : null}
     </View>
   );
 }
@@ -83,17 +71,5 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 19,
     borderWidth: 3,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 15,
-    lineHeight: 20,
-    textAlign: 'center',
-  },
-  message: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
-    textAlign: 'center',
   },
 });

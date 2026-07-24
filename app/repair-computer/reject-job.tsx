@@ -1,20 +1,26 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
-import { type AppColors, useThemedStyles } from '@/constants/theme';
+import { Platform, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
+import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { FloatingActionBar } from "@/components/floating-action-bar";
 import { NavTopBar } from "@/components/nav-top-bar";
+import { SectionCard } from "@/components/section-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Button, Card, ConfirmDialog, TextField } from "@/components/ui";
+import { Button, ConfirmDialog } from "@/components/ui";
+import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { foremanRejectJob } from "@/services/repairComputerService";
 
-const DEFAULT_REJECT_DETAIL = "Reject job because not our duty";
+// Remove the default focus outline on web so active inputs match the
+// borderless underline style (RN Web only; no-op on native).
+const webNoOutline: any = Platform.OS === "web" ? { outlineStyle: "none" } : null;
 
 export default function RejectJobScreen() {
+  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{
     backHref?: string | string[];
@@ -25,7 +31,8 @@ export default function RejectJobScreen() {
     ? params.backHref[0]
     : params.backHref;
   const backHref = backHrefParam || "/repair-computer/foreman-new-job";
-  const [rejectDetail, setRejectDetail] = useState(DEFAULT_REJECT_DETAIL);
+  const [rejectDetail, setRejectDetail] = useState("");
+  const [rejectError, setRejectError] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -44,6 +51,15 @@ export default function RejectJobScreen() {
     }
 
     router.replace(backHref as Parameters<typeof router.replace>[0]);
+  };
+
+  const handleConfirmPress = () => {
+    if (!rejectDetail.trim()) {
+      setRejectError(TEXT.REPAIR_COMPUTER_REJECT_REASON_REQUIRED);
+      return;
+    }
+    setRejectError("");
+    setIsConfirmOpen(true);
   };
 
   const handleReject = async () => {
@@ -81,40 +97,61 @@ export default function RejectJobScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={TEXT.REPAIR_COMPUTER_TITLE}
+        title={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_NO_PREFIX}${jobId}` : TEXT.REPAIR_COMPUTER_TITLE}
         onBackPress={handleBackPress}
         showBackButton
       />
 
-      <View style={styles.content}>
-        <Card style={styles.panel}>
-          <ThemedText type="subtitle">Reject Job</ThemedText>
-          <TextField
-            label={TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL}
-            multiline
-            numberOfLines={2}
-            value={rejectDetail}
-            onChangeText={setRejectDetail}
-            placeholder={TEXT.REPAIR_COMPUTER_REJECT_DETAIL_LABEL}
-          />
-        </Card>
-      </View>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <SectionCard>
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>
+              {TEXT.REPAIR_COMPUTER_REJECT_REASON}
+              <ThemedText style={styles.requiredMark}> *</ThemedText>
+            </ThemedText>
+            <TextInput
+              multiline
+              numberOfLines={2}
+              value={rejectDetail}
+              onChangeText={(value) => {
+                setRejectDetail(value);
+                if (value.trim()) setRejectError("");
+              }}
+              placeholder={TEXT.REPAIR_COMPUTER_REJECT_REASON_PLACEHOLDER}
+              placeholderTextColor={c.textFaint}
+              style={[
+                styles.input,
+                styles.textArea,
+                rejectError ? styles.inputError : undefined,
+                webNoOutline,
+              ]}
+            />
+            {rejectError ? (
+              <ThemedText style={styles.fieldError}>{rejectError}</ThemedText>
+            ) : null}
+          </View>
+        </SectionCard>
+      </ScrollView>
 
       <FloatingActionBar disabled={isSubmitting}>
         <Button
-          title="Submit"
+          title={TEXT.REPAIR_COMPUTER_REJECT_JOB}
           variant="danger"
           fullWidth
-          onPress={() => setIsConfirmOpen(true)}
+          loading={isSubmitting}
+          onPress={handleConfirmPress}
         />
       </FloatingActionBar>
 
       <ConfirmDialog
         visible={isConfirmOpen}
-        title="Confirm Reject"
-        message="Do you want to reject this repair computer job?"
-        confirmLabel="Yes"
-        cancelLabel="No"
+        title={TEXT.REPAIR_COMPUTER_REJECT_CONFIRM_TITLE}
+        message={TEXT.REPAIR_COMPUTER_REJECT_CONFIRM_MESSAGE}
+        confirmLabel={TEXT.REPAIR_COMPUTER_REJECT_JOB}
+        cancelLabel={TEXT.CANCEL}
         destructive
         loading={isSubmitting}
         onConfirm={handleReject}
@@ -125,6 +162,7 @@ export default function RejectJobScreen() {
         message={toastMessage}
         type={toastType === "error" ? "error" : "success"}
       />
+      <SubmittingOverlay visible={isSubmitting} />
     </ThemedView>
   );
 }
@@ -134,11 +172,49 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flex: 1,
     backgroundColor: c.background,
   },
-  content: {
-    flex: 1,
-    padding: 16,
+  scrollContent: {
+    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 120,
+    gap: 14,
   },
-  panel: {
-    gap: 18,
+  field: {
+    paddingHorizontal: 0,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  fieldLabel: {
+    fontSize: 15,
+    lineHeight: 20,
+    color: c.text,
+    fontFamily: AppFonts.psuBold,
+  },
+  requiredMark: {
+    color: c.danger,
+    fontFamily: AppFonts.psuBold,
+  },
+  input: {
+    minHeight: 40,
+    color: c.text,
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 16,
+    lineHeight: 22,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
+  },
+  textArea: {
+    minHeight: 60,
+    textAlignVertical: "top",
+  },
+  inputError: {
+    borderBottomWidth: 1.5,
+    borderBottomColor: c.danger,
+  },
+  fieldError: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: c.danger,
   },
 });

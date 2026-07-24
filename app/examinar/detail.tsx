@@ -3,7 +3,6 @@ import { StatusBar } from 'expo-status-bar';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,10 +15,10 @@ import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { DetailInfoCard } from '@/components/ui/detail-info-card';
+import { PersonListCard, type PersonListEntry } from '@/components/ui/person-list-card';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import type { ExamDetail, ExamStaff, ExamSubject } from '@/models/types';
-import { PHOTO_BASE_URL } from '@/constants/endpoints';
 import { useAuth } from '@/context/AuthContext';
 import { getExamDetail } from '@/services/examinarService';
 
@@ -68,14 +67,6 @@ function calcDuration(from: string, to: string): string {
   if (h > 0 && m > 0) return `${h} ${TEXT.EXAMINAR_DURATION_HOUR} ${m} ${TEXT.EXAMINAR_DURATION_MINUTE}`;
   if (h > 0) return `${h} ${TEXT.EXAMINAR_DURATION_HOUR}`;
   return `${m} ${TEXT.EXAMINAR_DURATION_MINUTE}`;
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w.charAt(0).toUpperCase())
-    .join('');
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -156,41 +147,6 @@ function SubjectItem({ subject, isFirst }: { subject: ExamSubject; isFirst: bool
             <ThemedText style={styles.subjectMetaText}>{TEXT.EXAMINAR_SECTION_PREFIX}{section}</ThemedText>
           </View>
         ) : null}
-      </View>
-    </View>
-  );
-}
-
-function StaffItem({ staff, isFirst }: { staff: ExamStaff; isFirst: boolean }) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  const obj = staff as Record<string, unknown>;
-  const firstName = getField(obj, 'fname', 'firstname', 'first_name', 'fname_th');
-  const lastName = getField(obj, 'lname', 'lastname', 'last_name', 'lname_th');
-  const fullName = getField(obj, 'name_th', 'fullname_th', 'fullname', 'name_en', 'fullname_en', 'name', 'staff_name', 'full_name');
-  const name = fullName || (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName);
-  const dept = getField(obj, 'dep_name', 'dept_name', 'department', 'dept', 'faculty', 'unit', 'dep');
-  const staffId = getField(obj, 'staff_id', 'staffid', 'staffId', 'id');
-  const photoUrl = staffId ? `${PHOTO_BASE_URL}${staffId}.jpg` : null;
-  const initials = getInitials(name || 'S');
-  const [imgError, setImgError] = useState(false);
-
-  return (
-    <View style={[styles.staffItem, !isFirst && styles.staffItemBordered]}>
-      <View style={styles.staffAvatar}>
-        {photoUrl && !imgError ? (
-          <Image
-            source={{ uri: photoUrl }}
-            style={styles.staffAvatarImage}
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <ThemedText style={styles.staffInitials}>{initials}</ThemedText>
-        )}
-      </View>
-      <View style={styles.staffInfo}>
-        <ThemedText style={styles.staffName}>{name || TEXT.SHARED_EMPTY_DATA}</ThemedText>
-        {dept ? <ThemedText style={styles.staffDept}>{dept}</ThemedText> : null}
       </View>
     </View>
   );
@@ -277,6 +233,21 @@ export default function ExaminarDetailScreen() {
     const bid = getField(b as Record<string, unknown>, 'staff_id', 'staffid', 'staffId', 'id');
     return (aid === authStaffId ? 0 : 1) - (bid === authStaffId ? 0 : 1);
   });
+  const staffEntries: PersonListEntry[] = staffList.map((staff, i) => {
+    const obj = staff as Record<string, unknown>;
+    const firstName = getField(obj, 'fname', 'firstname', 'first_name', 'fname_th');
+    const lastName = getField(obj, 'lname', 'lastname', 'last_name', 'lname_th');
+    const fullName = getField(obj, 'name_th', 'fullname_th', 'fullname', 'name_en', 'fullname_en', 'name', 'staff_name', 'full_name');
+    const name = fullName || (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName);
+    const dept = getField(obj, 'dep_name', 'dept_name', 'department', 'dept', 'faculty', 'unit', 'dep');
+    const staffId = getField(obj, 'staff_id', 'staffid', 'staffId', 'id');
+    return {
+      key: String(i),
+      name: name || TEXT.SHARED_EMPTY_DATA,
+      subtitle: dept || undefined,
+      photoStaffId: staffId || undefined,
+    };
+  });
 
   return (
     <ThemedView style={styles.container}>
@@ -311,23 +282,12 @@ export default function ExaminarDetailScreen() {
 
         {/* Staff List */}
         <View style={styles.section}>
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <ThemedText style={styles.sectionHeading}>{TEXT.EXAMINAR_PARTNERS_HEADING}</ThemedText>
-              {staffList.length > 0 ? (
-                <View style={styles.countBadge}>
-                  <ThemedText style={styles.countBadgeText}>{staffList.length}{TEXT.EXAMINAR_STAFF_COUNT}</ThemedText>
-                </View>
-              ) : null}
-            </View>
-            {staffList.length > 0 ? (
-              staffList.map((staff, i) => (
-                <StaffItem key={i} staff={staff} isFirst={i === 0} />
-              ))
-            ) : (
-              <ThemedText style={styles.emptySection}>{TEXT.EXAMINAR_NO_STAFF}</ThemedText>
-            )}
-          </View>
+          <PersonListCard
+            title={TEXT.EXAMINAR_PARTNERS_HEADING}
+            people={staffEntries}
+            countSuffix={TEXT.EXAMINAR_STAFF_COUNT}
+            emptyText={TEXT.EXAMINAR_NO_STAFF}
+          />
         </View>
       </ScrollView>
     </ThemedView>

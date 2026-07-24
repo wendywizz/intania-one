@@ -10,6 +10,7 @@ import {
 import { type AppColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
+import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -225,7 +226,7 @@ export default function SelectForemanScreen() {
     }
 
     if (visibleForemen.length === 0) {
-      return <ThemedText style={styles.emptyMessage}>No foreman available</ThemedText>;
+      return <ThemedText style={styles.emptyMessage}>{TEXT.REPAIR_COMPUTER_NO_FOREMAN}</ThemedText>;
     }
 
     return (
@@ -260,26 +261,19 @@ export default function SelectForemanScreen() {
     <ThemedView style={styles.container}>
       <NavTopBar
         title={TEXT.REPAIR_COMPUTER_TITLE}
-        subtitle={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_ID_LABEL} ${jobId}` : undefined}
-        moduleIcon="laptop"
         onBackPress={handleBackPress}
         showBackButton
       />
 
       <View style={styles.content}>
-        <View style={styles.panelHeader}>
-          <ThemedText type="subtitle" numberOfLines={1}>
-            Select Foreman
-          </ThemedText>
-        </View>
         {renderContent()}
       </View>
 
       {!isLoading && !error && visibleForemen.length > 0 ? (
         <View style={styles.bottomBar}>
-          <Button title="Back" variant="secondary" onPress={handleBackPress} />
+          <Button title={TEXT.SHARED_BACK_THAI} variant="secondary" onPress={handleBackPress} />
           <Button
-            title="Forward Foreman"
+            title={TEXT.REPAIR_COMPUTER_FORWARD_FOREMAN}
             disabled={!selectedForeman}
             onPress={() => setIsConfirmOpen(true)}
             style={styles.ctaButton}
@@ -289,20 +283,21 @@ export default function SelectForemanScreen() {
 
       <ConfirmDialog
         visible={isConfirmOpen}
-        title="Confirm Forward Foreman"
+        title={TEXT.REPAIR_COMPUTER_FORWARD_CONFIRM_TITLE}
         message={
           selectedForeman
-            ? `Forward this job to ${getForemanName(selectedForeman)}?`
-            : "Forward this job to the selected foreman?"
+            ? `${TEXT.REPAIR_COMPUTER_FORWARD_TO_PREFIX}${getForemanName(selectedForeman)}${TEXT.REPAIR_COMPUTER_CONFIRM_QUESTION_SUFFIX}`
+            : TEXT.REPAIR_COMPUTER_FORWARD_CONFIRM_MESSAGE
         }
-        confirmLabel="Confirm"
-        cancelLabel="Cancel"
+        confirmLabel={TEXT.SHARED_CONFIRM}
+        cancelLabel={TEXT.CANCEL}
         loading={isSubmitting}
         onConfirm={handleForward}
         onCancel={() => setIsConfirmOpen(false)}
       />
 
       <AppToast message={toastMessage} type={toastType === "error" ? "error" : "success"} />
+      <SubmittingOverlay visible={isSubmitting} />
     </ThemedView>
   );
 }

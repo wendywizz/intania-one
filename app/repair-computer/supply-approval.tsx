@@ -4,6 +4,7 @@ import { StyleSheet, View } from "react-native";
 import { type AppColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
+import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { FloatingActionBar } from "@/components/floating-action-bar";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -122,16 +123,17 @@ export default function SupplyApprovalScreen() {
             </ThemedText>
             <ThemedText style={styles.titleDescription}>
               {isReject
-                ? "Give a reason for rejecting this supply request. It is sent back to the worker."
-                : "Give a note for approving this supply request. It is sent back to the worker."}
+                ? TEXT.REPAIR_COMPUTER_REJECT_SUPPLY_HINT
+                : TEXT.REPAIR_COMPUTER_APPROVE_SUPPLY_HINT}
             </ThemedText>
           </View>
 
           <TextField
-            label="Reason"
+            label={TEXT.REPAIR_COMPUTER_REASON}
             required
             multiline
-            numberOfLines={3}
+            numberOfLines={2}
+            style={{ minHeight: 60 }}
             value={detail}
             onChangeText={(value) => {
               setDetail(value);
@@ -139,7 +141,7 @@ export default function SupplyApprovalScreen() {
                 setValidationError("");
               }
             }}
-            placeholder="Reason"
+            placeholder={TEXT.REPAIR_COMPUTER_REASON}
             error={validationError}
           />
         </Card>
@@ -147,7 +149,7 @@ export default function SupplyApprovalScreen() {
 
       <FloatingActionBar disabled={isSubmitting}>
         <Button
-          title="Submit"
+          title={TEXT.REPAIR_COMPUTER_SUBMIT}
           variant={isReject ? "danger" : "primary"}
           fullWidth
           onPress={handleOpenConfirm}
@@ -156,14 +158,14 @@ export default function SupplyApprovalScreen() {
 
       <ConfirmDialog
         visible={isConfirmOpen}
-        title={isReject ? "Confirm Reject Supply" : "Confirm Approve Supply"}
+        title={isReject ? TEXT.REPAIR_COMPUTER_REJECT_SUPPLY_CONFIRM_TITLE : TEXT.REPAIR_COMPUTER_APPROVE_SUPPLY_CONFIRM_TITLE}
         message={
           isReject
-            ? "Do you want to reject this supply request?"
-            : "Do you want to approve this supply request?"
+            ? TEXT.REPAIR_COMPUTER_REJECT_SUPPLY_CONFIRM_MESSAGE
+            : TEXT.REPAIR_COMPUTER_APPROVE_SUPPLY_CONFIRM_MESSAGE
         }
-        confirmLabel="Yes"
-        cancelLabel="No"
+        confirmLabel={TEXT.SHARED_YES}
+        cancelLabel={TEXT.SHARED_NO}
         destructive={isReject}
         loading={isSubmitting}
         onConfirm={handleConfirm}
@@ -174,6 +176,7 @@ export default function SupplyApprovalScreen() {
         message={toastMessage}
         type={toastType === "error" ? "error" : "success"}
       />
+      <SubmittingOverlay visible={isSubmitting} />
     </ThemedView>
   );
 }

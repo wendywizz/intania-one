@@ -5,6 +5,7 @@ import { HapticTab } from "@/components/haptic-tab";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AppFonts } from "@/constants/fonts";
 import { useColors } from "@/constants/theme";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
@@ -55,16 +56,20 @@ export default function TimestampTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: c.primary,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
         tabBarStyle: {
+          backgroundColor: c.primary,
+          borderTopColor: c.primary,
           height: 68,
           paddingBottom: 10,
           paddingTop: 6,
         },
         tabBarLabelStyle: {
           fontSize: 11,
+          fontFamily: AppFonts.psuRegular,
         },
       }}
     >

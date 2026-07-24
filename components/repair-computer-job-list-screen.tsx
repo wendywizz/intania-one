@@ -110,11 +110,6 @@ export function RepairComputerJobListScreen({
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const { height } = useWindowDimensions();
-  const { currentRole } = useRepairComputerRole();
-  const screenTitle =
-    title === TEXT.REPAIR_COMPUTER_NEW_JOB
-      ? `${getRoleTitlePrefix(currentRole)} ${title}`
-      : title;
   const pageSize = getPageSize(height);
   const [jobs, setJobs] = useState<RepairComputer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -288,9 +283,7 @@ export function RepairComputerJobListScreen({
         return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={TEXT.REPAIR_COMPUTER_TITLE}
-        subtitle={screenTitle}
-        moduleIcon="laptop"
+        title={title}
         backHref="/"
       />
 

@@ -13,16 +13,16 @@ export default function MeetingTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: c.primary,
-        tabBarInactiveTintColor: c.textMuted,
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
           height: 68,
           paddingBottom: 10,
           paddingTop: 6,
-          backgroundColor: c.surface,
-          borderTopColor: c.border,
+          backgroundColor: c.primary,
+          borderTopColor: c.primary,
         },
         tabBarLabelStyle: {
           fontSize: 11,

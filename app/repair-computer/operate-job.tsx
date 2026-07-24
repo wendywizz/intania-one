@@ -4,6 +4,7 @@ import { StyleSheet, View } from "react-native";
 import { type AppColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
+import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { FloatingActionBar } from "@/components/floating-action-bar";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -135,53 +136,54 @@ export default function OperateJobScreen() {
       <View style={styles.content}>
         <Card style={styles.panel}>
           <View style={styles.titleBlock}>
-            <ThemedText type="subtitle">Operate Job</ThemedText>
+            <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_OPERATE_JOB_TITLE}</ThemedText>
             <ThemedText style={styles.titleDescription}>
-              Record the problem you found and how you resolved it, then submit to
-              start working on this job.
+              {TEXT.REPAIR_COMPUTER_OPERATE_JOB_DESC}
             </ThemedText>
           </View>
 
           <TextField
-            label="Problem detail"
+            label={TEXT.REPAIR_COMPUTER_PROBLEM_DETAIL}
             required
             multiline
-            numberOfLines={3}
+            numberOfLines={2}
+            style={{ minHeight: 60 }}
             value={jobAudit}
             onChangeText={(value) => {
               setJobAudit(value);
               clearValidationError("jobAudit");
             }}
-            placeholder="Problem detail"
+            placeholder={TEXT.REPAIR_COMPUTER_PROBLEM_DETAIL}
             error={validationErrors.jobAudit}
           />
 
           <TextField
-            label="Solve method"
+            label={TEXT.REPAIR_COMPUTER_SOLVE_METHOD}
             required
             multiline
-            numberOfLines={3}
+            numberOfLines={2}
+            style={{ minHeight: 60 }}
             value={solveMethod}
             onChangeText={(value) => {
               setSolveMethod(value);
               clearValidationError("solveMethod");
             }}
-            placeholder="Solve method"
+            placeholder={TEXT.REPAIR_COMPUTER_SOLVE_METHOD}
             error={validationErrors.solveMethod}
           />
         </Card>
       </View>
 
       <FloatingActionBar disabled={isSubmitting}>
-        <Button title="Submit" fullWidth onPress={handleOpenConfirm} />
+        <Button title={TEXT.REPAIR_COMPUTER_SUBMIT} fullWidth onPress={handleOpenConfirm} />
       </FloatingActionBar>
 
       <ConfirmDialog
         visible={isConfirmOpen}
-        title="Confirm Operate Job"
-        message="Do you want to submit this repair computer job operation?"
-        confirmLabel="Yes"
-        cancelLabel="No"
+        title={TEXT.REPAIR_COMPUTER_OPERATE_CONFIRM_TITLE}
+        message={TEXT.REPAIR_COMPUTER_OPERATE_CONFIRM_MESSAGE}
+        confirmLabel={TEXT.SHARED_YES}
+        cancelLabel={TEXT.SHARED_NO}
         loading={isSubmitting}
         onConfirm={handleSubmit}
         onCancel={() => setIsConfirmOpen(false)}
@@ -191,6 +193,7 @@ export default function OperateJobScreen() {
         message={toastMessage}
         type={toastType === "error" ? "error" : "success"}
       />
+      <SubmittingOverlay visible={isSubmitting} />
     </ThemedView>
   );
 }

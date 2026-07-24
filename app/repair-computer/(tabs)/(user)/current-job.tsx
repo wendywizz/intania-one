@@ -17,6 +17,7 @@ import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/ui";
 import { AppToast } from "@/components/app-toast";
+import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import {
@@ -25,6 +26,8 @@ import {
 } from "@/components/repair-computer-job-list-item";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { AppFonts } from "@/constants/fonts";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { RepairComputer } from "@/models/types";
@@ -314,6 +317,24 @@ export default function RepairComputerCurrentJobScreen() {
         }
         onEndReached={loadMoreJobs}
         onEndReachedThreshold={0.4}
+        ListHeaderComponent={
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={TEXT.REPAIR_COMPUTER_ADD_NEW_JOB}
+            onPress={() =>
+              navPush('/repair-computer/inform' as Parameters<typeof navPush>[0])
+            }
+            style={({ pressed }) => [
+              styles.addJobButton,
+              pressed && styles.addJobButtonPressed,
+            ]}
+          >
+            <IconSymbol name="plus" size={20} color={c.primary} />
+            <ThemedText style={styles.addJobText}>
+              {TEXT.REPAIR_COMPUTER_ADD_NEW_JOB}
+            </ThemedText>
+          </Pressable>
+        }
         renderItem={({ item }) => (
           <RepairComputerJobListItem
             job={item}
@@ -346,30 +367,11 @@ export default function RepairComputerCurrentJobScreen() {
         </View>
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={TEXT.REPAIR_COMPUTER_INFORM}
-        onPress={() =>
-          navPush(
-            '/repair-computer/inform' as Parameters<typeof navPush>[0],
-          )
-        }
-        style={styles.fab}
-      >
-        <ThemedText
-          lightColor="#FFFFFF"
-          darkColor="#FFFFFF"
-          style={styles.fabIcon}
-        >
-          +
-        </ThemedText>
-      </Pressable>
-
       <ConfirmDialog
         visible={Boolean(selectedJob)}
         title={TEXT.CONFIRM_DELETE}
         message={TEXT.REPAIR_COMPUTER_DELETE_CONFIRM_MESSAGE}
-        confirmLabel="Delete"
+        confirmLabel={TEXT.DELETE}
         cancelLabel={TEXT.CANCEL}
         destructive
         loading={isDeleting}
@@ -381,6 +383,7 @@ export default function RepairComputerCurrentJobScreen() {
         message={toastMessage}
         type={toastType === "error" ? "error" : "success"}
       />
+      <SubmittingOverlay visible={isDeleting} />
     </ThemedView>
   );
 }
@@ -396,27 +399,28 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     listWrapper: {
     flex: 1,
   },
-  fab: {
-    position: 'absolute',
-    bottom: 84,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: c.primary,
+  addJobButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    gap: 8,
+    minHeight: 54,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: c.primary,
+    backgroundColor: c.primarySoft,
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
-  fabIcon: {
-    fontSize: 30,
-    lineHeight: 34,
-    fontWeight: '300',
-    marginTop: -2,
+  addJobButtonPressed: {
+    opacity: 0.7,
+  },
+  addJobText: {
+    color: c.primary,
+    fontSize: 15,
+    lineHeight: 21,
+    fontFamily: AppFonts.psuBold,
   },
   listContent: {
     flexGrow: 1,

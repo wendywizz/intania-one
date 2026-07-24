@@ -69,6 +69,12 @@ export default function RootLayout() {
     PSUStidti_Lt: require('../assets/fonts/PSU-Stidti/psu-stidti-light.ttf'),
     PSUStidti_Rg: require('../assets/fonts/PSU-Stidti/psu-stidti-regular.ttf'),
     PSUStidti_Bd: require('../assets/fonts/PSU-Stidti/psu-stidti-bold.ttf'),
+    // Sarabun — app-wide typeface (Light/Regular/Medium/SemiBold/Bold).
+    Sarabun_Lt: require('../assets/fonts/Sarabun/Sarabun-Light.ttf'),
+    Sarabun_Rg: require('../assets/fonts/Sarabun/Sarabun-Regular.ttf'),
+    Sarabun_Md: require('../assets/fonts/Sarabun/Sarabun-Medium.ttf'),
+    Sarabun_Sb: require('../assets/fonts/Sarabun/Sarabun-SemiBold.ttf'),
+    Sarabun_Bd: require('../assets/fonts/Sarabun/Sarabun-Bold.ttf'),
   });
 
   useEffect(() => {
