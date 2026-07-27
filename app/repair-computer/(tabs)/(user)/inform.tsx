@@ -197,6 +197,7 @@ export default function RepairComputerInformScreen() {
       <NavTopBar
         title={TEXT.REPAIR_COMPUTER_INFORM}
         backHref="/repair-computer/current-job"
+        tone="primary"
       />
 
       {isCheckingCanInform ? (

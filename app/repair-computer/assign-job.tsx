@@ -34,13 +34,12 @@ import {
 } from "@/services/repairComputerService";
 import { formatDateTime } from "@/utils/date-format";
 import { getRepairComputerTypeIcon } from "@/utils/category-icon";
+import { USER_PLACEHOLDER } from "@/constants/images";
 
 type AssignStep = "repairType" | "worker" | "confirm";
 type RepairTypeOption = Record<string, unknown>;
 
 const TEXT_NONE = "-";
-// Shown when a person's photo can't be loaded (or there's no staff id).
-const USER_PLACEHOLDER = require("../../assets/images/user-placeholder.jpg");
 
 // ── Value helpers (identical to original) ────────────────────────────────────
 
@@ -424,7 +423,7 @@ export default function AssignJobScreen() {
   if (isLoading) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} onBackPress={handleBackPress} showBackButton />
+        <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} onBackPress={handleBackPress} showBackButton tone="primary" />
         <View style={styles.stateContent}>
           <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
         </View>
@@ -435,7 +434,7 @@ export default function AssignJobScreen() {
   if (error) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} onBackPress={handleBackPress} showBackButton />
+        <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} onBackPress={handleBackPress} showBackButton tone="primary" />
         <View style={styles.stateContent}>
           <ThemedText type="subtitle">{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
           <ThemedText style={[styles.stateMessage, styles.errorText]}>{error}</ThemedText>
@@ -456,11 +455,14 @@ export default function AssignJobScreen() {
   // ── Step renders ────────────────────────────────────────────────────────────
 
   const renderRepairTypeStep = () => (
-    <>
+    <View style={styles.listGroup}>
+      <View style={styles.listCardHeader}>
+        <ThemedText style={styles.listCardTitle}>{TEXT.REPAIR_COMPUTER_SELECT_JOB_TYPE}</ThemedText>
+      </View>
       {repairTypes.length === 0 ? (
         <ThemedText style={styles.emptyMessage}>{TEXT.REPAIR_COMPUTER_NO_REPAIR_TYPES}</ThemedText>
       ) : (
-        <View style={styles.listGroup}>
+        <>
           {repairTypes.map((item, index) => {
             const itemId = getRepairTypeId(item);
             const isSelected = selectedRepairTypeId === itemId;
@@ -492,17 +494,20 @@ export default function AssignJobScreen() {
               </View>
             );
           })}
-        </View>
+        </>
       )}
-    </>
+    </View>
   );
 
   const renderWorkerStep = () => (
-    <>
+    <View style={styles.listGroup}>
+      <View style={styles.listCardHeader}>
+        <ThemedText style={styles.listCardTitle}>{TEXT.REPAIR_COMPUTER_SELECT_WORKER}</ThemedText>
+      </View>
       {workers.length === 0 ? (
         <ThemedText style={styles.emptyMessage}>{TEXT.REPAIR_COMPUTER_NO_WORKERS}</ThemedText>
       ) : (
-        <View style={styles.listGroup}>
+        <>
           {workers.map((item, index) => {
             const wId = getWorkerId(item);
             const photoId = getWorkerPhotoStaffId(item);
@@ -525,9 +530,9 @@ export default function AssignJobScreen() {
               </View>
             );
           })}
-        </View>
+        </>
       )}
-    </>
+    </View>
   );
 
   const renderConfirmStep = () => (
@@ -584,33 +589,52 @@ export default function AssignJobScreen() {
 
   // ── Root render ─────────────────────────────────────────────────────────────
 
-  const pageTitle =
-    step === "repairType" ? TEXT.REPAIR_COMPUTER_SELECT_JOB_TYPE
-    : step === "worker"   ? TEXT.REPAIR_COMPUTER_SELECT_WORKER
-    : TEXT.REPAIR_COMPUTER_JOB_ASSIGNMENT;
-
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} onBackPress={handleBackPress} showBackButton />
+      <NavTopBar title={TEXT.REPAIR_COMPUTER_TITLE} onBackPress={handleBackPress} showBackButton tone="primary" />
 
       <View style={styles.content}>
         <View style={styles.panelHeader}>
-          {/* Step progress — a segmented bar with the current step counter. */}
-          <View style={styles.stepBar}>
+          {/* Step progress — numbered circles (check when done) + connectors. */}
+          <View style={styles.stepper}>
             {(["repairType", "worker", "confirm"] as AssignStep[]).map((s, i) => {
               const stepIndex = { repairType: 0, worker: 1, confirm: 2 }[step];
-              const isActive = s === step;
-              const isReached = i <= stepIndex;
+              const isDone = i < stepIndex;
+              const isActive = i === stepIndex;
               const stepLabels: Record<AssignStep, string> = {
                 repairType: TEXT.REPAIR_COMPUTER_JOB_TYPE,
                 worker: TEXT.REPAIR_COMPUTER_STEP_WORKER,
                 confirm: TEXT.SHARED_CONFIRM,
               };
               return (
-                <View key={s} style={styles.stepSegment}>
-                  <View style={[styles.stepTrack, isReached && styles.stepTrackReached]} />
+                <View key={s} style={styles.stepCol}>
+                  <View style={styles.stepCircleRow}>
+                    <View
+                      style={[
+                        styles.stepLine,
+                        i <= stepIndex ? styles.stepLineOn : styles.stepLineOff,
+                        i === 0 && styles.stepLineHidden,
+                      ]}
+                    />
+                    <View style={[styles.stepDot, (isDone || isActive) && styles.stepDotOn]}>
+                      {isDone ? (
+                        <IconSymbol name="checkmark" size={13} color={c.textOnPrimary} />
+                      ) : (
+                        <ThemedText style={[styles.stepDotNum, isActive && styles.stepDotNumOn]}>
+                          {i + 1}
+                        </ThemedText>
+                      )}
+                    </View>
+                    <View
+                      style={[
+                        styles.stepLine,
+                        i < stepIndex ? styles.stepLineOn : styles.stepLineOff,
+                        i === 2 && styles.stepLineHidden,
+                      ]}
+                    />
+                  </View>
                   <ThemedText
-                    style={[styles.stepSegLabel, isActive && styles.stepSegLabelActive]}
+                    style={[styles.stepColLabel, isActive && styles.stepColLabelActive]}
                     numberOfLines={1}
                   >
                     {stepLabels[s]}
@@ -618,14 +642,6 @@ export default function AssignJobScreen() {
                 </View>
               );
             })}
-          </View>
-          <View style={styles.stepTitleRow}>
-            <ThemedText type="subtitle" numberOfLines={1} style={styles.stepTitle}>
-              {pageTitle}
-            </ThemedText>
-            <ThemedText style={styles.stepCounter}>
-              {({ repairType: 1, worker: 2, confirm: 3 }[step])}/3
-            </ThemedText>
           </View>
         </View>
 
@@ -684,47 +700,74 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingBottom: 12,
     gap: 10,
   },
-  stepBar: {
+  stepper: {
     flexDirection: "row",
-    gap: 8,
     marginTop: 4,
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  stepSegment: {
+  stepCol: {
     flex: 1,
+    alignItems: "center",
     gap: 6,
   },
-  stepTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: c.surfaceMuted,
+  stepCircleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "stretch",
   },
-  stepTrackReached: {
+  stepLine: {
+    flex: 1,
+    height: 2,
+  },
+  stepLineOn: {
     backgroundColor: c.primary,
   },
-  stepSegLabel: {
+  stepLineOff: {
+    backgroundColor: c.surfaceMuted,
+  },
+  stepLineHidden: {
+    backgroundColor: "transparent",
+  },
+  stepDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: c.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepDotOn: {
+    backgroundColor: c.primary,
+  },
+  stepDotNum: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: c.textMuted,
+  },
+  stepDotNumOn: {
+    color: c.textOnPrimary,
+  },
+  stepColLabel: {
     fontSize: 12,
     lineHeight: 16,
     color: c.textMuted,
+    textAlign: "center",
   },
-  stepSegLabelActive: {
+  stepColLabelActive: {
     color: c.primary,
     fontWeight: "700",
   },
-  stepTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
+  listCardHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: c.border,
   },
-  stepTitle: {
-    flex: 1,
-  },
-  stepCounter: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: c.textMuted,
+  listCardTitle: {
+    fontSize: 15,
+    lineHeight: 21,
     fontWeight: "700",
+    color: c.text,
   },
   panel: {
     flex: 1,
@@ -930,7 +973,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flexShrink: 0,
   },
   typeIconBoxSelected: {
-    backgroundColor: "#FFE3E3",
+    backgroundColor: c.primarySoft,
   },
   typeName: {
     flex: 1,
@@ -1064,7 +1107,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     marginTop: 24,
   },
 });

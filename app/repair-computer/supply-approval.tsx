@@ -113,6 +113,7 @@ export default function SupplyApprovalScreen() {
         title={TEXT.REPAIR_COMPUTER_TITLE}
         onBackPress={handleBackPress}
         showBackButton
+        tone="primary"
       />
 
       <View style={styles.content}>

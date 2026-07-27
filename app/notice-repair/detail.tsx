@@ -1,16 +1,21 @@
+import { LoadingAnimate } from '@/components/loading-animate';
 import { ConfirmModal } from '@/components/notice-repair/confirm-modal';
 import { MaterialItemCard } from '@/components/notice-repair/material-item-card';
 import { ScreenHeader } from '@/components/screen-header';
+import { SectionCard } from '@/components/section-card';
 import { useToast } from '@/components/toast-provider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { DetailInfoCard, DetailRows } from '@/components/ui/detail-info-card';
+import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
+import { PersonListCard } from '@/components/ui/person-list-card';
+import { UserAvatar } from '@/components/user-avatar';
+import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { NOTICE_REPAIR_ROLE_APPROVE, NOTICE_REPAIR_ROLE_ADMIN, NOTICE_REPAIR_ROLE_HEADER, NOTICE_REPAIR_ROLE_INFORMER } from '@/constants/types';
 import { useAuth } from '@/context/AuthContext';
 import type { NoticeRepairDetail } from '@/models/types';
 import { addRequisition, adminAcceptRepair, approveRepair, cancelRepair, getFullDetail } from '@/services/noticeRepairService';
-import { getPersonPhoto } from '@/services/personService';
 import {
   clearDraftMaterials,
   consumeScrollToMaterials,
@@ -19,86 +24,99 @@ import {
 import { getCategoryIcon } from '@/utils/category-icon';
 import { formatDateOnly, formatDateRange } from '@/utils/date-format';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import type { ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
 // New job awaiting approval — the only status where the approver's
 // เห็นชอบ / ไม่เห็นชอบ / ยกเลิก actions are valid (see Repair_Controller).
 const STATUS_NEW = '001';
 
-const STATUS_COLORS: Record<string, string> = {
-  '001': '#2563EB', '002': '#16A34A', '003': '#D97706',
-  '004': '#EA580C', '005': '#EA580C', '006': '#EA580C',
-  '007': '#EA580C', '008': '#15803D', '106': '#15803D', '200': '#DC2626',
+// Same pastel status swatches the absence detail screen uses, keyed by the
+// repair status code instead of a label keyword.
+const STATUS_APPROVED = { bg: '#D1FAE5', color: '#065F46' };
+const STATUS_PENDING = { bg: '#FEF3C7', color: '#92400E' };
+const STATUS_REJECTED = { bg: '#FEE2E2', color: '#991B1B' };
+
+const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
+  '001': STATUS_PENDING, '002': STATUS_APPROVED, '003': STATUS_PENDING,
+  '004': STATUS_PENDING, '005': STATUS_PENDING, '006': STATUS_PENDING,
+  '007': STATUS_PENDING, '008': STATUS_APPROVED, '106': STATUS_APPROVED,
+  '200': STATUS_REJECTED,
 };
+
 function statusColor(s?: string) {
-  if (!s) return '#6B7280';
-  if (s.startsWith('1') && s !== '106') return '#B91C1C';
-  return STATUS_COLORS[s] ?? '#6B7280';
+  if (!s) return STATUS_PENDING;
+  if (s.startsWith('1') && s !== '106') return STATUS_REJECTED;
+  return STATUS_COLORS[s] ?? STATUS_PENDING;
 }
 
+// Photos are keyed by the zero-padded 7-digit staff id.
 function normalizeStaffId(id: string) {
   return /^\d+$/.test(id) ? id.padStart(7, '0') : id;
 }
 
-/** White rounded card with soft shadow (Figma: Section cards, radius 24). */
-function Card({ children }: { children: ReactNode }) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <ThemedView style={styles.card} lightColor="#FFFFFF" darkColor="#151718">
-      {children}
-    </ThemedView>
-  );
-}
+type StaffEntry = { name: string; position?: string | null; staffId?: string };
 
-/** Filled key/value tile used for อาคาร / สถานที่ (Figma: #F9FAFB, radius 16). */
-function InfoTile({ label, value }: { label: string; value?: string | null }) {
-  const c = useColors();
+/** Avatar + name + position row, matching the absence detail person cards. */
+function PersonRow({ name, position, staffId }: StaffEntry) {
   const styles = useThemedStyles(makeStyles);
-  if (!value) return null;
   return (
-    <View style={styles.infoTile}>
-      <ThemedText style={styles.tileLabel}>{label}</ThemedText>
-      <ThemedText style={styles.tileValue}>{value}</ThemedText>
+    <View style={styles.personCard}>
+      <UserAvatar staffId={staffId ? normalizeStaffId(staffId) : ''} size={44} />
+      <View style={styles.personText}>
+        <ThemedText style={styles.personName}>{name || '-'}</ThemedText>
+        {position ? <ThemedText style={styles.personPosition}>{position}</ThemedText> : null}
+      </View>
     </View>
   );
 }
 
-/** Label/value row with a bottom divider (Figma: หน่วยงาน / เบอร์โทรศัพท์). */
-function DividerRow({ label, value, valueColor }: { label: string; value?: string | null; valueColor?: string }) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  if (!value) return null;
-  return (
-    <View style={styles.dividerRow}>
-      <ThemedText style={styles.rowLabel}>{label}</ThemedText>
-      <ThemedText style={[styles.rowValue, valueColor ? { color: valueColor } : null]}>{value}</ThemedText>
-    </View>
-  );
-}
+type MenuAction = {
+  key: string;
+  label: string;
+  icon: IconSymbolName;
+  /** Text/icon colour; defaults to the normal text colour. */
+  color?: string;
+  onPress: () => void;
+};
 
-function RequesterAvatar({ staffId, name, size = 64 }: { staffId: string; name: string; size?: number }) {
+// Kebab button in the action bar that pops its actions upward, so the bar keeps
+// a single primary action however many secondary ones a role has.
+function SecondaryActionMenu({ actions, disabled }: { actions: MenuAction[]; disabled?: boolean }) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const [failed, setFailed] = useState(false);
-  const normalized = normalizeStaffId(staffId);
-  const showPhoto = Boolean(normalized) && !failed;
-  const initial = (name || '?').trim().charAt(0).toUpperCase();
-  const dim = { width: size, height: size, borderRadius: size / 2 };
+  const [open, setOpen] = useState(false);
+
   return (
-    <View style={[styles.avatarWrap, dim]}>
-      {showPhoto ? (
-        <Image
-          source={{ uri: getPersonPhoto({ staffId: normalized }) }}
-          onError={() => setFailed(true)}
-          style={[styles.avatar, dim]}
-        />
-      ) : (
-        <View style={[styles.avatar, styles.avatarPlaceholder, dim]}>
-          <ThemedText style={[styles.avatarInitial, { fontSize: size * 0.34 }]}>{initial}</ThemedText>
+    <View style={styles.menuAnchor}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={TEXT.NOTICE_REPAIR_ACTION_MORE}
+        accessibilityState={{ expanded: open }}
+        disabled={disabled}
+        onPress={() => setOpen((isOpen) => !isOpen)}
+        style={[styles.actionBtn, styles.menuBtn, disabled && styles.actionBtnDisabled]}>
+        <IconSymbol name="ellipsis.vertical" size={20} color={c.textMuted} />
+      </Pressable>
+
+      {open && (
+        <View style={styles.menuSheet}>
+          {actions.map((action, index) => (
+            <Fragment key={action.key}>
+              {index > 0 ? <View style={styles.menuDivider} /> : null}
+              <Pressable
+                accessibilityRole="menuitem"
+                disabled={disabled}
+                onPress={() => { setOpen(false); action.onPress(); }}
+                style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}>
+                <IconSymbol name={action.icon} size={16} color={action.color ?? c.text} />
+                <ThemedText style={[styles.menuItemText, { color: action.color ?? c.text }]}>
+                  {action.label}
+                </ThemedText>
+              </Pressable>
+            </Fragment>
+          ))}
         </View>
       )}
     </View>
@@ -108,6 +126,7 @@ function RequesterAvatar({ staffId, name, size = 64 }: { staffId: string; name: 
 export default function NoticeRepairDetailScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const gutter = useScreenGutter();
   const { repair_id, staff_id: paramStaff, role, source } = useLocalSearchParams<{
     repair_id: string; staff_id: string; role?: string; source?: string;
   }>();
@@ -207,6 +226,11 @@ export default function NoticeRepairDetailScreen() {
 
   // Admin supply tabs — offer a link to the full requisition/supply list.
   const canViewSupply = source === 'supply_material' || source === 'dept_supply_response';
+
+  // Head of category reviewing a finished repair record: the materials are
+  // read-only here, so link out to the supply list instead of inlining it.
+  const canViewSupplyList =
+    role === NOTICE_REPAIR_ROLE_HEADER && source === 'header_repair_record';
 
   const onConfirmPending = useCallback(async () => {
     if (!pending || submitting) return;
@@ -361,9 +385,14 @@ export default function NoticeRepairDetailScreen() {
     }
   }, [savingMaterials, draftMaterials, repair_id, staffId, materialConfirm, doBack, showToast]);
 
+  // The request number rides in the nav bar, so the info card no longer repeats it.
+  const navTitle = detail?.repair_number
+    ? `${TEXT.NOTICE_REPAIR_JOB_ID_LABEL} ${detail.repair_number}`
+    : TEXT.NOTICE_REPAIR__TITLE;
+
   const renderContent = () => {
     if (isLoading) {
-      return <ActivityIndicator style={styles.loader} size="large" color={c.primary} />;
+      return <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />;
     }
     if (error) {
       return (
@@ -400,150 +429,113 @@ export default function NoticeRepairDetailScreen() {
 
     const hasDrafts = draftMaterials.length > 0;
 
+    const canAddMaterial = role === NOTICE_REPAIR_ROLE_HEADER && source === 'header_current';
+
     return (
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={[styles.scroll, (canApprove || canAdminReceive || canInformerEdit || canViewSupply || hasDrafts) && styles.scrollWithActions]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingHorizontal: gutter },
+          (canApprove || canAdminReceive || canInformerEdit || canViewSupply || canViewSupplyList || hasDrafts)
+            && styles.scrollWithActions,
+        ]}
         showsVerticalScrollIndicator={false}>
 
         {/* Content-top anchor for scroll-to-materials (zero-size, no layout impact) */}
         <View ref={topAnchorRef} style={styles.scrollTopAnchor} pointerEvents="none" />
 
-        {/* ── Repair Summary Card ── */}
-        <Card>
-          <View style={styles.summaryInner}>
-            <View style={styles.summaryTop}>
-              <View style={styles.summaryTitleBlock}>
-                <ThemedText style={styles.summaryTitle}>{TEXT.NOTICE_REPAIR_DETAIL_TITLE}</ThemedText>
-                {!!detail.repair_number && (
-                  <ThemedText style={styles.requestNo}>เลขที่คำร้อง {detail.repair_number}</ThemedText>
-                )}
+        {/* ── Repair info ── */}
+        <DetailInfoCard
+          title={TEXT.NOTICE_REPAIR_DETAIL_TITLE}
+          trailing={
+            status ? (
+              <View style={[styles.statusBadge, { backgroundColor: sColor.bg }]}>
+                <ThemedText style={[styles.statusText, { color: sColor.color }]} numberOfLines={1}>
+                  {detail.repair_status_name ?? status}
+                </ThemedText>
               </View>
-              {!!status && (
-                <View style={[styles.statusBadge, { backgroundColor: `${sColor}1A` }]}>
-                  <ThemedText style={[styles.statusText, { color: sColor }]} numberOfLines={1}>
-                    {detail.repair_status_name ?? status}
-                  </ThemedText>
-                </View>
-              )}
-            </View>
+            ) : null
+          }
+          rows={[
+            {
+              label: TEXT.NOTICE_REPAIR_DETAIL_CATEGORY,
+              value: detail.work_category_name ?? '',
+              icon: getCategoryIcon(detail.work_category_name),
+            },
+            { label: 'วันที่แจ้ง', value: dateText, icon: 'calendar' },
+            { label: 'อาคาร', value: detail.building_name ?? '', icon: 'house.fill' },
+            { label: 'สถานที่ / ห้อง', value: detail.repair_place ?? '', icon: 'mappin' },
+            { label: 'รายละเอียดความชำรุด', value: detail.repair_inform ?? '', icon: 'list.bullet' },
+          ]}
+        />
 
-            <View style={styles.summaryBody}>
-              {!!detail.work_category_name && (
-                <View style={styles.kvBlock}>
-                  <ThemedText style={styles.kicker}>{TEXT.NOTICE_REPAIR_DETAIL_CATEGORY}</ThemedText>
-                  <View style={styles.kickerValueRow}>
-                    <View style={styles.kickerIconBox}>
-                      <IconSymbol name={getCategoryIcon(detail.work_category_name)} size={20} color={c.primary} />
-                    </View>
-                    <ThemedText style={styles.kickerValue}>{detail.work_category_name}</ThemedText>
-                  </View>
-                </View>
-              )}
-
-              {!!dateText && (
-                <View style={styles.dateBox}>
-                  <IconSymbol name="calendar" size={20} color={c.primary} />
-                  <ThemedText style={styles.dateText}>{dateText}</ThemedText>
-                </View>
-              )}
-            </View>
-          </View>
-        </Card>
-
-        {/* ── Requester Info Card ── */}
+        {/* ── Requester (person + how to reach them) ── */}
         {(detail.informer_name || informerId) && (
-          <Card>
-            <View style={styles.summaryInner}>
-              <ThemedText style={styles.sectionHeading}>ข้อมูลผู้แจ้งซ่อม</ThemedText>
-
-              <View style={styles.profileRow}>
-                <RequesterAvatar staffId={informerId} name={detail.informer_name ?? ''} />
-                <View style={styles.profileTextBlock}>
-                  <ThemedText style={styles.profileName} numberOfLines={2}>
-                    {detail.informer_name || '-'}
-                  </ThemedText>
-                  {!!detail.informer_position && (
-                    <ThemedText style={styles.profileRole} numberOfLines={2}>
-                      {detail.informer_position}
-                    </ThemedText>
-                  )}
-                </View>
-              </View>
-
-              <View style={styles.tileGroup}>
-                <InfoTile label={TEXT.NOTICE_REPAIR_DETAIL_DEPARTMENT} value={detail.repair_inform_dept_name} />
-                <InfoTile label="เบอร์โทรศัพท์" value={detail.repair_tel} />
-              </View>
-            </View>
-          </Card>
+          <SectionCard title="ผู้แจ้งซ่อม">
+            <PersonRow
+              name={detail.informer_name ?? ''}
+              position={detail.informer_position}
+              staffId={informerId}
+            />
+            <DetailRows
+              style={styles.personRows}
+              rows={[
+                { label: TEXT.NOTICE_REPAIR_DETAIL_DEPARTMENT, value: detail.repair_inform_dept_name ?? '', icon: 'briefcase.fill' },
+                { label: 'เบอร์โทรศัพท์', value: detail.repair_tel ?? '', icon: 'phone.fill' },
+              ]}
+            />
+          </SectionCard>
         )}
 
-        {/* ── Location & Detail Card ── */}
-        <Card>
-          <View style={styles.summaryInner}>
-            <ThemedText style={styles.sectionHeading}>รายละเอียดสถานที่</ThemedText>
-
-            <View style={styles.tileGroup}>
-              <InfoTile label="อาคาร" value={detail.building_name} />
-              <InfoTile label="สถานที่ / ห้อง" value={detail.repair_place} />
-            </View>
-
-            {!!detail.repair_inform && (
-              <View style={styles.damageBlock}>
-                <ThemedText style={styles.tileLabel}>รายละเอียดความชำรุด</ThemedText>
-                <View style={styles.damageBox}>
-                  <ThemedText style={styles.damageText}>{detail.repair_inform}</ThemedText>
-                </View>
-              </View>
-            )}
-          </View>
-        </Card>
-
-        {/* ── For head of category: assignment / materials / examine ── */}
+        {/* ── For head of category: assignment / technicians / materials / examine ── */}
         {detail.header && (
-          <Card>
-            <View style={styles.summaryInner}>
-              <ThemedText style={styles.sectionHeading}>สำหรับหัวหน้าหมวดงาน</ThemedText>
+          <>
+            <DetailInfoCard
+              title="สำหรับหัวหน้าหมวดงาน"
+              rows={[
+                { label: 'วันที่ดำเนินการซ่อม / ดูสถานที่', value: opDateRange, icon: 'calendar-range' },
+                { label: 'ประเมินการซ่อม', value: assessmentText, icon: 'wrench.fill' },
+                { label: 'รายละเอียดการซ่อม', value: detail.header.repair_detail ?? '', icon: 'list.bullet' },
+                { label: 'การตรวจรับงานซ่อม', value: examineText, icon: 'checkmark.circle.fill' },
+              ]}
+            />
 
-              <View style={styles.tileGroup}>
-                <InfoTile label="วันที่ดำเนินการซ่อม / ดูสถานที่" value={opDateRange} />
-                <InfoTile label="ประเมินการซ่อม" value={assessmentText} />
-              </View>
+            {technicians.length > 0 && (
+              <PersonListCard
+                title="ช่างที่รับผิดชอบ"
+                countSuffix=" คน"
+                people={technicians.map((t, i) => ({
+                  key: `${t.staff_id ?? t.name}-${i}`,
+                  name: t.name ?? '',
+                  photoStaffId: t.staff_id ? normalizeStaffId(t.staff_id) : undefined,
+                }))}
+              />
+            )}
 
-              {technicians.length > 0 && (
-                <View style={styles.infoTile}>
-                  <ThemedText style={styles.tileLabel}>ช่างที่รับผิดชอบ</ThemedText>
-                  {technicians.map((t, i) => (
-                    <View key={`${t.staff_id ?? t.name}-${i}`} style={[styles.techListItem, i < technicians.length - 1 && styles.techListItemBorder]}>
-                      <RequesterAvatar staffId={t.staff_id ?? ''} name={t.name ?? ''} size={40} />
-                      <View style={styles.profileTextBlock}>
-                        <ThemedText style={styles.techProfileName} numberOfLines={2}>{t.name}</ThemedText>
-                        {!!t.staff_type && (
-                          <ThemedText style={styles.profileRole} numberOfLines={2}>{t.staff_type}</ThemedText>
-                        )}
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              <View ref={materialSectionRef} style={styles.infoTile}>
-                <View style={styles.matHeader}>
-                  <ThemedText style={styles.tileLabel}>รายการวัสดุ</ThemedText>
-                  {role === NOTICE_REPAIR_ROLE_HEADER && source === 'header_current' && (
+            {/* Screens that link out to a supply screen from the action bar
+                (admin supply sources, header repair record) skip the inline
+                list — it would only duplicate what the link opens. */}
+            {!canViewSupply && !canViewSupplyList && (
+            <View ref={materialSectionRef}>
+              <SectionCard
+                title="รายการวัสดุ"
+                trailing={
+                  canAddMaterial ? (
                     <Pressable
+                      accessibilityRole="button"
                       style={styles.addMatBtn}
                       onPress={() => router.push({
                         pathname: '/notice-repair/add-material',
                         params: { repair_id, staff_id: staffId, role, source },
                       } as Parameters<typeof router.push>[0])}
                     >
-                      <IconSymbol name="plus" size={16} color="#FFFFFF" />
+                      <IconSymbol name="plus" size={16} color={c.textOnPrimary} />
                       <ThemedText style={styles.addMatBtnText}>เพิ่มวัสดุ</ThemedText>
                     </Pressable>
-                  )}
-                </View>
+                  ) : null
+                }
+              >
                 {requisitions.length > 0 || hasDrafts ? (
                   <View style={styles.matList}>
                     {requisitions.map((r, i) => (
@@ -574,34 +566,20 @@ export default function NoticeRepairDetailScreen() {
                     ))}
                   </View>
                 ) : (
-                  <ThemedText style={styles.matEmptyText}>ไม่มีการจัดหาวัสดุ</ThemedText>
+                  <View style={styles.matEmpty}>
+                    <IconSymbol name="package.plus" size={20} color={c.textFaint} />
+                    <ThemedText style={styles.matEmptyText}>ไม่มีการจัดหาวัสดุ</ThemedText>
+                  </View>
                 )}
                 {hasDrafts && (
                   <ThemedText style={styles.draftHint}>
                     * รายการที่ไฮไลต์ยังไม่ถูกบันทึก กดปุ่ม “บันทึกรายการวัสดุ” ด้านล่างเพื่อบันทึก
                   </ThemedText>
                 )}
-              </View>
-
-              {!!detail.header.repair_detail && (
-                <View style={styles.damageBlock}>
-                  <ThemedText style={styles.tileLabel}>รายละเอียดการซ่อม</ThemedText>
-                  <View style={styles.damageBox}>
-                    <ThemedText style={styles.damageText}>{detail.header.repair_detail}</ThemedText>
-                  </View>
-                </View>
-              )}
-
-              {!!examineText && (
-                <View style={styles.damageBlock}>
-                  <ThemedText style={styles.tileLabel}>การตรวจรับงานซ่อม</ThemedText>
-                  <View style={styles.damageBox}>
-                    <ThemedText style={styles.examineText}>{examineText}</ThemedText>
-                  </View>
-                </View>
-              )}
+              </SectionCard>
             </View>
-          </Card>
+            )}
+          </>
         )}
       </ScrollView>
     );
@@ -610,9 +588,10 @@ export default function NoticeRepairDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScreenHeader
-        title={TEXT.NOTICE_REPAIR__TITLE}
+        title={navTitle}
         onBackPress={handleBackPress}
         titleInNavBar
+        tone="primary"
       />
 
       {renderContent()}
@@ -627,16 +606,25 @@ export default function NoticeRepairDetailScreen() {
               ? <ActivityIndicator color="#fff" />
               : <ThemedText style={styles.approveText}>{TEXT.NOTICE_REPAIR_ACTION_AGREE}</ThemedText>}
           </Pressable>
-          <Pressable
-            accessibilityRole="button" disabled={submitting} onPress={onNotAgree}
-            style={[styles.actionBtn, styles.rejectBtn, styles.quarterFlex, submitting && styles.actionBtnDisabled]}>
-            <ThemedText style={styles.rejectText} numberOfLines={1}>{TEXT.NOTICE_REPAIR_ACTION_NOT_AGREE}</ThemedText>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button" disabled={submitting} onPress={onCancelJob}
-            style={[styles.actionBtn, styles.cancelBtn, styles.quarterFlex, submitting && styles.actionBtnDisabled]}>
-            <ThemedText style={styles.cancelText} numberOfLines={1}>{TEXT.NOTICE_REPAIR_ACTION_CANCEL}</ThemedText>
-          </Pressable>
+          <SecondaryActionMenu
+            disabled={submitting}
+            actions={[
+              {
+                key: 'not-agree',
+                label: TEXT.NOTICE_REPAIR_ACTION_NOT_AGREE,
+                icon: 'xmark.circle',
+                color: c.primary,
+                onPress: onNotAgree,
+              },
+              {
+                key: 'cancel',
+                label: TEXT.NOTICE_REPAIR_ACTION_CANCEL,
+                icon: 'trash.fill',
+                color: c.danger,
+                onPress: onCancelJob,
+              },
+            ]}
+          />
         </View>
       )}
 
@@ -650,16 +638,24 @@ export default function NoticeRepairDetailScreen() {
               ? <ActivityIndicator color="#fff" />
               : <ThemedText style={styles.approveText}>{TEXT.NOTICE_REPAIR_ACTION_ADMIN_ACCEPT}</ThemedText>}
           </Pressable>
-          <Pressable
-            accessibilityRole="button" disabled={submitting} onPress={onEdit}
-            style={[styles.actionBtn, styles.editBtn, styles.quarterFlex, submitting && styles.actionBtnDisabled]}>
-            <ThemedText style={styles.editText} numberOfLines={1}>{TEXT.NOTICE_REPAIR_ACTION_EDIT}</ThemedText>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button" disabled={submitting} onPress={onAdminReject}
-            style={[styles.actionBtn, styles.rejectBtn, styles.quarterFlex, submitting && styles.actionBtnDisabled]}>
-            <ThemedText style={styles.rejectText} numberOfLines={1}>{TEXT.NOTICE_REPAIR_ACTION_ADMIN_REJECT}</ThemedText>
-          </Pressable>
+          <SecondaryActionMenu
+            disabled={submitting}
+            actions={[
+              {
+                key: 'edit',
+                label: TEXT.NOTICE_REPAIR_ACTION_EDIT,
+                icon: 'pencil',
+                onPress: onEdit,
+              },
+              {
+                key: 'admin-reject',
+                label: TEXT.NOTICE_REPAIR_ACTION_ADMIN_REJECT,
+                icon: 'arrow.triangle.2.circlepath',
+                color: c.primary,
+                onPress: onAdminReject,
+              },
+            ]}
+          />
         </View>
       )}
 
@@ -687,6 +683,21 @@ export default function NoticeRepairDetailScreen() {
             onPress={() => router.push({
               pathname: '/notice-repair/requisition',
               params: { repair_id, staff_id: staffId, role, source },
+            } as Parameters<typeof router.push>[0])}
+            style={[styles.actionBtn, styles.approveBtn, styles.approveFlex]}>
+            <ThemedText style={styles.approveText}>{TEXT.NOTICE_REPAIR_SUPPLY_VIEW_ALL}</ThemedText>
+          </Pressable>
+        </View>
+      )}
+
+      {/* Bottom action bar — head of category: open the read-only supply list */}
+      {canViewSupplyList && (
+        <View style={styles.actionBar}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push({
+              pathname: '/notice-repair/supply-list',
+              params: { repair_id, staff_id: staffId },
             } as Parameters<typeof router.push>[0])}
             style={[styles.actionBtn, styles.approveBtn, styles.approveFlex]}>
             <ThemedText style={styles.approveText}>{TEXT.NOTICE_REPAIR_SUPPLY_VIEW_ALL}</ThemedText>
@@ -736,130 +747,33 @@ export default function NoticeRepairDetailScreen() {
 }
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: c.surfaceAlt },
-  loader: { flex: 1 },
+  container: { flex: 1, backgroundColor: c.background },
   stateContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   errorText: { color: c.primary, fontSize: 14, lineHeight: 20, textAlign: 'center' },
 
-  scroll: { padding: 20, gap: 24 },
+  // Same scroll rhythm as the absence detail screen (gutter applied inline).
+  scrollContent: { paddingTop: 28, paddingBottom: 40, gap: 12 },
   scrollWithActions: { paddingBottom: 128 },
   scrollTopAnchor: { position: 'absolute', top: 0, left: 0, width: 0, height: 0 },
 
-  card: {
-    borderRadius: 24,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  cardInner: { padding: 20, gap: 16 },
-  summaryInner: { padding: 20, gap: 20 },
+  statusBadge: { borderRadius: 9999, paddingHorizontal: 12, paddingVertical: 5, flexShrink: 0, maxWidth: '52%' },
+  statusText: { fontFamily: AppFonts.psuBold, fontSize: 12, lineHeight: 16 },
 
-  // Summary card
-  summaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
-  summaryTitleBlock: { flex: 1, gap: 4 },
-  summaryTitle: { fontSize: 18, fontWeight: '700', lineHeight: 24, color: c.text },
-  requestNo: { fontSize: 14, color: c.textMuted, lineHeight: 20 },
-  statusBadge: { borderRadius: 9999, paddingHorizontal: 12, paddingVertical: 6, maxWidth: '42%' },
-  statusText: { fontSize: 12, fontWeight: '600', lineHeight: 16 },
-  summaryBody: { gap: 16 },
-  kvBlock: { gap: 4 },
-  kicker: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, color: c.primary },
-  kickerValueRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  kickerIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: c.primarySoft,
-  },
-  kickerValue: { flex: 1, fontSize: 16, fontWeight: '600', lineHeight: 24, color: c.text },
-  dateBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: c.border,
-    backgroundColor: c.surfaceAlt,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-  dateText: { fontSize: 16, fontWeight: '500', lineHeight: 24, color: c.textMuted },
+  // Person rows (requester / technicians) — identical to the absence detail cards.
+  personCard: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 18 },
+  // Contact rows sit under the person row inside the same card — the hairline
+  // separates the two halves.
+  personRows: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  personText: { flex: 1, gap: 3 },
+  personName: { fontFamily: AppFonts.psuBold, fontSize: 15, lineHeight: 21, color: c.text },
+  personPosition: { fontSize: 13, lineHeight: 18, color: c.textMuted },
 
-  // Section headings
-  sectionHeading: { fontSize: 16, fontWeight: '600', lineHeight: 24, color: c.text },
-
-  // Requester card
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: c.border,
-    backgroundColor: c.background,
-    padding: 16,
-  },
-  avatarWrap: { width: 64, height: 64 },
-  avatar: { width: 64, height: 64, borderRadius: 9999, borderWidth: 2, borderColor: c.textOnPrimary, backgroundColor: c.border },
-  avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { fontSize: 22, fontWeight: '700', color: c.primary },
-  profileTextBlock: { flex: 1, gap: 3 },
-  profileName: { fontSize: 16, fontWeight: '700', lineHeight: 22, color: c.text },
-  profileRole: { fontSize: 14, color: c.textMuted, lineHeight: 20 },
-
-  dividerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
-  },
-  rowLabel: { fontSize: 14, color: c.textMuted, lineHeight: 20 },
-  rowValue: { flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '600', lineHeight: 20, color: c.text },
-
-  // Location card
-  tileGroup: { gap: 16 },
-  infoTile: { borderRadius: 16, backgroundColor: c.surfaceAlt, padding: 12, gap: 4 },
-  tileLabel: { fontSize: 12, fontWeight: '600', letterSpacing: 0.5, color: c.textFaint, textTransform: 'uppercase' },
-  tileValue: { fontSize: 16, lineHeight: 24, color: c.textMuted },
-  damageBlock: { gap: 8 },
-  damageBox: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: c.border,
-    backgroundColor: c.background,
-    padding: 16,
-  },
-  damageText: { fontSize: 16, lineHeight: 24, color: c.textMuted },
-
-  // Header assignment / materials / examine
-  techProfileName: { fontSize: 15, fontWeight: '700', lineHeight: 20, color: c.text },
-  techListItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-  },
-  techListItemBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
-  },
-  matHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+  // Materials
   addMatBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -869,36 +783,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontWeight: '600',
     color: c.textOnPrimary,
   },
-  matList: { marginTop: 12, gap: 10 },
-  matItem: {
-    borderWidth: 1, borderColor: c.border, borderRadius: 14,
-    backgroundColor: c.surface, padding: 12, gap: 10,
-  },
-  matItemDraft: { backgroundColor: c.warningSoft, borderColor: c.warning },
-  matItemHead: {
-    flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8,
-  },
-  matItemName: { flex: 1, fontSize: 15, fontWeight: '700', color: c.text, lineHeight: 20 },
-  matStatusTag: {
-    backgroundColor: c.successSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2,
-  },
-  matStatusTagText: { fontSize: 11, fontWeight: '700', color: c.success },
-  matItemRows: {
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border, paddingTop: 8, gap: 6,
-  },
-  matDetailRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  matDetailLabel: { fontSize: 13, color: c.textMuted },
-  matDetailValue: { flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '600', color: c.text },
-  matDetailValueEmphasis: { fontSize: 15, fontWeight: '700', color: c.primary },
-  draftTagCell: { alignItems: 'center', justifyContent: 'center' },
-  draftTag: {
-    fontSize: 11, fontWeight: '700', color: c.warning,
-    backgroundColor: c.warningSoft, borderRadius: 999,
-    paddingHorizontal: 8, paddingVertical: 2, overflow: 'hidden',
-  },
+  matList: { gap: 10 },
   draftHint: { marginTop: 10, fontSize: 12, color: c.warning, lineHeight: 18 },
-  matEmptyText: { marginTop: 12, fontSize: 14, color: c.textFaint, textAlign: 'center' },
-  examineText: { fontSize: 15, fontWeight: '600', color: c.success, lineHeight: 22, marginTop: 4 },
+  matEmpty: { alignItems: 'center', gap: 8, paddingVertical: 8 },
+  matEmptyText: { fontSize: 14, color: c.textFaint, textAlign: 'center' },
 
   // Bottom action bar
   actionBar: {
@@ -914,7 +802,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   threeQuarterFlex: { flex: 3 },
   quarterFlex: { flex: 1 },
   approveBtn: {
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     shadowColor: c.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
@@ -922,10 +810,44 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     elevation: 3,
   },
   approveText: { fontSize: 14, fontWeight: '700', color: c.textOnPrimary },
-  rejectBtn: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FEE2E2' },
+  rejectBtn: { backgroundColor: c.primarySoft, borderWidth: 1, borderColor: c.primarySoft },
   rejectText: { fontSize: 14, fontWeight: '600', color: c.primary },
-  cancelBtn: { borderWidth: 1, borderColor: c.border },
-  cancelText: { fontSize: 14, fontWeight: '600', color: c.textMuted },
-  editBtn: { backgroundColor: c.infoSoft, borderWidth: 1, borderColor: '#DBEAFE' },
-  editText: { fontSize: 14, fontWeight: '600', color: c.info },
+
+  // Secondary-action menu: a kebab button in the action bar that pops its items
+  // upward, so the bar keeps a single primary action.
+  menuAnchor: { flexShrink: 0 },
+  menuBtn: {
+    width: 48,
+    paddingHorizontal: 0,
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.surface,
+  },
+  menuSheet: {
+    position: 'absolute',
+    bottom: '100%',
+    right: 0,
+    marginBottom: 8,
+    minWidth: 180,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    backgroundColor: c.surface,
+    overflow: 'hidden',
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  menuItemPressed: { backgroundColor: c.surfaceMuted },
+  menuItemText: { fontSize: 14, fontWeight: '600' },
+  menuDivider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border },
 });

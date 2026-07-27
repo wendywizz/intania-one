@@ -174,7 +174,7 @@ export default function MyLeaveScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_MY_LEAVE_TAB} backHref="/" titleInNavBar />
+      <ScreenHeader title={TEXT.ABSENCE_MY_LEAVE_TAB} backHref="/" titleInNavBar showHomeButton={false} />
 
       <View style={styles.topTabBar}>
         {tabs.map((tab) => {

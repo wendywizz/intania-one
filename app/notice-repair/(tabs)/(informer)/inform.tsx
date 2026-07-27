@@ -11,11 +11,8 @@ export default function InformScreen() {
       mode="create"
       staffId={staffId}
       backHref="/notice-repair/informer-current"
-      title={TEXT.NOTICE_REPAIR__TITLE}
-      heading={TEXT.NOTICE_REPAIR_FORM_NEW_TITLE}
-      subtitle={TEXT.NOTICE_REPAIR_FORM_NEW_SUBTITLE}
+      title={TEXT.NOTICE_REPAIR_FORM_NEW_TITLE}
       submitLabel={TEXT.NOTICE_REPAIR_FORM_SUBMIT}
-      submitIconName="paperplane.fill"
       successMessage={TEXT.NOTICE_REPAIR_FORM_SUCCESS}
       errorMessage={TEXT.NOTICE_REPAIR_FORM_ERROR}
       confirmBeforeSubmit

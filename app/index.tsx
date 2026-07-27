@@ -2,7 +2,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Modal,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Platform,
   Pressable,
   RefreshControl,
@@ -30,9 +33,15 @@ import { getActiveSummary, type ActiveSummaryData } from '@/services/activeSumma
 import { approvingWaitingData } from '@/services/absenceService';
 import { getForgetApprovalWaiting } from '@/services/timestampService';
 import { listExamTasks } from '@/services/examinarService';
-import { formatNewsDate } from '@/utils/date-format';
+import { formatNewsDateTime } from '@/utils/date-format';
 import { navPush } from '@/utils/navigation';
 import { ENDPOINTS } from '@/constants/endpoints';
+import { USER_PLACEHOLDER } from '@/constants/images';
+
+// Scroll offsets at which the pinned mini header appears / disappears. The gap
+// between them is deliberate — it stops the bar flickering at the boundary.
+const COMPACT_HEADER_SHOW_AT = 64;
+const COMPACT_HEADER_HIDE_AT = 40;
 
 // ─── Soft warm palette (smart-home reference) ─────────────────────────────────
 // A warm cream canvas with pure-white cards floating on soft, warm-tinted
@@ -119,6 +128,10 @@ const D = {
   gap: 12,
 } as const;
 
+// Published-date accent on the news cards — shared by the icon and the label so
+// they always match.
+const NEWS_DATE_COLOR = '#F1C40F';
+
 type IconName = Parameters<typeof IconSymbol>[0]['name'];
 
 const MENU_ITEMS: readonly { title: string; href: string; icon: IconName }[] = [
@@ -140,13 +153,6 @@ function getDateString() {
 function getFirstName(user: AuthUser | null) {
   const raw = (String(user?.name ?? user?.staffId ?? '')).trim();
   return raw.split(/\s+/)[0] ?? raw;
-}
-
-function getInitials(user: AuthUser | null) {
-  const raw = (String(user?.name ?? user?.staffId ?? '')).trim();
-  const parts = raw.split(/\s+/);
-  if (parts.length >= 2) return `${parts[0]?.[0] ?? ''}${parts[1]?.[0] ?? ''}`.toUpperCase();
-  return (raw.slice(0, 2) || '?').toUpperCase();
 }
 
 function getNewsKey(item: News, index: number) {
@@ -351,6 +357,15 @@ function UpcomingShiftSection({ data, loading, error, onReload, upcomingExams, a
     });
   }
 
+  // A single absence entry was folded into `tiles` above, so an absenceSubs
+  // count of 1 is not on its own something to show.
+  const isEmpty = repairSubs.length === 0 && absenceSubs.length <= 1 && tiles.length === 0;
+
+  // Nothing pending: drop the whole section rather than showing an empty card.
+  // Loading and error still render, so the section doesn't pop in and out while
+  // fetching and the retry button stays reachable.
+  if (!loading && !error && isEmpty) return null;
+
   return (
     <View style={s.coverCard}>
       <Text style={s.coverTitle}>{TEXT.HOME_UPCOMING_SHIFT_TITLE}</Text>
@@ -372,11 +387,6 @@ function UpcomingShiftSection({ data, loading, error, onReload, upcomingExams, a
             <IconSymbol name="arrow.triangle.2.circlepath" size={16} color={m.accent} />
             <Text style={s.reloadBtnText}>{TEXT.SHARED_RETRY}</Text>
           </Pressable>
-        </View>
-      ) : repairSubs.length === 0 && absenceSubs.length <= 1 && tiles.length === 0 ? (
-        <View style={s.stateWrap}>
-          <IconSymbol name="checkmark.circle.fill" size={22} color={m.textFaint} />
-          <Text style={s.emptyText}>{TEXT.HOME_ALL_CAUGHT_UP}</Text>
         </View>
       ) : (
         <>
@@ -648,6 +658,7 @@ export default function HomeScreen() {
   const [isNewsLoading, setIsNewsLoading] = useState(true);
   const [isNewsError, setIsNewsError] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
+  const [isCompactHeader, setIsCompactHeader] = useState(false);
   const [activeSummary, setActiveSummary] = useState<ActiveSummaryData | null>(null);
   const [isActiveSummaryLoading, setIsActiveSummaryLoading] = useState(false);
   const [isActiveSummaryError, setIsActiveSummaryError] = useState(false);
@@ -844,6 +855,29 @@ export default function HomeScreen() {
     } as Parameters<typeof navPush>[0]);
   }, []);
 
+  // Once the big greeting header scrolls away, a compact pinned version of it
+  // takes over. Two thresholds give it hysteresis so it can't flicker when the
+  // scroll rests right on the boundary. Declared above the auth early-returns —
+  // every hook must run on every render.
+  const compactAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(compactAnim, {
+      toValue: isCompactHeader ? 1 : 0,
+      duration: 180,
+      // react-native-web has no native animated module; asking for one there
+      // only produces a console warning.
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  }, [compactAnim, isCompactHeader]);
+
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    setIsCompactHeader((wasCompact) =>
+      wasCompact ? offsetY > COMPACT_HEADER_HIDE_AT : offsetY > COMPACT_HEADER_SHOW_AT,
+    );
+  }, []);
+
   // ─── Auth loading ───────────────────────────────────────────────────────────
 
   if (isAuthLoading) {
@@ -915,6 +949,8 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 28 }]}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={m.onCanvasMuted} />}>
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -926,18 +962,12 @@ export default function HomeScreen() {
                 accessibilityLabel="View profile"
                 onPress={() => navPush('/my-profile' as Parameters<typeof navPush>[0])}
                 style={({ pressed }) => [styles.avatarBtn, pressed && styles.pressed]}>
-                {avatarSource && !avatarFailed ? (
-                  <Image
-                    source={{ uri: avatarSource }}
-                    style={styles.avatar}
-                    contentFit="cover"
-                    onError={() => setAvatarFailed(true)}
-                  />
-                ) : (
-                  <View style={[styles.avatar, styles.avatarFallback]}>
-                    <Text style={styles.avatarText}>{getInitials(authUser)}</Text>
-                  </View>
-                )}
+                <Image
+                  source={avatarSource && !avatarFailed ? { uri: avatarSource } : USER_PLACEHOLDER}
+                  style={styles.avatar}
+                  contentFit="cover"
+                  onError={() => setAvatarFailed(true)}
+                />
               </Pressable>
               <View style={styles.greetingWrap}>
                 <Text numberOfLines={1} style={styles.greeting}>{getFirstName(authUser)}</Text>
@@ -1019,7 +1049,12 @@ export default function HomeScreen() {
                     onPress={() => openNews(item)}>
                     <Text numberOfLines={2} style={styles.newsTitle}>{item.title}</Text>
                     {item.pubDate ? (
-                      <Text style={styles.newsDate}>{formatNewsDate(item.pubDate)}</Text>
+                      <View style={styles.newsDateRow}>
+                        <IconSymbol name="calendar" size={13} color={NEWS_DATE_COLOR} />
+                        <Text numberOfLines={1} style={styles.newsDate}>
+                          {formatNewsDateTime(item.pubDate)}
+                        </Text>
+                      </View>
                     ) : null}
                   </Pressable>
                 ))}
@@ -1054,6 +1089,59 @@ export default function HomeScreen() {
 
         </View>
       </ScrollView>
+
+      {/* ── Pinned mini header ────────────────────────────────────────────── */}
+      <Animated.View
+        pointerEvents={isCompactHeader ? 'auto' : 'none'}
+        style={[
+          styles.miniHeader,
+          {
+            paddingTop: insets.top + 8,
+            opacity: compactAnim,
+            transform: [
+              {
+                translateY: compactAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-16, 0],
+                }),
+              },
+            ],
+          },
+        ]}>
+        <View style={styles.miniHeaderRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="View profile"
+            onPress={() => navPush('/my-profile' as Parameters<typeof navPush>[0])}
+            style={({ pressed }) => [styles.miniAvatarBtn, pressed && styles.pressed]}>
+            <Image
+              source={avatarSource && !avatarFailed ? { uri: avatarSource } : USER_PLACEHOLDER}
+              style={styles.avatar}
+              contentFit="cover"
+              onError={() => setAvatarFailed(true)}
+            />
+          </Pressable>
+          <Text numberOfLines={1} style={styles.miniGreeting}>{getFirstName(authUser)}</Text>
+
+          <View style={styles.headerRight}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Settings"
+              onPress={() => navPush('/settings')}
+              style={({ pressed }) => [styles.miniIconBtn, pressed && styles.pressed]}>
+              <IconSymbol name="gearshape.fill" size={19} color={m.icon} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Notifications"
+              onPress={() => navPush('/notification')}
+              style={({ pressed }) => [styles.miniIconBtn, pressed && styles.pressed]}>
+              <IconSymbol name="bell.fill" size={19} color={m.icon} />
+              {unreadCount > 0 ? <View style={styles.miniBellBadge} /> : null}
+            </Pressable>
+          </View>
+        </View>
+      </Animated.View>
 
       {/* ── Modals ────────────────────────────────────────────────────────── */}
       <Modal
@@ -1185,16 +1273,64 @@ const makeStyles = (m: M) => StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  avatarFallback: {
-    backgroundColor: m.fill,
+
+  // Pinned compact header — fades in over the canvas once the big one scrolls
+  // past, so the greeting and the two actions stay reachable.
+  miniHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: D.pad,
+    paddingBottom: 10,
+    backgroundColor: m.card,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: m.border,
+    shadowColor: m.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  miniHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 40,
+  },
+  miniAvatarBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    overflow: 'hidden',
+    flexShrink: 0,
+  },
+  miniGreeting: {
+    flex: 1,
+    fontFamily: F.semibold,
+    fontSize: 17,
+    lineHeight: 23,
+    color: m.text,
+  },
+  miniIconBtn: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 18,
+    backgroundColor: m.fill,
+    position: 'relative',
   },
-  avatarText: {
-    fontFamily: F.semibold,
-    fontSize: 15,
-    lineHeight: 20,
-    color: m.text,
+  miniBellBadge: {
+    position: 'absolute',
+    top: 7,
+    right: 7,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: m.notify,
+    borderWidth: 1.5,
+    borderColor: m.fill,
   },
 
   // Padded content below header
@@ -1306,11 +1442,16 @@ const makeStyles = (m: M) => StyleSheet.create({
     lineHeight: 21,
     color: m.accentText,
   },
+  newsDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
   newsDate: {
     fontFamily: F.regular,
     fontSize: 13,
     lineHeight: 17,
-    color: '#F1C40F',
+    color: NEWS_DATE_COLOR,
   },
   newsEmptyCard: {
     backgroundColor: m.card,

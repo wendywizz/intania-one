@@ -495,7 +495,7 @@ export default function TimestampCalendarScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.TIMESTAMP_CALENDAR_TAB} backHref="/" titleInNavBar />
+      <ScreenHeader title={TEXT.TIMESTAMP_CALENDAR_TAB} backHref="/" titleInNavBar showHomeButton={false} />
       <View style={styles.content}>{renderBody()}</View>
     </ThemedView>
   );
@@ -754,7 +754,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 8,
     minHeight: 48,
     borderRadius: 12,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     paddingHorizontal: 16,
   },
   requestButtonPressed: {

@@ -195,7 +195,7 @@ export default function ExaminarDetailScreen() {
     return (
       <ThemedView style={styles.container}>
         <StatusBar style="light" />
-        <NavTopBar title={TEXT.EXAMINAR_DETAIL_HEADER_TITLE} showBackButton onBackPress={() => router.back()} />
+        <NavTopBar title={TEXT.EXAMINAR_DETAIL_HEADER_TITLE} showBackButton onBackPress={() => router.back()} tone="primary" />
         <LoadingAnimate title={TEXT.EXAMINAR_LOADING} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
       </ThemedView>
     );
@@ -205,7 +205,7 @@ export default function ExaminarDetailScreen() {
     return (
       <ThemedView style={styles.container}>
         <StatusBar style="light" />
-        <NavTopBar title={TEXT.EXAMINAR_DETAIL_HEADER_TITLE} showBackButton onBackPress={() => router.back()} />
+        <NavTopBar title={TEXT.EXAMINAR_DETAIL_HEADER_TITLE} showBackButton onBackPress={() => router.back()} tone="primary" />
         <View style={styles.centerWrap}>
           <View style={styles.errorCard}>
             <ThemedText style={styles.errorTitle}>{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
@@ -252,7 +252,7 @@ export default function ExaminarDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.EXAMINAR_DETAIL_HEADER_TITLE} showBackButton onBackPress={() => router.back()} />
+      <NavTopBar title={TEXT.EXAMINAR_DETAIL_HEADER_TITLE} showBackButton onBackPress={() => router.back()} tone="primary" />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
@@ -376,26 +376,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     padding: 16,
   },
   staffItemBordered: { borderTopWidth: 1, borderTopColor: c.border },
-  staffAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 9999,
-    backgroundColor: c.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    overflow: 'hidden',
-  },
-  staffAvatarImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 9999,
-  },
-  staffInitials: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 16,
-    color: c.primary,
-  },
   staffInfo: { flex: 1, gap: 2 },
   staffName: {
     fontFamily: AppFonts.psuBold,
@@ -440,7 +420,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   retryText: { color: c.textOnPrimary, fontFamily: AppFonts.psuBold, fontSize: 14 },
 });

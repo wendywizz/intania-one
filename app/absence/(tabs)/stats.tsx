@@ -301,7 +301,7 @@ export default function StatsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_STATS_TITLE} backHref="/" titleInNavBar />
+      <ScreenHeader title={TEXT.ABSENCE_STATS_TITLE} backHref="/" titleInNavBar showHomeButton={false} />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );

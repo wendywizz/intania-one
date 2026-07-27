@@ -449,7 +449,7 @@ export default function MeetingDetailScreen() {
     return (
       <ThemedView style={styles.container}>
         <StatusBar style="light" />
-        <NavTopBar title={TEXT.MEETING_AGENDA_TITLE} showBackButton onBackPress={() => router.back()} />
+        <NavTopBar title={TEXT.MEETING_AGENDA_TITLE} showBackButton onBackPress={() => router.back()} tone="primary" />
         <LoadingAnimate title={TEXT.MEETING_LOADING_AGENDA} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
       </ThemedView>
     );
@@ -459,7 +459,7 @@ export default function MeetingDetailScreen() {
     return (
       <ThemedView style={styles.container}>
         <StatusBar style="light" />
-        <NavTopBar title={TEXT.MEETING_AGENDA_TITLE} showBackButton onBackPress={() => router.back()} />
+        <NavTopBar title={TEXT.MEETING_AGENDA_TITLE} showBackButton onBackPress={() => router.back()} tone="primary" />
         <View style={styles.centerWrap}>
           <View style={styles.errorCard}>
             <ThemedText style={styles.errorTitle}>{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
@@ -480,7 +480,7 @@ export default function MeetingDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.MEETING_AGENDA_TITLE} showBackButton onBackPress={() => router.back()} />
+      <NavTopBar title={TEXT.MEETING_AGENDA_TITLE} showBackButton onBackPress={() => router.back()} tone="primary" />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Meeting info — shared detail card (same style as absence/detail) */}
@@ -816,7 +816,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   retryText: { color: c.textOnPrimary, fontFamily: AppFonts.psuBold, fontSize: 14 },
 });

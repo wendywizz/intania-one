@@ -13,12 +13,10 @@ export default function Screen() {
         {
           label: TEXT.NOTICE_REPAIR_TAB_SUPPLY_MATERIAL,
           listType: 'supply_material',
-          description: 'รายการที่หน่วยงานจัดหาวัสดุให้',
         },
         {
           label: TEXT.NOTICE_REPAIR_TAB_DEPT_SUPPLY,
           listType: 'dept_supply_response',
-          description: 'รายการที่รอหน่วยงานตอบรับการจัดหา',
         },
       ]}
     />

@@ -165,7 +165,7 @@ export default function TimestampApproveDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={typeLabel} backHref="/timestamp/approve" titleInNavBar />
+      <ScreenHeader title={typeLabel} backHref="/timestamp/approve" titleInNavBar tone="primary" />
 
       {isLoading ? (
         <LoadingAnimate

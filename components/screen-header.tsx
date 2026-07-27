@@ -23,6 +23,11 @@ type ScreenHeaderProps = {
   titlePaddingHorizontal?: number;
   /** Render the title inside the top nav bar instead of as a large content title. */
   titleInNavBar?: boolean;
+  /**
+   * Nav-bar colouring. 'primary' paints the bar in the brand colour — the
+   * app-wide look for detail and form screens. Defaults to the blended surface.
+   */
+  tone?: 'default' | 'primary';
 };
 
 // Shared screen header used across the app: a status bar + a minimal nav bar
@@ -40,6 +45,7 @@ export function ScreenHeader({
   titleTrailing,
   titlePaddingHorizontal,
   titleInNavBar,
+  tone = 'default',
 }: ScreenHeaderProps) {
   const c = useColors();
   const { isDarkMode } = useTheme();
@@ -51,9 +57,12 @@ export function ScreenHeader({
   // Scale the title with device height (clamped) so it stays proportional.
   const titleSize = Math.round(Math.min(26, Math.max(20, height * 0.028)));
 
+  const isPrimary = tone === 'primary';
+
   return (
     <>
-      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      {/* A primary bar is always dark enough for light status-bar content. */}
+      <StatusBar style={isPrimary || isDarkMode ? 'light' : 'dark'} />
       <NavTopBar
         title={titleInNavBar ? title : ''}
         titleStyle={titleInNavBar ? { fontSize: 20, lineHeight: 26 } : undefined}
@@ -62,8 +71,8 @@ export function ScreenHeader({
         showBackButton={showBackButton}
         showHomeButton={showHomeButton}
         rightContent={rightContent}
-        backgroundColor={c.surface}
-        contentColor={c.text}
+        backgroundColor={isPrimary ? c.primary : c.surface}
+        contentColor={isPrimary ? c.textOnPrimary : c.text}
       />
       {titleInNavBar ? (
         titleTrailing ? (

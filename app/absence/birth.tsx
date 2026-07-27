@@ -480,7 +480,7 @@ export default function BirthScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
+        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar tone="primary" />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -493,7 +493,7 @@ export default function BirthScreen() {
     const shouldShowRetry = isRetryableInitialError(initialError);
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
+        <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar tone="primary" />
         {shouldShowRetry ? (
           <ErrorState
             variant="error"
@@ -522,7 +522,7 @@ export default function BirthScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
+      <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar tone="primary" />
 
       <ScrollView
         contentContainerStyle={[styles.content, { paddingHorizontal: gutter }]}
@@ -1030,7 +1030,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     marginTop: 6,
   },
   removeRequestButton: {

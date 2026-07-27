@@ -3,6 +3,7 @@ import { Image, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts } from '@/constants/fonts';
+import { USER_PLACEHOLDER } from '@/constants/images';
 import { type AppColors, useThemedStyles } from '@/constants/theme';
 import { getPersonPhoto } from '@/services/personService';
 
@@ -12,7 +13,7 @@ export type PersonListEntry = {
   name: string;
   /** Secondary line — role, department, etc. */
   subtitle?: string;
-  /** Staff id used to resolve the avatar photo; falls back to initials. */
+  /** Staff id used to resolve the avatar photo; falls back to the placeholder. */
   photoStaffId?: string;
 };
 
@@ -28,33 +29,20 @@ type PersonListCardProps = {
   emptyText?: string;
 };
 
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((word) => word.charAt(0).toUpperCase())
-    .join('');
-}
-
 function PersonRow({ entry, isFirst }: { entry: PersonListEntry; isFirst: boolean }) {
   const styles = useThemedStyles(makeStyles);
   const [imgError, setImgError] = useState(false);
   const photoUri =
     entry.photoStaffId && !imgError ? getPersonPhoto({ staffId: entry.photoStaffId }) : null;
-  const initials = getInitials(entry.name || 'S');
 
   return (
     <View style={[styles.row, !isFirst && styles.rowBordered]}>
       <View style={styles.avatar}>
-        {photoUri ? (
-          <Image
-            source={{ uri: photoUri }}
-            style={styles.avatarImage}
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <ThemedText style={styles.initials}>{initials}</ThemedText>
-        )}
+        <Image
+          source={photoUri ? { uri: photoUri } : USER_PLACEHOLDER}
+          style={styles.avatarImage}
+          onError={() => setImgError(true)}
+        />
       </View>
       <View style={styles.info}>
         <ThemedText style={styles.name} numberOfLines={2}>
@@ -163,11 +151,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 9999,
-  },
-  initials: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 16,
-    color: c.primary,
   },
   info: { flex: 1, gap: 2 },
   name: {

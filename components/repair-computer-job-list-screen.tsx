@@ -285,6 +285,7 @@ export function RepairComputerJobListScreen({
       <NavTopBar
         title={title}
         backHref="/"
+        showHomeButton={false}
       />
 
       <View style={styles.content}>
@@ -336,7 +337,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     marginTop: 24,
   },
   emptyCard: {

@@ -119,7 +119,9 @@ export function LeaveCard({ item, name, badge, onPress }: LeaveCardProps) {
       </View>
       {badge ? (
         <View style={[styles.badge, { backgroundColor: badge.bg }]}>
-          <ThemedText style={[styles.badgeText, { color: badge.color }]}>{badge.text}</ThemedText>
+          <ThemedText style={[styles.badgeText, { color: badge.color }]} numberOfLines={1}>
+            {badge.text}
+          </ThemedText>
         </View>
       ) : null}
     </View>
@@ -185,11 +187,15 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
+  // Matches the shared ListCard badge: top-aligned and capped at a quarter of
+  // the card so a long status label ellipsizes instead of squeezing the body.
   badge: {
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 5,
-    flexShrink: 0,
+    alignSelf: 'flex-start',
+    flexShrink: 1,
+    maxWidth: '25%',
   },
   badgeText: {
     fontSize: 12,

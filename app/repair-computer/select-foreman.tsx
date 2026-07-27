@@ -21,13 +21,12 @@ import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { Person } from "@/models/types";
 import { getPersonPhoto } from "@/services/personService";
+import { USER_PLACEHOLDER } from "@/constants/images";
 import {
     foremanForwardForeman,
     getRepairComputerForemen,
 } from "@/services/repairComputerService";
 
-// Shown when a person's photo can't be loaded (or there's no staff id).
-const USER_PLACEHOLDER = require("../../assets/images/user-placeholder.jpg");
 
 function getValue(row: Person | null | undefined, fields: string[]) {
   if (!row) return "";
@@ -263,6 +262,7 @@ export default function SelectForemanScreen() {
         title={TEXT.REPAIR_COMPUTER_TITLE}
         onBackPress={handleBackPress}
         showBackButton
+        tone="primary"
       />
 
       <View style={styles.content}>

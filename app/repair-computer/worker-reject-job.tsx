@@ -94,6 +94,7 @@ export default function WorkerRejectJobScreen() {
         title={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_NO_PREFIX}${jobId}` : TEXT.REPAIR_COMPUTER_TITLE}
         onBackPress={handleBackPress}
         showBackButton
+        tone="primary"
       />
 
       <ScrollView

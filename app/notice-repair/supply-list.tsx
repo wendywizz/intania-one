@@ -35,7 +35,7 @@ export default function SupplyListScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.NOTICE_REPAIR_SUPPLY_LIST_TITLE} showHomeButton />
+      <NavTopBar title={TEXT.NOTICE_REPAIR_SUPPLY_LIST_TITLE} showHomeButton tone="primary" />
 
       {isLoading ? (
         <ActivityIndicator style={styles.loader} size="large" color={c.primary} />

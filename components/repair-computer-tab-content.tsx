@@ -42,6 +42,7 @@ export function RepairComputerTabContent({ title, description }: RepairComputerT
         subtitle={screenTitle}
         moduleIcon="laptop"
         backHref="/"
+        showHomeButton={false}
       />
 
       <View style={styles.content}>

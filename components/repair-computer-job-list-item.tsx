@@ -107,7 +107,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     marginLeft: 8,
   },
 });

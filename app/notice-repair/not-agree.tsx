@@ -62,7 +62,7 @@ export default function NoticeRepairNotAgreeScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.NOTICE_REPAIR_ACTION_NOT_AGREE} />
+      <NavTopBar title={TEXT.NOTICE_REPAIR_ACTION_NOT_AGREE} tone="primary" />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -117,7 +117,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   scroll: { padding: 16, gap: 8 },
   label: { fontSize: 14, fontWeight: '700', color: c.primary },
   input: {
-    minHeight: 64,
+    // Two lines of text plus the 12px vertical padding.
+    minHeight: 60,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
@@ -140,7 +141,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   submitBtnDisabled: { opacity: 0.6 },
   submitBtnText: { fontSize: 15, fontWeight: '700', color: c.textOnPrimary },

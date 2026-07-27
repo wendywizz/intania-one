@@ -32,6 +32,7 @@ import {
     workerReceiveJob,
 } from "@/services/repairComputerService";
 import { formatDateTime } from "@/utils/date-format";
+import { USER_PLACEHOLDER } from "@/constants/images";
 
 const detailFields = [
   "detail",
@@ -48,8 +49,6 @@ const supplyFields = [
   "code",
 ];
 const phoneFields = ["phone", "tel", "telephone"];
-// Shown when a person's photo can't be loaded (or there's no staff id).
-const USER_PLACEHOLDER = require("../../assets/images/user-placeholder.jpg");
 const statusFields = ["status", "state", "statusId", "status_id"];
 const informDateFields = [
   "informDateTime",
@@ -666,6 +665,7 @@ export default function RepairComputerEditJobScreen() {
         title={TEXT.REPAIR_COMPUTER_TITLE}
         onBackPress={handleBackPress}
         showBackButton
+        tone="primary"
       />
 
       <View style={styles.content}>
@@ -859,7 +859,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     marginTop: 24,
   },
   updateButton: {
@@ -869,7 +869,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     marginTop: 4,
   },
   disabledButton: {
@@ -888,7 +888,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.success,
     paddingHorizontal: 18,
   },
   rejectButton: {
@@ -897,7 +897,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.danger,
     paddingHorizontal: 18,
   },
   operateButton: {
@@ -907,7 +907,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     marginTop: 4,
     paddingHorizontal: 18,
   },

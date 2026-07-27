@@ -143,6 +143,7 @@ export default function TimestampRecordDetailScreen() {
         title={typeLabel}
         backHref={{ pathname: "/timestamp/approve", params: { tab: "history" } } as Href}
         titleInNavBar
+        tone="primary"
       />
 
       {isLoading ? (

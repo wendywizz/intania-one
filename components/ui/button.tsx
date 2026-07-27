@@ -3,7 +3,7 @@
  *
  * Replaces the per-screen `Pressable` + StyleSheet buttons (submit bars,
  * secondary/back buttons, dialog actions) and the indigo `ModernButton`.
- * Brand-red primary, theme-aware via useColors(), ≥44pt touch target,
+ * Pomegranate-red primary, theme-aware via useColors(), ≥44pt touch target,
  * built-in loading + disabled states.
  */
 import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
@@ -44,8 +44,10 @@ function palette(c: AppColors, variant: ButtonVariant) {
     case 'danger':
       return { bg: c.danger, border: c.danger, fg: '#FFFFFF' };
     case 'primary':
+    // Pomegranate rather than `primary`: the brand red washes out to pink as a
+    // fill in dark mode, and this holds one red across both themes.
     default:
-      return { bg: c.primary, border: c.primary, fg: c.textOnPrimary };
+      return { bg: c.pomegranate, border: c.pomegranate, fg: c.textOnPrimary };
   }
 }
 

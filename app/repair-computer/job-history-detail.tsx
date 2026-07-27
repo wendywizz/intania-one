@@ -23,11 +23,10 @@ import { getPersonPhoto } from "@/services/personService";
 import { getJobDetail } from "@/services/repairComputerService";
 import { formatDateTime } from "@/utils/date-format";
 import { getRepairStatusBadgeStyle } from "@/utils/repair-computer-status";
+import { USER_PLACEHOLDER } from "@/constants/images";
 
 const TEXT_NONE = "-";
 const TEXT_RC_NO_SUPPLYCODE = "No supply code";
-// Shown when a person's photo can't be loaded (or there's no staff id).
-const USER_PLACEHOLDER = require("../../assets/images/user-placeholder.jpg");
 
 const detailFields = ["detail", "description", "repairDetail", "repair_detail", "problem"];
 const repairTypeNameFields = ["repairTypeName", "repair_type_name", "problemTypeName", "problem_type_name"];
@@ -290,9 +289,10 @@ export default function JobHistoryDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_NO_PREFIX}${jobId}` : TEXT.REPAIR_COMPUTER_TITLE}
+        title={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_ID_LABEL} ${jobId}` : TEXT.REPAIR_COMPUTER_TITLE}
         onBackPress={handleBackPress}
         showBackButton
+        tone="primary"
       />
       <View style={styles.content}>
         <View style={styles.panel}>
@@ -512,7 +512,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     marginTop: 24,
   },
 });

@@ -144,7 +144,7 @@ export default function NewsDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.NEWS_DETAIL_TITLE} showHomeButton />
+      <NavTopBar title={TEXT.NEWS_DETAIL_TITLE} showHomeButton tone="primary" />
 
       {isLoading ? (
         <View style={styles.loadingContainer}>

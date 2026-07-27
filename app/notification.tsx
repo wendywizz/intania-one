@@ -126,6 +126,7 @@ export default function NotificationScreen() {
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <NavTopBar
         title={TEXT.NOTIFICATION_TITLE}
+        tone="primary"
         showHomeButton
         rightContent={
           items.length > 0 ? (

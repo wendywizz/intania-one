@@ -21,7 +21,7 @@ import { SectionCard } from "@/components/section-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { ConfirmDialog } from "@/components/ui";
-import { DetailInfoCard } from "@/components/ui/detail-info-card";
+import { DetailInfoCard, DetailRows } from "@/components/ui/detail-info-card";
 import { PersonListCard } from "@/components/ui/person-list-card";
 import {
     REPAIR_STATUS_APPROVAL_REJECTED,
@@ -41,11 +41,10 @@ import {
 } from "@/services/repairComputerService";
 import { formatDateTime } from "@/utils/date-format";
 import { getRepairStatusBadgeStyle } from "@/utils/repair-computer-status";
+import { USER_PLACEHOLDER } from "@/constants/images";
 
 const TEXT_NONE = "-";
 const TEXT_RC_NO_SUPPLYCODE = "No supply code";
-// Shown when a person's photo can't be loaded (or there's no staff id).
-const USER_PLACEHOLDER = require("../../assets/images/user-placeholder.jpg");
 type ForemanCurrentJobAction = "closeJob" | "forwardReject";
 
 const detailFields = ["detail", "description", "repairDetail", "repair_detail", "problem"];
@@ -146,13 +145,11 @@ function normalizeStaffId(staffId: string) {
 function PersonSummaryCard({
   fallbackTitle,
   id,
-  meta,
   name,
   role,
 }: {
   fallbackTitle: string;
   id: string;
-  meta?: string;
   name: string;
   role?: string;
 }) {
@@ -160,7 +157,7 @@ function PersonSummaryCard({
   const staffId = normalizeStaffId(id);
   const [photoFailed, setPhotoFailed] = useState(false);
   const showPhoto = Boolean(staffId) && !photoFailed;
-  const position = [role, meta].filter(Boolean).join(" · ");
+  const position = role ?? "";
 
   return (
     <View style={styles.personRow}>
@@ -285,10 +282,11 @@ export default function ForemanJobDetailScreen() {
   const workerId = getJobText(data, workerIdFields);
   const foremanName = getJobText(data, foremanNameFields);
   const foremanId = getJobText(data, foremanIdFields);
-  const pageTitle =
-    backHref === "/repair-computer/manage-job"
-      ? TEXT.REPAIR_COMPUTER_MANAGE_JOB
-      : TEXT.REPAIR_COMPUTER_JOB_DETAIL;
+  // The nav bar carries the job code; it falls back to the module title only
+  // when the route arrived without an id.
+  const navTitle = jobId
+    ? `${TEXT.REPAIR_COMPUTER_JOB_ID_LABEL} ${jobId}`
+    : TEXT.REPAIR_COMPUTER_TITLE;
 
   const handleBackPress = () => {
     router.replace(backHref as Parameters<typeof router.replace>[0]);
@@ -409,8 +407,15 @@ export default function ForemanJobDetailScreen() {
           <PersonSummaryCard
             fallbackTitle={TEXT.REPAIR_COMPUTER_INFORMER_NAME}
             id={requesterId}
-            meta={[deptName, phone].filter(Boolean).join(" · ") || TEXT_NONE}
             name={requesterName}
+          />
+          {/* Department and phone as icon-prefixed rows under the person. */}
+          <DetailRows
+            style={styles.personRows}
+            rows={[
+              { label: TEXT.REPAIR_COMPUTER_DEPT, value: deptName, icon: "briefcase.fill" },
+              { label: TEXT.REPAIR_COMPUTER_PHONE, value: phone, icon: "phone.fill" },
+            ]}
           />
         </SectionCard>
 
@@ -708,9 +713,10 @@ export default function ForemanJobDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
-        title={jobId ? `${TEXT.REPAIR_COMPUTER_JOB_NO_PREFIX}${jobId}` : TEXT.REPAIR_COMPUTER_TITLE}
+        title={navTitle}
         onBackPress={handleBackPress}
         showBackButton
+        tone="primary"
       />
 
       <View style={styles.content}>
@@ -933,6 +939,13 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     minWidth: 0,
     gap: 3,
   },
+  // Dept/phone rows sit under the person row inside the same card — the
+  // hairline separates the two halves.
+  personRows: {
+    marginTop: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.border,
+  },
   personName: {
     fontSize: 15,
     lineHeight: 21,
@@ -979,7 +992,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     marginTop: 24,
   },
   actionRow: {
@@ -1000,7 +1013,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.success,
   },
   approveButton: {
     flex: 1,
@@ -1028,7 +1041,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     justifyContent: "center",
     gap: 4,
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   rejectButton: {
     flex: 1,
@@ -1036,7 +1049,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.danger,
   },
   disabledButton: {
     opacity: 0.65,

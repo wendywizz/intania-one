@@ -68,7 +68,7 @@ export default function NoticeRepairIndexScreen() {
   if (noAccess) {
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.NOTICE_REPAIR__TITLE} backHref="/" titleInNavBar />
+        <ScreenHeader title={TEXT.NOTICE_REPAIR__TITLE} backHref="/" titleInNavBar showHomeButton={false} />
         <View style={styles.center}>
           <ThemedText style={styles.noAccessTitle}>{TEXT.NOTICE_REPAIR_NO_ACCESS_TITLE}</ThemedText>
           <ThemedText style={styles.noAccessMessage}>{TEXT.NOTICE_REPAIR_NO_ACCESS_MESSAGE}</ThemedText>

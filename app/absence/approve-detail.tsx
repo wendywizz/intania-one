@@ -263,7 +263,7 @@ export default function ApproveDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_APPROVE_DETAIL_SUBTITLE} backHref="/absence/approve-leave" titleInNavBar />
+      <ScreenHeader title={TEXT.ABSENCE_APPROVE_DETAIL_SUBTITLE} backHref="/absence/approve-leave" titleInNavBar tone="primary" />
 
       {isLoading ? (
         <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
@@ -355,7 +355,7 @@ export default function ApproveDetailScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: c.surface,
   },
   scrollContent: {
     paddingTop: 4,

@@ -8,6 +8,7 @@ import { TEXT } from '@/constants/text';
 import { useAuth } from '@/context/AuthContext';
 import type { NoticeRepairDetail, NoticeRepairReference } from '@/models/types';
 import { getHeaderDetail, getReference } from '@/services/noticeRepairService';
+import { USER_PLACEHOLDER } from '@/constants/images';
 import { getPersonPhoto } from '@/services/personService';
 import { getCategoryIcon } from '@/utils/category-icon';
 import { formatDateOnly, formatDateRange } from '@/utils/date-format';
@@ -67,27 +68,19 @@ function DividerRow({ label, value, valueColor }: { label: string; value?: strin
   );
 }
 
-function RequesterAvatar({ staffId, name, size = 64 }: { staffId: string; name: string; size?: number }) {
-  const c = useColors();
+function RequesterAvatar({ staffId, size = 64 }: { staffId: string; size?: number }) {
   const styles = useThemedStyles(makeStyles);
   const [failed, setFailed] = useState(false);
   const normalized = normalizeStaffId(staffId);
   const showPhoto = Boolean(normalized) && !failed;
-  const initial = (name || '?').trim().charAt(0).toUpperCase();
   const dim = { width: size, height: size, borderRadius: size / 2 };
   return (
     <View style={[styles.avatarWrap, dim]}>
-      {showPhoto ? (
-        <Image
-          source={{ uri: getPersonPhoto({ staffId: normalized }) }}
-          onError={() => setFailed(true)}
-          style={[styles.avatar, dim]}
-        />
-      ) : (
-        <View style={[styles.avatar, styles.avatarPlaceholder, dim]}>
-          <ThemedText style={[styles.avatarInitial, { fontSize: size * 0.34 }]}>{initial}</ThemedText>
-        </View>
-      )}
+      <Image
+        source={showPhoto ? { uri: getPersonPhoto({ staffId: normalized }) } : USER_PLACEHOLDER}
+        onError={() => setFailed(true)}
+        style={[styles.avatar, dim]}
+      />
     </View>
   );
 }
@@ -257,7 +250,7 @@ export default function HeaderEstimateDetailScreen() {
               <ThemedText style={styles.sectionHeading}>ข้อมูลผู้แจ้งซ่อม</ThemedText>
 
               <View style={styles.profileRow}>
-                <RequesterAvatar staffId={informerId} name={detail.informer_name ?? ''} />
+                <RequesterAvatar staffId={informerId} />
                 <View style={styles.profileTextBlock}>
                   <ThemedText style={styles.profileName} numberOfLines={2}>
                     {detail.informer_name || '-'}
@@ -324,7 +317,7 @@ export default function HeaderEstimateDetailScreen() {
               {technicians.length > 0 ? (
                 technicians.map((t, i) => (
                   <View key={`${t.staff_id ?? t.name}-${i}`} style={styles.techRow}>
-                    <RequesterAvatar staffId={t.staff_id ?? ''} name={t.name ?? ''} size={40} />
+                    <RequesterAvatar staffId={t.staff_id ?? ''} size={40} />
                     <ThemedText style={styles.techName} numberOfLines={2}>{`${i + 1}. ${t.name}`}</ThemedText>
                   </View>
                 ))
@@ -362,7 +355,7 @@ export default function HeaderEstimateDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.NOTICE_REPAIR__TITLE} />
+      <NavTopBar title={TEXT.NOTICE_REPAIR__TITLE} tone="primary" />
 
       {renderContent()}
 
@@ -496,7 +489,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   approveFlex: { flex: 2 },
   quarterFlex: { flex: 1 },
   approveBtn: {
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     shadowColor: c.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 3,
   },
   approveText: { fontSize: 14, fontWeight: '700', color: c.textOnPrimary },

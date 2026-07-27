@@ -1,4 +1,5 @@
 import { router, type Href } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +20,12 @@ type NavTopBarProps = {
   rightContent?: ReactNode;
   backgroundColor?: string;
   contentColor?: string;
+  /**
+   * Preset bar colouring. 'primary' paints the bar in the brand colour with
+   * on-primary content — the app-wide look for detail and form screens.
+   * Explicit backgroundColor/contentColor still win.
+   */
+  tone?: 'default' | 'primary';
   /** Optional style override for the title text (e.g. a larger font size). */
   titleStyle?: StyleProp<TextStyle>;
 };
@@ -34,12 +41,15 @@ export function NavTopBar({
   rightContent,
   backgroundColor,
   contentColor,
+  tone = 'default',
   titleStyle,
 }: NavTopBarProps) {
   const insets = useSafeAreaInsets();
   const c = useColors();
-  const barColor = backgroundColor ?? c.navBar;
-  const barContent = contentColor ?? c.navBarText;
+  const toneBar = tone === 'primary' ? c.primary : c.navBar;
+  const toneContent = tone === 'primary' ? c.textOnPrimary : c.navBarText;
+  const barColor = backgroundColor ?? toneBar;
+  const barContent = contentColor ?? toneContent;
 
   const goBack = () => {
     if (!acquireNavLock()) return;
@@ -64,6 +74,10 @@ export function NavTopBar({
 
   return (
     <View style={[styles.container, subtitle ? styles.containerWithSubtitle : null, { paddingTop: insets.top + 14, backgroundColor: barColor }]}>
+      {/* A primary bar is dark in both themes, so status-bar content must be
+          light. StatusBar renders null, so it adds nothing to this row. */}
+      {tone === 'primary' ? <StatusBar style="light" /> : null}
+
       <View style={styles.leftActions}>
         {showBackButton ? (
           <Pressable

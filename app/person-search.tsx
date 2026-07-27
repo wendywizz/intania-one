@@ -22,6 +22,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PHOTO_BASE_URL } from '@/constants/endpoints';
 import { AppFonts } from '@/constants/fonts';
+import { USER_PLACEHOLDER } from '@/constants/images';
 import { useTheme } from '@/context/ThemeContext';
 import type { Person } from '@/models/types';
 import { getPersonnelSuggestions } from '@/services/personService';
@@ -147,20 +148,16 @@ function PersonSearchListItem({ item }: { item: Person }) {
   return (
     <View style={styles.listItemRow}>
       <View style={styles.avatarWrap}>
-        {showPhoto ? (
-          <Image
-            accessibilityIgnoresInvertColors
-            contentFit="cover"
-            onError={() => {
-              setPhotoFailed(true);
-            }}
-            source={{ uri: photoUri }}
-            style={styles.avatar}
-            transition={200}
-          />
-        ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]} />
-        )}
+        <Image
+          accessibilityIgnoresInvertColors
+          contentFit="cover"
+          onError={() => {
+            setPhotoFailed(true);
+          }}
+          source={showPhoto ? { uri: photoUri } : USER_PLACEHOLDER}
+          style={styles.avatar}
+          transition={200}
+        />
       </View>
       <View style={styles.listItemText}>
         <ThemedText style={styles.name} numberOfLines={2}>
@@ -322,8 +319,8 @@ export default function PersonSearchScreen() {
       <NavTopBar
         title={TEXT.PERSON_SEARCH_TITLE}
         backHref="/"
-        backgroundColor={c.surface}
-        contentColor={c.text}
+        showHomeButton={false}
+        tone="primary"
       />
 
       <View style={styles.content}>
@@ -540,9 +537,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     width: 40,
     height: 40,
   },
-  avatarPlaceholder: {
-    backgroundColor: c.surfaceMuted,
-  },
   listItemText: {
     flex: 1,
     minWidth: 0,
@@ -606,7 +600,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   retryBtnText: {
     color: c.textOnPrimary,

@@ -181,7 +181,7 @@ export default function ApproveLeaveScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_APPROVE_LEAVE_TAB} backHref="/" titleInNavBar />
+      <ScreenHeader title={TEXT.ABSENCE_APPROVE_LEAVE_TAB} backHref="/" titleInNavBar showHomeButton={false} />
 
       <View style={styles.topTabBar}>
         {tabs.map((tab) => {

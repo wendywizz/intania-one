@@ -148,6 +148,14 @@ export function formatMeetingDetailDate(value: string): string {
   return `${datePart}${timePart}`;
 }
 
+// Whole days between the given date and today, both taken at start of day.
+// Positive means the date is in the past. Null when the value can't be parsed.
+export function daysSince(value: string) {
+  const m = parseDateTime(value);
+  if (!m) return null;
+  return moment().startOf('day').diff(m.startOf('day'), 'days');
+}
+
 export function formatTimeOnly(value: string): string {
   if (!value || !/\d{1,2}:\d{2}/.test(value)) return '';
   const m = parseDateTime(value);

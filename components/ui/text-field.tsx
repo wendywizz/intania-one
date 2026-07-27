@@ -62,6 +62,7 @@ export function TextField({
       <View style={styles.inputWrap}>
         <TextInput
           multiline={multiline}
+          numberOfLines={multiline ? 2 : 1}
           secureTextEntry={isPassword && hidden}
           placeholderTextColor={c.textFaint}
           style={[
@@ -115,7 +116,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  multiline: { minHeight: 96 },
+  // Two lines of text plus the vertical padding.
+  multiline: { minHeight: 60 },
   inputWithAdornment: { paddingRight: 44 },
   adornment: { position: 'absolute', right: 12, height: 24, width: 24, alignItems: 'center', justifyContent: 'center' },
   helper: { fontSize: 12, lineHeight: 17, fontFamily: AppFonts.psuRegular },

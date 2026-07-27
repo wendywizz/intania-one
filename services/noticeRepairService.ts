@@ -57,106 +57,106 @@ export async function getList(
   workCategory?: string | number,
 ): Promise<ListResponse<NoticeRepairJob>> {
   // Approver ("หัวหน้าสาธารณูปการ") pending screen — backed by the Infor approve_new
-  // endpoint, which returns the full list in one response (no pagination).
-  if (type === 'approve_pending') return getApproveNewJobs(staffId, start);
+  // endpoint, paginated via page/per_page.
+  if (type === 'approve_pending') return getApproveNewJobs(staffId, start, length);
 
   // Admin "รอรับเรื่อง" screen — backed by the Infor admin_pending endpoint,
-  // which returns the full list in one response (no pagination).
+  // paginated via page/per_page.
   if (type === 'admin_pending') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairAdminPending, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairAdminPending, staffId, start, length);
   }
 
   // Admin "งานปัจจุบัน" (in-progress) screen — backed by the Infor admin_list
-  // endpoint, which returns the full list in one response (no pagination).
+  // endpoint, paginated via page/per_page.
   if (type === 'admin_list') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairAdminList, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairAdminList, staffId, start, length);
   }
 
   // Admin "เสร็จสิ้น" (finished) screen — backed by the Infor admin_finished
-  // endpoint, which returns the full list in one response (no pagination).
+  // endpoint, paginated via page/per_page.
   if (type === 'admin_finished') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairAdminFinished, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairAdminFinished, staffId, start, length);
   }
 
   // Admin "จัดหาวัสดุ" (supply material) tab — Infor supply_material endpoint
-  // (status 007, requisition 'c'), returned as a full list in one response.
+  // (status 007, requisition 'c'), paginated via page/per_page.
   if (type === 'supply_material') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairSupplyMaterial, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairSupplyMaterial, staffId, start, length);
   }
 
   // Admin "หน่วยงานตอบรับการจัดหา" (dept supply response) tab — Infor
-  // dept_supply_response endpoint (status 005, requisition 'y'), full list.
+  // dept_supply_response endpoint (status 005, requisition 'y').
   if (type === 'dept_supply_response') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairDeptSupply, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairDeptSupply, staffId, start, length);
   }
 
   // Approver history top-tabs (ซ่อมได้ / ซ่อมไม่ได้) — each backed by its own Infor
-  // endpoint, returned as a full list in one response (no pagination).
+  // endpoint, paginated via page/per_page.
   if (type === 'approve_history_repairable') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairCanRepair, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairCanRepair, staffId, start, length);
   }
   if (type === 'approve_history_unrepairable') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairNotRepair, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairNotRepair, staffId, start, length);
   }
 
   // Informer "งานปัจจุบัน" (current) screen — backed by the Infor informer_current
-  // endpoint, which returns the full list in one response (no pagination).
+  // endpoint, paginated via page/per_page.
   if (type === 'informer_current') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairInformerCurrent, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairInformerCurrent, staffId, start, length);
   }
 
   // Informer "ประวัติ/เสร็จสิ้น" (finished) screen — backed by the Infor
-  // informer_finished endpoint, returned as a full list in one response.
+  // informer_finished endpoint, paginated via page/per_page.
   if (type === 'informer_history') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairInformerFinished, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairInformerFinished, staffId, start, length);
   }
 
   // Header "รอรับเรื่อง" (pending) screen — backed by the Infor header_pending
-  // endpoint, which returns the full list in one response (no pagination).
+  // endpoint, paginated via page/per_page.
   if (type === 'header_pending') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairHeaderPending, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairHeaderPending, staffId, start, length);
   }
 
   // Header "รอประเมิน" (waiting estimate) tab — backed by the Infor
-  // header_estimate endpoint, returned as a full list in one response.
+  // header_estimate endpoint, paginated via page/per_page.
   if (type === 'header_waiting_estimate') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairHeaderEstimate, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairHeaderEstimate, staffId, start, length);
   }
 
   // Header "ประเมินแล้ว" (estimated) tab — backed by the Infor header_progress
-  // endpoint, returned as a full list in one response.
+  // endpoint, paginated via page/per_page.
   if (type === 'header_estimated') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairHeaderProgress, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairHeaderProgress, staffId, start, length);
   }
 
   // Header "บันทึกการซ่อม" (repair record) tab — backed by the Infor header_note
-  // endpoint, returned as a full list in one response.
+  // endpoint, paginated via page/per_page.
   if (type === 'header_repair_record') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairHeaderNote, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairHeaderNote, staffId, start, length);
   }
 
   // Header "ตรวจรับงาน" (acceptance) tab — backed by the Infor examine_pending
-  // endpoint, returned as a full list in one response.
+  // endpoint, paginated via page/per_page.
   if (type === 'header_acceptance') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairExaminePending, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairExaminePending, staffId, start, length);
   }
 
   // Header "ซ่อมไม่ได้" (not repairable) tab — backed by the Infor not_repair_ack
-  // endpoint, returned as a full list in one response.
+  // endpoint, paginated via page/per_page.
   if (type === 'header_reject_cannot_repair') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairNotRepairAck, staffId, start);
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairNotRepairAck, staffId, start, length);
   }
 
   // Header "รายการซ่อม → กำลังดำเนินการ" (current) tab — backed by the Infor
   // header_repairing endpoint, filtered by the header's work category.
   if (type === 'header_current') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairHeaderRepairing, staffId, start, { work_category: workCategory });
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairHeaderRepairing, staffId, start, length, { work_category: workCategory });
   }
 
   // Header "รายการซ่อม → เสร็จสิ้น" (finished) tab — backed by the Infor
   // header_finished endpoint, filtered by the header's work category.
   if (type === 'header_done') {
-    return getRepairListFromUrl(ENDPOINTS.noticeRepairHeaderFinished, staffId, start, { work_category: workCategory });
+    return getRepairListFromUrl(ENDPOINTS.noticeRepairHeaderFinished, staffId, start, length, { work_category: workCategory });
   }
 
   const perPage = length;
@@ -187,35 +187,59 @@ function sortByDateDesc(list: NoticeRepairJob[]): NoticeRepairJob[] {
   return [...list].sort((a, b) => (ts(b) - ts(a)) || (b.repair_id - a.repair_id));
 }
 
-// ── Approver lists (full list per response, no pagination) ─────────────────────
+// ── Paged repair lists ────────────────────────────────────────────────────────
+
+// The server caps per_page at 100 and defaults it to 20 (see the api's
+// Repair_Controller::paging), so a request without it silently truncates the
+// list to the first 20 rows.
+const MAX_PER_PAGE = 100;
 
 async function getRepairListFromUrl(
   endpoint: string,
   staffId: string,
   start = 0,
+  length = 20,
   extraParams?: Record<string, string | number | undefined | null>,
 ): Promise<ListResponse<NoticeRepairJob>> {
-  // Upstream returns the full list at once, so paginated follow-up calls are empty.
-  if (start > 0) return { data: [], totalCount: 0, message: '' };
+  const perPage = Math.min(Math.max(1, length), MAX_PER_PAGE);
+  const page = Math.floor(start / perPage);
 
   const url = new URL(endpoint);
   url.searchParams.set('staff_id', staffId);
+  url.searchParams.set('page', String(page));
+  url.searchParams.set('per_page', String(perPage));
   if (extraParams) {
     Object.entries(extraParams).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
     });
   }
-  const json = await getJson<{ success: boolean; data: NoticeRepairJob[]; total_count?: number }>(
-    url.toString(),
-  );
+  // These endpoints answer with `total`; `total_count` is kept as a fallback for
+  // any that still use the older key.
+  const json = await getJson<{
+    success: boolean;
+    data: NoticeRepairJob[];
+    total?: number;
+    total_count?: number;
+  }>(url.toString());
 
   if (!json.success) throw new Error('ไม่สามารถโหลดรายการได้');
+  // Sorting is per-page; the server already returns each page newest-first, so
+  // the pages stay in order as they are appended.
   const data = sortByDateDesc(Array.isArray(json.data) ? json.data : []);
-  return { data, totalCount: Number(json.total_count ?? data.length), message: '' };
+  const total = Number(json.total ?? json.total_count ?? NaN);
+  return {
+    data,
+    totalCount: Number.isFinite(total) ? total : start + data.length,
+    message: '',
+  };
 }
 
-export function getApproveNewJobs(staffId: string, start = 0): Promise<ListResponse<NoticeRepairJob>> {
-  return getRepairListFromUrl(ENDPOINTS.noticeRepairApproveNew, staffId, start);
+export function getApproveNewJobs(
+  staffId: string,
+  start = 0,
+  length = 20,
+): Promise<ListResponse<NoticeRepairJob>> {
+  return getRepairListFromUrl(ENDPOINTS.noticeRepairApproveNew, staffId, start, length);
 }
 
 // ── Detail ────────────────────────────────────────────────────────────────────

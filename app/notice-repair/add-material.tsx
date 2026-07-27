@@ -90,7 +90,7 @@ export default function AddMaterialScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="เพิ่มรายการวัสดุ" backHref={backHref} showHomeButton />
+      <NavTopBar title="เพิ่มรายการวัสดุ" backHref={backHref} showHomeButton tone="primary" />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -223,7 +223,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
 
   submitBtn: {
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',

@@ -24,9 +24,11 @@ import {
   getTimestampData,
   type Timestamp,
 } from "@/services/timestampService";
-import { formatFullDate } from "@/utils/date-format";
+import { daysSince, formatFullDate } from "@/utils/date-format";
 
-const APPEAL_DOCUMENT_MESSAGE = TEXT.TIMESTAMP_APPEAL_DOCUMENT;
+// Days a staff member has to file the forgot-timestamp request in the app.
+// Past this the request can only be made on the paper form at a PC.
+const APPEAL_WINDOW_DAYS = 3;
 
 const stampTypeFields = new Set(["stampType", "stamp_type"]);
 const statusFields = ["status", "isActive", "is_active"];
@@ -116,6 +118,11 @@ function isStatusFalse(item: Timestamp) {
   return status === "false" || status === "0" || status === "no";
 }
 
+function isPastAppealWindow(item: Timestamp) {
+  const days = daysSince(getItemDateValue(item));
+  return days !== null && days > APPEAL_WINDOW_DAYS;
+}
+
 function isEditableItem(item: Timestamp) {
   const value = item.isEdit ?? item.is_edit;
   if (typeof value === "boolean") return value;
@@ -150,7 +157,7 @@ function TimestampItem({ item }: { item: Timestamp }) {
   const styles = useThemedStyles(makeStyles);
   const alreadyRequested = hasSubmittedRequest(item);
   const canOpenDetail = isStatusTrue(item) || alreadyRequested;
-  const showAppealDocumentMessage = isStatusFalse(item) && !alreadyRequested;
+  const showAppealNotice = isPastAppealWindow(item) && !alreadyRequested;
   const isUnavailable = isStatusFalse(item) && !alreadyRequested;
   const dateValue = getItemDateValue(item);
   const dateLabel = dateValue ? formatFullDate(dateValue) : "";
@@ -184,7 +191,13 @@ function TimestampItem({ item }: { item: Timestamp }) {
       showChevron={false}
       meta={dateLabel ? [{ icon: <CalendarDays size={13} color={c.textMuted} />, text: dateLabel }] : []}
       style={isUnavailable ? styles.unavailableCard : undefined}
-    />
+    >
+      {showAppealNotice ? (
+        <ThemedText style={styles.appealMessage}>
+          {TEXT.TIMESTAMP_OVER_APPEAL_WINDOW}
+        </ThemedText>
+      ) : null}
+    </ListCard>
   );
 }
 
@@ -401,8 +414,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontFamily: AppFonts.psuBold,
   },
   appealMessage: {
+    marginTop: 2,
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17,
     color: c.primary,
     fontFamily: AppFonts.psuRegular,
   },

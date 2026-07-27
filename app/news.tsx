@@ -194,7 +194,7 @@ export default function NewsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.HOME_NEWS_SECTION_TITLE} titleInNavBar />
+      <ScreenHeader title={TEXT.HOME_NEWS_SECTION_TITLE} titleInNavBar tone="primary" />
       <View style={styles.content}>
         {renderContent()}
       </View>
@@ -289,7 +289,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     marginTop: 24,
   },
   emptyCard: {

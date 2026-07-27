@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Bell, Camera, ChevronRight, Images, Mail, MapPin, Phone, Trash2, User } from 'lucide-react-native';
+import { Bell, Camera, ChevronRight, Images, Mail, MapPin, Phone, Trash2 } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
@@ -10,6 +10,7 @@ import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, ScrollView,
 import { AppToast } from '@/components/app-toast';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
+import { USER_PLACEHOLDER } from '@/constants/images';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
@@ -30,12 +31,6 @@ const D = {
   primary: '#B33939',
   avatarRing: '#FECDD3',
   positionColor: '#D97706',
-  iconBgDept: '#FFE4E6',
-  iconColorDept: '#BE123C',
-  iconBgPhone: '#DCFCE7',
-  iconColorPhone: '#16A34A',
-  iconBgEmail: '#FEE2E2',
-  iconColorEmail: '#DC2626',
 } as const;
 
 function str(v: unknown): string {
@@ -80,31 +75,18 @@ function getPersonPhoto(person: Person): string {
   return '';
 }
 
-const ICON_CIRCLE_MAP: Record<string, React.ComponentType<{ size: number; color: string }>> = {
+const ROW_ICON_MAP: Record<string, React.ComponentType<{ size: number; color: string }>> = {
   place: MapPin,
   phone: Phone,
   email: Mail,
 };
 
-function IconCircle({
-  bg,
-  color,
-  name,
-  size = 18,
-}: {
-  bg: string;
-  color: string;
-  name: string;
-  size?: number;
-}) {
+// Bare prefix icon, matching the absence detail rows (DetailRows): no coloured
+// circle, 22px, drawn in the inverse tone.
+function RowIcon({ name }: { name: string }) {
   const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  const IconComponent = ICON_CIRCLE_MAP[name];
-  return (
-    <View style={[styles.iconCircle, { backgroundColor: bg }]}>
-      {IconComponent ? <IconComponent size={size} color={color} /> : null}
-    </View>
-  );
+  const IconComponent = ROW_ICON_MAP[name];
+  return IconComponent ? <IconComponent size={22} color={c.inverse} /> : null;
 }
 
 export default function MyProfileScreen() {
@@ -232,6 +214,7 @@ export default function MyProfileScreen() {
         title={TEXT.PROFILE_TITLE}
         backHref="/"
         titleInNavBar
+        tone="primary"
         rightContent={
           <Pressable
             accessibilityRole="button"
@@ -239,7 +222,7 @@ export default function MyProfileScreen() {
             onPress={() => router.push('/notification')}
             style={styles.bellBtn}
           >
-            <Bell size={22} color={c.text} />
+            <Bell size={22} color={c.textOnPrimary} />
             {unreadCount > 0 ? <View style={styles.bellBadge} /> : null}
           </Pressable>
         }
@@ -263,19 +246,17 @@ export default function MyProfileScreen() {
               style={styles.avatarPressable}
             >
               <View style={styles.avatarRing}>
-                {displayPhotoUri && !photoFailed ? (
-                  <Image
-                    source={{ uri: displayPhotoUri }}
-                    style={styles.avatar}
-                    contentFit="cover"
-                    transition={200}
-                    onError={() => setPhotoFailed(true)}
-                  />
-                ) : (
-                  <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                    <User size={48} color="#FFFFFF" />
-                  </View>
-                )}
+                <Image
+                  source={
+                    displayPhotoUri && !photoFailed
+                      ? { uri: displayPhotoUri }
+                      : USER_PLACEHOLDER
+                  }
+                  style={styles.avatar}
+                  contentFit="cover"
+                  transition={200}
+                  onError={() => setPhotoFailed(true)}
+                />
               </View>
               <View style={styles.cameraBadge}>
                 {isUploadingPhoto
@@ -403,7 +384,7 @@ export default function MyProfileScreen() {
             <View style={styles.infoCard}>
               {department ? (
                 <View style={styles.infoRow}>
-                  <IconCircle bg={D.iconBgDept} color={D.iconColorDept} name="place" />
+                  <RowIcon name="place" />
                   <View style={styles.infoBody}>
                     <ThemedText style={styles.infoLabel}>DEPARTMENT</ThemedText>
                     <ThemedText style={styles.infoValue}>{department}</ThemedText>
@@ -419,7 +400,7 @@ export default function MyProfileScreen() {
                     style={({ pressed }) => [styles.infoRow, pressed && styles.infoRowPressed]}
                     onPress={() => router.push({ pathname: '/edit-profile-field', params: { field: 'phone', value: phone, staffId } })}
                   >
-                    <IconCircle bg={D.iconBgPhone} color={D.iconColorPhone} name="phone" />
+                    <RowIcon name="phone" />
                     <View style={styles.infoBody}>
                       <ThemedText style={styles.infoLabel}>PHONE NUMBER</ThemedText>
                       <ThemedText style={styles.infoValue}>{phone}</ThemedText>
@@ -437,7 +418,7 @@ export default function MyProfileScreen() {
                     style={({ pressed }) => [styles.infoRow, pressed && styles.infoRowPressed]}
                     onPress={() => router.push({ pathname: '/edit-profile-field', params: { field: 'email', value: email, staffId } })}
                   >
-                    <IconCircle bg={D.iconBgEmail} color={D.iconColorEmail} name="email" />
+                    <RowIcon name="email" />
                     <View style={styles.infoBody}>
                       <ThemedText style={styles.infoLabel}>EMAIL ADDRESS</ThemedText>
                       <ThemedText style={styles.infoValue} numberOfLines={1}>{email}</ThemedText>
@@ -505,11 +486,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-  },
-  avatarPlaceholder: {
-    backgroundColor: '#FECDD3',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   cameraBadge: {
     position: 'absolute',
@@ -643,8 +619,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
+    paddingVertical: 16,
+    gap: 14,
   },
   infoRowPressed: {
     backgroundColor: c.surfaceAlt,
@@ -653,14 +629,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     height: 1,
     backgroundColor: c.border,
     marginHorizontal: 16,
-  },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
   },
   infoBody: { flex: 1, gap: 2 },
   infoLabel: {
@@ -757,7 +725,7 @@ emptyRow: {
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   confirmPhotoConfirmText: {
     fontSize: 15,

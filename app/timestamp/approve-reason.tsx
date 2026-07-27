@@ -103,6 +103,7 @@ export default function TimestampApproveReasonScreen() {
         title={firstParam(params.type) || TEXT.TIMESTAMP_APPROVE_TITLE}
         backHref={{ pathname: "/timestamp/approve-detail", params: { forgetId } } as Href}
         titleInNavBar
+        tone="primary"
       />
 
       <ScrollView
@@ -116,7 +117,7 @@ export default function TimestampApproveReasonScreen() {
           </ThemedText>
           <TextInput
             multiline
-            numberOfLines={3}
+            numberOfLines={2}
             value={reason}
             onChangeText={(value) => {
               setReason(value);
@@ -221,7 +222,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontWeight: "700",
   },
   textArea: {
-    minHeight: 96,
+    // Two lines of text (2 × 20 lineHeight) plus the vertical padding.
+    minHeight: 60,
     backgroundColor: c.surface,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,

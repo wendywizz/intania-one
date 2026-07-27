@@ -184,7 +184,7 @@ export default function HistoryScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_HISTORY_TITLE} backHref="/" titleInNavBar />
+      <ScreenHeader title={TEXT.ABSENCE_HISTORY_TITLE} backHref="/" titleInNavBar showHomeButton={false} />
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
@@ -248,7 +248,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     marginTop: 8,
     paddingHorizontal: 24,
   },

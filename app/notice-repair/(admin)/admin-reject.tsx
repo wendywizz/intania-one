@@ -63,7 +63,7 @@ export default function NoticeRepairAdminRejectScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.NOTICE_REPAIR_ACTION_ADMIN_REJECT} />
+      <NavTopBar title={TEXT.NOTICE_REPAIR_ACTION_ADMIN_REJECT} tone="primary" />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -118,7 +118,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   scroll: { padding: 16, gap: 8 },
   label: { fontSize: 14, fontWeight: '700', color: c.primary },
   input: {
-    minHeight: 64,
+    // Two lines of text plus the 12px vertical padding.
+    minHeight: 60,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,

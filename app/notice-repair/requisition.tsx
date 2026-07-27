@@ -95,7 +95,7 @@ export default function RequisitionScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="ใบขอจัดหา" backHref={backHref} showHomeButton />
+      <NavTopBar title="ใบขอจัดหา" backHref={backHref} showHomeButton tone="primary" />
 
       {isLoading ? (
         <ActivityIndicator style={styles.loader} size="large" color={c.primary} />
@@ -272,7 +272,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 16, paddingTop: 12, paddingBottom: 20,
     backgroundColor: c.surface, borderTopWidth: 1, borderTopColor: c.border,
   },
-  submitBtn: { backgroundColor: c.primary, borderRadius: 12, height: 52, alignItems: 'center', justifyContent: 'center' },
+  submitBtn: { backgroundColor: c.pomegranate, borderRadius: 12, height: 52, alignItems: 'center', justifyContent: 'center' },
   submitDisabled: { opacity: 0.6 },
   submitText: { color: c.textOnPrimary, fontSize: 16, fontWeight: '700' },
 

@@ -70,7 +70,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: c.primarySoft,
   },
   solid: {
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   onAccent: {
     backgroundColor: 'rgba(255, 255, 255, 0.18)',

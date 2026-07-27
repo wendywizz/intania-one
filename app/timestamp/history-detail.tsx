@@ -157,6 +157,7 @@ export default function TimestampHistoryDetailScreen() {
         title={typeLabel}
         backHref={{ pathname: "/timestamp/forgot-timestamp", params: { tab: "history" } } as Href}
         titleInNavBar
+        tone="primary"
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

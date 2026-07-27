@@ -897,7 +897,7 @@ export default function BusinessScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_BUSINESS_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
+        <ScreenHeader title={TEXT.ABSENCE_BUSINESS_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar tone="primary" />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -911,7 +911,7 @@ export default function BusinessScreen() {
 
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_BUSINESS_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
+        <ScreenHeader title={TEXT.ABSENCE_BUSINESS_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar tone="primary" />
         {shouldShowRetry ? (
           <ErrorState
             variant="error"
@@ -940,7 +940,7 @@ export default function BusinessScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_BUSINESS_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
+      <ScreenHeader title={TEXT.ABSENCE_BUSINESS_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar tone="primary" />
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
@@ -1625,7 +1625,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   deleteButton: {
     minHeight: 52,

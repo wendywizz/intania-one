@@ -384,7 +384,7 @@ export default function absenceDetailScreen() {
   if (isLoading) {
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={typeLabel} backHref={backHref} titleInNavBar />
+        <ScreenHeader title={typeLabel} backHref={backHref} titleInNavBar tone="primary" />
         <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
       </ThemedView>
     );
@@ -392,7 +392,7 @@ export default function absenceDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={typeLabel} backHref={backHref} titleInNavBar />
+      <ScreenHeader title={typeLabel} backHref={backHref} titleInNavBar tone="primary" />
 
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]} showsVerticalScrollIndicator={false}>
         {/* Leave-info section */}

@@ -19,31 +19,41 @@ type DetailInfoCardProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-// The shared "detail info" card used by the detail screens: a titled SectionCard
-// of stacked "icon + label above value" rows. Empty-value rows are dropped and
-// the last visible row has no bottom divider.
-export function DetailInfoCard({ title, trailing, rows, style }: DetailInfoCardProps) {
+// The stacked "icon + label above value" rows on their own, for callers that
+// need them inside a card they already own. Empty-value rows are dropped and the
+// last visible row has no bottom divider.
+export function DetailRows({ rows, style }: { rows: DetailRow[]; style?: StyleProp<ViewStyle> }) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const visible = rows.filter((row) => row.value);
   if (!visible.length) return null;
 
   return (
-    <SectionCard title={title} trailing={trailing} style={style}>
-      <View>
-        {visible.map((row, index) => (
-          <View
-            key={row.label}
-            style={[styles.row, index === visible.length - 1 ? styles.rowLast : undefined]}
-          >
-            {row.icon ? <IconSymbol name={row.icon} size={22} color={c.inverse} /> : null}
-            <View style={styles.rowText}>
-              <ThemedText style={styles.label}>{row.label}</ThemedText>
-              <ThemedText style={styles.value}>{row.value}</ThemedText>
-            </View>
+    <View style={style}>
+      {visible.map((row, index) => (
+        <View
+          key={row.label}
+          style={[styles.row, index === visible.length - 1 ? styles.rowLast : undefined]}
+        >
+          {row.icon ? <IconSymbol name={row.icon} size={22} color={c.inverse} /> : null}
+          <View style={styles.rowText}>
+            <ThemedText style={styles.label}>{row.label}</ThemedText>
+            <ThemedText style={styles.value}>{row.value}</ThemedText>
           </View>
-        ))}
-      </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// The shared "detail info" card used by the detail screens: a titled SectionCard
+// of `DetailRows`. Renders nothing when every row is empty.
+export function DetailInfoCard({ title, trailing, rows, style }: DetailInfoCardProps) {
+  if (!rows.some((row) => row.value)) return null;
+
+  return (
+    <SectionCard title={title} trailing={trailing} style={style}>
+      <DetailRows rows={rows} />
     </SectionCard>
   );
 }

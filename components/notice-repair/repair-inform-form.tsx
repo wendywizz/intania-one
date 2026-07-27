@@ -1,5 +1,8 @@
-import { NavTopBar } from '@/components/nav-top-bar';
+import { X } from 'lucide-react-native';
+
 import { ConfirmModal } from '@/components/notice-repair/confirm-modal';
+import { ScreenHeader } from '@/components/screen-header';
+import { SectionCard } from '@/components/section-card';
 import { useToast } from '@/components/toast-provider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -8,13 +11,14 @@ import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import type { NoticeRepairReference } from '@/models/types';
 import { createRepair, getDetail, getReference, updateRepair } from '@/services/noticeRepairService';
+import { getCategoryIcon } from '@/utils/category-icon';
 import { useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator, Modal, Platform, Pressable, ScrollView,
   StyleSheet, TextInput, useWindowDimensions, View,
 } from 'react-native';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
 // On web a focused TextInput draws the browser's own rectangular outline, which
 // ignores the control's rounded border. Remove it so the focus state can show
@@ -38,15 +42,11 @@ function RadioGroup({
   value: string;
   onChange: (value: string) => void;
 }) {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const fs = useThemedStyles(makeFs);
-  const ms = useThemedStyles(makeMs);
-  const rs = useThemedStyles(makeRs);
   return (
-    <View style={fs.field}>
+    <View style={styles.field}>
       <FieldLabel text={label} />
-      <View style={rs.row}>
+      <View style={styles.radioRow}>
         {options.map((opt) => {
           const active = value === opt.value;
           return (
@@ -55,12 +55,12 @@ function RadioGroup({
               accessibilityRole="radio"
               accessibilityState={{ checked: active }}
               onPress={() => onChange(opt.value)}
-              style={[rs.option, active && rs.optionActive]}
+              style={[styles.radioOption, active && styles.radioOptionActive]}
             >
-              <View style={[rs.radio, active && rs.radioActive]}>
-                {active ? <View style={rs.radioDot} /> : null}
+              <View style={[styles.radio, active && styles.radioActive]}>
+                {active ? <View style={styles.radioDot} /> : null}
               </View>
-              <ThemedText style={[rs.radioLabel, active && rs.radioLabelActive]}>
+              <ThemedText style={[styles.radioLabel, active && styles.radioLabelActive]}>
                 {opt.label}
               </ThemedText>
             </Pressable>
@@ -132,62 +132,80 @@ function isSameRef(a: RefItem | null | undefined, b: RefItem) {
 
 /** Renders the label, colouring a trailing "*" (required marker) red. */
 function FieldLabel({ text }: { text: string }) {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const fs = useThemedStyles(makeFs);
-  const ms = useThemedStyles(makeMs);
-  const rs = useThemedStyles(makeRs);
   const trimmed = text.trimEnd();
   const required = trimmed.endsWith('*');
   const base = required ? trimmed.slice(0, -1).trimEnd() : trimmed;
   return (
-    <ThemedText style={fs.label}>
+    <ThemedText style={styles.fieldLabel}>
       {base}
-      {required ? <ThemedText style={fs.required}> *</ThemedText> : null}
+      {required ? <ThemedText style={styles.required}> *</ThemedText> : null}
     </ThemedText>
   );
 }
 
+// Option sheet for the reference pickers, styled like the absence forms'
+// select modal (centred card, X close button, hairline-separated options).
 function PickerModal({
-  visible, title, items, selected, onSelect, onClose,
+  visible, title, items, selected, onSelect, onClose, iconFor,
 }: {
   visible: boolean; title: string; items: RefItem[]; selected?: RefItem | null;
   onSelect: (item: RefItem) => void; onClose: () => void;
+  /** Leading icon for each option row. */
+  iconFor?: (item: RefItem) => IconSymbolName;
 }) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const fs = useThemedStyles(makeFs);
-  const ms = useThemedStyles(makeMs);
-  const rs = useThemedStyles(makeRs);
   const { width } = useWindowDimensions();
+  // Never narrower than 70% of the screen, however short the option labels are.
+  const minWidth = Math.round(width * 0.7);
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={ms.backdrop} onPress={onClose}>
-        <Pressable>
-          <View style={[ms.modal, { minWidth: width * 0.6 }]}>
-            <View style={ms.header}>
-              <ThemedText style={ms.title}>{title}</ThemedText>
-              <Pressable accessibilityRole="button" onPress={onClose} style={ms.closeBtn}>
-                <ThemedText>{TEXT.CLOSE}</ThemedText>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable style={styles.modalWrap}>
+          <ThemedView style={[styles.selectModal, { minWidth }]} lightColor="#FFFFFF" darkColor="#151718">
+            <View style={styles.selectModalHeader}>
+              <ThemedText type="defaultSemiBold" style={styles.selectModalTitle}>{title}</ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
+                onPress={onClose}
+                style={styles.closeButton}>
+                <X size={20} color={c.text} />
               </Pressable>
             </View>
-            <ScrollView style={{ maxHeight: 360 }}>
-              {items.map((item) => {
-                const active = isSameRef(selected, item);
-                return (
-                  <Pressable key={item.id || item.name} accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    onPress={() => { onSelect(item); onClose(); }}
-                    style={[ms.option, active && ms.optionActive]}>
-                    <ThemedText style={[ms.optionText, active && ms.optionTextActive]}>
-                      {item.name}
-                    </ThemedText>
-                    {active && <ThemedText style={ms.optionCheck}>✓</ThemedText>}
-                  </Pressable>
-                );
-              })}
+
+            <ScrollView style={styles.optionScroll} contentContainerStyle={styles.optionScrollContent}>
+              {items.length ? (
+                items.map((item) => {
+                  const active = isSameRef(selected, item);
+                  return (
+                    <Pressable key={item.id || item.name} accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      onPress={() => { onSelect(item); onClose(); }}
+                      style={styles.option}>
+                      <View style={styles.optionRow}>
+                        {iconFor ? (
+                          <View style={styles.optionIcon}>
+                            <IconSymbol
+                              name={iconFor(item)}
+                              size={18}
+                              color={active ? c.primary : c.textMuted}
+                            />
+                          </View>
+                        ) : null}
+                        <ThemedText style={[styles.optionText, active && styles.selectedOptionText]}>
+                          {item.name}
+                        </ThemedText>
+                      </View>
+                    </Pressable>
+                  );
+                })
+              ) : (
+                <ThemedText style={styles.emptyOption}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
+              )}
             </ScrollView>
-          </View>
+          </ThemedView>
         </Pressable>
       </Pressable>
     </Modal>
@@ -199,57 +217,40 @@ function SelectField({
 }: {
   label: string; value: string; placeholder: string; onPress: () => void;
 }) {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const fs = useThemedStyles(makeFs);
-  const ms = useThemedStyles(makeMs);
-  const rs = useThemedStyles(makeRs);
   return (
-    <View style={fs.field}>
+    <View style={styles.field}>
       <FieldLabel text={label} />
-      <Pressable accessibilityRole="button" onPress={onPress} style={fs.control}>
-        <ThemedText style={[fs.controlText, !value && fs.placeholder]} numberOfLines={1}>
+      <Pressable accessibilityRole="button" onPress={onPress} style={styles.selectButton}>
+        <ThemedText style={[styles.selectText, !value && styles.placeholder]} numberOfLines={1}>
           {value || placeholder}
         </ThemedText>
-        <IconSymbol name="chevron.down" size={18} color={c.textMuted} />
+        <ThemedText style={styles.chevron}>⌄</ThemedText>
       </Pressable>
     </View>
   );
 }
 
 function TextField({
-  label, value, onChangeText, placeholder, multiline, keyboardType, iconName,
+  label, value, onChangeText, placeholder, multiline, keyboardType,
 }: {
   label: string; value: string; onChangeText: (t: string) => void;
   placeholder?: string; multiline?: boolean; keyboardType?: 'phone-pad' | 'default';
-  iconName?: IconSymbolName;
 }) {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const fs = useThemedStyles(makeFs);
-  const ms = useThemedStyles(makeMs);
-  const rs = useThemedStyles(makeRs);
-  const [focused, setFocused] = useState(false);
   return (
-    <View style={fs.field}>
+    <View style={styles.field}>
       <FieldLabel text={label} />
-      <View style={[fs.control, multiline && fs.controlMultiline, focused && fs.controlFocused]}>
-        {iconName && !multiline ? (
-          <IconSymbol name={iconName} size={18} color={c.textMuted} />
-        ) : null}
-        <TextInput
-          style={[fs.input, multiline && fs.inputMultiline, webNoOutline]}
-          value={value}
-          onChangeText={onChangeText}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          placeholder={placeholder}
-          placeholderTextColor="#9CA3AF"
-          multiline={multiline}
-          numberOfLines={multiline ? 3 : 1}
-          keyboardType={keyboardType}
-        />
-      </View>
+      <TextInput
+        style={[styles.input, multiline && styles.inputMultiline, webNoOutline]}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor="#8A969C"
+        multiline={multiline}
+        numberOfLines={multiline ? 2 : 1}
+        keyboardType={keyboardType}
+      />
     </View>
   );
 }
@@ -261,16 +262,11 @@ export type RepairInformFormProps = {
   /** Required in 'edit' mode — the job to load and update. */
   repairId?: string;
   title: string;
-  /** Heading shown above the form card (e.g. "แจ้งซ่อมใหม่"). */
-  heading?: string;
-  subtitle?: string;
   rightContent?: ReactNode;
   /** Where the top-bar back button goes. Defaults to NavTopBar's own behavior. */
   backHref?: Href;
   showHomeButton?: boolean;
   submitLabel: string;
-  /** Optional leading icon on the submit button (e.g. send/paperplane). */
-  submitIconName?: IconSymbolName;
   successMessage: string;
   errorMessage: string;
   loadErrorMessage?: string;
@@ -285,15 +281,13 @@ export type RepairInformFormProps = {
 };
 
 export function RepairInformForm({
-  mode, staffId, repairId, title, heading, subtitle, rightContent, backHref, showHomeButton,
-  submitLabel, submitIconName, successMessage, errorMessage, loadErrorMessage,
+  mode, staffId, repairId, title, rightContent, backHref, showHomeButton,
+  submitLabel, successMessage, errorMessage, loadErrorMessage,
   confirmBeforeSubmit, confirmTitle, confirmMessage, resetOnFocus, onSuccess,
 }: RepairInformFormProps) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const fs = useThemedStyles(makeFs);
-  const ms = useThemedStyles(makeMs);
-  const rs = useThemedStyles(makeRs);
+  const gutter = useScreenGutter();
   const [categories, setCategories] = useState<RefItem[]>([]);
   const [buildings, setBuildings] = useState<RefItem[]>([]);
   const [workTypes, setWorkTypes] = useState<RefItem[]>([]);
@@ -431,7 +425,14 @@ export function RepairInformForm({
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={title} backHref={backHref} rightContent={rightContent} showHomeButton={showHomeButton} />
+      <ScreenHeader
+        title={title}
+        backHref={backHref}
+        rightContent={rightContent}
+        showHomeButton={showHomeButton}
+        titleInNavBar
+        tone="primary"
+      />
 
       {isLoading ? (
         <ActivityIndicator style={styles.loader} size="large" color={c.primary} />
@@ -440,12 +441,12 @@ export function RepairInformForm({
           <ThemedText style={styles.errorText}>{loadError}</ThemedText>
         </View>
       ) : (
-        <>
-          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-            {heading ? <ThemedText style={styles.heading}>{heading}</ThemedText> : null}
-            {subtitle ? <ThemedText style={styles.subtitle}>{subtitle}</ThemedText> : null}
-
-            <View style={styles.card}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingHorizontal: gutter }]}
+          keyboardShouldPersistTaps="handled">
+          <View style={styles.form}>
+            {/* Type of request */}
+            <SectionCard>
               <RadioGroup
                 label={TEXT.NOTICE_REPAIR_FORM_REPAIR_TYPE}
                 options={REPAIR_TYPE_OPTIONS}
@@ -458,6 +459,10 @@ export function RepairInformForm({
                 placeholder={TEXT.NOTICE_REPAIR_FORM_SELECT_CATEGORY}
                 onPress={() => setOpenPicker('category')}
               />
+            </SectionCard>
+
+            {/* Where */}
+            <SectionCard>
               <SelectField
                 label={TEXT.NOTICE_REPAIR_FORM_BUILDING}
                 value={selectedBuilding?.name ?? ''}
@@ -469,8 +474,11 @@ export function RepairInformForm({
                 value={place}
                 onChangeText={setPlace}
                 placeholder="เช่น ห้อง 201 ชั้น 2"
-                iconName="mappin"
               />
+            </SectionCard>
+
+            {/* What is wrong + how to reach the informer */}
+            <SectionCard>
               <TextField
                 label={TEXT.NOTICE_REPAIR_FORM_DETAIL}
                 value={detail}
@@ -484,7 +492,6 @@ export function RepairInformForm({
                 onChangeText={setPhone}
                 placeholder="08X-XXX-XXXX"
                 keyboardType="phone-pad"
-                iconName="phone.fill"
               />
               <TextField
                 label={TEXT.NOTICE_REPAIR_FORM_REMARK}
@@ -493,29 +500,30 @@ export function RepairInformForm({
                 placeholder={TEXT.NOTICE_REPAIR_FORM_REMARK_PLACEHOLDER}
                 multiline
               />
-            </View>
-          </ScrollView>
+            </SectionCard>
 
-          <View style={styles.footer}>
-            <Pressable accessibilityRole="button" style={[styles.submitBtn, isSubmitting && styles.submitDisabled]}
-              onPress={handleSave} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <View style={styles.submitInner}>
-                  {submitIconName ? <IconSymbol name={submitIconName} size={18} color="#fff" /> : null}
-                  <ThemedText style={styles.submitText}>{submitLabel}</ThemedText>
-                </View>
-              )}
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={handleSave}
+              style={[styles.submitButton, isSubmitting && styles.disabledButton]}>
+              {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+              <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+                {submitLabel}
+              </ThemedText>
             </Pressable>
           </View>
-        </>
+        </ScrollView>
       )}
 
       <PickerModal visible={openPicker === 'category'} title={TEXT.NOTICE_REPAIR_FORM_WORK_CATEGORY}
-        items={categories} selected={selectedCategory} onSelect={setSelectedCategory} onClose={() => setOpenPicker(null)} />
+        items={categories} selected={selectedCategory} onSelect={setSelectedCategory}
+        onClose={() => setOpenPicker(null)}
+        iconFor={(item) => getCategoryIcon(item.name)} />
       <PickerModal visible={openPicker === 'building'} title={TEXT.NOTICE_REPAIR_FORM_BUILDING}
-        items={buildings} selected={selectedBuilding} onSelect={setSelectedBuilding} onClose={() => setOpenPicker(null)} />
+        items={buildings} selected={selectedBuilding} onSelect={setSelectedBuilding}
+        onClose={() => setOpenPicker(null)}
+        iconFor={() => 'house.fill'} />
 
       <ConfirmModal
         visible={confirmVisible}
@@ -530,119 +538,129 @@ export function RepairInformForm({
   );
 }
 
+// Mirrors the absence form screens: underlined fields grouped into SectionCards,
+// bold 15px labels, and an inline submit button at the end of the form.
 const makeStyles = (c: AppColors) => StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: c.background },
   loader: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   errorText: { fontSize: 15, color: c.danger, textAlign: 'center' },
-  scroll: { padding: 16, paddingBottom: 24 },
-  heading: { fontSize: 20, fontWeight: '700', color: c.text, marginBottom: 4 },
-  subtitle: { fontSize: 13, color: c.textMuted, lineHeight: 20, marginBottom: 16 },
-  card: {
-    backgroundColor: c.surface, borderWidth: 1, borderColor: c.border,
-    borderRadius: 12, padding: 16, gap: 14,
-    boxShadow: '0 1px 3px rgba(17, 24, 28, 0.04)',
-  },
-  footer: {
-    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 20,
-    backgroundColor: c.surface, borderTopWidth: 1, borderTopColor: c.border,
-  },
-  submitBtn: { backgroundColor: c.primary, borderRadius: 10, height: 52, alignItems: 'center', justifyContent: 'center' },
-  submitInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  submitDisabled: { opacity: 0.6 },
-  submitText: { color: c.textOnPrimary, fontSize: 16, fontWeight: '700' },
-  toast: {
-    position: 'absolute', left: 16, right: 16, bottom: 90,
-    backgroundColor: c.success, borderRadius: 10,
-    paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center',
-    boxShadow: '0 6px 16px rgba(17, 24, 28, 0.18)',
-  },
-  toastText: { color: c.textOnPrimary, fontSize: 14, fontWeight: '600', textAlign: 'center' },
-});
 
-const makeFs = (c: AppColors) => StyleSheet.create({
-  field: { gap: 8 },
-  label: {
-    fontSize: 11, lineHeight: 16, fontWeight: '600', letterSpacing: 0.6,
-    color: c.textMuted, textTransform: 'uppercase',
+  content: { paddingTop: 16, paddingBottom: 24 },
+  form: { marginTop: 4, gap: 14 },
+
+  field: { paddingVertical: 12, gap: 10 },
+  fieldLabel: { fontSize: 15, lineHeight: 20, color: c.text, fontFamily: AppFonts.psuBold },
+  required: { color: c.danger, fontFamily: AppFonts.psuBold },
+  input: {
+    minHeight: 40,
+    color: c.text,
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 16,
+    lineHeight: 22,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
-  required: { color: c.danger, fontWeight: '700' },
-  control: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: c.surfaceMuted,
-    borderWidth: 1,
-    borderColor: c.border,
-    borderRadius: 8,
-    paddingHorizontal: 14, paddingVertical: 10, minHeight: 44,
-  },
-  controlFocused: { borderColor: c.text },
-  controlMultiline: { alignItems: 'flex-start', minHeight: 80 },
-  controlText: { flex: 1, fontSize: 14, lineHeight: 20, color: c.text, fontFamily: AppFonts.psuRegular },
-  placeholder: { color: c.textFaint },
-  input: { flex: 1, fontSize: 14, lineHeight: 20, color: c.text, fontFamily: AppFonts.psuRegular, paddingVertical: 0 },
+  // Two lines of text (2 × 22 lineHeight) plus the vertical padding.
   inputMultiline: { minHeight: 60, textAlignVertical: 'top' },
-});
+  placeholder: { color: c.textFaint },
 
-const makeMs = (c: AppColors) => StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  modal: { backgroundColor: c.surface, borderRadius: 12, padding: 16, width: '100%', maxWidth: 420 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  title: { fontSize: 15, fontWeight: '700', flex: 1 },
-  closeBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: c.surfaceMuted },
-  option: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-    paddingVertical: 12, paddingHorizontal: 8, borderRadius: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border,
+  selectButton: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
-  optionActive: { backgroundColor: c.primarySoft },
-  optionText: { flex: 1, fontSize: 14, color: c.text },
-  optionTextActive: { color: c.primary, fontWeight: '700' },
-  optionCheck: { fontSize: 15, fontWeight: '700', color: c.primary },
-});
+  selectText: { flex: 1, color: c.text, fontSize: 16, fontFamily: AppFonts.psuRegular },
+  chevron: { color: c.textMuted, fontSize: 18, lineHeight: 22 },
 
-const makeRs = (c: AppColors) => StyleSheet.create({
-  row: { flexDirection: 'row', gap: 12 },
-  option: {
+  // Radio row (no absence equivalent — kept, restyled to sit with the fields).
+  radioRow: { flexDirection: 'row', gap: 12 },
+  radioOption: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     backgroundColor: c.surfaceAlt,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 12,
   },
-  optionActive: {
-    backgroundColor: c.primarySoft,
-    borderColor: c.primary,
-  },
+  radioOptionActive: { backgroundColor: c.primarySoft, borderColor: c.primary },
   radio: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: c.border,
+    width: 18, height: 18, borderRadius: 9, borderWidth: 2,
+    borderColor: c.border, alignItems: 'center', justifyContent: 'center',
+  },
+  radioActive: { borderColor: c.primary },
+  radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: c.primary },
+  radioLabel: { flex: 1, fontSize: 15, color: c.textMuted, fontFamily: AppFonts.psuRegular },
+  radioLabelActive: { color: c.primary, fontFamily: AppFonts.psuBold },
+
+  // Picker modal
+  backdrop: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    padding: 24,
   },
-  radioActive: {
-    borderColor: c.primary,
+  modalWrap: { width: '100%', alignItems: 'center' },
+  selectModal: { width: '100%', maxWidth: 520, maxHeight: 460, borderRadius: 8, padding: 16 },
+  selectModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 12,
   },
-  radioDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: c.primary,
+  selectModalTitle: { flex: 1, fontSize: 16 },
+  closeButton: {
+    width: 40, height: 40, alignItems: 'center', justifyContent: 'center',
+    borderRadius: 20, backgroundColor: `${c.text}14`,
   },
-  radioLabel: {
-    fontSize: 14,
-    color: c.textMuted,
-    flex: 1,
+  optionScroll: { maxHeight: 360 },
+  optionScrollContent: { gap: 8 },
+  option: {
+    minHeight: 48,
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
   },
-  radioLabelActive: {
-    color: c.primary,
-    fontWeight: '600',
+  optionRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  optionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: c.surfaceMuted,
+    flexShrink: 0,
   },
+  optionText: { flex: 1, color: c.text, lineHeight: 20 },
+  selectedOptionText: { color: c.primary, fontFamily: AppFonts.psuBold },
+  emptyOption: { color: c.textMuted, lineHeight: 20, paddingVertical: 16, textAlign: 'center' },
+
+  submitButton: {
+    minHeight: 48,
+    minWidth: 132,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: c.pomegranate,
+    marginTop: 6,
+  },
+  disabledButton: { opacity: 0.65 },
 });

@@ -40,6 +40,7 @@ const extra = publicKeys.reduce((acc, key) => {
 }, {});
 
 const appJson = require('./app.json');
+const pkg = require('./package.json');
 
 // EAS project link. `eas init` can't write this into a dynamic config, and the
 // computed `extra` above replaces app.json's `extra`, so the projectId must be
@@ -52,6 +53,11 @@ extra.eas = {
 module.exports = {
   expo: {
     ...appJson.expo,
+    // package.json is the single source of truth for the app version: it drives
+    // the store version and the number Settings shows via Constants.expoConfig.
+    // Bump it there and both follow. (Build numbers stay with EAS — eas.json
+    // sets appVersionSource: "remote".)
+    version: pkg.version,
     owner: 'faculty-of-engineer',
     extra,
   },

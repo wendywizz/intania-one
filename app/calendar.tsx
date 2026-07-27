@@ -344,8 +344,8 @@ export default function CalendarScreen() {
           title={TEXT.CALENDAR_HEADER_TITLE}
           titleStyle={{ fontSize: 20, lineHeight: 26 }}
           backHref="/"
-          backgroundColor={c.surface}
-          contentColor={c.text}
+          showHomeButton={false}
+          tone="primary"
         />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
@@ -364,8 +364,8 @@ export default function CalendarScreen() {
           title={TEXT.CALENDAR_HEADER_TITLE}
           titleStyle={{ fontSize: 20, lineHeight: 26 }}
           backHref="/"
-          backgroundColor={c.surface}
-          contentColor={c.text}
+          showHomeButton={false}
+          tone="primary"
         />
         <ErrorState
           title={TEXT.SHARED_UNABLE_TO_COMPLETE}
@@ -382,11 +382,11 @@ export default function CalendarScreen() {
     <ThemedView style={styles.container}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
       <NavTopBar
-        title={TEXT.CALENDAR_TITLE}
+        title={TEXT.CALENDAR_HEADER_TITLE}
         titleStyle={{ fontSize: 20, lineHeight: 26 }}
         backHref="/"
-        backgroundColor={c.surface}
-        contentColor={c.text}
+        showHomeButton={false}
+        tone="primary"
       />
 
       {/* Fixed calendar panel */}
@@ -675,7 +675,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   retryBtnText: {
     color: c.textOnPrimary,

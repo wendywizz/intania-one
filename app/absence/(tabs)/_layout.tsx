@@ -42,7 +42,7 @@ export default function absenceTabLayout() {
 
   if (isChecking) {
     return (
-      <ThemedView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <ThemedView style={{ flex: 1 }}>
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}

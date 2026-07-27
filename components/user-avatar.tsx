@@ -1,13 +1,13 @@
 import { Image } from "expo-image";
-import { User } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
 import { ENDPOINTS } from "@/constants/endpoints";
+import { USER_PLACEHOLDER } from "@/constants/images";
 import { useColors } from "@/constants/theme";
 
-// Circular staff photo (personnel photo API) with a person-icon fallback when
-// the id is missing or the photo fails to load.
+// Circular staff photo (personnel photo API), falling back to the shared
+// placeholder portrait when the id is missing or the photo fails to load.
 export function UserAvatar({
   staffId,
   size = 44,
@@ -31,18 +31,14 @@ export function UserAvatar({
 
   return (
     <View style={[styles.circle, { backgroundColor: c.primarySoft }, circle, style]}>
-      {showPhoto ? (
-        <Image
-          accessibilityIgnoresInvertColors
-          contentFit="cover"
-          onError={() => setFailed(true)}
-          source={{ uri }}
-          style={circle}
-          transition={200}
-        />
-      ) : (
-        <User size={Math.round(size * 0.5)} color={c.primary} />
-      )}
+      <Image
+        accessibilityIgnoresInvertColors
+        contentFit="cover"
+        onError={() => setFailed(true)}
+        source={showPhoto ? { uri } : USER_PLACEHOLDER}
+        style={circle}
+        transition={200}
+      />
     </View>
   );
 }

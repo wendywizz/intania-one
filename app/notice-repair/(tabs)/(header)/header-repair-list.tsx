@@ -22,8 +22,8 @@ export default function Screen() {
       title={TEXT.NOTICE_REPAIR_TAB_REPAIR_LIST}
       staffId={staffId}
       segments={[
-        { label: TEXT.NOTICE_REPAIR_TAB_CURRENT, listType: 'header_current', description: 'รายการที่กำลังดำเนินการ', workCategory },
-        { label: TEXT.NOTICE_REPAIR_TAB_DONE, listType: 'header_done', description: 'รายการที่เสร็จสิ้นแล้ว', workCategory },
+        { label: TEXT.NOTICE_REPAIR_TAB_CURRENT, listType: 'header_current', workCategory },
+        { label: TEXT.NOTICE_REPAIR_TAB_DONE, listType: 'header_done', workCategory },
       ]}
     />
   );

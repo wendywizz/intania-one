@@ -5,13 +5,15 @@ import { NavTopBar } from '@/components/nav-top-bar';
 import { NoticeRepairJobCard } from '@/components/notice-repair/notice-repair-job-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { useNoticeRepairRole } from '@/context/NoticeRepairRoleContext';
 import type { NoticeRepairJob } from '@/models/types';
 import { getList } from '@/services/noticeRepairService';
 import { navPush } from '@/utils/navigation';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
@@ -21,10 +23,6 @@ const CHROME_HEIGHT = 200;
 export type NoticeRepairSegment = {
   label: string;
   listType: string;
-  /** Title shown while this segment is active (falls back to the screen title). */
-  title?: string;
-  /** Sub-title shown under the top-tab bar while this segment is active. */
-  description?: string;
   /** Detail route to open for items in this segment (defaults to /notice-repair/detail). */
   detailPathname?: string;
   /** Extra work_category filter passed to the list endpoint for this segment. */
@@ -32,15 +30,14 @@ export type NoticeRepairSegment = {
 };
 
 type Props = {
+  /** Shown in the loading state; the nav bar carries the module title. */
   title: string;
   staffId: string;
-  /** Subtitle shown under the screen title. Falls back to a generic line. */
-  description?: string;
   /** Single list mode. Ignored when `segments` is provided. */
   listType?: string;
   /** Top-tab mode: renders a segmented bar and lists the selected segment. */
   segments?: NoticeRepairSegment[];
-  /** When provided, shows a floating "+" button that runs this handler. */
+  /** When provided, shows a dashed "add" button above the list that runs this handler. */
   onAddPress?: () => void;
   addLabel?: string;
   /** Detail route to open when a job is tapped (defaults to /notice-repair/detail). */
@@ -53,7 +50,7 @@ function getPageSize(height: number) {
   return Math.max(5, Math.ceil((height - CHROME_HEIGHT) / ITEM_HEIGHT));
 }
 
-export function NoticeRepairListScreen({ title, description, listType, staffId, segments, onAddPress, addLabel, detailPathname, workCategory }: Props) {
+export function NoticeRepairListScreen({ title, listType, staffId, segments, onAddPress, addLabel, detailPathname, workCategory }: Props) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const { roleSwitcher, currentRole } = useNoticeRepairRole();
@@ -64,11 +61,16 @@ export function NoticeRepairListScreen({ title, description, listType, staffId, 
   const currentListType = segments ? segments[activeSegment].listType : (listType ?? '');
   const currentWorkCategory = segments ? segments[activeSegment].workCategory : workCategory;
 
+  // `jobs` is everything fetched so far; `visibleCount` is how much of it the
+  // list actually renders. Most upstream endpoints hand back the whole list in
+  // one response, so scrolling reveals more of what we already hold; the few
+  // that page server-side fall through to a follow-up fetch (see onEndReached).
   const [jobs, setJobs] = useState<NoticeRepairJob[]>([]);
+  const [visibleCount, setVisibleCount] = useState(pageSize);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMoreOnServer, setHasMoreOnServer] = useState(true);
   const [error, setError] = useState('');
   const loadingRef = useRef<number | null>(null);
   const loadedRef = useRef<Set<number>>(new Set());
@@ -88,12 +90,16 @@ export function NoticeRepairListScreen({ title, description, listType, staffId, 
       const result = await getList(currentListType, staffId, start, pageSize, currentWorkCategory);
       loadedRef.current.add(start);
       setJobs((prev) => (start === 0 ? result.data : [...prev, ...result.data]));
-      setHasMore(result.data.length >= pageSize && start + result.data.length < (result.totalCount || Infinity));
+      setVisibleCount((prev) => (start === 0 ? pageSize : prev + pageSize));
+      // A short page, or reaching the reported total, means the server is done.
+      setHasMoreOnServer(
+        result.data.length >= pageSize && start + result.data.length < (result.totalCount || Infinity),
+      );
     } catch (e) {
       if (start === 0) {
         setJobs([]);
         setError(e instanceof Error ? e.message : TEXT.NOTICE_REPAIR_ERROR_LOAD);
-        setHasMore(false);
+        setHasMoreOnServer(false);
       }
     } finally {
       loadingRef.current = null;
@@ -107,8 +113,9 @@ export function NoticeRepairListScreen({ title, description, listType, staffId, 
     if (index === activeSegment) return;
     loadedRef.current = new Set();
     setJobs([]);
+    setVisibleCount(pageSize);
     setActiveSegment(index);
-  }, [activeSegment]);
+  }, [activeSegment, pageSize]);
 
   const refresh = useCallback(() => {
     loadedRef.current = new Set();
@@ -120,11 +127,31 @@ export function NoticeRepairListScreen({ title, description, listType, staffId, 
     load(0);
   }, [load]));
 
+  const visibleJobs = useMemo(() => jobs.slice(0, visibleCount), [jobs, visibleCount]);
+  // More to show if we're still holding unrendered rows, or the server has more.
+  const hasMore = visibleCount < jobs.length || hasMoreOnServer;
+
   const onEndReached = useCallback(() => {
-    if (!isLoading && !isRefreshing && !isLoadingMore && hasMore) {
-      load(jobs.length);
+    if (isLoading || isRefreshing || isLoadingMore) return;
+    // Reveal the next slice of what we already have before asking for more.
+    if (visibleCount < jobs.length) {
+      setVisibleCount((prev) => Math.min(prev + pageSize, jobs.length));
+      return;
     }
-  }, [isLoading, isRefreshing, isLoadingMore, hasMore, jobs.length, load]);
+    if (hasMoreOnServer) load(jobs.length);
+  }, [isLoading, isRefreshing, isLoadingMore, visibleCount, jobs.length, hasMoreOnServer, pageSize, load]);
+
+  // Dashed "add" row pinned above the list, matching the repair-computer module.
+  const addButton = onAddPress ? (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={addLabel}
+      onPress={onAddPress}
+      style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}>
+      <IconSymbol name="plus" size={20} color={c.primary} />
+      <ThemedText style={styles.addButtonText}>{addLabel}</ThemedText>
+    </Pressable>
+  ) : null;
 
   const openDetail = (job: NoticeRepairJob) => {
     const pathname = (segments ? segments[activeSegment]?.detailPathname : detailPathname) ?? '/notice-repair/detail';
@@ -138,10 +165,9 @@ export function NoticeRepairListScreen({ title, description, listType, staffId, 
     <ThemedView style={styles.container}>
       <NavTopBar
         title={TEXT.NOTICE_REPAIR__TITLE}
-        subtitle={TEXT.NOTICE_REPAIR_LIST_SUBTITLE}
-        moduleIcon="wrench.fill"
         backHref="/"
         rightContent={roleSwitcher}
+        showHomeButton={false}
       />
 
       {segments ? (
@@ -167,18 +193,6 @@ export function NoticeRepairListScreen({ title, description, listType, staffId, 
         </View>
       ) : null}
 
-      {/* Title + sub-title, same typography as the non-segmented screens. In
-          segments mode the sub-title reflects the active tab. */}
-      <View style={styles.panelHeader}>
-        <ThemedText type="subtitle">
-          {segments ? (segments[activeSegment]?.title ?? title) : title}
-        </ThemedText>
-        <ThemedText style={styles.panelDescription}>
-          {segments
-            ? (segments[activeSegment]?.description ?? description ?? TEXT.NOTICE_REPAIR_LIST_SUBTITLE)
-            : (description ?? TEXT.NOTICE_REPAIR_LIST_SUBTITLE)}
-        </ThemedText>
-      </View>
 
       {isLoading ? (
         <LoadingAnimate title={title} desc={TEXT.NOTICE_REPAIR_LOADING} />
@@ -188,26 +202,23 @@ export function NoticeRepairListScreen({ title, description, listType, staffId, 
         </View>
       ) : (
         <FlatList
-          data={jobs}
+          data={visibleJobs}
           keyExtractor={(item, i) => `${item.repair_id}-${i}`}
           renderItem={({ item }) => <NoticeRepairJobCard job={item} onPress={openDetail} />}
-          contentContainerStyle={jobs.length === 0 ? styles.emptyContainer : styles.list}
+          contentContainerStyle={
+            visibleJobs.length === 0
+              ? [styles.emptyContainer, onAddPress ? styles.emptyContainerWithAdd : null]
+              : styles.list
+          }
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.3}
+          ListHeaderComponent={addButton}
           ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.NOTICE_REPAIR_NO_ITEMS} />}
-          ListFooterComponent={isLoadingMore ? <ActivityIndicator style={styles.footer} /> : null}
+          ListFooterComponent={
+            isLoadingMore || hasMore ? <ActivityIndicator style={styles.footer} /> : null
+          }
         />
-      )}
-
-      {onAddPress && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={addLabel}
-          onPress={onAddPress}
-          style={styles.fab}>
-          <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" style={styles.fabIcon}>+</ThemedText>
-        </Pressable>
       )}
     </ThemedView>
   );
@@ -215,17 +226,6 @@ export function NoticeRepairListScreen({ title, description, listType, staffId, 
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
-  panelHeader: {
-    paddingTop: 16,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 4,
-  },
-  panelDescription: {
-    color: c.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-  },
   topTabBar: {
     flexDirection: 'row',
     backgroundColor: c.surface,
@@ -245,16 +245,30 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   topTabIndicatorActive: { backgroundColor: c.primary },
   list: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 16 },
   emptyContainer: { flexGrow: 1 },
+  emptyContainerWithAdd: { paddingHorizontal: 16, paddingTop: 24 },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 54,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: c.primary,
+    backgroundColor: c.primarySoft,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  addButtonPressed: { opacity: 0.7 },
+  addButtonText: {
+    color: c.primary,
+    fontSize: 15,
+    lineHeight: 21,
+    fontFamily: AppFonts.psuBold,
+  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyText: { fontSize: 15, color: c.textFaint, textAlign: 'center' },
   errorText: { fontSize: 15, color: c.danger, textAlign: 'center' },
   footer: { paddingVertical: 16 },
-  fab: {
-    position: 'absolute', bottom: 24, right: 20,
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center',
-    elevation: 4, shadowColor: c.shadow, shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25, shadowRadius: 4,
-  },
-  fabIcon: { fontSize: 30, lineHeight: 34, fontWeight: '300', marginTop: -2 },
 });

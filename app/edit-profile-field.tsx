@@ -18,7 +18,12 @@ import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
+import { TEXT } from '@/constants/text';
 import { updatePersonInfo } from '@/services/personService';
+
+// The focused underline is our focus affordance, so suppress the browser's own
+// outline on web (same helper the absence forms use).
+const webNoOutline: any = Platform.OS === 'web' ? { outlineStyle: 'none' } : null;
 
 type Field = 'phone' | 'email';
 
@@ -30,17 +35,17 @@ const FIELD_CONFIG: Record<Field, {
   keyboardType: React.ComponentProps<typeof TextInput>['keyboardType'];
 }> = {
   phone: {
-    title: 'Edit Phone Number',
-    description: 'Update your office phone number. This will be visible to other staff members in the directory.',
-    label: 'Phone Number',
-    placeholder: 'e.g. +1 (555) 000-0000',
+    title: TEXT.EDIT_PROFILE_PHONE_TITLE,
+    description: TEXT.EDIT_PROFILE_PHONE_DESCRIPTION,
+    label: TEXT.EDIT_PROFILE_PHONE_LABEL,
+    placeholder: TEXT.EDIT_PROFILE_PHONE_PLACEHOLDER,
     keyboardType: 'phone-pad',
   },
   email: {
-    title: 'Edit Email Address',
-    description: 'Update your work email address. Make sure it is valid as it will be used for official communications.',
-    label: 'Email Address',
-    placeholder: 'e.g. name@email.psu.ac.th',
+    title: TEXT.EDIT_PROFILE_EMAIL_TITLE,
+    description: TEXT.EDIT_PROFILE_EMAIL_DESCRIPTION,
+    label: TEXT.EDIT_PROFILE_EMAIL_LABEL,
+    placeholder: TEXT.EDIT_PROFILE_EMAIL_PLACEHOLDER,
     keyboardType: 'email-address',
   },
 };
@@ -67,10 +72,10 @@ export default function EditProfileFieldScreen() {
     try {
       await updatePersonInfo(staffId, field, value.trim());
       setToastType('success');
-      setToastMessage(`${config.label} updated successfully`);
+      setToastMessage(TEXT.EDIT_PROFILE_UPDATE_SUCCESS);
     } catch (error) {
       setToastType('error');
-      setToastMessage(error instanceof Error ? error.message : 'Update failed');
+      setToastMessage(error instanceof Error ? error.message : TEXT.EDIT_PROFILE_UPDATE_FAILED);
     } finally {
       setIsSaving(false);
     }
@@ -81,7 +86,7 @@ export default function EditProfileFieldScreen() {
   return (
     <ThemedView style={styles.container} lightColor="#F5F6FA">
       <StatusBar style="light" />
-      <NavTopBar title={config.title} />
+      <NavTopBar title={config.title} tone="primary" />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -91,26 +96,24 @@ export default function EditProfileFieldScreen() {
         <View style={styles.body}>
           <ThemedText style={styles.description}>{config.description}</ThemedText>
 
-          <View style={styles.fieldGroup}>
+          <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>{config.label}</ThemedText>
-            <Pressable onPress={() => inputRef.current?.focus()} style={[styles.inputBox, isFocused && styles.inputBoxFocused]}>
-              <TextInput
-                ref={inputRef}
-                style={styles.input}
-                value={value}
-                onChangeText={setValue}
-                keyboardType={config.keyboardType}
-                autoCapitalize={field === 'email' ? 'none' : 'words'}
-                autoCorrect={false}
-                placeholder={config.placeholder}
-                placeholderTextColor="#9CA3AF"
-                underlineColorAndroid="transparent"
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                returnKeyType="done"
-                onSubmitEditing={canSave ? handleSave : undefined}
-              />
-            </Pressable>
+            <TextInput
+              ref={inputRef}
+              style={[styles.input, isFocused && styles.inputFocused, webNoOutline]}
+              value={value}
+              onChangeText={setValue}
+              keyboardType={config.keyboardType}
+              autoCapitalize={field === 'email' ? 'none' : 'words'}
+              autoCorrect={false}
+              placeholder={config.placeholder}
+              placeholderTextColor={c.textFaint}
+              underlineColorAndroid="transparent"
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              returnKeyType="done"
+              onSubmitEditing={canSave ? handleSave : undefined}
+            />
           </View>
         </View>
 
@@ -127,11 +130,11 @@ export default function EditProfileFieldScreen() {
             accessibilityRole="button"
           >
             {isSaving ? (
-              <ThemedText style={styles.saveButtonText}>Saving…</ThemedText>
+              <ThemedText style={styles.saveButtonText}>{TEXT.EDIT_PROFILE_SAVING}</ThemedText>
             ) : (
               <>
                 <Check size={18} color="#FFFFFF" />
-                <ThemedText style={styles.saveButtonText}>Save Changes</ThemedText>
+                <ThemedText style={styles.saveButtonText}>{TEXT.EDIT_PROFILE_SAVE}</ThemedText>
               </>
             )}
           </Pressable>
@@ -159,32 +162,32 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textMuted,
   },
 
-  fieldGroup: {
-    gap: 8,
+  // Underlined field, matching the absence form screens.
+  field: {
+    paddingHorizontal: 0,
+    paddingVertical: 12,
+    gap: 10,
   },
   fieldLabel: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 20,
     fontFamily: AppFonts.psuBold,
-    color: c.textMuted,
-  },
-  inputBox: {
-    backgroundColor: c.surface,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: c.border,
-    paddingHorizontal: 14,
-  },
-  inputBoxFocused: {
-    borderColor: c.primary,
+    color: c.text,
   },
   input: {
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 15,
-    lineHeight: 22,
+    minHeight: 40,
     color: c.text,
-    paddingVertical: 13,
-    outlineStyle: 'none',
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 16,
+    lineHeight: 22,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
+  },
+  inputFocused: {
+    borderBottomWidth: 1.5,
+    borderBottomColor: c.primary,
   },
 
   footer: {
@@ -193,7 +196,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: c.surfaceAlt,
   },
   saveButton: {
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     borderRadius: 12,
     paddingVertical: 15,
     flexDirection: 'row',

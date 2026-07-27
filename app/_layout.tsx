@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
 
+import { BiometricGate } from '@/components/biometric-gate';
 import { ToastProvider } from '@/components/toast-provider';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
@@ -54,10 +55,6 @@ function AppStack() {
 
 export default function RootLayout() {
   const [loaded] = useFonts({
-    LINESeedSansTH_Th: require('../assets/fonts/LINE_Seed_Sans_TH/TTF/LINESeedSansTH_A_Th.ttf'),
-    LINESeedSansTH_Rg: require('../assets/fonts/LINE_Seed_Sans_TH/TTF/LINESeedSansTH_A_Rg.ttf'),
-    LINESeedSansTH_Bd: require('../assets/fonts/LINE_Seed_Sans_TH/TTF/LINESeedSansTH_A_Bd.ttf'),
-    LINESeedSansTH_XBd: require('../assets/fonts/LINE_Seed_Sans_TH/TTF/LINESeedSansTH_A_XBd.ttf'),
     // Sukhumvit Set — app-wide typeface (Thin/Light/Text/Medium/SemiBold/Bold).
     SukhumvitSet_Thin: require('../assets/fonts/Sukhumvit-Set/SukhumvitSet-Thin.ttf'),
     SukhumvitSet_Light: require('../assets/fonts/Sukhumvit-Set/SukhumvitSet-Light.ttf'),
@@ -97,7 +94,9 @@ export default function RootLayout() {
         <AuthProvider>
           <ThemeProvider>
             <ToastProvider>
-              <AppStack />
+              <BiometricGate>
+                <AppStack />
+              </BiometricGate>
             </ToastProvider>
           </ThemeProvider>
         </AuthProvider>

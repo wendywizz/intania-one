@@ -271,8 +271,8 @@ export default function ExaminarListScreen() {
       <NavTopBar
         title={TEXT.EXAMINAR_HEADER_TITLE}
         backHref="/"
-        backgroundColor={c.surface}
-        contentColor={c.text}
+        showHomeButton={false}
+        tone="primary"
       />
       <View style={styles.content}>
         <FilterBar
@@ -482,7 +482,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   retryText: { color: c.textOnPrimary, fontFamily: AppFonts.psuBold, fontSize: 14 },
 });

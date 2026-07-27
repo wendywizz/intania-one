@@ -789,6 +789,7 @@ export default function TimestampDetailScreen() {
       <NavTopBar
         title={TEXT.TIMESTAMP_TITLE}
         backHref={"/timestamp/forgot-timestamp" as Href}
+        tone="primary"
       />
       <ScrollView contentContainerStyle={styles.content}>
         {renderContent()}
@@ -1298,7 +1299,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignSelf: "flex-start",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
     marginTop: 12,
     paddingHorizontal: 16,
   },
@@ -1332,7 +1333,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   row: {
     flexDirection: "row",

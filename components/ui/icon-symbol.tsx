@@ -12,6 +12,7 @@ import Lightbulb from 'lucide-react-native/dist/cjs/icons/lightbulb';
 import Monitor from 'lucide-react-native/dist/cjs/icons/monitor';
 import Network from 'lucide-react-native/dist/cjs/icons/network';
 import Ellipsis from 'lucide-react-native/dist/cjs/icons/ellipsis';
+import EllipsisVertical from 'lucide-react-native/dist/cjs/icons/ellipsis-vertical';
 import Projector from 'lucide-react-native/dist/cjs/icons/projector';
 import Replace from 'lucide-react-native/dist/cjs/icons/replace';
 import PackagePlus from 'lucide-react-native/dist/cjs/icons/package-plus';
@@ -64,6 +65,8 @@ import Trash from 'lucide-react-native/dist/cjs/icons/trash-2';
 import Pencil from 'lucide-react-native/dist/cjs/icons/pencil';
 import Check from 'lucide-react-native/dist/cjs/icons/check';
 import X from 'lucide-react-native/dist/cjs/icons/x';
+import LogOut from 'lucide-react-native/dist/cjs/icons/log-out';
+import LockOpen from 'lucide-react-native/dist/cjs/icons/lock-open';
 import type { LucideIcon } from 'lucide-react-native';
 import { OpaqueColorValue, StyleProp, ViewStyle } from 'react-native';
 
@@ -79,6 +82,8 @@ const MAPPING = {
   'history': History,
   'house.fill': House,
   'plus': Plus,
+  'logout': LogOut,
+  'lock.open': LockOpen,
   // Communication
   'bell.fill': Bell,
   'gearshape.fill': Settings,
@@ -118,6 +123,7 @@ const MAPPING = {
   'package.plus': PackagePlus,
   'replace': Replace,
   'ellipsis': Ellipsis,
+  'ellipsis.vertical': EllipsisVertical,
   'chair': Armchair,
   'hammer.fill': Hammer,
   'paintroller': PaintRoller,

@@ -182,18 +182,21 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textMuted,
     fontFamily: AppFonts.psuBold,
   },
+  // Pinned to the top of the row and capped at a quarter of the card so a long
+  // status label ellipsizes instead of squeezing the title column.
   right: {
     flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
+    alignItems: 'flex-start',
+    alignSelf: 'flex-start',
     gap: 6,
     flexShrink: 0,
+    maxWidth: '25%',
   },
   badge: {
     borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 3,
-    maxWidth: 120,
+    flexShrink: 1,
   },
   badgeText: {
     fontSize: 11,

@@ -8,6 +8,7 @@ import {ThemedText} from '@/components/themed-text';
 import {ThemedView} from '@/components/themed-view';
 import {AUTH} from '@/constants/auth';
 import {TEXT} from '@/constants/text';
+import {type AppColors, useThemedStyles} from '@/constants/theme';
 import * as authService from '@/services/authService';
 
 const CUSTOM_ELEMENTS_GET_NAME_SHIM = `
@@ -42,6 +43,7 @@ function isOpenIdCallbackUrl(url: string) {
 }
 
 export default function OpenIdWebViewScreen() {
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{authUrl?: string | string[]}>();
   const authUrl = Array.isArray(params.authUrl) ? params.authUrl[0] : params.authUrl;
   const [errorMessage, setErrorMessage] = useState('');
@@ -71,7 +73,7 @@ export default function OpenIdWebViewScreen() {
   if (!authUrl) {
     return (
       <ThemedView style={styles.container}>
-        <NavTopBar title={TEXT.AUTH_LOGIN} onBackPress={cancelLogin} showHomeButton={false} backgroundColor="#ffffff" contentColor="#1f2933" />
+        <NavTopBar title={TEXT.AUTH_LOGIN} onBackPress={cancelLogin} showHomeButton={false} />
         <View style={styles.messageContent}>
           <ThemedText type="subtitle">{TEXT.AUTH_LOGIN_FAILED}</ThemedText>
           <ThemedText style={styles.message}>Authorization URL is missing.</ThemedText>
@@ -87,7 +89,7 @@ export default function OpenIdWebViewScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title={TEXT.AUTH_LOGIN} onBackPress={cancelLogin} showHomeButton={false} backgroundColor="#ffffff" contentColor="#1f2933" />
+      <NavTopBar title={TEXT.AUTH_LOGIN} onBackPress={cancelLogin} showHomeButton={false} />
       {errorMessage ? (
         <View style={styles.messageContent}>
           <ThemedText type="subtitle">{TEXT.AUTH_LOGIN_FAILED}</ThemedText>
@@ -138,7 +140,7 @@ export default function OpenIdWebViewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -146,7 +148,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.surface,
   },
   messageContent: {
     flex: 1,
@@ -155,19 +157,19 @@ const styles = StyleSheet.create({
   },
   message: {
     marginTop: 10,
-    color: '#687076',
+    color: c.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },
   errorText: {
-    color: '#B42318',
+    color: c.danger,
   },
   button: {
     minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#0A6E8A',
+    backgroundColor: c.pomegranate,
     marginTop: 24,
     paddingHorizontal: 16,
   },

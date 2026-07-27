@@ -225,7 +225,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 32,
   },
   buttonPrimary: {
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   buttonSecondary: {
     backgroundColor: c.surface,

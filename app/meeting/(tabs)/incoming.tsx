@@ -117,7 +117,7 @@ export default function IncomingMeetingScreen() {
   if (isLoading) {
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.MEETING_HEADER_TITLE} backHref="/" titleInNavBar />
+        <ScreenHeader title={TEXT.MEETING_HEADER_TITLE} backHref="/" titleInNavBar showHomeButton={false} />
         <LoadingAnimate title={TEXT.MEETING_LOADING_MEETINGS} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
       </ThemedView>
     );
@@ -126,7 +126,7 @@ export default function IncomingMeetingScreen() {
   if (error) {
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.MEETING_HEADER_TITLE} backHref="/" titleInNavBar />
+        <ScreenHeader title={TEXT.MEETING_HEADER_TITLE} backHref="/" titleInNavBar showHomeButton={false} />
         <View style={styles.errorWrap}>
           <View style={styles.errorCard}>
             <ThemedText style={styles.errorTitle}>{TEXT.SHARED_SOMETHING_WENT_WRONG}</ThemedText>
@@ -142,7 +142,7 @@ export default function IncomingMeetingScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.MEETING_HEADER_TITLE} backHref="/" titleInNavBar />
+      <ScreenHeader title={TEXT.MEETING_HEADER_TITLE} backHref="/" titleInNavBar showHomeButton={false} />
       <FlatList<ListRow>
         contentContainerStyle={styles.listContent}
         data={rows}
@@ -290,7 +290,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 14,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   retryText: { color: c.textOnPrimary, fontFamily: AppFonts.psuBold, fontSize: 14 },
 });

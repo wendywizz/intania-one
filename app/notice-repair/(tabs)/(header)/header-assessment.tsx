@@ -9,8 +9,8 @@ export default function Screen() {
       title={TEXT.NOTICE_REPAIR_TAB_ASSESSMENT}
       staffId={staffId}
       segments={[
-        { label: TEXT.NOTICE_REPAIR_TAB_WAITING_ESTIMATE, listType: 'header_waiting_estimate', description: 'รายการที่รอการประเมินราคา', detailPathname: '/notice-repair/header-estimate-detail' },
-        { label: TEXT.NOTICE_REPAIR_TAB_ESTIMATED, listType: 'header_estimated', description: 'รายการที่ประเมินราคาแล้ว' },
+        { label: TEXT.NOTICE_REPAIR_TAB_WAITING_ESTIMATE, listType: 'header_waiting_estimate', detailPathname: '/notice-repair/header-estimate-detail' },
+        { label: TEXT.NOTICE_REPAIR_TAB_ESTIMATED, listType: 'header_estimated' },
       ]}
     />
   );

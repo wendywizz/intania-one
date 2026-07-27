@@ -36,6 +36,7 @@ import { TYPE_ABSENCE_SICK } from "@/constants/types";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import type { absence } from "@/models/types";
+import { USER_PLACEHOLDER } from "@/constants/images";
 import {
   addabsenceData,
   getabsenceData,
@@ -232,23 +233,11 @@ const CONFIRM_REMOVE_TITLE = TEXT.ABSENCE_CONFIRM_REMOVE_TITLE;
 const CONFIRM_REMOVE_MESSAGE = TEXT.ABSENCE_CONFIRM_REMOVE_MESSAGE;
 const PENDING_APPROVAL_TITLE = TEXT.ABSENCE_CANNOT_REQUEST_TITLE;
 
-function getPersonInitials(name?: string) {
-  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "?";
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-}
-
 function PersonAvatar({
   photoId,
-  name,
   size = 40,
 }: {
   photoId?: string;
-  name?: string;
   size?: number;
 }) {
   const styles = useThemedStyles(makeStyles);
@@ -256,23 +245,13 @@ function PersonAvatar({
   const uri = photoId ? `${ENDPOINTS.photoBase}${photoId}.jpg` : "";
   const dimension = { width: size, height: size, borderRadius: size / 2 };
 
-  if (uri && !failed) {
-    return (
-      <Image
-        source={{ uri }}
-        style={[styles.personAvatar, dimension]}
-        contentFit="cover"
-        onError={() => setFailed(true)}
-      />
-    );
-  }
-
   return (
-    <View style={[styles.personAvatar, styles.personAvatarFallback, dimension]}>
-      <ThemedText style={styles.personAvatarText}>
-        {getPersonInitials(name)}
-      </ThemedText>
-    </View>
+    <Image
+      source={uri && !failed ? { uri } : USER_PLACEHOLDER}
+      style={[styles.personAvatar, dimension]}
+      contentFit="cover"
+      onError={() => setFailed(true)}
+    />
   );
 }
 
@@ -323,7 +302,6 @@ function SelectField({
           <View style={styles.selectPerson}>
             <PersonAvatar
               photoId={selectedOption.photoId ?? selectedOption.staffId}
-              name={selectedOption.title}
               size={40}
             />
             <View style={styles.selectPersonText}>
@@ -403,7 +381,6 @@ function SelectField({
                         <View style={styles.optionPerson}>
                           <PersonAvatar
                             photoId={option.photoId ?? option.staffId}
-                            name={option.title}
                             size={40}
                           />
                           <View style={styles.optionPersonText}>
@@ -915,7 +892,7 @@ export default function SickScreen() {
   if (isInitialLoading) {
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
+        <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar tone="primary" />
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
           desc={TEXT.SHARED_LOADING_DESCRIPTION}
@@ -929,7 +906,7 @@ export default function SickScreen() {
 
     return (
       <ThemedView style={styles.container}>
-        <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
+        <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar tone="primary" />
         {shouldShowRetry ? (
           <ErrorState
             variant="error"
@@ -958,7 +935,7 @@ export default function SickScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar />
+      <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar tone="primary" />
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
@@ -1654,16 +1631,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   personAvatar: {
     backgroundColor: c.surfaceMuted,
   },
-  personAvatarFallback: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  personAvatarText: {
-    color: c.textMuted,
-    fontSize: 14,
-    lineHeight: 18,
-    fontFamily: AppFonts.psuBold,
-  },
   selectPerson: {
     flex: 1,
     flexDirection: "row",
@@ -1814,7 +1781,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
-    backgroundColor: c.primary,
+    backgroundColor: c.pomegranate,
   },
   deleteButton: {
     minHeight: 52,

@@ -45,7 +45,7 @@ export default function ChooseAbsenceScreen() {
   const gutter = useScreenGutter();
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title="ยื่นลา" backHref="/" titleInNavBar />
+      <ScreenHeader title="ยื่นลา" backHref="/" titleInNavBar showHomeButton={false} />
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]} showsVerticalScrollIndicator={false}>
         <View style={styles.intro}>
           <ThemedText style={styles.screenTitle}>เลือกประเภทการลา</ThemedText>

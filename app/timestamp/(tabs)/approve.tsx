@@ -32,7 +32,7 @@ export default function TimestampApproveScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.TIMESTAMP_APPROVE_TAB} backHref="/" titleInNavBar />
+      <ScreenHeader title={TEXT.TIMESTAMP_APPROVE_TAB} backHref="/" titleInNavBar showHomeButton={false} />
 
       <View style={styles.topTabBar}>
         {TABS.map((tab) => {

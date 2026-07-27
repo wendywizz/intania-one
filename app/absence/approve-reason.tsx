@@ -91,6 +91,7 @@ export default function ApproveReasonScreen() {
         title={isApprove ? TEXT.ABSENCE_APPROVE_ACCEPT : TEXT.ABSENCE_APPROVE_REJECT}
         backHref="/absence/pending"
         titleInNavBar
+        tone="primary"
       />
 
       <ScrollView
@@ -101,7 +102,7 @@ export default function ApproveReasonScreen() {
           <ThemedText style={styles.label}>{TEXT.ABSENCE_APPROVE_NOTE_LABEL}</ThemedText>
           <TextInput
             multiline
-            numberOfLines={3}
+            numberOfLines={2}
             value={reason}
             onChangeText={(value) => {
               setReason(value);
@@ -180,7 +181,7 @@ export default function ApproveReasonScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: c.surface,
   },
   scrollContent: {
     paddingTop: 20,
@@ -201,7 +202,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.text,
   },
   textArea: {
-    minHeight: 96,
+    // Two lines of text (2 × 20 lineHeight) plus the vertical padding.
+    minHeight: 60,
     backgroundColor: c.surface,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
