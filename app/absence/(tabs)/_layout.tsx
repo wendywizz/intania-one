@@ -11,6 +11,7 @@ import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { useColors } from '@/constants/theme';
 import { approvingWaitingData } from '@/services/absenceService';
+import { scaleFont } from '@/utils/font-scale';
 
 export default function absenceTabLayout() {
   const c = useColors();
@@ -70,7 +71,7 @@ export default function absenceTabLayout() {
           paddingTop: 6,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: scaleFont(11),
           fontFamily: AppFonts.psuRegular,
         },
       }}>

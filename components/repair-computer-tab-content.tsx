@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useThemedStyles } from '@/constants/theme';
 import { TEXT } from '@/constants/text';
 
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -30,7 +30,6 @@ function getRoleTitlePrefix(role: RepairComputerRole) {
 }
 
 export function RepairComputerTabContent({ title, description }: RepairComputerTabContentProps) {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const { currentRole } = useRepairComputerRole();
   const screenTitle = title === TEXT.REPAIR_COMPUTER_NEW_JOB ? `${getRoleTitlePrefix(currentRole)} ${title}` : title;
@@ -40,7 +39,6 @@ export function RepairComputerTabContent({ title, description }: RepairComputerT
       <NavTopBar
         title={TEXT.REPAIR_COMPUTER_TITLE}
         subtitle={screenTitle}
-        moduleIcon="laptop"
         backHref="/"
         showHomeButton={false}
       />

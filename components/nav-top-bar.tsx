@@ -12,7 +12,6 @@ import { acquireNavLock, navReplace } from '@/utils/navigation';
 type NavTopBarProps = {
   title: string;
   subtitle?: string;
-  moduleIcon?: string;
   backHref?: Href;
   onBackPress?: () => void;
   showBackButton?: boolean;
@@ -33,7 +32,6 @@ type NavTopBarProps = {
 export function NavTopBar({
   title,
   subtitle,
-  moduleIcon,
   backHref,
   onBackPress,
   showBackButton = true,
@@ -93,11 +91,6 @@ export function NavTopBar({
       </View>
 
       <View style={styles.titleContainer}>
-          {moduleIcon ? (
-          <View style={[styles.iconCircle, { backgroundColor: `${barContent}20`, borderColor: `${barContent}40`, borderWidth: 2 }]}>
-          <IconSymbol name={moduleIcon} size={20} color={barContent} />
-          </View>
-        ) : null}
         <View style={styles.textContainer}>
           <ThemedText lightColor={barContent} darkColor={barContent} type="defaultSemiBold" numberOfLines={1} style={[styles.title, titleStyle]}>
             {title}
@@ -192,13 +185,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     opacity: 0.9,
     lineHeight: 17,
-  },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
 

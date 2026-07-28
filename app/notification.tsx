@@ -127,7 +127,7 @@ export default function NotificationScreen() {
       <NavTopBar
         title={TEXT.NOTIFICATION_TITLE}
         tone="primary"
-        showHomeButton
+        showHomeButton={false}
         rightContent={
           items.length > 0 ? (
             <Pressable

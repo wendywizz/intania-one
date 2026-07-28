@@ -159,6 +159,10 @@ export default function TimestampApproveDetailScreen() {
         intime: String(detail.inTime ?? ""),
         outtime: String(detail.outTime ?? ""),
         type: typeLabel,
+        // Neither forget_id nor approve_id carries a staff_id, so the
+        // requester's is forwarded separately — it is what the decision
+        // notification is sent to.
+        requestStaffId: String(requesterStaffId ?? ""),
       },
     } as Parameters<typeof router.push>[0]);
   };

@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppToast } from '@/components/app-toast';
 import { NavTopBar } from '@/components/nav-top-bar';
+import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
@@ -94,10 +95,9 @@ export default function EditProfileFieldScreen() {
       >
         {/* Scrollable body */}
         <View style={styles.body}>
-          <ThemedText style={styles.description}>{config.description}</ThemedText>
-
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>{config.label}</ThemedText>
+          {/* The same card the absence forms wrap their inputs in, so the field
+              sits on a surface instead of floating on the canvas. */}
+          <SectionCard title={config.label}>
             <TextInput
               ref={inputRef}
               style={[styles.input, isFocused && styles.inputFocused, webNoOutline]}
@@ -114,7 +114,10 @@ export default function EditProfileFieldScreen() {
               returnKeyType="done"
               onSubmitEditing={canSave ? handleSave : undefined}
             />
-          </View>
+            {/* Helper text below the field it explains, not above it — the user
+                reads the label, types, then finds out what the value is for. */}
+            <ThemedText style={styles.description}>{config.description}</ThemedText>
+          </SectionCard>
         </View>
 
         {/* Save button pinned to bottom */}
@@ -155,25 +158,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 24,
   },
 
+  // Helper text under the input: a step down from the value it describes.
   description: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 20,
     fontFamily: AppFonts.psuRegular,
     color: c.textMuted,
   },
 
-  // Underlined field, matching the absence form screens.
-  field: {
-    paddingHorizontal: 0,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  fieldLabel: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontFamily: AppFonts.psuBold,
-    color: c.text,
-  },
+  // Underlined field, matching the absence form screens. The label above it is
+  // now the card's own header, so neither lives here any more.
   input: {
     minHeight: 40,
     color: c.text,
@@ -183,7 +177,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 0,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   inputFocused: {
     borderBottomWidth: 1.5,

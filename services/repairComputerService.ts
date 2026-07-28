@@ -199,10 +199,6 @@ export function listForemanSupplyApproveHistory(
   return listRequest<RepairComputer>(url);
 }
 
-export function changeWorker(id: string, workerId: string) {
-  return updateManageData(id, { worker: workerId }, "change_worker");
-}
-
 export function foremanRejectJob(id: string) {
   return updateManageData(id, {}, "reject");
 }
@@ -223,10 +219,6 @@ export function foremanUnassignJob(id: string) {
 
 export function acceptRejectedFromWorker(id: string) {
   return updateManageData(id, {}, "accept_rejected");
-}
-
-export function foremanForwardWorker(id: string) {
-  return updateManageData(id, {}, "forward_worker");
 }
 
 /** Forward a job to another foreman (division). `divisionId` is the target

@@ -6,6 +6,7 @@ import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { useColors } from '@/constants/theme';
+import { scaleFont } from '@/utils/font-scale';
 
 export default function MeetingTabLayout() {
   const c = useColors();
@@ -25,7 +26,7 @@ export default function MeetingTabLayout() {
           borderTopColor: c.primary,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: scaleFont(11),
           fontFamily: AppFonts.psuRegular,
         },
       }}>

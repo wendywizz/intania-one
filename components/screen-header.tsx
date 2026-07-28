@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useScreenGutter, useScreenTitleGap, useThemedStyles } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
+import { scaleFont } from '@/utils/font-scale';
 
 type ScreenHeaderProps = {
   /** Large title shown in the content, below a minimal blended nav bar. */
@@ -54,8 +55,9 @@ export function ScreenHeader({
   const titlePad = titlePaddingHorizontal ?? gutter;
   const titleGap = useScreenTitleGap();
   const styles = useThemedStyles(makeStyles);
-  // Scale the title with device height (clamped) so it stays proportional.
-  const titleSize = Math.round(Math.min(26, Math.max(20, height * 0.028)));
+  // Scale the title with device height (clamped) so it stays proportional. The
+  // result is an inline style, so it takes the app-wide font scale by hand.
+  const titleSize = scaleFont(Math.round(Math.min(26, Math.max(20, height * 0.028))));
 
   const isPrimary = tone === 'primary';
 
@@ -65,7 +67,7 @@ export function ScreenHeader({
       <StatusBar style={isPrimary || isDarkMode ? 'light' : 'dark'} />
       <NavTopBar
         title={titleInNavBar ? title : ''}
-        titleStyle={titleInNavBar ? { fontSize: 20, lineHeight: 26 } : undefined}
+        titleStyle={titleInNavBar ? { fontSize: scaleFont(20), lineHeight: scaleFont(26) } : undefined}
         backHref={backHref}
         onBackPress={onBackPress}
         showBackButton={showBackButton}

@@ -3,18 +3,49 @@ import {AppState} from 'react-native';
 import type {AuthUser} from '../models/types';
 import * as authService from '../services/authService';
 import {registerLoggedInDevice, subscribeToLoggedInDevicePushTokenChanges} from '../services/deviceService';
+import {
+  fetchStaffEligibility,
+  readCachedEligibility,
+  writeCachedEligibility,
+} from '../services/staffInfoService';
 import {DEV_STAFF_ID} from '../constants/devConfig';
+
+/**
+ * Whether the signed-in person is Faculty of Engineering staff.
+ *
+ * `unknown` is deliberately distinct from `denied`: it means the check has not
+ * run or could not complete, and it is treated as "let them in". The gate exists
+ * to keep other faculties' staff out of a UI that is useless to them, not as a
+ * security boundary — every module endpoint is reachable without it — so failing
+ * open on a dropped connection is far better than locking out real staff.
+ */
+export type StaffEligibilityStatus = 'unknown' | 'checking' | 'allowed' | 'denied';
 
 type AuthContextValue = {
   user: AuthUser | null;
   loading: boolean;
   signedIn: boolean;
+  /** Faculty check for `user`; see StaffEligibilityStatus. */
+  eligibility: StaffEligibilityStatus;
   completeWebSignIn: (params: Parameters<typeof authService.completeWebLogin>[0]) => Promise<void>;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+/**
+ * The staff id every feature actually works with — the same dev impersonation
+ * override `effectiveUser` applies, so the faculty check cannot disagree with the
+ * account the rest of the app is showing.
+ */
+function resolveStaffId(user: AuthUser | null): string | undefined {
+  if (!user) {
+    return undefined;
+  }
+
+  return __DEV__ && DEV_STAFF_ID ? DEV_STAFF_ID : user.staffId;
+}
 
 function registerDeviceInBackground(user: AuthUser | null) {
   if (!user) {
@@ -31,8 +62,47 @@ function registerDeviceInBackground(user: AuthUser | null) {
 export function AuthProvider({children}: {children: React.ReactNode}) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [eligibility, setEligibility] = useState<StaffEligibilityStatus>('unknown');
   const signInPromiseRef = useRef<Promise<void> | null>(null);
   const userRef = useRef<AuthUser | null>(null);
+  // Guards against a stale check overwriting a newer one — a slow reply for the
+  // previous account must not decide the current account's verdict.
+  const eligibilityRunRef = useRef(0);
+
+  /**
+   * Resolves `staffId`'s faculty and records the verdict. Seeds from the cached
+   * verdict first so a returning user does not flash the wrong home screen while
+   * the network call runs.
+   */
+  const verifyEligibility = React.useCallback(async (staffId: string | undefined) => {
+    const run = ++eligibilityRunRef.current;
+    const isCurrent = () => eligibilityRunRef.current === run;
+
+    // No staff id means nothing to check against — fail open rather than
+    // stranding the user on an empty home screen.
+    if (!staffId) {
+      if (isCurrent()) setEligibility('unknown');
+      return;
+    }
+
+    const cached = await readCachedEligibility(staffId);
+    if (!isCurrent()) return;
+    setEligibility(cached === null ? 'checking' : cached ? 'allowed' : 'denied');
+
+    try {
+      const result = await fetchStaffEligibility(staffId);
+      await writeCachedEligibility(staffId, result.eligible);
+      if (isCurrent()) setEligibility(result.eligible ? 'allowed' : 'denied');
+    } catch (error) {
+      // Could not reach the gateway. Keep whatever the cache said; with no cached
+      // verdict, fall back to 'unknown' (= allowed) rather than turning a network
+      // failure into "you have no permission".
+      if (isCurrent() && cached === null) setEligibility('unknown');
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[auth] eligibility check failed', error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     userRef.current = user;
@@ -44,9 +114,12 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       .then((restoredUser) => {
         setUser(restoredUser);
         registerDeviceInBackground(restoredUser);
+        // Not awaited: cold start must not wait on the network. The cached
+        // verdict settles the screen immediately and the re-check corrects it.
+        void verifyEligibility(resolveStaffId(restoredUser));
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [verifyEligibility]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
@@ -73,12 +146,17 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       user: effectiveUser,
       loading,
       signedIn: Boolean(effectiveUser),
+      eligibility,
       completeWebSignIn: async (params) => {
         setLoading(true);
         try {
           const signedInUser = await authService.completeWebLogin(params);
           setUser(signedInUser);
           registerDeviceInBackground(signedInUser);
+          // Awaited on the login path, unlike on restore: the verdict decides
+          // which home screen this person gets, and settling it before `loading`
+          // clears means they never see the wrong one flash first.
+          await verifyEligibility(resolveStaffId(signedInUser));
         } finally {
           setLoading(false);
         }
@@ -91,9 +169,10 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         setLoading(true);
         signInPromiseRef.current = authService
           .login()
-          .then((signedInUser) => {
+          .then(async (signedInUser) => {
             setUser(signedInUser);
             registerDeviceInBackground(signedInUser);
+            await verifyEligibility(resolveStaffId(signedInUser));
           })
           .finally(() => {
             setLoading(false);
@@ -105,9 +184,13 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       signOut: async () => {
         await authService.logout();
         setUser(null);
+        // Abandon any check still in flight, so its late reply cannot stamp a
+        // verdict onto the signed-out state.
+        eligibilityRunRef.current += 1;
+        setEligibility('unknown');
       },
     }),
-    [loading, effectiveUser],
+    [loading, effectiveUser, eligibility, verifyEligibility],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -7,8 +7,8 @@ import {
   AppState,
   type AppStateStatus,
   Platform,
+  Pressable,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -16,16 +16,19 @@ import { StatusBar } from 'expo-status-bar';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { AppFonts } from '@/constants/fonts';
+import { PasscodePad } from '@/components/passcode-pad';
 import { APP_ICON } from '@/constants/images';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
-import { verifyAppPassword } from '@/services/appPasswordService';
+import { useAuth } from '@/context/AuthContext';
+import { PASSCODE_LENGTH, verifyAppPassword } from '@/services/appPasswordService';
 import {
   authenticateWithBiometrics,
+  getLockPlan,
   isBiometricUnusable,
   isCancelledAttempt,
   isRejectedScan,
-  shouldLockApp,
+  type LockPlan,
 } from '@/services/biometricService';
 
 // react-native-web has no native animation driver.
@@ -41,6 +44,8 @@ const REVEAL_MS = 340;
 const SCANS_BEFORE_PASSCODE = 2;
 // The progress bar that runs before the unlock button appears.
 const ACTION_REVEAL_MS = 500;
+// Side of the icon tile, and therefore the diameter of the success circle.
+const LOCK_TILE_SIZE = 96;
 
 type Status = 'checking' | 'locked' | 'unlocking' | 'unlocked';
 
@@ -61,6 +66,7 @@ type Status = 'checking' | 'locked' | 'unlocking' | 'unlocked';
 export function BiometricGate({ children }: { children: React.ReactNode }) {
   const styles = useThemedStyles(makeStyles);
   const c = useColors();
+  const { user, loading: isAuthLoading } = useAuth();
   // Starts as 'checking' so the app content is never briefly visible before we
   // know whether the lock applies — the cover is up from the very first frame.
   // Web has no biometrics at all, so it skips straight past the cover.
@@ -79,6 +85,16 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
   const isAuthenticatingRef = useRef(false);
   const backgroundedAtRef = useRef<number | null>(null);
   const failedScansRef = useRef(0);
+  // What can open the lock currently up. Read inside callbacks, so it lives in a
+  // ref; `hasBiometrics` mirrors it for rendering.
+  const planRef = useRef<LockPlan>({ locked: false, biometrics: false, password: false });
+  const [hasBiometrics, setHasBiometrics] = useState(false);
+  // Set only when scanning has failed and there is no app passcode to fall back
+  // on. The device passcode is then the last way in, so the next prompt offers
+  // it rather than asking for a face that has already been refused.
+  const needsDeviceFallbackRef = useRef(false);
+  // The lock applies once per launch; see the cold-start effect below.
+  const didInitialCheckRef = useRef(false);
 
   // Success choreography: the scan icon gives way to a tick, then the whole
   // overlay fades and eases back to hand the app over.
@@ -142,11 +158,13 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
     isAuthenticatingRef.current = true;
     setIsPrompting(true);
     try {
-      // Never `allowDeviceFallback`: the app password is the fallback now, and
-      // asking for the phone's own passcode is exactly what this lock avoids.
+      // The app passcode is the fallback, so the phone's own passcode stays out
+      // of it — unless there is no app passcode, in which case it is all that's
+      // left and refusing it would lock the user out of their own app.
       const { success, error } = await authenticateWithBiometrics(
         TEXT.BIOMETRIC_LOCK_PROMPT,
         TEXT.BIOMETRIC_LOCK_CANCEL,
+        { allowDeviceFallback: needsDeviceFallbackRef.current },
       );
       if (success) {
         revealApp();
@@ -157,11 +175,12 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
         // user ever being asked for a face or finger.
         if (isRejectedScan(error)) failedScansRef.current += 1;
 
-        // Out of scans, or biometrics are unusable — hand over to the app's own
-        // password. `shouldLockApp` guarantees one exists, which is why the
-        // device passcode never enters into it.
+        // Out of scans, or biometrics are unusable: hand over to the app's own
+        // passcode, or — when there isn't one — let the next prompt offer the
+        // device passcode.
         if (isBiometricUnusable(error) || failedScansRef.current >= SCANS_BEFORE_PASSCODE) {
-          setIsEnteringPassword(true);
+          if (planRef.current.password) setIsEnteringPassword(true);
+          else needsDeviceFallbackRef.current = true;
         }
       }
     } finally {
@@ -173,30 +192,52 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
     }
   }, [revealApp]);
 
-  /** Check a typed app password and, if it matches, hand the app over. */
-  const submitPassword = useCallback(async () => {
-    if (!password) return;
+  // The keypad has no submit button: the passcode is checked the moment its
+  // last digit lands, the way the OS does it.
+  useEffect(() => {
+    if (!isEnteringPassword || password.length !== PASSCODE_LENGTH) return;
 
-    setIsPrompting(true);
-    const ok = await verifyAppPassword(password);
-    setIsPrompting(false);
+    let cancelled = false;
+    void verifyAppPassword(password).then((ok) => {
+      if (cancelled) return;
+      setPassword('');
+      if (ok) {
+        setPasswordError('');
+        revealApp();
+        return;
+      }
+      setPasswordError(TEXT.PASSCODE_UNLOCK_WRONG);
+    });
 
-    if (!ok) {
-      setPasswordError(TEXT.PASSWORD_UNLOCK_WRONG);
-      return;
-    }
-    setPassword('');
-    setPasswordError('');
-    revealApp();
-  }, [password, revealApp]);
+    return () => {
+      cancelled = true;
+    };
+  }, [password, isEnteringPassword, revealApp]);
 
-  /** Everything a fresh lock has to forget. */
-  const resetAttempts = useCallback(() => {
+  /**
+   * Puts a fresh lock up. Nothing is asked for yet: both routes begin at the
+   * unlock button, and pressing it is what starts the check.
+   */
+  const startLock = useCallback((plan: LockPlan) => {
+    planRef.current = plan;
     failedScansRef.current = 0;
-    setIsEnteringPassword(false);
+    needsDeviceFallbackRef.current = false;
     setPassword('');
     setPasswordError('');
+    setHasBiometrics(plan.biometrics);
+    setIsEnteringPassword(false);
+    setStatus('locked');
   }, []);
+
+  /**
+   * The unlock button. Biometrics on: scan first, and the keypad only appears
+   * once SCANS_BEFORE_PASSCODE scans have been rejected. Biometrics off: the
+   * keypad straight away.
+   */
+  const handleUnlockPress = useCallback(() => {
+    if (planRef.current.biometrics) void promptUnlock();
+    else setIsEnteringPassword(true);
+  }, [promptUnlock]);
 
   // Every time the screen locks, run the bar and only then offer the button.
   useEffect(() => {
@@ -219,23 +260,36 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
 
   // Decide on cold start, before anything of the app is shown.
   useEffect(() => {
+    // Auth is still resolving: the plain cover stays up rather than guessing.
+    if (isAuthLoading) return;
+    // Only ever decided once per launch. Without this guard, signing in would
+    // change `user` and re-run the check, throwing the lock screen up over the
+    // app the moment the user finished authenticating.
+    if (didInitialCheckRef.current) return;
+    didInitialCheckRef.current = true;
+
+    // Nobody signed in: there is nothing behind the lock to protect, and the
+    // passcode belongs to an account rather than to the device.
+    if (!user) {
+      setStatus('unlocked');
+      return;
+    }
+
     let cancelled = false;
 
-    void shouldLockApp().then((locked) => {
+    void getLockPlan().then((plan) => {
       if (cancelled) return;
-      if (!locked) {
+      if (!plan.locked) {
         setStatus('unlocked');
         return;
       }
-      resetAttempts();
-      setStatus('locked');
-      void promptUnlock();
+      startLock(plan);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [promptUnlock, resetAttempts]);
+  }, [isAuthLoading, user, startLock]);
 
   // Re-lock when the app returns after more than RELOCK_AFTER_MS away; a quick
   // trip out (checking a message, a share sheet) comes straight back in. Only a
@@ -253,20 +307,23 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
       const since = backgroundedAtRef.current;
       backgroundedAtRef.current = null;
       if (since === null || Date.now() - since < RELOCK_AFTER_MS) return;
+      // Signed out while away — including by logging out — leaves nothing to
+      // lock, so coming back must not put the lock screen up.
+      if (!user) return;
 
-      void shouldLockApp().then((locked) => {
-        if (!locked) return;
+      // Re-read the plan rather than reusing the last one: the user may have
+      // just come back from changing these very settings.
+      void getLockPlan().then((plan) => {
+        if (!plan.locked) return;
         // Each lock starts over: biometrics first, password only after failures.
-        resetAttempts();
         resetOverlay();
-        setStatus('locked');
-        void promptUnlock();
+        startLock(plan);
       });
     };
 
     const subscription = AppState.addEventListener('change', handleChange);
     return () => subscription.remove();
-  }, [promptUnlock, resetOverlay, resetAttempts]);
+  }, [resetOverlay, startLock, user]);
 
   return (
     <View style={styles.root}>
@@ -289,65 +346,46 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
           {/* The primary fill is dark in both themes, so status-bar content
               must be light. */}
           <StatusBar style="light" />
-          <View style={[styles.iconTile, status === 'unlocking' && styles.iconTileSuccess]}>
-            {status === 'unlocking' ? (
-              <Animated.View style={{ transform: [{ scale: tickScale }] }}>
-                {/* Pomegranate, not `primary`: the latter is a pale pink in
-                    dark mode and would barely read on the white tile. */}
-                <Check size={48} color={c.pomegranate} strokeWidth={3} />
-              </Animated.View>
-            ) : (
-              <Image source={APP_ICON} style={styles.appIcon} contentFit="cover" />
-            )}
+          {/* The whole lock UI fades out as one, so the tick that replaces it can
+              sit dead centre instead of wherever the icon happened to be — the
+              passcode keypad makes this column tall and pushes it well above
+              the middle of the screen. */}
+          <Animated.View style={[styles.lockContent, { opacity: promptOpacity }]}>
+          <View style={styles.iconTile}>
+            <Image source={APP_ICON} style={styles.appIcon} contentFit="cover" />
           </View>
-          <Animated.View style={[styles.prompt, { opacity: promptOpacity }]}>
+          <View style={styles.prompt}>
             <ThemedText style={styles.title}>{TEXT.BIOMETRIC_LOCK_TITLE}</ThemedText>
             <ThemedText style={styles.description}>
-              {isEnteringPassword ? TEXT.PASSWORD_UNLOCK_PROMPT : TEXT.BIOMETRIC_LOCK_DESCRIPTION}
+              {isEnteringPassword ? TEXT.PASSCODE_UNLOCK_PROMPT : TEXT.BIOMETRIC_LOCK_DESCRIPTION}
             </ThemedText>
             {isEnteringPassword ? (
-              <View style={styles.passwordForm}>
-                <TextInput
-                  value={password}
-                  onChangeText={(next) => {
-                    setPassword(next);
-                    setPasswordError('');
-                  }}
-                  placeholder={TEXT.PASSWORD_PLACEHOLDER}
-                  placeholderTextColor="rgba(255,255,255,0.6)"
-                  secureTextEntry
-                  autoFocus
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  returnKeyType="go"
-                  onSubmitEditing={() => void submitPassword()}
-                  style={styles.passwordInput}
-                />
+              <View style={styles.passcodeForm}>
                 {passwordError ? (
-                  <ThemedText style={styles.passwordError}>{passwordError}</ThemedText>
+                  <ThemedText style={styles.passcodeError}>{passwordError}</ThemedText>
                 ) : null}
-                <Button
-                  title={TEXT.PASSWORD_UNLOCK_SUBMIT}
-                  variant="secondary"
-                  size="lg"
-                  icon="lock.open"
-                  loading={isPrompting}
-                  disabled={!password}
-                  onPress={() => void submitPassword()}
-                  style={styles.unlockButton}
-                />
-                {/* A wrong-fingered scan shouldn't strand anyone on the password
-                    form — the scanner is one tap away again. */}
-                <Button
-                  title={TEXT.PASSWORD_USE_BIOMETRIC}
-                  variant="ghost"
-                  size="sm"
-                  onPress={() => {
-                    setIsEnteringPassword(false);
-                    setPasswordError('');
-                    void promptUnlock();
-                  }}
-                />
+                <PasscodePad value={password} onChange={setPassword} onPrimary />
+                {/* A scan that won't read shouldn't strand anyone on the keypad —
+                    the scanner is one tap away again. Hidden when biometrics is
+                    off or unavailable: there would be nothing to go back to. Not
+                    the shared Button: its ghost variant paints text in
+                    `primary`, which is the colour of this very overlay. */}
+                {hasBiometrics ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setIsEnteringPassword(false);
+                      setPassword('');
+                      setPasswordError('');
+                      void promptUnlock();
+                    }}
+                    style={({ pressed }) => [styles.biometricLink, pressed && { opacity: 0.6 }]}
+                  >
+                    <ThemedText style={styles.biometricLinkText}>
+                      {TEXT.PASSCODE_USE_BIOMETRIC}
+                    </ThemedText>
+                  </Pressable>
+                ) : null}
               </View>
             ) : (
             /* Fixed-height slot so swapping the bar for the button doesn't
@@ -360,7 +398,7 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
                   size="lg"
                   icon="lock.open"
                   loading={isPrompting}
-                  onPress={() => void promptUnlock()}
+                  onPress={handleUnlockPress}
                   style={styles.unlockButton}
                 />
               ) : (
@@ -380,7 +418,26 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
               )}
             </View>
             )}
+          </View>
           </Animated.View>
+
+          {/* Springs in at the centre of the screen, independent of the column
+              above, which is already on its way out. */}
+          {status === 'unlocking' ? (
+            <View pointerEvents="none" style={styles.successCenter}>
+              <Animated.View
+                style={[
+                  styles.iconTile,
+                  styles.iconTileSuccess,
+                  { transform: [{ scale: tickScale }] },
+                ]}
+              >
+                {/* Pomegranate, not `primary`: the latter is a pale pink in dark
+                    mode and would barely read on the white tile. */}
+                <Check size={48} color={c.pomegranate} strokeWidth={3} />
+              </Animated.View>
+            </View>
+          ) : null}
         </Animated.View>
       ) : null}
     </View>
@@ -401,11 +458,19 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 32,
     gap: 12,
   },
+  lockContent: { alignItems: 'center', gap: 12 },
+  // Ignores the column's layout entirely so the tick lands mid-screen whether
+  // the lock showed a button or a full keypad.
+  successCenter: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   // The app icon as a rounded tile. The artwork is red and so is the overlay,
   // so a white ring is what separates the two.
   iconTile: {
-    width: 96,
-    height: 96,
+    width: LOCK_TILE_SIZE,
+    height: LOCK_TILE_SIZE,
     borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 3,
@@ -416,8 +481,13 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     marginBottom: 8,
   },
   appIcon: { width: '100%', height: '100%' },
-  // Fills in solid on success so the tick reads as a confirmation.
-  iconTileSuccess: { backgroundColor: c.textOnPrimary },
+  // Fills in solid on success so the tick reads as a confirmation, and rounds
+  // all the way to a circle — the icon's squircle belongs to the app's artwork,
+  // the confirmation is its own mark.
+  iconTileSuccess: {
+    backgroundColor: c.textOnPrimary,
+    borderRadius: LOCK_TILE_SIZE / 2,
+  },
   prompt: { alignItems: 'center', gap: 12 },
   title: {
     fontSize: 20,
@@ -451,27 +521,19 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.28)',
   },
   progressFill: { height: '100%', borderRadius: 2, backgroundColor: c.textOnPrimary },
-  passwordForm: { marginTop: 12, width: 260, alignItems: 'center', gap: 10 },
-  // Sits on the primary fill, so it is styled against that rather than the
-  // usual surface tokens the shared TextField assumes.
-  passwordInput: {
-    alignSelf: 'stretch',
-    minHeight: 48,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.45)',
+  passcodeForm: { marginTop: 16, alignItems: 'center', gap: 20 },
+  passcodeError: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: AppFonts.psuRegular,
     color: c.textOnPrimary,
-    fontSize: 16,
-    fontFamily: AppFonts.psuRegular,
-    ...(Platform.OS === 'web' ? { outlineStyle: 'none' as never } : null),
+    textAlign: 'center',
   },
-  passwordError: {
-    alignSelf: 'stretch',
-    fontSize: 12,
-    lineHeight: 16,
-    fontFamily: AppFonts.psuRegular,
+  biometricLink: { paddingVertical: 8, paddingHorizontal: 16 },
+  biometricLinkText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: AppFonts.psuBold,
     color: c.textOnPrimary,
   },
 });

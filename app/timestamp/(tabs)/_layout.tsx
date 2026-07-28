@@ -11,6 +11,7 @@ import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
 import { getForgetApprovalWaiting } from "@/services/timestampService";
+import { scaleFont } from "@/utils/font-scale";
 
 export default function TimestampTabLayout() {
   const c = useColors();
@@ -68,7 +69,7 @@ export default function TimestampTabLayout() {
           paddingTop: 6,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: scaleFont(11),
           fontFamily: AppFonts.psuRegular,
         },
       }}

@@ -33,9 +33,12 @@ export default function TimestampApproveReasonScreen() {
     intime?: string;
     outtime?: string;
     type?: string;
+    requestStaffId?: string;
   }>();
   const forgetId = firstParam(params.forgetId);
   const approveId = firstParam(params.approveId);
+  // Who the decision gets pushed to; forwarded from the approve-detail screen.
+  const requestStaffId = firstParam(params.requestStaffId);
   const status: "1" | "2" = firstParam(params.status) === "2" ? "2" : "1";
   const intime = firstParam(params.intime);
   const outtime = firstParam(params.outtime);
@@ -79,6 +82,7 @@ export default function TimestampApproveReasonScreen() {
         reason: reason.trim(),
         intime,
         outtime,
+        ...(requestStaffId ? { request_staff_id: requestStaffId } : {}),
       });
       setToastType("success");
       setToastMessage(result.message || TEXT.TIMESTAMP_APPROVE_SUBMIT_SUCCESS);

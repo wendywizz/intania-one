@@ -1159,7 +1159,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 8,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   inputError: {
     borderBottomWidth: 1.5,
@@ -1217,7 +1217,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 0,
     backgroundColor: "transparent",
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
     paddingHorizontal: 0,
   },
   webTimeSeparator: {
@@ -1258,7 +1258,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     lineHeight: 22,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   reasonInput: {
     minHeight: 52,

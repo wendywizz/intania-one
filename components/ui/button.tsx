@@ -11,8 +11,9 @@ import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, View, ViewSt
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors } from '@/constants/theme';
+import { scaleFont } from '@/utils/font-scale';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'dangerOutline';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 type ButtonProps = {
@@ -35,19 +36,28 @@ const SIZES: Record<ButtonSize, { minHeight: number; paddingHorizontal: number; 
   lg: { minHeight: 52, paddingHorizontal: 24, fontSize: 16, iconSize: 20 },
 };
 
+// A filled button's border only softens the fill's edge, so hairline is right.
+// An outlined one has nothing but its border, and hairline (~0.5px) is too faint
+// to read as a button — hence the explicit width per variant.
+const OUTLINE_BORDER_WIDTH = 1.5;
+
 function palette(c: AppColors, variant: ButtonVariant) {
   switch (variant) {
     case 'secondary':
-      return { bg: c.surface, border: c.border, fg: c.text };
+      return { bg: c.surface, border: c.border, fg: c.text, borderWidth: StyleSheet.hairlineWidth };
     case 'ghost':
-      return { bg: 'transparent', border: 'transparent', fg: c.primary };
+      return { bg: 'transparent', border: 'transparent', fg: c.primary, borderWidth: StyleSheet.hairlineWidth };
     case 'danger':
-      return { bg: c.danger, border: c.danger, fg: '#FFFFFF' };
+      return { bg: c.danger, border: c.danger, fg: '#FFFFFF', borderWidth: StyleSheet.hairlineWidth };
+    // Outlined destructive action: the same weight of intent as `danger`, but it
+    // does not shout from across the screen the way a solid red slab does.
+    case 'dangerOutline':
+      return { bg: 'transparent', border: c.danger, fg: c.danger, borderWidth: OUTLINE_BORDER_WIDTH };
     case 'primary':
     // Pomegranate rather than `primary`: the brand red washes out to pink as a
     // fill in dark mode, and this holds one red across both themes.
     default:
-      return { bg: c.pomegranate, border: c.pomegranate, fg: c.textOnPrimary };
+      return { bg: c.pomegranate, border: c.pomegranate, fg: c.textOnPrimary, borderWidth: StyleSheet.hairlineWidth };
   }
 }
 
@@ -65,7 +75,10 @@ export function Button({
 }: ButtonProps) {
   const c = useColors();
   const dims = SIZES[size];
-  const { bg, border, fg } = palette(c, variant);
+  // The label is styled inline, so it misses the StyleSheet-level font scale and
+  // has to opt in by hand. `minHeight` is generous enough to take the extra.
+  const fontSize = scaleFont(dims.fontSize);
+  const { bg, border, fg, borderWidth } = palette(c, variant);
   const isDisabled = disabled || loading;
 
   return (
@@ -82,6 +95,7 @@ export function Button({
           paddingHorizontal: dims.paddingHorizontal,
           backgroundColor: bg,
           borderColor: border,
+          borderWidth,
         },
         fullWidth && styles.fullWidth,
         pressed && !isDisabled && styles.pressed,
@@ -96,7 +110,7 @@ export function Button({
           {icon ? <IconSymbol name={icon} size={dims.iconSize} color={fg} /> : null}
           <Text
             numberOfLines={1}
-            style={{ color: fg, fontSize: dims.fontSize, fontFamily: AppFonts.psuBold, lineHeight: dims.fontSize + 5 }}
+            style={{ color: fg, fontSize, fontFamily: AppFonts.psuBold, lineHeight: fontSize + 5 }}
           >
             {title}
           </Text>
@@ -113,7 +127,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 100,
-    borderWidth: StyleSheet.hairlineWidth,
   },
   fullWidth: { alignSelf: 'stretch' },
   content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },

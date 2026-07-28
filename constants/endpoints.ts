@@ -44,6 +44,7 @@ export const ENDPOINTS = {
   absence: `${API_BASE_URL}/api/absence`,
   repairComputer: `${API_BASE_URL}/api/repair-computer`,  
   person: `${API_BASE_URL}/api/person`,
+  staffInfo: `${API_BASE_URL}/api/staff-info`,
   personUpdateInfo: `${API_BASE_URL}/api/person/update-info`,
   personUploadPhoto: `${API_BASE_URL}/api/person/upload-photo`,
   meeting: `${API_BASE_URL}/api/meeting`,

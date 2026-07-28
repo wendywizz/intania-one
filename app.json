@@ -55,7 +55,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Intania Staff Buddy to access your photos so you can attach a medical certificate image."
+          "photosPermission": "Allow Intania Staff Buddy to access your photos so you can attach a medical certificate image.",
+          "cameraPermission": "Allow Intania Staff Buddy to use the camera so you can photograph a medical certificate."
         }
       ],
       "@react-native-community/datetimepicker",

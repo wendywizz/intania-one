@@ -1396,7 +1396,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 0,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   inputError: {
     borderBottomWidth: 1.5,
@@ -1412,7 +1412,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 8,
     textAlignVertical: "top",
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   dateRow: {
     flexDirection: "row",
@@ -1446,7 +1446,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 8,
     gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   selectValueRow: {
     flex: 1,

@@ -7,7 +7,6 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { TEXT } from '@/constants/text';
 
 import { BiometricGate } from '@/components/biometric-gate';
 import { ToastProvider } from '@/components/toast-provider';
@@ -25,29 +24,11 @@ function AppStack() {
   const { isDarkMode } = useTheme();
   return (
     <NavThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="absence" options={{ headerShown: false }} />
-        <Stack.Screen name="meeting" options={{ headerShown: false }} />
-        <Stack.Screen name="repair-computer" options={{ headerShown: false }} />
-        <Stack.Screen name="notice-repair" options={{ headerShown: false }} />
-        <Stack.Screen name="calendar" options={{ headerShown: false }} />
-        <Stack.Screen name="news" options={{ headerShown: false }} />
-        <Stack.Screen name="news-detail" options={{ headerShown: false }} />
-        <Stack.Screen name="notification" options={{ headerShown: false }} />
-        <Stack.Screen name="timestamp" options={{ headerShown: false }} />
-        <Stack.Screen name="clear-auth" options={{ headerShown: false }} />
-        <Stack.Screen name="login-callback" options={{ headerShown: false }} />
-        <Stack.Screen name="openid-webview" options={{ headerShown: false }} />
-        <Stack.Screen name="oauth/callback" options={{ headerShown: false }} />
-        <Stack.Screen name="person-search" options={{ headerShown: false }} />
-        <Stack.Screen name="examiner" options={{ headerShown: false }} />
-        <Stack.Screen name="examinar" options={{ headerShown: false }} />
-        <Stack.Screen name="my-profile" options={{ headerShown: false }} />
-        <Stack.Screen name="settings" options={{ headerShown: false }} />
-        <Stack.Screen name="edit-profile-field" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: TEXT.SHARED_MODAL }} />
-      </Stack>
+      {/* Screens draw their own <NavTopBar/>, so the navigator header is off by
+          default. Listing routes one by one meant a new route that forgot its
+          entry got the native header *as well as* its NavTopBar — two stacked
+          bars. Opting out here makes that impossible. */}
+      <Stack screenOptions={{ headerShown: false }} />
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
     </NavThemeProvider>
   );

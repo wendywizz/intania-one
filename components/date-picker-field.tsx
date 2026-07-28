@@ -247,7 +247,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
     paddingHorizontal: 0,
     paddingVertical: 6,
   },

@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppToast } from '@/components/app-toast';
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -21,6 +21,9 @@ import { useAuth } from '@/context/AuthContext';
 import type { Person } from '@/models/types';
 import { getPersonnelSuggestions, uploadPersonPhoto } from '@/services/personService';
 import { getUnreadNotificationCount } from '@/services/notificationService';
+import { usePopAnimation } from '@/hooks/use-pop-animation';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const D = {
   bg: '#F5F6FA',
@@ -81,12 +84,16 @@ const ROW_ICON_MAP: Record<string, React.ComponentType<{ size: number; color: st
   email: Mail,
 };
 
-// Bare prefix icon, matching the absence detail rows (DetailRows): no coloured
-// circle, 22px, drawn in the inverse tone.
+/** Neutral grey tile behind a row's glyph, matching the settings/absence rows. */
 function RowIcon({ name }: { name: string }) {
   const c = useColors();
+  const styles = useThemedStyles(makeStyles);
   const IconComponent = ROW_ICON_MAP[name];
-  return IconComponent ? <IconComponent size={22} color={c.inverse} /> : null;
+  return (
+    <View style={styles.rowIconCircle}>
+      {IconComponent ? <IconComponent size={18} color={c.text} /> : null}
+    </View>
+  );
 }
 
 export default function MyProfileScreen() {
@@ -106,6 +113,7 @@ export default function MyProfileScreen() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoToastMessage, setPhotoToastMessage] = useState('');
   const [photoToastType, setPhotoToastType] = useState<'success' | 'error'>('success');
+  const photoMenuAnim = usePopAnimation(showPhotoMenu);
 
   const photoUrl = staffId
     ? `${ENDPOINTS.photoBase}${encodeURIComponent(staffId)}.jpg`
@@ -143,7 +151,7 @@ export default function MyProfileScreen() {
     setShowPhotoMenu(false);
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission required', 'Camera access is needed to take a photo.');
+      Alert.alert(TEXT.PROFILE_PHOTO_PERMISSION_TITLE, TEXT.PROFILE_PHOTO_CAMERA_PERMISSION);
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -161,7 +169,7 @@ export default function MyProfileScreen() {
     setShowPhotoMenu(false);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission required', 'Photo library access is needed to choose a photo.');
+      Alert.alert(TEXT.PROFILE_PHOTO_PERMISSION_TITLE, TEXT.PROFILE_PHOTO_LIBRARY_PERMISSION);
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -185,10 +193,10 @@ export default function MyProfileScreen() {
     try {
       await uploadPersonPhoto(staffId, uri);
       setPhotoToastType('success');
-      setPhotoToastMessage('อัปโหลดรูปภาพสำเร็จ');
+      setPhotoToastMessage(TEXT.PROFILE_PHOTO_UPLOAD_SUCCESS);
     } catch (error) {
       setPhotoToastType('error');
-      setPhotoToastMessage(error instanceof Error ? error.message : 'อัปโหลดรูปภาพไม่สำเร็จ');
+      setPhotoToastMessage(error instanceof Error ? error.message : TEXT.PROFILE_PHOTO_UPLOAD_FAILED);
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -218,7 +226,7 @@ export default function MyProfileScreen() {
         rightContent={
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Notifications"
+            accessibilityLabel={TEXT.PROFILE_NOTIFICATIONS_A11Y}
             onPress={() => router.push('/notification')}
             style={styles.bellBtn}
           >
@@ -241,7 +249,7 @@ export default function MyProfileScreen() {
           <View style={styles.avatarSection}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Change profile photo"
+              accessibilityLabel={TEXT.PROFILE_PHOTO_CHANGE_A11Y}
               onPress={() => setShowPhotoMenu(true)}
               style={styles.avatarPressable}
             >
@@ -266,20 +274,21 @@ export default function MyProfileScreen() {
             </Pressable>
             <ThemedText style={styles.heroName}>{name}</ThemedText>
             {position ? <ThemedText style={styles.heroPosition}>{position}</ThemedText> : null}
-            {staffId ? <ThemedText style={styles.heroStaffId}>ID: {staffId}</ThemedText> : null}
+            {staffId ? <ThemedText style={styles.heroStaffId}>{TEXT.PROFILE_STAFF_ID_PREFIX}{staffId}</ThemedText> : null}
           </View>
 
           {/* ── Photo context menu ─────────────────────────────────────────── */}
           <Modal
             transparent
-            visible={showPhotoMenu}
-            animationType="slide"
+            visible={photoMenuAnim.isMounted}
+            animationType="none"
             onRequestClose={() => setShowPhotoMenu(false)}
           >
+            <Animated.View style={[styles.menuFill, photoMenuAnim.backdropStyle]}>
             <Pressable style={styles.menuOverlay} onPress={() => setShowPhotoMenu(false)}>
-              <Pressable accessibilityRole="none" onPress={(e) => e.stopPropagation()} style={styles.menuSheet}>
+              <AnimatedPressable accessibilityRole="none" onPress={(e) => e.stopPropagation()} style={[styles.menuSheet, photoMenuAnim.panelStyle]}>
                 <View style={styles.menuHandle} />
-                <ThemedText style={styles.menuTitle}>Profile Photo</ThemedText>
+                <ThemedText style={styles.menuTitle}>{TEXT.PROFILE_PHOTO_MENU_TITLE}</ThemedText>
 
                 <Pressable
                   style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
@@ -289,7 +298,7 @@ export default function MyProfileScreen() {
                   <View style={styles.menuItemIcon}>
                     <Camera size={20} color={c.primary} />
                   </View>
-                  <ThemedText style={styles.menuItemText}>Take Photo</ThemedText>
+                  <ThemedText style={styles.menuItemText}>{TEXT.PROFILE_PHOTO_TAKE}</ThemedText>
                 </Pressable>
 
                 <View style={styles.menuDivider} />
@@ -302,7 +311,7 @@ export default function MyProfileScreen() {
                   <View style={styles.menuItemIcon}>
                     <Images size={20} color={c.primary} />
                   </View>
-                  <ThemedText style={styles.menuItemText}>Choose from Library</ThemedText>
+                  <ThemedText style={styles.menuItemText}>{TEXT.PROFILE_PHOTO_LIBRARY}</ThemedText>
                 </Pressable>
 
                 {(localPhotoUri || personPhotoUri || photoUrl) ? (
@@ -316,7 +325,7 @@ export default function MyProfileScreen() {
                       <View style={styles.menuItemIcon}>
                         <Trash2 size={20} color="#DC2626" />
                       </View>
-                      <ThemedText style={[styles.menuItemText, styles.menuItemDestructive]}>Remove Photo</ThemedText>
+                      <ThemedText style={[styles.menuItemText, styles.menuItemDestructive]}>{TEXT.PROFILE_PHOTO_REMOVE}</ThemedText>
                     </Pressable>
                   </>
                 ) : null}
@@ -326,10 +335,11 @@ export default function MyProfileScreen() {
                   onPress={() => setShowPhotoMenu(false)}
                   accessibilityRole="button"
                 >
-                  <ThemedText style={styles.menuCancelText}>Cancel</ThemedText>
+                  <ThemedText style={styles.menuCancelText}>{TEXT.CANCEL}</ThemedText>
                 </Pressable>
-              </Pressable>
+              </AnimatedPressable>
             </Pressable>
+            </Animated.View>
           </Modal>
 
           {/* ── Photo confirm modal ───────────────────────────────────────── */}
@@ -341,7 +351,7 @@ export default function MyProfileScreen() {
           >
             <View style={styles.confirmPhotoBackdrop}>
               <View style={styles.confirmPhotoSheet}>
-                <ThemedText style={styles.confirmPhotoTitle}>ใช้รูปภาพนี้?</ThemedText>
+                <ThemedText style={styles.confirmPhotoTitle}>{TEXT.PROFILE_PHOTO_CONFIRM_TITLE}</ThemedText>
 
                 <View style={styles.confirmPhotoPreviewRing}>
                   {pendingPhotoUri ? (
@@ -354,7 +364,7 @@ export default function MyProfileScreen() {
                 </View>
 
                 <ThemedText style={styles.confirmPhotoSubtitle}>
-                  รูปภาพจะถูกอัปโหลดเป็นรูปโปรไฟล์ของคุณ
+                  {TEXT.PROFILE_PHOTO_CONFIRM_SUBTITLE}
                 </ThemedText>
 
                 <View style={styles.confirmPhotoActions}>
@@ -363,14 +373,14 @@ export default function MyProfileScreen() {
                     onPress={() => setPendingPhotoUri(null)}
                     accessibilityRole="button"
                   >
-                    <ThemedText style={styles.confirmPhotoCancelText}>ยกเลิก</ThemedText>
+                    <ThemedText style={styles.confirmPhotoCancelText}>{TEXT.CANCEL}</ThemedText>
                   </Pressable>
                   <Pressable
                     style={({ pressed }) => [styles.confirmPhotoConfirmBtn, pressed && { opacity: 0.85 }]}
                     onPress={handleConfirmPhoto}
                     accessibilityRole="button"
                   >
-                    <ThemedText style={styles.confirmPhotoConfirmText}>ใช้รูปนี้</ThemedText>
+                    <ThemedText style={styles.confirmPhotoConfirmText}>{TEXT.PROFILE_PHOTO_CONFIRM_ACCEPT}</ThemedText>
                   </Pressable>
                 </View>
               </View>
@@ -379,14 +389,14 @@ export default function MyProfileScreen() {
 
           {/* ── Personal Information ───────────────────────────────────────── */}
           <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>Personal Information</ThemedText>
+            <ThemedText style={styles.sectionTitle}>{TEXT.PROFILE_SECTION_INFO}</ThemedText>
 
             <View style={styles.infoCard}>
               {department ? (
                 <View style={styles.infoRow}>
                   <RowIcon name="place" />
                   <View style={styles.infoBody}>
-                    <ThemedText style={styles.infoLabel}>DEPARTMENT</ThemedText>
+                    <ThemedText style={styles.infoLabel}>{TEXT.PROFILE_FIELD_DEPARTMENT}</ThemedText>
                     <ThemedText style={styles.infoValue}>{department}</ThemedText>
                   </View>
                 </View>
@@ -402,7 +412,7 @@ export default function MyProfileScreen() {
                   >
                     <RowIcon name="phone" />
                     <View style={styles.infoBody}>
-                      <ThemedText style={styles.infoLabel}>PHONE NUMBER</ThemedText>
+                      <ThemedText style={styles.infoLabel}>{TEXT.PROFILE_FIELD_PHONE}</ThemedText>
                       <ThemedText style={styles.infoValue}>{phone}</ThemedText>
                     </View>
                     <ChevronRight size={20} color={c.textMuted} />
@@ -420,7 +430,7 @@ export default function MyProfileScreen() {
                   >
                     <RowIcon name="email" />
                     <View style={styles.infoBody}>
-                      <ThemedText style={styles.infoLabel}>EMAIL ADDRESS</ThemedText>
+                      <ThemedText style={styles.infoLabel}>{TEXT.PROFILE_FIELD_EMAIL}</ThemedText>
                       <ThemedText style={styles.infoValue} numberOfLines={1}>{email}</ThemedText>
                     </View>
                     <ChevronRight size={20} color={c.textMuted} />
@@ -502,6 +512,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
 
   // ── Photo context menu ───────────────────────────────────────────────────────
+  menuFill: { flex: 1 },
   menuOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -629,6 +640,15 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     height: 1,
     backgroundColor: c.border,
     marginHorizontal: 16,
+  },
+  rowIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: c.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   infoBody: { flex: 1, gap: 2 },
   infoLabel: {

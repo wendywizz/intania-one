@@ -257,7 +257,9 @@ export default function ApproveDetailScreen() {
   const goToDecision = (status: "1" | "2") => {
     navPush({
       pathname: "/absence/approve-reason",
-      params: { detail: detailId, status },
+      // `detail` is encoded and carries no staff_id, so the requester's is
+      // forwarded separately — it is what the decision notification is sent to.
+      params: { detail: detailId, status, requestStaffId: requester.staffId ?? "" },
     } as Parameters<typeof navPush>[0]);
   };
 

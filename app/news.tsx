@@ -194,7 +194,12 @@ export default function NewsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.HOME_NEWS_SECTION_TITLE} titleInNavBar tone="primary" />
+      <ScreenHeader
+        title={TEXT.HOME_NEWS_SECTION_TITLE}
+        titleInNavBar
+        tone="primary"
+        showHomeButton={false}
+      />
       <View style={styles.content}>
         {renderContent()}
       </View>

@@ -307,17 +307,28 @@ export async function approvingHistoryData(
 
 /** Save an approval decision for a leave request the current user must approve.
  * `detail` is the encoded id from the approving list item; `status` is "1"
- * (approve) or "2" (reject); `reason` is the approver's note. */
+ * (approve) or "2" (reject); `reason` is the approver's note.
+ *
+ * `requestStaffId` is the requester's university staff_id. `detail` is encoded
+ * and carries no staff_id, so this is what lets the backend push the decision
+ * back to whoever asked for the leave — omitting it silently costs them the
+ * notification. */
 export async function approveSaveData(
   detail: string,
   status: "1" | "2",
   reason: string,
+  requestStaffId?: string,
 ): Promise<MutationResponse> {
   const url = createabsenceUrl("/approve-save");
   const jsonData = await requestJson(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ detail, status, reason }),
+    body: JSON.stringify({
+      detail,
+      status,
+      reason,
+      ...(requestStaffId ? { request_staff_id: requestStaffId } : {}),
+    }),
   });
   ensureSuccess(jsonData);
 

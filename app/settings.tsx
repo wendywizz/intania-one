@@ -1,12 +1,15 @@
 import Constants from 'expo-constants';
-import { Bell, ChevronRight, KeyRound, ScanFace, Moon, SunMoon } from 'lucide-react-native';
-import { Alert, AppState, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Bell, ChevronRight, KeyRound, LockKeyhole, ScanFace, Moon, SunMoon } from 'lucide-react-native';
+import { Alert, AppState, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
 
 import { NavTopBar } from '@/components/nav-top-bar';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Toggle } from '@/components/ui/toggle';
+import { navReplace } from '@/utils/navigation';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
@@ -27,8 +30,10 @@ import {
 } from '@/services/appPasswordService';
 import {
   authenticateWithBiometrics,
+  describeAuthError,
   getBiometricEnabled,
   getBiometricSupport,
+  isCancelledAttempt,
   setBiometricEnabled,
   type BiometricSupport,
 } from '@/services/biometricService';
@@ -43,6 +48,9 @@ const ICON_MAP: Record<string, React.ComponentType<{ size: number; color: string
   notifications: Bell,
   fingerprint: ScanFace,
   password: KeyRound,
+  // Distinct from `password`: the two sit next to each other in the password
+  // section, so the same key glyph twice would read as one repeated row.
+  'password-change': LockKeyhole,
   'dark-mode': Moon,
   'auto-theme': SunMoon,
 };
@@ -74,6 +82,8 @@ export default function SettingsScreen() {
   const [biometricLoading, setBiometricLoading] = useState(true);
   const [passwordEnabled, setPasswordEnabledState] = useState(false);
   const [passwordExists, setPasswordExists] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // The OS permission is the real switch — ours only narrows it. Re-read both
   // whenever the user could have changed the OS setting behind our back.
@@ -157,11 +167,28 @@ export default function SettingsScreen() {
 
     // Prove the *scan* works before promising it at the next launch — a device
     // passcode here would enable a lock the user may not be able to open.
-    const { success } = await authenticateWithBiometrics(
+    const { success, error, detail } = await authenticateWithBiometrics(
       TEXT.BIOMETRIC_ENABLE_PROMPT,
       TEXT.BIOMETRIC_LOCK_CANCEL,
     );
-    if (!success) return;
+    if (!success) {
+      // Silence here is what made this switch look broken: the user taps it, the
+      // prompt fails or never appears, and the switch flicks back with no reason
+      // given. A deliberate dismissal needs no explanation; anything else does —
+      // and the reason has to be specific, because "try again" is wrong advice
+      // for a lockout or for a build that cannot show the prompt at all.
+      if (!isCancelledAttempt(error)) {
+        // Development builds append the raw code: an unmapped failure otherwise
+        // shows the same generic sentence as every other one, which is exactly
+        // what made this hard to diagnose.
+        const message = describeAuthError(error);
+        Alert.alert(
+          TEXT.BIOMETRIC_UNAVAILABLE_TITLE,
+          __DEV__ && detail ? `${message}\n\n[${detail}]` : message,
+        );
+      }
+      return;
+    }
 
     await setBiometricEnabled(true);
     setBiometricEnabledState(true);
@@ -224,21 +251,24 @@ export default function SettingsScreen() {
     }
   }
 
-  function handleLogout() {
-    Alert.alert(
-      TEXT.SETTINGS_LOGOUT,
-      TEXT.SETTINGS_LOGOUT_CONFIRM,
-      [
-        { text: TEXT.CANCEL, style: 'cancel' },
-        { text: TEXT.SETTINGS_LOGOUT, style: 'destructive', onPress: () => signOut() },
-      ],
-    );
+  // Signing out leaves this screen showing settings that belong to nobody, so it
+  // hands back to Home. `navReplace` rather than push: the settings screen must
+  // not stay in the stack for a back gesture to return to.
+  async function handleConfirmLogout() {
+    setIsLoggingOut(true);
+    try {
+      await signOut();
+      navReplace('/');
+    } finally {
+      setIsLoggingOut(false);
+      setIsLogoutConfirmOpen(false);
+    }
   }
 
   return (
     <ThemedView style={styles.container} lightColor={c.background} darkColor={c.background}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.SETTINGS_TITLE} tone="primary" />
+      <NavTopBar title={TEXT.SETTINGS_TITLE} tone="primary" showHomeButton={false} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
@@ -253,12 +283,10 @@ export default function SettingsScreen() {
                 <ThemedText style={styles.rowTitle}>{TEXT.SETTINGS_NOTIFICATIONS_TITLE}</ThemedText>
                 <ThemedText style={styles.rowSub}>{TEXT.SETTINGS_NOTIFICATIONS_SUB}</ThemedText>
               </View>
-              <Switch
+              <Toggle
                 value={notificationsEnabled}
                 onValueChange={handleNotificationsToggle}
                 disabled={notificationsLoading}
-                trackColor={{ false: c.borderStrong, true: c.primary }}
-                thumbColor="#FFFFFF"
               />
             </View>
           </View>
@@ -279,42 +307,23 @@ export default function SettingsScreen() {
                 </ThemedText>
                 <ThemedText style={styles.rowSub}>{TEXT.SETTINGS_PASSWORD_UNLOCK_SUB}</ThemedText>
               </View>
-              <Switch
+              <Toggle
                 value={passwordEnabled}
                 onValueChange={handlePasswordToggle}
-                trackColor={{ false: c.borderStrong, true: c.primary }}
-                thumbColor="#FFFFFF"
               />
             </View>
 
-            <View style={[styles.row, passwordExists ? styles.rowDivider : null]}>
-              <IconCircle name="fingerprint" />
-              <View style={styles.rowBody}>
-                <ThemedText style={styles.rowTitle}>{TEXT.SETTINGS_BIOMETRIC_TITLE}</ThemedText>
-                <ThemedText style={styles.rowSub}>
-                  {biometricSupport && !biometricSupport.usable
-                    ? TEXT.BIOMETRIC_NO_HARDWARE_MESSAGE
-                    : biometricSupport?.label
-                      ? `${TEXT.SETTINGS_BIOMETRIC_SUB_PREFIX}${biometricSupport.label}`
-                      : TEXT.SETTINGS_BIOMETRIC_SUB}
-                </ThemedText>
-              </View>
-              <Switch
-                value={biometricEnabled}
-                onValueChange={handleBiometricToggle}
-                disabled={biometricLoading || !biometricSupport?.usable}
-                trackColor={{ false: c.borderStrong, true: c.primary }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-
-            {passwordExists ? (
+            {/* Directly under the toggle it belongs to — changing the passcode is
+                part of that setting, not a peer of the biometric one. Hidden
+                while the option is off: a passcode that unlocks nothing is not
+                worth offering to change, even if one is still stored. */}
+            {passwordEnabled && passwordExists ? (
               <Pressable
                 accessibilityRole="button"
-                style={styles.row}
+                style={[styles.row, styles.rowDivider]}
                 onPress={() => router.push('/create-password')}
               >
-                <IconCircle name="password" />
+                <IconCircle name="password-change" />
                 <View style={styles.rowBody}>
                   <ThemedText style={styles.rowTitle}>
                     {TEXT.SETTINGS_PASSWORD_CHANGE_TITLE}
@@ -326,6 +335,26 @@ export default function SettingsScreen() {
                 <ChevronRight size={18} color={c.textFaint} />
               </Pressable>
             ) : null}
+
+            {/* Last row of the card, so it never draws a bottom divider. */}
+            <View style={styles.row}>
+              <IconCircle name="fingerprint" />
+              <View style={styles.rowBody}>
+                <ThemedText style={styles.rowTitle}>{TEXT.SETTINGS_BIOMETRIC_TITLE}</ThemedText>
+                <ThemedText style={styles.rowSub}>
+                  {biometricSupport && !biometricSupport.usable
+                    ? TEXT.BIOMETRIC_NO_HARDWARE_MESSAGE
+                    : biometricSupport?.label
+                      ? `${TEXT.SETTINGS_BIOMETRIC_SUB_PREFIX}${biometricSupport.label}`
+                      : TEXT.SETTINGS_BIOMETRIC_SUB}
+                </ThemedText>
+              </View>
+              <Toggle
+                value={biometricEnabled}
+                onValueChange={handleBiometricToggle}
+                disabled={biometricLoading || !biometricSupport?.usable}
+              />
+            </View>
           </View>
         </View>
 
@@ -350,11 +379,9 @@ export default function SettingsScreen() {
                   {isAutoTheme ? TEXT.SETTINGS_DARK_SUB_AUTO : TEXT.SETTINGS_DARK_SUB}
                 </ThemedText>
               </View>
-              <Switch
+              <Toggle
                 value={isDarkMode}
                 onValueChange={toggleDarkMode}
-                trackColor={{ false: c.borderStrong, true: c.primary }}
-                thumbColor="#FFFFFF"
               />
             </View>
 
@@ -364,11 +391,9 @@ export default function SettingsScreen() {
                 <ThemedText style={styles.rowTitle}>{TEXT.SETTINGS_AUTO_THEME_TITLE}</ThemedText>
                 <ThemedText style={styles.rowSub}>{TEXT.SETTINGS_AUTO_THEME_SUB}</ThemedText>
               </View>
-              <Switch
+              <Toggle
                 value={isAutoTheme}
                 onValueChange={toggleAutoTheme}
-                trackColor={{ false: c.borderStrong, true: c.primary }}
-                thumbColor="#FFFFFF"
               />
             </View>
           </View>
@@ -377,11 +402,11 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Button
             title={TEXT.SETTINGS_LOGOUT}
-            variant="danger"
+            variant="dangerOutline"
             size="lg"
             icon="logout"
             fullWidth
-            onPress={handleLogout}
+            onPress={() => setIsLogoutConfirmOpen(true)}
           />
           <ThemedText style={styles.versionText}>
             {`${TEXT.SETTINGS_APP_VERSION} ${APP_VERSION}`}
@@ -389,6 +414,19 @@ export default function SettingsScreen() {
         </View>
 
       </ScrollView>
+
+      <ConfirmDialog
+        visible={isLogoutConfirmOpen}
+        title={TEXT.SETTINGS_LOGOUT}
+        message={TEXT.SETTINGS_LOGOUT_CONFIRM}
+        confirmLabel={TEXT.SETTINGS_LOGOUT}
+        cancelLabel={TEXT.CANCEL}
+        icon="logout"
+        destructive
+        loading={isLoggingOut}
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setIsLogoutConfirmOpen(false)}
+      />
     </ThemedView>
   );
 }

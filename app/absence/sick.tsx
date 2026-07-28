@@ -1,6 +1,7 @@
 ﻿import { TEXT } from "@/constants/text";
-import { CloudUpload, Eye, Paperclip, X } from 'lucide-react-native';
+import { Camera, CloudUpload, Eye, FileText, Images, Paperclip, X } from 'lucide-react-native';
 import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { openBrowserAsync } from "expo-web-browser";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -14,7 +15,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   TextInput,
   View,
 } from "react-native";
@@ -22,7 +22,9 @@ import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/c
 
 import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
+import { Sheet } from "@/components/ui/sheet";
 import { TipAlert } from "@/components/ui/tip-alert";
+import { Toggle } from "@/components/ui/toggle";
 import { useHolidays } from "@/hooks/use-holidays";
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
@@ -443,6 +445,29 @@ function isImageFile(uri: string, fileName: string, mimeType?: string) {
   );
 }
 
+/**
+ * ImagePicker and DocumentPicker describe a picked file differently — a photo
+ * has `fileName`/`fileSize`, a document has `name`/`size`. Everything downstream
+ * (the file card, the preview, the upload body) already speaks DocumentPicker's
+ * shape, so a photo is translated once here rather than teaching each of them
+ * both dialects.
+ */
+function imageAssetToDocumentAsset(
+  asset: ImagePicker.ImagePickerAsset,
+): DocumentPicker.DocumentPickerAsset {
+  const mimeType = asset.mimeType || "image/jpeg";
+
+  return {
+    uri: asset.uri,
+    // A camera capture usually arrives with no name at all.
+    name: asset.fileName || `medical-certificate.${mimeType.split("/")[1] || "jpg"}`,
+    mimeType,
+    size: asset.fileSize,
+    lastModified: Date.now(),
+    file: asset.file,
+  };
+}
+
 function createUploadFile(asset: DocumentPicker.DocumentPickerAsset): UploadableFile {
   if (Platform.OS === "web" && asset.file) {
     return asset.file;
@@ -494,6 +519,9 @@ export default function SickScreen() {
   const [hasMedicalCert, setHasMedicalCert] = useState(false);
   const [selectedFile, setSelectedFile] =
     useState<DocumentPicker.DocumentPickerAsset | null>(null);
+  // Which of the three ways to attach a certificate — browse files, pick a photo,
+  // or take one — the user is choosing between.
+  const [isSourceMenuOpen, setIsSourceMenuOpen] = useState(false);
   const [openSelect, setOpenSelect] = useState<"approver" | "halfDay" | null>(
     null,
   );
@@ -690,14 +718,68 @@ export default function SickScreen() {
   }, [dateError, endDate, halfDay, startDate, startDateError, holidays.isHoliday]);
 
   const handlePickFile = useCallback(async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      copyToCacheDirectory: true,
-      multiple: false,
-      type: "*/*",
-    });
+    setIsSourceMenuOpen(false);
 
-    if (!result.canceled) {
-      setSelectedFile(result.assets[0] ?? null);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+        multiple: false,
+        type: "*/*",
+      });
+
+      if (!result.canceled) {
+        setSelectedFile(result.assets[0] ?? null);
+      }
+    } catch {
+      setToastMessage(TEXT.MEDIA_PICKER_FAILED);
+    }
+  }, []);
+
+  const handlePickFromLibrary = useCallback(async () => {
+    setIsSourceMenuOpen(false);
+
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setToastMessage(TEXT.MEDIA_LIBRARY_PERMISSION);
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        quality: 0.8,
+      });
+
+      // No cropping step here, unlike the profile photo: a certificate must be
+      // uploaded whole, and a fixed aspect ratio would cut part of it off.
+      if (!result.canceled && result.assets[0]) {
+        setSelectedFile(imageAssetToDocumentAsset(result.assets[0]));
+      }
+    } catch {
+      setToastMessage(TEXT.MEDIA_PICKER_FAILED);
+    }
+  }, []);
+
+  const handleTakePhoto = useCallback(async () => {
+    setIsSourceMenuOpen(false);
+
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        setToastMessage(TEXT.MEDIA_CAMERA_PERMISSION);
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedFile(imageAssetToDocumentAsset(result.assets[0]));
+      }
+    } catch {
+      setToastMessage(TEXT.MEDIA_PICKER_FAILED);
     }
   }, []);
 
@@ -1117,14 +1199,12 @@ export default function SickScreen() {
               <ThemedText style={styles.fieldLabel}>
                 {TEXT.ABSENCE_MEDICAL_CERTIFICATE_TOGGLE}
               </ThemedText>
-              <Switch
+              <Toggle
                 value={hasMedicalCert}
                 onValueChange={(value) => {
                   setHasMedicalCert(value);
                   if (!value) setSelectedFile(null);
                 }}
-                trackColor={{ false: '#E0E0E0', true: '#F4C4C4' }}
-                thumbColor={hasMedicalCert ? '#B33939' : '#BDBDBD'}
               />
             </View>
 
@@ -1158,7 +1238,7 @@ export default function SickScreen() {
                 ) : (
                   <Pressable
                     accessibilityRole="button"
-                    onPress={handlePickFile}
+                    onPress={() => setIsSourceMenuOpen(true)}
                     style={styles.uploadZone}
                   >
                     <CloudUpload size={30} color={c.primary} />
@@ -1421,6 +1501,72 @@ export default function SickScreen() {
         </View>
       </Modal>
 
+      {/* Where a certificate comes from. A phone user photographing the slip they
+          were just handed and a desktop user attaching a scanned PDF are both
+          normal, so neither is buried behind the other. */}
+      <Sheet
+        visible={isSourceMenuOpen}
+        onClose={() => setIsSourceMenuOpen(false)}
+        title={TEXT.ABSENCE_MEDICAL_CERTIFICATE_MENU_TITLE}
+        scroll={false}
+        contentStyle={styles.sourceSheet}
+        animation="pop"
+      >
+        <Pressable
+          accessibilityRole="button"
+          onPress={handleTakePhoto}
+          style={({ pressed }) => [styles.sourceItem, pressed && styles.sourceItemPressed]}
+        >
+          <View style={styles.sourceIcon}>
+            <Camera size={20} color={c.primary} />
+          </View>
+          <View style={styles.sourceTextWrap}>
+            <ThemedText style={styles.sourceLabel}>
+              {TEXT.ABSENCE_MEDICAL_CERTIFICATE_TAKE_PHOTO}
+            </ThemedText>
+            <ThemedText style={styles.sourceHint}>
+              {TEXT.ABSENCE_MEDICAL_CERTIFICATE_TAKE_PHOTO_HINT}
+            </ThemedText>
+          </View>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={handlePickFromLibrary}
+          style={({ pressed }) => [styles.sourceItem, pressed && styles.sourceItemPressed]}
+        >
+          <View style={styles.sourceIcon}>
+            <Images size={20} color={c.primary} />
+          </View>
+          <View style={styles.sourceTextWrap}>
+            <ThemedText style={styles.sourceLabel}>
+              {TEXT.ABSENCE_MEDICAL_CERTIFICATE_FROM_LIBRARY}
+            </ThemedText>
+            <ThemedText style={styles.sourceHint}>
+              {TEXT.ABSENCE_MEDICAL_CERTIFICATE_FROM_LIBRARY_HINT}
+            </ThemedText>
+          </View>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={handlePickFile}
+          style={({ pressed }) => [styles.sourceItem, pressed && styles.sourceItemPressed]}
+        >
+          <View style={styles.sourceIcon}>
+            <FileText size={20} color={c.primary} />
+          </View>
+          <View style={styles.sourceTextWrap}>
+            <ThemedText style={styles.sourceLabel}>
+              {TEXT.ABSENCE_MEDICAL_CERTIFICATE_FROM_FILE}
+            </ThemedText>
+            <ThemedText style={styles.sourceHint}>
+              {TEXT.ABSENCE_MEDICAL_CERTIFICATE_FROM_FILE_HINT}
+            </ThemedText>
+          </View>
+        </Pressable>
+      </Sheet>
+
       <AppToast
         message={toastMessage}
         type={toastType === "error" ? "error" : "success"}
@@ -1483,7 +1629,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 0,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   inputError: {
     borderBottomWidth: 1.5,
@@ -1499,7 +1645,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 8,
     textAlignVertical: "top",
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   dateRow: {
     flexDirection: "row",
@@ -1533,7 +1679,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 8,
     gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   selectText: {
     flex: 1,
@@ -1708,6 +1854,43 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     color: c.textFaint,
+  },
+  // Attachment-source sheet. Rows are 56pt+ tall so each is a comfortable target
+  // one-handed, which is how a photo of a certificate usually gets taken.
+  sourceSheet: {
+    paddingBottom: 4,
+  },
+  sourceItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 14,
+  },
+  sourceItemPressed: {
+    opacity: 0.6,
+  },
+  sourceIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: c.primarySoft,
+  },
+  sourceTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  sourceLabel: {
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: "600",
+    color: c.text,
+  },
+  sourceHint: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: c.textMuted,
   },
   selectedFileCard: {
     marginTop: 14,

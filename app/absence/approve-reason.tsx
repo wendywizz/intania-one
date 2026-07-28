@@ -27,9 +27,15 @@ export default function ApproveReasonScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
-  const params = useLocalSearchParams<{ detail?: string; status?: string }>();
+  const params = useLocalSearchParams<{
+    detail?: string;
+    status?: string;
+    requestStaffId?: string;
+  }>();
   const detail = firstParam(params.detail);
   const status: "1" | "2" = firstParam(params.status) === "2" ? "2" : "1";
+  // Who the decision gets pushed to; forwarded from the approve-detail screen.
+  const requestStaffId = firstParam(params.requestStaffId);
   const isApprove = status === "1";
 
   // Approve pre-fills "อนุมัติ"; reject starts empty so the approver must give a
@@ -67,7 +73,7 @@ export default function ApproveReasonScreen() {
     setToastType("");
 
     try {
-      const result = await approveSaveData(detail, status, reason.trim());
+      const result = await approveSaveData(detail, status, reason.trim(), requestStaffId);
       setToastType("success");
       setToastMessage(result.message || TEXT.ABSENCE_APPROVE_SUBMIT_SUCCESS);
       setTimeout(() => {

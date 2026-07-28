@@ -235,7 +235,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 8,
     gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   inputError: {
     borderBottomWidth: 1.5,
@@ -350,7 +350,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     marginBottom: 12,
     paddingVertical: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   searchInput: {
     flex: 1,

@@ -18,3 +18,4 @@ export { Collapsible } from './collapsible';
 export { MonthCalendar, type MonthCalendarProps } from './month-calendar';
 export { EventTimelineItem, type EventTimelineItemProps } from './event-timeline-item';
 export { PillButton, type PillButtonProps, type PillButtonVariant } from './pill-button';
+export { Toggle, type ToggleProps } from './toggle';

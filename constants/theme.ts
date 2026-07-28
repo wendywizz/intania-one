@@ -87,6 +87,13 @@ export type AppColors = {
   // Lines
   border: string;          // card borders / dividers
   borderStrong: string;    // heavier separators
+  /**
+   * Underline of an input control. Deliberately darker than `border`: a divider
+   * only has to hint at a boundary, but this line is the entire affordance that
+   * says "you can type here", and at `border` it was near-invisible on a real
+   * device screen.
+   */
+  inputBorder: string;
   // Brand
   primary: string;         // brand accent / primary actions
   primarySoft: string;     // soft brand tint (icon circles, chips)
@@ -147,6 +154,7 @@ export const LightColors: AppColors = {
   inverse: '#2E3134',
   border: '#E3E6EA',
   borderStrong: '#D3D8DE',
+  inputBorder: '#8E98A3',
   primary: '#B33939',
   primarySoft: '#F7EBEB',
   primaryDeep: '#8A2626',
@@ -177,6 +185,7 @@ export const DarkColors: AppColors = {
   inverse: '#E8EAED',
   border: '#2A333B',
   borderStrong: '#333E47',
+  inputBorder: '#5C6772',
   primary: '#E07A7A',
   primarySoft: 'rgba(224,122,122,0.18)',
   primaryDeep: '#7A2E2E',

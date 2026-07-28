@@ -561,7 +561,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 0,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   // Two lines of text (2 × 22 lineHeight) plus the vertical padding.
   inputMultiline: { minHeight: 60, textAlignVertical: 'top' },
@@ -576,7 +576,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 0,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   selectText: { flex: 1, color: c.text, fontSize: 16, fontFamily: AppFonts.psuRegular },
   chevron: { color: c.textMuted, fontSize: 18, lineHeight: 22 },

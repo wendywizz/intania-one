@@ -467,7 +467,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 0,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
+    borderBottomColor: c.inputBorder,
   },
   textArea: {
     minHeight: 60,

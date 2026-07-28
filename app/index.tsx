@@ -36,7 +36,12 @@ import { listExamTasks } from '@/services/examinarService';
 import { formatNewsDateTime } from '@/utils/date-format';
 import { navPush } from '@/utils/navigation';
 import { ENDPOINTS } from '@/constants/endpoints';
-import { USER_PLACEHOLDER } from '@/constants/images';
+import {
+  NAV_LOGO,
+  PSU_PASSPORT_BUTTON,
+  PSU_PASSPORT_BUTTON_ASPECT,
+  USER_PLACEHOLDER,
+} from '@/constants/images';
 
 // Scroll offsets at which the pinned mini header appears / disappears. The gap
 // between them is deliberate — it stops the bar flickering at the boundary.
@@ -180,24 +185,28 @@ function isExamUpcoming(task: ExamTask): boolean {
   return !isNaN(d.getTime()) && d >= today;
 }
 
-// A single upcoming-shift stat tile: label + count, presented like the
-// reference's featured "stat" tiles inside a white cover card.
-type ShiftTile = {
+// One outstanding thing to do — one tile. Not grouped: every tile is built and
+// sized identically, and the module lives in the icon + caption instead of in a
+// card header wrapped around it.
+type ShiftItem = {
   key: string;
+  /** What to do, e.g. 'งานใหม่'. */
   label: string;
+  /** Which module it belongs to, e.g. 'แจ้งซ่อมคอม · หัวหน้าช่าง'. */
+  caption: string;
   count: number;
   icon: IconName;
   onPress: () => void;
 };
 
-// A grouped sub-item row (repair roles, or absence own/approve). When a module
-// has more than one, its rows collapse into a single grouped card.
-type ShiftSub = {
-  key: string;
-  label: string;
-  count: number;
-  onPress: () => void;
-};
+// Icon per module, so the tile is identifiable before any of its text is read.
+const SHIFT_ICONS = {
+  repair: 'laptop',
+  absence: 'calendar-clock',
+  meeting: 'person.2.fill',
+  timestamp: 'clock.fill',
+  exam: 'checkmark.circle.fill',
+} as const satisfies Record<string, IconName>;
 
 type UpcomingShiftSectionProps = {
   data: ActiveSummaryData | null;
@@ -209,162 +218,158 @@ type UpcomingShiftSectionProps = {
   timestampApproval: { show: boolean; count: number };
 };
 
-// A grouped module card: a header (title + icon) over tappable sub-rows. Used by
-// any module with more than one sub-item (repair roles, absence own/approve).
-function ShiftGroupCard({ title, icon, subs }: { title: string; icon: IconName; subs: ShiftSub[] }) {
+// Module mark and count on top, what-to-do underneath. Every tile uses this one
+// layout at one size — the previous tile design special-cased the odd last tile
+// into a wide row with its own type scale, so the same item looked different
+// depending on where it landed in the grid.
+function ShiftTile({ item, width }: { item: ShiftItem; width: number }) {
   const m = useMinimal();
   const s = useMStyles(makeShiftStyles);
   return (
-    <View style={s.repairCard}>
-      <View style={s.repairHeader}>
-        <Text style={s.repairTitle}>{title}</Text>
-        <IconSymbol name={icon} size={20} color={m.accent} />
+    <Pressable
+      accessibilityRole="button"
+      onPress={item.onPress}
+      style={({ pressed }) => [
+        s.tile,
+        { width },
+        Platform.OS === 'web' ? ({ scrollSnapAlign: 'start' } as any) : null,
+        pressed && s.tilePressed,
+      ]}>
+      <View style={s.tileTop}>
+        <View style={s.tileIcon}>
+          <IconSymbol name={item.icon} size={18} color={m.accent} />
+        </View>
+        <Text style={s.tileCount}>{item.count}</Text>
       </View>
-      {subs.map((sub) => (
-        <Pressable
-          key={sub.key}
-          accessibilityRole="button"
-          onPress={sub.onPress}
-          style={({ pressed }) => [s.repairSub, pressed && s.tilePressed]}>
-          <Text numberOfLines={1} style={s.repairSubLabel}>{sub.label}</Text>
-          <View style={s.repairSubRight}>
-            <Text style={s.repairSubCount}>{sub.count}</Text>
-            <IconSymbol name="chevron.right" size={16} color={m.textFaint} />
-          </View>
-        </Pressable>
-      ))}
-    </View>
+      <View style={s.tileText}>
+        <Text numberOfLines={1} style={s.tileLabel}>{item.label}</Text>
+        <Text numberOfLines={2} style={s.tileCaption}>{item.caption}</Text>
+      </View>
+    </Pressable>
   );
 }
 
 function UpcomingShiftSection({ data, loading, error, onReload, upcomingExams, absenceApproval, timestampApproval }: UpcomingShiftSectionProps) {
   const m = useMinimal();
   const s = useMStyles(makeShiftStyles);
-  const tiles: ShiftTile[] = [];
-  const repairSubs: ShiftSub[] = [];
-  const absenceSubs: ShiftSub[] = [];
+  const { width: screenWidth } = useWindowDimensions();
+  // Two tiles plus a sliver of the third, so the row visibly continues past the
+  // edge. Capped so tiles don't balloon on a tablet.
+  const tileWidth = Math.min(190, Math.floor(screenWidth * 0.4));
 
-  if (data) {
-    // ── Repair computer: grouped card with role-specific sub-items ──────────
-    if (data.repairComputer.success) {
-      const repairTasks = data.repairComputer.tasks ?? [];
-      const countOf = (key: string) =>
-        repairTasks.find((task) => task.key === key)?.count ?? 0;
-      const addSub = (key: string, label: string, count: number, path: string) => {
-        if (count > 0) {
-          repairSubs.push({
-            key,
-            label,
-            count,
-            onPress: () => navPush(path as Parameters<typeof navPush>[0]),
-          });
-        }
-      };
+  // A tile with nothing outstanding is not worth showing, so the count check
+  // lives here rather than at each of the eleven call sites.
+  const tiles: ShiftItem[] = [];
+  const add = (item: ShiftItem) => {
+    if (item.count > 0) tiles.push(item);
+  };
+  const to = (path: string) => () => navPush(path as Parameters<typeof navPush>[0]);
 
-      // Informer: only the current job.
-      addSub('repair-informer', TEXT.HOME_SHIFT_CURRENT_JOB, countOf('user-current-job'),
-        '/repair-computer/current-job');
-      // Foreman: new job + current jobs (running / supply approvals).
-      addSub('repair-foreman-new', TEXT.HOME_SHIFT_NEW_JOB, countOf('foreman-new-job'),
-        '/repair-computer/foreman-new-job');
-      addSub('repair-foreman-current', TEXT.HOME_SHIFT_CURRENT_JOB,
-        countOf('foreman-running') + countOf('foreman-supply-approve'),
-        '/repair-computer/manage-job');
-      // Worker: new job + current jobs (in progress / awaiting supply).
-      addSub('repair-worker-new', TEXT.HOME_SHIFT_NEW_JOB, countOf('worker-new-job'),
-        '/repair-computer/worker-new-job');
-      addSub('repair-worker-current', TEXT.HOME_SHIFT_CURRENT_JOB,
-        countOf('worker-current-job') + countOf('worker-supply-wait'),
-        '/repair-computer/worker-current-job');
-    }
-
-    // ── Absence: own requests (all roles) + approvals (boss only). Multiple
-    //    entries collapse into one grouped card (like repair computer). ────────
-    if (data.absence.success) {
-      const ownCount =
-        (data.absence.pending?.length ?? 0) + (data.absence.cancelled?.length ?? 0);
-      if (ownCount > 0) {
-        absenceSubs.push({
-          key: 'absence-mine',
-          label: TEXT.HOME_SHIFT_MY_LEAVE,
-          count: ownCount,
-          onPress: () => navPush('/absence/my-leave' as Parameters<typeof navPush>[0]),
-        });
-      }
-    }
-    if (absenceApproval.show && absenceApproval.count > 0) {
-      absenceSubs.push({
-        key: 'absence-approve',
-        label: TEXT.HOME_SHIFT_APPROVE_LEAVE,
-        count: absenceApproval.count,
-        onPress: () => navPush('/absence/approve-leave' as Parameters<typeof navPush>[0]),
+  // ── Repair computer: one tile per role-specific queue ──────────────────────
+  if (data?.repairComputer.success) {
+    const repairTasks = data.repairComputer.tasks ?? [];
+    const countOf = (key: string) =>
+      repairTasks.find((task) => task.key === key)?.count ?? 0;
+    // No role in the caption. The summary reports one `role` per account, so
+    // only that role's keys come back with a count — the tiles below are already
+    // mutually exclusive in practice and naming the role would add nothing.
+    const repair = (key: string, label: string, count: number, path: string) =>
+      add({
+        key,
+        label,
+        caption: TEXT.REPAIR_COMPUTER_MENU_TITLE,
+        count,
+        icon: SHIFT_ICONS.repair,
+        onPress: to(path),
       });
-    }
-    // A single absence entry stays a tile; multiple collapse into a card below.
-    if (absenceSubs.length === 1) {
-      const only = absenceSubs[0];
-      tiles.push({
-        key: only.key,
-        label: only.label,
-        count: only.count,
-        icon: 'calendar-clock',
-        onPress: only.onPress,
-      });
-    }
 
-    // ── Meeting ─────────────────────────────────────────────────────────────
-    if (data.meeting.success && data.meeting.items.length > 0) {
-      tiles.push({
-        key: 'meeting',
-        label: TEXT.HOME_SHIFT_MEETINGS_TODAY,
-        count: data.meeting.items.length,
-        icon: 'person.2.fill',
-        onPress: () => navPush('/meeting' as Parameters<typeof navPush>[0]),
-      });
-    }
-
-    // ── Timestamp: own forgot-timestamp requests (all roles) ────────────────
-    if (data.timestamp.success && data.timestamp.items.length > 0) {
-      tiles.push({
-        key: 'timestamp-mine',
-        label: TEXT.HOME_SHIFT_TIMESTAMP,
-        count: data.timestamp.items.length,
-        icon: 'clock.fill',
-        onPress: () => navPush('/timestamp/forgot-timestamp' as Parameters<typeof navPush>[0]),
-      });
-    }
+    // Informer: only the current job.
+    repair('repair-informer', TEXT.HOME_SHIFT_CURRENT_JOB,
+      countOf('user-current-job'), '/repair-computer/current-job');
+    // Foreman: new job + current jobs (running / supply approvals).
+    repair('repair-foreman-new', TEXT.HOME_SHIFT_NEW_JOB,
+      countOf('foreman-new-job'), '/repair-computer/foreman-new-job');
+    repair('repair-foreman-current', TEXT.HOME_SHIFT_CURRENT_JOB,
+      countOf('foreman-running') + countOf('foreman-supply-approve'),
+      '/repair-computer/manage-job');
+    // Worker: new job + current jobs (in progress / awaiting supply).
+    repair('repair-worker-new', TEXT.HOME_SHIFT_NEW_JOB,
+      countOf('worker-new-job'), '/repair-computer/worker-new-job');
+    repair('repair-worker-current', TEXT.HOME_SHIFT_CURRENT_JOB,
+      countOf('worker-current-job') + countOf('worker-supply-wait'),
+      '/repair-computer/worker-current-job');
   }
 
-  // ── Timestamp approvals: boss/approver only ───────────────────────────────
-  if (timestampApproval.show && timestampApproval.count > 0) {
-    tiles.push({
+  // ── Absence: own requests (all roles) + approvals (boss only) ───────────────
+  if (data?.absence.success) {
+    add({
+      key: 'absence-mine',
+      label: TEXT.HOME_SHIFT_MY_LEAVE,
+      caption: TEXT.ABSENCE_TITLE,
+      count: (data.absence.pending?.length ?? 0) + (data.absence.cancelled?.length ?? 0),
+      icon: SHIFT_ICONS.absence,
+      onPress: to('/absence/my-leave'),
+    });
+  }
+  if (absenceApproval.show) {
+    add({
+      key: 'absence-approve',
+      label: TEXT.HOME_SHIFT_APPROVE_LEAVE,
+      caption: TEXT.ABSENCE_TITLE,
+      count: absenceApproval.count,
+      icon: SHIFT_ICONS.absence,
+      onPress: to('/absence/approve-leave'),
+    });
+  }
+
+  // ── Meeting ────────────────────────────────────────────────────────────────
+  if (data?.meeting.success) {
+    add({
+      key: 'meeting-today',
+      label: TEXT.HOME_SHIFT_MEETINGS_TODAY,
+      caption: TEXT.MEETING_MENU_TITLE,
+      count: data.meeting.items.length,
+      icon: SHIFT_ICONS.meeting,
+      onPress: to('/meeting'),
+    });
+  }
+
+  // ── Timestamp: own forgot-timestamp requests + approvals (boss only) ────────
+  if (data?.timestamp.success) {
+    add({
+      key: 'timestamp-mine',
+      label: TEXT.HOME_SHIFT_TIMESTAMP,
+      caption: TEXT.TIMESTAMP_TITLE,
+      count: data.timestamp.items.length,
+      icon: SHIFT_ICONS.timestamp,
+      onPress: to('/timestamp/forgot-timestamp'),
+    });
+  }
+  if (timestampApproval.show) {
+    add({
       key: 'timestamp-approve',
       label: TEXT.HOME_SHIFT_APPROVE_TIMESTAMP,
+      caption: TEXT.TIMESTAMP_TITLE,
       count: timestampApproval.count,
-      icon: 'checkmark.circle.fill',
-      onPress: () => navPush('/timestamp/approve' as Parameters<typeof navPush>[0]),
+      icon: SHIFT_ICONS.timestamp,
+      onPress: to('/timestamp/approve'),
     });
   }
 
   // ── Examinar: upcoming exams ───────────────────────────────────────────────
-  if (upcomingExams.length > 0) {
-    tiles.push({
-      key: 'exam',
-      label: TEXT.EXAMINAR_HEADER_TITLE,
-      count: upcomingExams.length,
-      icon: 'checkmark.circle.fill',
-      onPress: () => navPush('/examinar' as Parameters<typeof navPush>[0]),
-    });
-  }
-
-  // A single absence entry was folded into `tiles` above, so an absenceSubs
-  // count of 1 is not on its own something to show.
-  const isEmpty = repairSubs.length === 0 && absenceSubs.length <= 1 && tiles.length === 0;
+  add({
+    key: 'exam-upcoming',
+    label: TEXT.HOME_SHIFT_UPCOMING_EXAM,
+    caption: TEXT.EXAMINAR_HEADER_TITLE,
+    count: upcomingExams.length,
+    icon: SHIFT_ICONS.exam,
+    onPress: to('/examinar'),
+  });
 
   // Nothing pending: drop the whole section rather than showing an empty card.
   // Loading and error still render, so the section doesn't pop in and out while
   // fetching and the retry button stays reachable.
-  if (!loading && !error && isEmpty) return null;
+  if (!loading && !error && tiles.length === 0) return null;
 
   return (
     <View style={s.coverCard}>
@@ -389,53 +394,19 @@ function UpcomingShiftSection({ data, loading, error, onReload, upcomingExams, a
           </Pressable>
         </View>
       ) : (
-        <>
-          {repairSubs.length > 0 && (
-            <ShiftGroupCard title={TEXT.REPAIR_COMPUTER_MENU_TITLE} icon="laptop" subs={repairSubs} />
-          )}
-
-          {absenceSubs.length > 1 && (
-            <ShiftGroupCard title={TEXT.ABSENCE_TITLE} icon="calendar-clock" subs={absenceSubs} />
-          )}
-
-          {tiles.length > 0 && (
-            <View style={s.tileGrid}>
-              {tiles.map((tile, index) => {
-                const isFullRow =
-                  index === tiles.length - 1 && tiles.length % 2 === 1;
-                return (
-              <Pressable
-                key={tile.key}
-                accessibilityRole="button"
-                onPress={tile.onPress}
-                style={({ pressed }) => [
-                  s.tile,
-                  isFullRow && s.tileFull,
-                  pressed && s.tilePressed,
-                ]}>
-                {isFullRow ? (
-                  <>
-                    <Text numberOfLines={1} style={s.tileFullTitle}>{tile.label}</Text>
-                    <View style={s.tileFullRight}>
-                      <Text style={s.tileCountSm}>{tile.count}</Text>
-                      <IconSymbol name={tile.icon} size={40} color={m.textFaint} />
-                    </View>
-                  </>
-                ) : (
-                  <>
-                    <View style={s.tileHead}>
-                      <Text numberOfLines={2} style={s.tileLabel}>{tile.label}</Text>
-                      <IconSymbol name={tile.icon} size={18} color={m.textFaint} />
-                    </View>
-                    <Text style={s.tileCount}>{tile.count}</Text>
-                  </>
-                )}
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
-        </>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          snapToInterval={tileWidth + D.gap}
+          snapToAlignment="start"
+          disableIntervalMomentum
+          style={Platform.OS === 'web' ? ({ scrollSnapType: 'x mandatory' } as any) : undefined}
+          contentContainerStyle={s.tileRow}>
+          {tiles.map((tile) => (
+            <ShiftTile key={tile.key} item={tile} width={tileWidth} />
+          ))}
+        </ScrollView>
       )}
     </View>
   );
@@ -463,79 +434,21 @@ const makeShiftStyles = (m: M) => StyleSheet.create({
     lineHeight: 21,
     color: m.onCanvas,
   },
-  // Repair-computer grouped card: a module header over role-specific sub-rows.
-  repairCard: {
+  // One row that scrolls sideways. Tiles are equal height because the content
+  // container stretches them, so a two-line caption lifts the whole row rather
+  // than making one tile taller than its neighbours.
+  tileRow: {
+    gap: D.gap,
+    paddingRight: 4,
+  },
+  tile: {
+    minHeight: 132,
+    justifyContent: 'space-between',
+    gap: 14,
     backgroundColor: m.card,
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingBottom: 4,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: m.border,
-    shadowColor: m.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
-  },
-  repairHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-    paddingTop: 14,
-    paddingBottom: 12,
-  },
-  repairTitle: {
-    flex: 1,
-    fontFamily: F.medium,
-    fontSize: 15,
-    lineHeight: 20,
-    color: m.text,
-  },
-  repairSub: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    paddingVertical: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: m.border,
-  },
-  repairSubLabel: {
-    flex: 1,
-    fontFamily: F.regular,
-    fontSize: 14,
-    lineHeight: 19,
-    color: m.text,
-  },
-  repairSubRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  repairSubCount: {
-    fontFamily: F.medium,
-    fontSize: 16,
-    lineHeight: 20,
-    color: m.accent,
-  },
-  // Two-up grid of stat tiles inside the cover card.
-  tileGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  tile: {
-    flexGrow: 1,
-    flexBasis: '46%',
-    minHeight: 116,
-    justifyContent: 'space-between',
-    backgroundColor: m.card,
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom: 14,
-    gap: 12,
+    paddingVertical: 16,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: m.border,
     shadowColor: m.shadow,
@@ -547,57 +460,44 @@ const makeShiftStyles = (m: M) => StyleSheet.create({
   tilePressed: {
     opacity: 0.7,
   },
-  // Full-width row (the lone last tile of an odd grid): detail on the left,
-  // a larger icon anchoring the right, with a smaller count.
-  tileFull: {
+  tileTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 88,
-    paddingTop: 22,
-    paddingBottom: 22,
-    gap: 16,
+    gap: 8,
   },
-  tileFullTitle: {
-    flex: 1,
-    fontFamily: F.medium,
-    fontSize: 16,
-    lineHeight: 21,
-    color: m.text,
-  },
-  tileFullRight: {
-    flexDirection: 'row',
+  tileIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: m.accentSoft,
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  tileCountSm: {
-    fontFamily: F.semibold,
-    fontSize: 24,
-    lineHeight: 28,
-    letterSpacing: -0.4,
-    color: m.accent,
-  },
-  tileHead: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  tileLabel: {
-    flex: 1,
-    fontFamily: F.regular,
-    fontSize: 13,
-    lineHeight: 18,
-    color: m.textMuted,
-  },
-  // KPI-style metric: a solid, bold count in corporate navy — the number reads
-  // like a dashboard figure, with the module as its muted caption above.
+  // Big enough to be the tile's anchor, small enough that a 2-digit count still
+  // fits beside the icon on a narrow phone.
   tileCount: {
     fontFamily: F.semibold,
-    fontSize: 34,
-    lineHeight: 38,
+    fontSize: 26,
+    lineHeight: 30,
     letterSpacing: -0.4,
     color: m.accent,
+  },
+  tileText: {
+    gap: 2,
+  },
+  tileLabel: {
+    fontFamily: F.semibold,
+    fontSize: 14,
+    lineHeight: 20,
+    color: m.text,
+  },
+  tileCaption: {
+    fontFamily: F.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: m.textMuted,
   },
   stateWrap: {
     flexDirection: 'row',
@@ -674,7 +574,7 @@ export default function HomeScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const processedCallbackRef = useRef('');
-  const { completeWebSignIn, loading: isAuthLoading, signIn, signOut, user: authUser } = useAuth();
+  const { completeWebSignIn, eligibility, loading: isAuthLoading, signIn, signOut, user: authUser } = useAuth();
   const completeWebSignInRef = useRef(completeWebSignIn);
 
   useEffect(() => {
@@ -713,9 +613,14 @@ export default function HomeScreen() {
     useCallback(() => {
       let isActive = true;
 
-      void getUnreadNotificationCount().then((count) => {
-        if (isActive) setUnreadCount(count);
-      });
+      // Signed out there is no bell to badge, and the count is per-user anyway.
+      if (authUser) {
+        void getUnreadNotificationCount().then((count) => {
+          if (isActive) setUnreadCount(count);
+        });
+      } else {
+        setUnreadCount(0);
+      }
 
       setIsNewsLoading(true);
       void staffNewsFeed().then((items) => {
@@ -731,7 +636,7 @@ export default function HomeScreen() {
       });
 
       return () => { isActive = false; };
-    }, []),
+    }, [authUser]),
   );
 
   useFocusEffect(
@@ -739,7 +644,9 @@ export default function HomeScreen() {
       let isActive = true;
       const staffId = String(authUser?.staffId ?? '').trim();
       const userId = String(authUser?.userId ?? authUser?.staffId ?? '').trim();
-      if (!staffId) return;
+      // Someone outside the faculty sees none of this, so there is nothing to
+      // fetch — skip the round trip to every module's summary API.
+      if (!staffId || eligibility === 'denied') return;
 
       setIsActiveSummaryLoading(true);
       setIsActiveSummaryError(false);
@@ -775,7 +682,7 @@ export default function HomeScreen() {
       });
 
       return () => { isActive = false; };
-    }, [authUser]),
+    }, [authUser, eligibility]),
   );
 
   const reloadActiveSummary = useCallback(() => {
@@ -807,7 +714,9 @@ export default function HomeScreen() {
       staffNewsFeed()
         .then((items) => { setNewsItems(items); setIsNewsError(false); })
         .catch(() => { setNewsItems([]); setIsNewsError(true); }),
-      getUnreadNotificationCount().then(setUnreadCount).catch(() => {}),
+      staffId
+        ? getUnreadNotificationCount().then(setUnreadCount).catch(() => {})
+        : Promise.resolve(),
       staffId
         ? getActiveSummary(staffId, userId)
             .then((data) => { setActiveSummary(data); setIsActiveSummaryError(false); })
@@ -888,53 +797,18 @@ export default function HomeScreen() {
     );
   }
 
-  // ─── Unauthenticated ────────────────────────────────────────────────────────
+  // ─── Home ───────────────────────────────────────────────────────────────────
+  // Signed out, the same screen is shown with everything personal taken out of
+  // it: no greeting, no settings or notifications, no pending work and no module
+  // menu. What is left — the news feed — is public anyway, and a login button
+  // takes the place of the header actions.
 
-  if (!authUser) {
-    return (
-      <View style={styles.container}>
-        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-        <View style={styles.welcomeContent}>
-          <View style={styles.welcomeTextGroup}>
-            <Text style={styles.welcomeTitle}>{TEXT.HOME_TITLE}</Text>
-            <Text style={styles.welcomeDesc}>{TEXT.HOME_WELCOME_DESCRIPTION}</Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleLogin}
-            style={({ pressed }) => [styles.welcomeLoginButton, pressed && styles.pressed]}>
-            <Text style={styles.welcomeLoginText}>{TEXT.AUTH_LOGIN}</Text>
-          </Pressable>
-        </View>
-
-        <Modal
-          transparent
-          visible={Boolean(authCallbackErrorMessage)}
-          animationType="fade"
-          onRequestClose={() => setAuthCallbackErrorMessage('')}>
-          <Pressable style={styles.backdrop} onPress={() => setAuthCallbackErrorMessage('')}>
-            <Pressable accessibilityRole="none" onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modal}>
-                <Text style={styles.modalTitle}>{TEXT.AUTH_LOGIN_FAILED}</Text>
-                <Text style={styles.modalMessage}>{authCallbackErrorMessage}</Text>
-                <View style={styles.modalActions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => setAuthCallbackErrorMessage('')}
-                    style={styles.btnPrimary}>
-                    <Text style={styles.btnPrimaryText}>{TEXT.SHARED_OK}</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </Pressable>
-          </Pressable>
-        </Modal>
-      </View>
-    );
-  }
-
-  // ─── Authenticated ──────────────────────────────────────────────────────────
-
+  // Signed in but not Faculty of Engineering staff: the account is real, so there
+  // is nothing to log in to and no login button to offer — but none of the
+  // modules apply to them either. They get the stripped-down screen with an
+  // explanation in place of the sign-in call to action.
+  const isDenied = Boolean(authUser) && eligibility === 'denied';
+  const isGuest = !authUser || isDenied;
   const displayedNews = newsItems.slice(0, 3);
   const menuCardWidth = Math.floor((screenWidth - D.pad * 2 - D.gap * 2) / 3);
   const newsCardWidth = Math.floor(screenWidth * 0.72);
@@ -956,47 +830,64 @@ export default function HomeScreen() {
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <View style={[styles.header, { paddingTop: insets.top + 28 }]}>
           <View style={styles.headerRow}>
-            <View style={styles.greetRow}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="View profile"
-                onPress={() => navPush('/my-profile' as Parameters<typeof navPush>[0])}
-                style={({ pressed }) => [styles.avatarBtn, pressed && styles.pressed]}>
-                <Image
-                  source={avatarSource && !avatarFailed ? { uri: avatarSource } : USER_PLACEHOLDER}
-                  style={styles.avatar}
-                  contentFit="cover"
-                  onError={() => setAvatarFailed(true)}
-                />
-              </Pressable>
-              <View style={styles.greetingWrap}>
-                <Text numberOfLines={1} style={styles.greeting}>{getFirstName(authUser)}</Text>
-                <Text numberOfLines={1} style={styles.date}>{getDateString()}</Text>
+            {isGuest ? (
+              <Image
+                source={NAV_LOGO}
+                style={styles.navLogo}
+                contentFit="contain"
+                contentPosition="left"
+              />
+            ) : (
+              <View style={styles.greetRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={TEXT.HOME_VIEW_PROFILE_A11Y}
+                  onPress={() => navPush('/my-profile' as Parameters<typeof navPush>[0])}
+                  style={({ pressed }) => [styles.avatarBtn, pressed && styles.pressed]}>
+                  <Image
+                    source={avatarSource && !avatarFailed ? { uri: avatarSource } : USER_PLACEHOLDER}
+                    style={styles.avatar}
+                    contentFit="cover"
+                    onError={() => setAvatarFailed(true)}
+                  />
+                </Pressable>
+                <View style={styles.greetingWrap}>
+                  <Text numberOfLines={1} style={styles.greeting}>{getFirstName(authUser)}</Text>
+                  <Text numberOfLines={1} style={styles.date}>{getDateString()}</Text>
+                </View>
               </View>
-            </View>
+            )}
 
-            <View style={styles.headerRight}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Settings"
-                onPress={() => navPush('/settings')}
-                style={({ pressed }) => [styles.iconBtn, styles.iconBtnLight, pressed && styles.pressed]}>
-                <IconSymbol name="gearshape.fill" size={20} color={m.icon} />
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Notifications"
-                onPress={() => navPush('/notification')}
-                style={({ pressed }) => [styles.iconBtn, styles.iconBtnLight, pressed && styles.pressed]}>
-                <IconSymbol name="bell.fill" size={20} color={m.icon} />
-                {unreadCount > 0 ? <View style={styles.bellBadge} /> : null}
-              </Pressable>
-            </View>
+            {/* Settings and notifications are both personal — signed out the
+                header carries no actions at all, and signing in is offered
+                below the news band instead. */}
+            {isGuest ? null : (
+              <View style={styles.headerRight}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={TEXT.SETTINGS_TITLE}
+                  onPress={() => navPush('/settings')}
+                  style={({ pressed }) => [styles.iconBtn, styles.iconBtnLight, pressed && styles.pressed]}>
+                  <IconSymbol name="gearshape.fill" size={20} color={m.icon} />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={TEXT.NOTIFICATION_TITLE}
+                  onPress={() => navPush('/notification')}
+                  style={({ pressed }) => [styles.iconBtn, styles.iconBtnLight, pressed && styles.pressed]}>
+                  <IconSymbol name="bell.fill" size={20} color={m.icon} />
+                  {unreadCount > 0 ? <View style={styles.bellBadge} /> : null}
+                </Pressable>
+              </View>
+            )}
           </View>
         </View>
 
         {/* ── Padded content ──────────────────────────────────────────────── */}
-        <View style={styles.innerContent}>
+        {/* Signed out there is only the news band above the sign-in call to
+            action, so the block is allowed to grow and centre it in whatever
+            height is left rather than leaving it stranded under the news. */}
+        <View style={[styles.innerContent, isGuest && styles.innerContentGuest]}>
 
           {/* News section — sits on a full-width primary band */}
           <View style={styles.newsSection}>
@@ -1063,34 +954,85 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Upcoming Shift section */}
-          <UpcomingShiftSection data={activeSummary} loading={isActiveSummaryLoading} error={isActiveSummaryError} onReload={reloadActiveSummary} upcomingExams={upcomingExams} absenceApproval={absenceApproval} timestampApproval={timestampApproval} />
-
-          {/* Menu section — matches the upcoming band's vertical padding and sits
-              flush beneath it. */}
-          <View style={styles.menuSection}>
-          <View style={styles.sectionHead}>
-            <Text style={styles.sectionTitle}>{TEXT.HOME_MENU_SECTION_TITLE}</Text>
-          </View>
-
-          <View style={styles.menuGrid}>
-            {MENU_ITEMS.map((item) => (
+          {/* Signed out, the sign-in call to action takes the place the pending
+              work and the module menu would occupy. Signed in from another
+              faculty, the same space explains why the rest of the screen is
+              empty — offering a login button there would be nonsense, they are
+              already logged in. */}
+          {isDenied ? (
+            <View style={styles.loginSection}>
+              <View style={styles.deniedIcon}>
+                <IconSymbol name="exclamationmark.triangle.fill" size={26} color={m.textMuted} />
+              </View>
+              <Text style={styles.deniedText}>{TEXT.HOME_NOT_ELIGIBLE}</Text>
+              {/* The one control this screen keeps. Without it the session has no
+                  exit: settings is hidden, and a signed-in user gets no login
+                  button — they could never sign out or try another account. */}
               <Pressable
-                key={item.href}
                 accessibilityRole="button"
-                style={({ pressed }) => [styles.menuCard, { width: menuCardWidth }, pressed && styles.pressed]}
-                onPress={() => navPush(item.href as Parameters<typeof navPush>[0])}>
-                <IconSymbol name={item.icon} size={30} color={m.icon} />
-                <Text numberOfLines={2} style={styles.menuLabel}>{item.title}</Text>
+                onPress={() => setIsLogoutConfirmOpen(true)}
+                style={({ pressed }) => [styles.deniedLogoutBtn, pressed && styles.pressed]}>
+                <Text style={styles.deniedLogoutText}>{TEXT.HOME_LOGOUT}</Text>
               </Pressable>
-            ))}
-          </View>
-          </View>
+            </View>
+          ) : isGuest ? (
+            <View style={styles.loginSection}>
+              {/* The artwork carries the wording, so the button has no label of
+                  its own — hence the explicit accessibility label. */}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={TEXT.AUTH_LOGIN}
+                onPress={handleLogin}
+                style={({ pressed }) => [styles.loginBtn, pressed && styles.pressed]}>
+                <Image
+                  source={PSU_PASSPORT_BUTTON}
+                  style={styles.loginBtnImage}
+                  contentFit="contain"
+                />
+              </Pressable>
+              <Text style={styles.loginNote}>{TEXT.HOME_LOGIN_NOTE}</Text>
+            </View>
+          ) : null}
+
+          {/* Upcoming Shift + module menu: both are per-user. */}
+          {isGuest ? null : (
+            <>
+              <UpcomingShiftSection
+                data={activeSummary}
+                loading={isActiveSummaryLoading}
+                error={isActiveSummaryError}
+                onReload={reloadActiveSummary}
+                upcomingExams={upcomingExams}
+                absenceApproval={absenceApproval}
+                timestampApproval={timestampApproval}
+              />
+
+              {/* Menu section — matches the upcoming band's vertical padding and
+                  sits flush beneath it. */}
+              <View style={styles.menuSection}>
+                <View style={styles.menuGrid}>
+                  {MENU_ITEMS.map((item) => (
+                    <Pressable
+                      key={item.href}
+                      accessibilityRole="button"
+                      style={({ pressed }) => [styles.menuCard, { width: menuCardWidth }, pressed && styles.pressed]}
+                      onPress={() => navPush(item.href as Parameters<typeof navPush>[0])}>
+                      <IconSymbol name={item.icon} size={30} color={m.icon} />
+                      <Text numberOfLines={2} style={styles.menuLabel}>{item.title}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            </>
+          )}
 
         </View>
       </ScrollView>
 
       {/* ── Pinned mini header ────────────────────────────────────────────── */}
+      {/* Signed out it would carry the same avatar, name and personal actions the
+          main header just dropped, so it is not rendered at all. */}
+      {isGuest ? null : (
       <Animated.View
         pointerEvents={isCompactHeader ? 'auto' : 'none'}
         style={[
@@ -1111,7 +1053,7 @@ export default function HomeScreen() {
         <View style={styles.miniHeaderRow}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="View profile"
+            accessibilityLabel={TEXT.HOME_VIEW_PROFILE_A11Y}
             onPress={() => navPush('/my-profile' as Parameters<typeof navPush>[0])}
             style={({ pressed }) => [styles.miniAvatarBtn, pressed && styles.pressed]}>
             <Image
@@ -1126,14 +1068,14 @@ export default function HomeScreen() {
           <View style={styles.headerRight}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Settings"
+              accessibilityLabel={TEXT.SETTINGS_TITLE}
               onPress={() => navPush('/settings')}
               style={({ pressed }) => [styles.miniIconBtn, pressed && styles.pressed]}>
               <IconSymbol name="gearshape.fill" size={19} color={m.icon} />
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Notifications"
+              accessibilityLabel={TEXT.NOTIFICATION_TITLE}
               onPress={() => navPush('/notification')}
               style={({ pressed }) => [styles.miniIconBtn, pressed && styles.pressed]}>
               <IconSymbol name="bell.fill" size={19} color={m.icon} />
@@ -1142,6 +1084,7 @@ export default function HomeScreen() {
           </View>
         </View>
       </Animated.View>
+      )}
 
       {/* ── Modals ────────────────────────────────────────────────────────── */}
       <Modal
@@ -1176,6 +1119,31 @@ export default function HomeScreen() {
             <LoadingAnimate fill={false} title={TEXT.HOME_SIGNING_OUT_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
           </View>
         </View>
+      </Modal>
+
+      {/* Sign-in failure. It used to live on the welcome screen, which no longer
+          exists — without it here a failed callback would report nothing. */}
+      <Modal
+        transparent
+        visible={Boolean(authCallbackErrorMessage)}
+        animationType="fade"
+        onRequestClose={() => setAuthCallbackErrorMessage('')}>
+        <Pressable style={styles.backdrop} onPress={() => setAuthCallbackErrorMessage('')}>
+          <Pressable accessibilityRole="none" onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modal}>
+              <Text style={styles.modalTitle}>{TEXT.AUTH_LOGIN_FAILED}</Text>
+              <Text style={styles.modalMessage}>{authCallbackErrorMessage}</Text>
+              <View style={styles.modalActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setAuthCallbackErrorMessage('')}
+                  style={styles.btnPrimary}>
+                  <Text style={styles.btnPrimaryText}>{TEXT.SHARED_OK}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -1239,6 +1207,76 @@ const makeStyles = (m: M) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  // Stands in for the whole greeting cluster when signed out. Height matches the
+  // avatar so the header keeps the same bar height either way; `contentFit
+  // contain` lets the width follow the artwork's own aspect ratio.
+  navLogo: {
+    flex: 1,
+    height: 44,
+    alignSelf: 'center',
+  },
+  // Centred in the space a signed-in user's pending work and module menu would
+  // fill — the one thing a visitor can act on, so it sits in the middle of the
+  // page rather than tucked under the news band or into a header corner.
+  loginSection: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+    paddingVertical: 8,
+  },
+  // Lets `loginSection` claim the leftover height. Only applied signed out —
+  // signed in the block is already taller than the screen.
+  innerContentGuest: {
+    flexGrow: 1,
+  },
+  // Width-driven: the height follows the artwork's own ratio, so the button can
+  // never end up stretched. `maxWidth` caps it on a tablet while `width: 100%`
+  // lets it shrink inside the page gutter on a narrow phone.
+  loginBtn: {
+    width: '100%',
+    maxWidth: 280,
+    aspectRatio: PSU_PASSPORT_BUTTON_ASPECT,
+  },
+  loginBtnImage: {
+    width: '100%',
+    height: '100%',
+  },
+  // Sits where the login button would be, in the same centred block.
+  deniedIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: m.fill,
+  },
+  deniedText: {
+    fontFamily: F.medium,
+    fontSize: 16,
+    lineHeight: 24,
+    color: m.onCanvas,
+    textAlign: 'center',
+  },
+  deniedLogoutBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+  },
+  deniedLogoutText: {
+    fontFamily: F.semibold,
+    fontSize: 14,
+    lineHeight: 20,
+    color: m.onCanvasMuted,
+    textDecorationLine: 'underline',
+  },
+  // Who the app is for — quiet enough not to compete with the button above it.
+  loginNote: {
+    fontFamily: F.regular,
+    fontSize: 13,
+    lineHeight: 20,
+    color: m.onCanvasMuted,
+    textAlign: 'center',
   },
   greetingWrap: {
     flex: 1,
@@ -1343,28 +1381,18 @@ const makeStyles = (m: M) => StyleSheet.create({
   // Menu section wrapper — mirrors the upcoming band's vertical padding and sits
   // flush beneath it (marginTop cancels the inter-section gap). The inner gap:40
   // keeps the original title↔grid spacing intact alongside sectionHead's -26.
+  // No heading of its own — the grid's icons already say what each tile is, so
+  // the top padding is what separates it from the band above.
   menuSection: {
     marginTop: -40,
-    paddingTop: 32,
+    paddingTop: 40,
     paddingBottom: 38,
-    gap: 40,
   },
 
-  // Title + decorative rule as one unit. The negative margin keeps the larger
-  // inter-section gap spacing sections apart, not the title from its content.
-  sectionHead: {
-    marginBottom: -26,
-  },
   sectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    fontFamily: F.semibold,
-    fontSize: 16,
-    lineHeight: 21,
-    color: m.onCanvas,
   },
   seeAll: {
     fontFamily: F.medium,
@@ -1605,44 +1633,4 @@ const makeStyles = (m: M) => StyleSheet.create({
   },
 
   // Welcome (unauthenticated)
-  welcomeContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-    gap: 40,
-  },
-  welcomeTextGroup: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  welcomeTitle: {
-    fontFamily: F.semibold,
-    fontSize: 28,
-    lineHeight: 34,
-    color: m.onCanvas,
-    textAlign: 'center',
-  },
-  welcomeDesc: {
-    fontFamily: F.regular,
-    fontSize: 15,
-    lineHeight: 22,
-    color: m.onCanvasMuted,
-    textAlign: 'center',
-  },
-  welcomeLoginButton: {
-    minHeight: 54,
-    minWidth: 220,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    backgroundColor: m.accent,
-    paddingHorizontal: 32,
-  },
-  welcomeLoginText: {
-    fontFamily: F.semibold,
-    fontSize: 16,
-    lineHeight: 22,
-    color: m.accentText,
-  },
 });

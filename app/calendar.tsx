@@ -49,6 +49,7 @@ import {
     type CalendarEvent,
     type CalendarSource,
 } from "@/services/executiveCalendarService";
+import { scaleFont } from "@/utils/font-scale";
 
 const todayKey = toDateKey(new Date());
 
@@ -250,7 +251,9 @@ export default function CalendarScreen() {
         },
         text: {
           marginTop: 0,
-          fontSize: 13,
+          // react-native-calendars' own theme object, not a StyleSheet — the
+          // app-wide scale does not reach it.
+          fontSize: scaleFont(13),
           fontFamily: AppFonts.psuRegular,
           color: c.text,
         },
@@ -342,7 +345,7 @@ export default function CalendarScreen() {
         <StatusBar style={isDarkMode ? "light" : "dark"} />
         <NavTopBar
           title={TEXT.CALENDAR_HEADER_TITLE}
-          titleStyle={{ fontSize: 20, lineHeight: 26 }}
+          titleStyle={{ fontSize: scaleFont(20), lineHeight: scaleFont(26) }}
           backHref="/"
           showHomeButton={false}
           tone="primary"
@@ -362,7 +365,7 @@ export default function CalendarScreen() {
         <StatusBar style={isDarkMode ? "light" : "dark"} />
         <NavTopBar
           title={TEXT.CALENDAR_HEADER_TITLE}
-          titleStyle={{ fontSize: 20, lineHeight: 26 }}
+          titleStyle={{ fontSize: scaleFont(20), lineHeight: scaleFont(26) }}
           backHref="/"
           showHomeButton={false}
           tone="primary"
@@ -383,7 +386,7 @@ export default function CalendarScreen() {
       <StatusBar style={isDarkMode ? "light" : "dark"} />
       <NavTopBar
         title={TEXT.CALENDAR_HEADER_TITLE}
-        titleStyle={{ fontSize: 20, lineHeight: 26 }}
+        titleStyle={{ fontSize: scaleFont(20), lineHeight: scaleFont(26) }}
         backHref="/"
         showHomeButton={false}
         tone="primary"
