@@ -20,6 +20,7 @@ import {
   type PushNotificationHistoryItem,
 } from '@/services/notificationService';
 import { navPush } from '@/utils/navigation';
+import { boxShadow } from '@/constants/shadows';
 
 function formatRelativeTime(value: string) {
   const m = moment(value);
@@ -181,11 +182,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: c.border,
     padding: 16,
     marginBottom: 12,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.04 }),
   },
   itemCardUnread: {
     backgroundColor: c.primarySoft,

@@ -1,4 +1,5 @@
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { InfinityLoader } from '@/components/infinity-loader';
 
 import { useColors } from '@/constants/theme';
 
@@ -23,7 +24,7 @@ export function SubmittingOverlay({ visible }: SubmittingOverlayProps) {
       onMoveShouldSetResponder={() => true}
       style={[StyleSheet.absoluteFill, styles.scrim, { backgroundColor: `${c.background}B3` }]}
     >
-      <ActivityIndicator size="large" color={c.primary} />
+      <InfinityLoader size={60} />
     </View>
   );
 }

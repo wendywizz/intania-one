@@ -42,6 +42,7 @@ import {
   PSU_PASSPORT_BUTTON_ASPECT,
   USER_PLACEHOLDER,
 } from '@/constants/images';
+import { boxShadow } from '@/constants/shadows';
 
 // Scroll offsets at which the pinned mini header appears / disappears. The gap
 // between them is deliberate — it stops the bar flickering at the boundary.
@@ -139,15 +140,22 @@ const NEWS_DATE_COLOR = '#F1C40F';
 
 type IconName = Parameters<typeof IconSymbol>[0]['name'];
 
+// The order the grid draws them in, and the only thing that decides it. Daily
+// business first, then the things asked for when something is needed, with
+// reference lookups last.
 const MENU_ITEMS: readonly { title: string; href: string; icon: IconName }[] = [
-  { title: TEXT.ABSENCE_TITLE, href: '/absence', icon: 'calendar-clock' },
   { title: TEXT.TIMESTAMP_TITLE, href: '/timestamp/calendar', icon: 'clock.fill' },
+  // Straight to the pending list, not to /absence: the leave-form chooser there
+  // is no longer a tab, so landing on it would show a tab bar with nothing
+  // selected. Starting a new request is a button on this list.
+  { title: TEXT.ABSENCE_TITLE, href: '/absence/pending', icon: 'calendar-clock' },
   { title: TEXT.MEETING_MENU_TITLE, href: '/meeting', icon: 'person.2.fill' },
   { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: '/repair-computer', icon: 'laptop' },
   { title: TEXT.NOTICE_REPAIR__MENU_TITLE, href: '/notice-repair', icon: 'wrench.fill' },
+  { title: TEXT.BOOKING_ROOM_MENU_TITLE, href: '/booking-room', icon: 'door.open' },
+  { title: TEXT.EXAMINER_MENU_TITLE, href: '/examiner', icon: 'checkmark.circle.fill' },
   { title: TEXT.CALENDAR_TITLE, href: '/calendar', icon: 'calendar-range' },
   { title: TEXT.PERSON_SEARCH_TITLE, href: '/person-search', icon: 'user-round-search' },
-  { title: TEXT.EXAMINER_MENU_TITLE, href: '/examiner', icon: 'checkmark.circle.fill' },
 ];
 
 function getDateString() {
@@ -451,11 +459,7 @@ const makeShiftStyles = (m: M) => StyleSheet.create({
     paddingVertical: 16,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: m.border,
-    shadowColor: m.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(m.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   tilePressed: {
     opacity: 0.7,
@@ -1185,11 +1189,7 @@ const makeStyles = (m: M) => StyleSheet.create({
   },
   iconBtnLight: {
     backgroundColor: m.card,
-    shadowColor: m.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(m.shadow, { y: 4, blur: 8, opacity: 0.12 }),
   },
   bellBadge: {
     position: 'absolute',
@@ -1301,11 +1301,7 @@ const makeStyles = (m: M) => StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: m.card,
-    shadowColor: m.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    elevation: 2,
+    boxShadow: boxShadow(m.shadow, { y: 4, blur: 10, opacity: 0.14 }),
   },
   avatar: {
     width: '100%',
@@ -1324,11 +1320,11 @@ const makeStyles = (m: M) => StyleSheet.create({
     backgroundColor: m.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: m.border,
-    shadowColor: m.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
+    boxShadow: boxShadow(m.shadow, { y: 2, blur: 10, opacity: 0.1 }),
+    // Replaces the `elevation` this had before boxShadow: on Android elevation
+    // was doing double duty as the stacking order that keeps this above the
+    // scrolling canvas.
+    zIndex: 4,
   },
   miniHeaderRow: {
     flexDirection: 'row',
@@ -1384,9 +1380,12 @@ const makeStyles = (m: M) => StyleSheet.create({
   // No heading of its own — the grid's icons already say what each tile is, so
   // the top padding is what separates it from the band above.
   menuSection: {
+    // The negative margin cancels the gap the section stack leaves, so the
+    // padding below is the whole distance to the band above — the two have to
+    // move together or the section detaches from it.
     marginTop: -40,
-    paddingTop: 40,
-    paddingBottom: 38,
+    paddingTop: 24,
+    paddingBottom: 22,
   },
 
   sectionRow: {
@@ -1458,11 +1457,7 @@ const makeStyles = (m: M) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255, 255, 255, 0.22)',
     justifyContent: 'flex-start',
-    shadowColor: '#4A0F11',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 3,
+    boxShadow: boxShadow('#4A0F11', { y: 4, blur: 18, opacity: 0.18 }),
   },
   newsTitle: {
     fontFamily: F.medium,
@@ -1493,11 +1488,7 @@ const makeStyles = (m: M) => StyleSheet.create({
     gap: 10,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: m.border,
-    shadowColor: m.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(m.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   newsEmptyIcon: {
     width: 44,
@@ -1532,11 +1523,7 @@ const makeStyles = (m: M) => StyleSheet.create({
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: m.border,
-    shadowColor: m.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(m.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   menuLabel: {
     fontFamily: F.regular,

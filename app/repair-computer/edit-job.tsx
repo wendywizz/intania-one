@@ -33,6 +33,7 @@ import {
 } from "@/services/repairComputerService";
 import { formatDateTime } from "@/utils/date-format";
 import { USER_PLACEHOLDER } from "@/constants/images";
+import { boxShadow } from '@/constants/shadows';
 
 const detailFields = [
   "detail",
@@ -744,11 +745,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: c.border,
     padding: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.05 }),
   },
   panelHeader: {
     gap: 4,

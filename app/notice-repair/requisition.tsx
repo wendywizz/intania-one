@@ -1,4 +1,5 @@
 import { MaterialItemCard } from '@/components/notice-repair/material-item-card';
+import { InfinityLoader } from '@/components/infinity-loader';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -98,7 +99,7 @@ export default function RequisitionScreen() {
       <NavTopBar title="ใบขอจัดหา" backHref={backHref} showHomeButton tone="primary" />
 
       {isLoading ? (
-        <ActivityIndicator style={styles.loader} size="large" color={c.primary} />
+        <InfinityLoader size={60} style={styles.loader} />
       ) : error ? (
         <View style={styles.center}><ThemedText style={styles.errorText}>{error}</ThemedText></View>
       ) : (
@@ -236,7 +237,9 @@ export default function RequisitionScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.surfaceAlt },
   flex: { flex: 1 },
-  loader: { flex: 1 },
+  // Centred both ways: ActivityIndicator centred itself inside a flex:1 box,
+  // the infinity mark is a plain view and has to be told.
+  loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   errorText: { fontSize: 15, color: c.danger, textAlign: 'center' },
   scroll: { padding: 16, gap: 12 },

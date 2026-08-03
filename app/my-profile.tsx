@@ -22,6 +22,7 @@ import type { Person } from '@/models/types';
 import { getPersonnelSuggestions, uploadPersonPhoto } from '@/services/personService';
 import { getUnreadNotificationCount } from '@/services/notificationService';
 import { usePopAnimation } from '@/hooks/use-pop-animation';
+import { boxShadow } from '@/constants/shadows';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -285,60 +286,60 @@ export default function MyProfileScreen() {
             onRequestClose={() => setShowPhotoMenu(false)}
           >
             <Animated.View style={[styles.menuFill, photoMenuAnim.backdropStyle]}>
-            <Pressable style={styles.menuOverlay} onPress={() => setShowPhotoMenu(false)}>
-              <AnimatedPressable accessibilityRole="none" onPress={(e) => e.stopPropagation()} style={[styles.menuSheet, photoMenuAnim.panelStyle]}>
-                <View style={styles.menuHandle} />
-                <ThemedText style={styles.menuTitle}>{TEXT.PROFILE_PHOTO_MENU_TITLE}</ThemedText>
+              <Pressable style={styles.menuOverlay} onPress={() => setShowPhotoMenu(false)}>
+                <AnimatedPressable accessibilityRole="none" onPress={(e) => e.stopPropagation()} style={[styles.menuSheet, photoMenuAnim.panelStyle]}>
+                  <View style={styles.menuHandle} />
+                  <ThemedText style={styles.menuTitle}>{TEXT.PROFILE_PHOTO_MENU_TITLE}</ThemedText>
 
-                <Pressable
-                  style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
-                  onPress={handleTakePhoto}
-                  accessibilityRole="button"
-                >
-                  <View style={styles.menuItemIcon}>
-                    <Camera size={20} color={c.primary} />
-                  </View>
-                  <ThemedText style={styles.menuItemText}>{TEXT.PROFILE_PHOTO_TAKE}</ThemedText>
-                </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+                    onPress={handleTakePhoto}
+                    accessibilityRole="button"
+                  >
+                    <View style={styles.menuItemIcon}>
+                      <Camera size={20} color={c.primary} />
+                    </View>
+                    <ThemedText style={styles.menuItemText}>{TEXT.PROFILE_PHOTO_TAKE}</ThemedText>
+                  </Pressable>
 
-                <View style={styles.menuDivider} />
+                  <View style={styles.menuDivider} />
 
-                <Pressable
-                  style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
-                  onPress={handleChooseFromLibrary}
-                  accessibilityRole="button"
-                >
-                  <View style={styles.menuItemIcon}>
-                    <Images size={20} color={c.primary} />
-                  </View>
-                  <ThemedText style={styles.menuItemText}>{TEXT.PROFILE_PHOTO_LIBRARY}</ThemedText>
-                </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+                    onPress={handleChooseFromLibrary}
+                    accessibilityRole="button"
+                  >
+                    <View style={styles.menuItemIcon}>
+                      <Images size={20} color={c.primary} />
+                    </View>
+                    <ThemedText style={styles.menuItemText}>{TEXT.PROFILE_PHOTO_LIBRARY}</ThemedText>
+                  </Pressable>
 
-                {(localPhotoUri || personPhotoUri || photoUrl) ? (
-                  <>
-                    <View style={styles.menuDivider} />
-                    <Pressable
-                      style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
-                      onPress={handleRemovePhoto}
-                      accessibilityRole="button"
-                    >
-                      <View style={styles.menuItemIcon}>
-                        <Trash2 size={20} color="#DC2626" />
-                      </View>
-                      <ThemedText style={[styles.menuItemText, styles.menuItemDestructive]}>{TEXT.PROFILE_PHOTO_REMOVE}</ThemedText>
-                    </Pressable>
-                  </>
-                ) : null}
+                  {(localPhotoUri || personPhotoUri || photoUrl) ? (
+                    <>
+                      <View style={styles.menuDivider} />
+                      <Pressable
+                        style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+                        onPress={handleRemovePhoto}
+                        accessibilityRole="button"
+                      >
+                        <View style={styles.menuItemIcon}>
+                          <Trash2 size={20} color="#DC2626" />
+                        </View>
+                        <ThemedText style={[styles.menuItemText, styles.menuItemDestructive]}>{TEXT.PROFILE_PHOTO_REMOVE}</ThemedText>
+                      </Pressable>
+                    </>
+                  ) : null}
 
-                <Pressable
-                  style={({ pressed }) => [styles.menuCancelBtn, pressed && styles.menuItemPressed]}
-                  onPress={() => setShowPhotoMenu(false)}
-                  accessibilityRole="button"
-                >
-                  <ThemedText style={styles.menuCancelText}>{TEXT.CANCEL}</ThemedText>
-                </Pressable>
-              </AnimatedPressable>
-            </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [styles.menuCancelBtn, pressed && styles.menuItemPressed]}
+                    onPress={() => setShowPhotoMenu(false)}
+                    accessibilityRole="button"
+                  >
+                    <ThemedText style={styles.menuCancelText}>{TEXT.CANCEL}</ThemedText>
+                  </Pressable>
+                </AnimatedPressable>
+              </Pressable>
             </Animated.View>
           </Modal>
 
@@ -620,11 +621,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: c.border,
     overflow: 'hidden',
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 1, blur: 6, opacity: 0.04 }),
   },
   infoRow: {
     flexDirection: 'row',

@@ -24,6 +24,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import type { ExamTask } from '@/models/types';
 import { listExamTasks } from '@/services/examinarService';
+import { boxShadow } from '@/constants/shadows';
 
 // ─── Filter options ────────────────────────────────────────────────────────────
 
@@ -357,11 +358,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   filterRow: { flexDirection: 'row', gap: 8 },
   filterItem: { flex: 1, gap: 4 },
@@ -389,11 +386,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: c.border,
     paddingHorizontal: 16,
     paddingVertical: 22,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.04 }),
   },
   examCardPast: {
     opacity: 0.7,

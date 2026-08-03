@@ -6,9 +6,11 @@ import Baby from 'lucide-react-native/dist/cjs/icons/baby';
 import Bell from 'lucide-react-native/dist/cjs/icons/bell';
 import Briefcase from 'lucide-react-native/dist/cjs/icons/briefcase';
 import Cpu from 'lucide-react-native/dist/cjs/icons/cpu';
+import DoorOpen from 'lucide-react-native/dist/cjs/icons/door-open';
 import Droplets from 'lucide-react-native/dist/cjs/icons/droplets';
 import Hammer from 'lucide-react-native/dist/cjs/icons/hammer';
 import Lightbulb from 'lucide-react-native/dist/cjs/icons/lightbulb';
+import Mic from 'lucide-react-native/dist/cjs/icons/mic';
 import Monitor from 'lucide-react-native/dist/cjs/icons/monitor';
 import Network from 'lucide-react-native/dist/cjs/icons/network';
 import Ellipsis from 'lucide-react-native/dist/cjs/icons/ellipsis';
@@ -109,6 +111,9 @@ const MAPPING = {
   'wrench.fill': Wrench,
   'laptop': Laptop,
   'user-round-search': UserRoundSearch,
+  // A door rather than a calendar: the menu grid already carries three calendar
+  // glyphs, so room booking needs to be tellable apart at a glance.
+  'door.open': DoorOpen,
   // Repair categories
   'bolt.fill': Zap,
   'lightbulb.fill': Lightbulb,
@@ -120,6 +125,7 @@ const MAPPING = {
   'display': Monitor,
   'network': Network,
   'projector': Projector,
+  'mic': Mic,
   'package.plus': PackagePlus,
   'replace': Replace,
   'ellipsis': Ellipsis,

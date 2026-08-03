@@ -24,6 +24,7 @@ import type { absence } from "@/models/types";
 import { getabsenceData } from "@/services/absenceService";
 import { formatDateRange } from "@/utils/date-format";
 import { navPush } from "@/utils/navigation";
+import { boxShadow } from '@/constants/shadows';
 
 const absenceTypeLabels: Record<string, string> = {
   [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
@@ -372,11 +373,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     gap: 12,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   sectionTitle: {
     fontSize: 13,

@@ -25,6 +25,7 @@ import { useAuth } from "@/context/AuthContext";
 import type { Meeting } from "@/models/types";
 import { listMeeting } from "@/services/meetingService";
 import { formatDateOnly, formatTimeOnly, parseDateTime } from "@/utils/date-format";
+import { boxShadow } from '@/constants/shadows';
 
 const titleFields = ["name", "title", "topic", "subject", "meetingName", "meetingTitle"];
 const dateFields = ["m_lastdate", "meetingDate", "date", "startDate", "meeting_date", "start_date"];
@@ -185,11 +186,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: c.border,
     padding: 16,
     marginBottom: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.05 }),
     gap: 4,
   },
   headerTitle: {
@@ -221,11 +218,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     padding: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   itemRow: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
   chevron: { flexShrink: 0, marginTop: 2 },
@@ -277,11 +270,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: c.border,
     padding: 20,
     gap: 8,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.05 }),
   },
   errorTitle: { fontFamily: AppFonts.psuBold, fontSize: 15, color: c.primary },
   errorMessage: { fontFamily: AppFonts.psuRegular, fontSize: 14, lineHeight: 20, color: c.textMuted },

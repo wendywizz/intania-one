@@ -1,9 +1,8 @@
 ﻿import { ArrowRight, Calendar, Newspaper } from 'lucide-react-native';
 import { useFocusEffect } from 'expo-router';
+import { InfinityLoader } from '@/components/infinity-loader';
 import { useCallback, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
+import { FlatList,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -24,6 +23,7 @@ import type { News } from '@/models/types';
 import { staffNewsFeed } from '@/services/newsService';
 import { formatNewsDateTime } from '@/utils/date-format';
 import { navPush } from '@/utils/navigation';
+import { boxShadow } from '@/constants/shadows';
 
 // The feed returns every item at once (no server paging), so we reveal it in
 // pages client-side as the user scrolls to the end.
@@ -183,7 +183,7 @@ export default function NewsScreen() {
         ListFooterComponent={
           hasMore ? (
             <View style={styles.footerLoader}>
-              <ActivityIndicator color={c.primary} />
+              <InfinityLoader size={44} strokeWidth={4} />
             </View>
           ) : null
         }
@@ -235,11 +235,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: c.border,
     padding: 16,
     gap: 10,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.04 }),
   },
   cardPressed: {
     opacity: 0.75,

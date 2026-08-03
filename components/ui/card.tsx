@@ -8,6 +8,7 @@
 import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
 import { useColors } from '@/constants/theme';
+import { boxShadow } from '@/constants/shadows';
 
 type CardProps = {
   children: React.ReactNode;
@@ -23,7 +24,14 @@ export function Card({ children, onPress, padding = 16, style, accessibilityLabe
 
   const base: StyleProp<ViewStyle> = [
     styles.card,
-    { backgroundColor: c.surface, borderColor: c.border, shadowColor: c.shadow, padding },
+    {
+      backgroundColor: c.surface,
+      borderColor: c.border,
+      // The shadow lives here rather than in `styles` because its colour comes
+      // from the theme, and boxShadow bakes the colour into the string.
+      boxShadow: boxShadow(c.shadow, { y: 1, blur: 4, opacity: 0.04 }),
+      padding,
+    },
     style,
   ];
 
@@ -48,10 +56,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
   },
   pressed: { opacity: 0.9 },
 });

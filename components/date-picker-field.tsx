@@ -1,7 +1,16 @@
 import { CalendarDays } from 'lucide-react-native';
+import { InfinityLoader } from '@/components/infinity-loader';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal,
+  Pressable,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from 'react-native';
 import { DAY_STATUS_STYLE } from '@/constants/calendar-status';
+import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { TEXT } from '@/constants/text';
 
@@ -14,10 +23,60 @@ type DatePickerFieldProps = {
    * placeholder "เลือก{label}"). */
   hideLabel?: boolean;
   value: Date | null;
+  /**
+   * Text for the trigger instead of the formatted value. For callers where the
+   * chosen date is a means rather than the point — picking any day to move a
+   * week, say — so the button can show the week it selected.
+   */
+  displayValue?: string;
   minimumDate?: Date;
   maximumDate?: Date;
   highlightedStartDate?: Date | null;
+  /**
+   * End of the highlighted span, when it is not the chosen date.
+   *
+   * The leave forms highlight from a start date up to whatever the user is
+   * choosing, so the span ends at `value`. A caller that already knows the whole
+   * span — a week being browsed, say — passes it here instead, and `value` is
+   * left to mark the one day inside it that was actually tapped.
+   */
+  highlightedEndDate?: Date | null;
   hasError?: boolean;
+  /**
+   * Overrides for the trigger, applied on top of the default underline field.
+   *
+   * For callers that place the field on a surface of their own choosing — a
+   * white toolbar card, say — where the themed text colour would no longer be
+   * readable. The calendar itself is unaffected.
+   */
+  buttonStyle?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+  /** Colour for the leading calendar glyph; defaults to the muted text colour. */
+  iconColor?: string;
+  /**
+   * Size of the leading calendar glyph, in points. Defaults to 16 — the size
+   * that suits the form fields. Callers that set a larger text size can raise
+   * it so the glyph stands as tall as the line it sits beside.
+   */
+  iconSize?: number;
+  /**
+   * A line above the calendar's legend naming what is currently selected.
+   *
+   * For callers whose selection is a span rather than a day — the schedule
+   * screen picks a week — so the calendar states the range it is showing
+   * instead of leaving the highlighted band to be read off the grid.
+   */
+  caption?: string;
+  /**
+   * Let Saturdays and Sundays be picked.
+   *
+   * Off by default, because the callers that came first are leave forms and
+   * leave is only taken on working days. Room booking is the other case: the
+   * building is open at the weekend and the booking system takes weekend
+   * bookings — with more notice, a rule the server enforces. Weekends still
+   * *look* like weekends here; this only stops the tap being swallowed.
+   */
+  allowWeekends?: boolean;
   /** Set of 'YYYY-MM-DD' keys that are public holidays — shown greyed and
    * non-selectable, like weekends. */
   holidays?: Set<string>;
@@ -66,10 +125,18 @@ export function DatePickerField({
   label,
   hideLabel,
   value,
+  displayValue,
   minimumDate,
   maximumDate,
   highlightedStartDate,
+  highlightedEndDate,
   hasError,
+  buttonStyle,
+  textStyle,
+  iconColor,
+  iconSize = 16,
+  caption,
+  allowWeekends = false,
   holidays,
   onVisibleMonthChange,
   onChange,
@@ -82,7 +149,11 @@ export function DatePickerField({
   const minimumDay = minimumDate ? startOfDay(minimumDate) : null;
   const maximumDay = maximumDate ? startOfDay(maximumDate) : null;
   const rangeStartDay = highlightedStartDate ? startOfDay(highlightedStartDate) : null;
-  const rangeEndDay = rangeStartDay && value ? startOfDay(value) : rangeStartDay;
+  const rangeEndDay = highlightedEndDate
+    ? startOfDay(highlightedEndDate)
+    : rangeStartDay && value
+      ? startOfDay(value)
+      : rangeStartDay;
 
   const isHolidayDate = (date: Date) => Boolean(holidays?.has(formatDateKey(date)));
 
@@ -113,7 +184,7 @@ export function DatePickerField({
   };
 
   const selectDate = (date: Date) => {
-    if (isWeekendDate(date) || isHolidayDate(date)) {
+    if ((isWeekendDate(date) && !allowWeekends) || isHolidayDate(date)) {
       return;
     }
 
@@ -131,8 +202,9 @@ export function DatePickerField({
       (minimumDay && currentDay < minimumDay) || (maximumDay && currentDay > maximumDay),
     );
     // Weekends and holidays stay full-colour (informational) but are still not
-    // selectable.
-    const isDisabled = isWeekend || isHoliday || isOutOfRange;
+    // selectable — unless the caller books at the weekend, in which case a
+    // Saturday keeps its colour and becomes tappable.
+    const isDisabled = (isWeekend && !allowWeekends) || isHoliday || isOutOfRange;
     const isSelected = Boolean(value && formatDateKey(date) === formatDateKey(value));
     const isHighlighted = Boolean(
       rangeStartDay &&
@@ -174,16 +246,23 @@ export function DatePickerField({
   };
 
   const legend = (
-    <View style={styles.legend}>
-      <View style={styles.legendItem}>
-        <View style={[styles.legendSwatch, styles.weekendDayButton]} />
-        <ThemedText style={styles.legendText}>{TEXT.DATE_PICKER_LEGEND_WEEKEND}</ThemedText>
+    <>
+      {caption ? (
+        <View style={styles.caption}>
+          <ThemedText style={styles.captionText}>{caption}</ThemedText>
+        </View>
+      ) : null}
+      <View style={styles.legend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendSwatch, styles.weekendDayButton]} />
+          <ThemedText style={styles.legendText}>{TEXT.DATE_PICKER_LEGEND_WEEKEND}</ThemedText>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendSwatch, styles.holidayDayButton]} />
+          <ThemedText style={styles.legendText}>{TEXT.DATE_PICKER_LEGEND_HOLIDAY}</ThemedText>
+        </View>
       </View>
-      <View style={styles.legendItem}>
-        <View style={[styles.legendSwatch, styles.holidayDayButton]} />
-        <ThemedText style={styles.legendText}>{TEXT.DATE_PICKER_LEGEND_HOLIDAY}</ThemedText>
-      </View>
-    </View>
+    </>
   );
 
   return (
@@ -194,13 +273,17 @@ export function DatePickerField({
       <Pressable
         accessibilityRole="button"
         onPress={() => setIsOpen(true)}
-        style={[styles.button, hasError ? styles.inputError : undefined]}>
-        <CalendarDays size={16} color={c.textMuted} />
+        style={[styles.button, hasError ? styles.inputError : undefined, buttonStyle]}>
+        <CalendarDays size={iconSize} color={iconColor ?? c.textMuted} />
         <ThemedText
           numberOfLines={1}
           adjustsFontSizeToFit
-          style={[styles.buttonText, !value && styles.placeholder]}>
-          {value ? formatDisplayDate(value) : `เลือก${label}`}
+          style={[
+            styles.buttonText,
+            !displayValue && !value && styles.placeholder,
+            textStyle,
+          ]}>
+          {displayValue ?? (value ? formatDisplayDate(value) : `เลือก${label}`)}
         </ThemedText>
       </Pressable>
 
@@ -209,7 +292,7 @@ export function DatePickerField({
           <Pressable>
             {isMonthLoading ? (
               <View style={[styles.calendar, styles.loadingCard]}>
-                <ActivityIndicator color={c.primary} />
+                <InfinityLoader size={60} />
                 <ThemedText style={styles.loadingText}>
                   {TEXT.SHARED_LOADING_DATA_TITLE}
                 </ThemedText>
@@ -301,7 +384,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 6,
   },
   selectedDayButton: {
-    backgroundColor: c.info,
+    backgroundColor: c.belizeHole,
   },
   // Backgrounds mirror the timestamp calendar (the source of truth): weekends &
   // public holidays share the "holiday" grey; the requested leave span uses the
@@ -335,6 +418,20 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   disabledDayText: {
     color: c.textFaint,
+  },
+  // Sits directly under the grid: the span in words, since it is no longer
+  // drawn on the days themselves.
+  caption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: 14,
+    paddingHorizontal: 2,
+  },
+  captionText: {
+    fontSize: 13,
+    color: c.text,
+    fontFamily: AppFonts.psuBold,
   },
   legend: {
     flexDirection: 'row',

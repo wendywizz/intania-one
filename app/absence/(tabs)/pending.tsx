@@ -2,7 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { Inbox } from 'lucide-react-native';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { type AppColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
 import {
   AbsenceListItem,
@@ -16,6 +16,8 @@ import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import {
   TYPE_ABSENCE_BIRTH,
@@ -42,6 +44,7 @@ function getEditPathname(type: string) {
 type PendingTab = 'approve' | 'mine';
 
 export default function PendingScreen() {
+  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
   const { user: authUser } = useAuth();
@@ -96,6 +99,17 @@ export default function PendingScreen() {
   );
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
+
+  /**
+   * Whether a new request can be started.
+   *
+   * `remain` is a leave request still awaiting approval and `cancel` a
+   * cancellation of one; either means this person already has something in the
+   * queue. While the list is still loading or has failed, the answer is not
+   * known — so the button stays hidden rather than appearing and then
+   * disappearing under the finger.
+   */
+  const canRequestLeave = !isLoading && !error && !items.remain && !items.cancel;
 
   const openDetail = useCallback((item: absence) => {
     const type = getAbsenceType(item);
@@ -228,6 +242,28 @@ export default function PendingScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScreenHeader title={TEXT.ABSENCE_PENDING_TITLE} backHref="/" titleInNavBar showHomeButton={false} />
+
+      {/* The way into the leave forms, now that "ยื่นลา" is not a tab. Same
+          dashed outline booking-room uses for "จองห้อง": it reads as "start
+          something new" rather than as another item in the list below it.
+
+          Hidden while a request of this person's is still waiting — the system
+          allows one at a time, so offering to start another would only lead to
+          a form that cannot be submitted. The pending card below is the answer
+          to "why not": it is the request in the way. */}
+      {canRequestLeave ? (
+        <View style={[styles.addRow, { paddingHorizontal: gutter }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={TEXT.ABSENCE_NEW_LEAVE}
+            onPress={() => navPush('/absence' as Parameters<typeof navPush>[0])}
+            style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}>
+            <IconSymbol name="plus" size={20} color={c.primary} />
+            <ThemedText style={styles.addButtonText}>{TEXT.ABSENCE_NEW_LEAVE}</ThemedText>
+          </Pressable>
+        </View>
+      ) : null}
+
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
   );
@@ -257,6 +293,34 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  // Sits between the nav bar and the list, so the list's own top padding is
+  // measured from the button rather than from the navbar.
+  addRow: {
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  // Copied in shape from booking-room's add row: a dashed outline reads as
+  // "start a new one", which is exactly what it does.
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 54,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: c.primary,
+    backgroundColor: c.primarySoft,
+    paddingHorizontal: 16,
+  },
+  addButtonPressed: { opacity: 0.7 },
+  addButtonText: {
+    color: c.primary,
+    fontSize: 15,
+    lineHeight: 21,
+    fontFamily: AppFonts.psuBold,
   },
   topTabBar: {
     flexDirection: 'row',

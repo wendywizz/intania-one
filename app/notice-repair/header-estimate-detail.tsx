@@ -1,4 +1,5 @@
 import { AppToast } from '@/components/app-toast';
+import { InfinityLoader } from '@/components/infinity-loader';
 import { ModalSelectField, type ModalSelectOption } from '@/components/modal-select-field';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -17,6 +18,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { boxShadow } from '@/constants/shadows';
 
 const STATUS_COLORS: Record<string, string> = {
   '001': '#2563EB', '002': '#16A34A', '003': '#D97706',
@@ -172,7 +174,7 @@ export default function HeaderEstimateDetailScreen() {
   };
 
   const renderContent = () => {
-    if (isLoading) return <ActivityIndicator style={styles.loader} size="large" color={c.primary} />;
+    if (isLoading) return <InfinityLoader size={60} style={styles.loader} />;
     if (error) {
       return (
         <View style={styles.stateContent}>
@@ -388,7 +390,9 @@ export default function HeaderEstimateDetailScreen() {
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.surfaceAlt },
-  loader: { flex: 1 },
+  // Centred both ways: ActivityIndicator centred itself inside a flex:1 box,
+  // the infinity mark is a plain view and has to be told.
+  loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   stateContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   errorText: { color: c.primary, fontSize: 14, lineHeight: 20, textAlign: 'center' },
 
@@ -397,11 +401,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
 
   card: {
     borderRadius: 24,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 4, blur: 6, opacity: 0.06 }),
   },
   cardInner: { padding: 20, gap: 16 },
   summaryInner: { padding: 20, gap: 20 },
@@ -490,7 +490,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   quarterFlex: { flex: 1 },
   approveBtn: {
     backgroundColor: c.pomegranate,
-    shadowColor: c.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 3,
+    boxShadow: boxShadow(c.primary, { y: 6, blur: 8, opacity: 0.25 }),
   },
   approveText: { fontSize: 14, fontWeight: '700', color: c.textOnPrimary },
   cancelBtn: { borderWidth: 1, borderColor: c.border },

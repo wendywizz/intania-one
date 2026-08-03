@@ -75,9 +75,14 @@ export default function absenceTabLayout() {
           fontFamily: AppFonts.psuRegular,
         },
       }}>
+      {/* The leave-form chooser is still a route — /absence lands on it, and the
+          pending list links to it — but it is no longer a tab: picking a form is
+          something you do once, not a place you return to. `href: null` hides it
+          from the bar without removing the screen. */}
       <Tabs.Screen
         name="index"
         options={{
+          href: null,
           title: TEXT.ABSENCE_TAB_APPEAL,
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="person.crop.circle.badge.minus" color={color} />,
         }}

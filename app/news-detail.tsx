@@ -15,6 +15,7 @@ import { TEXT } from '@/constants/text';
 import type { News } from '@/models/types';
 import { staffNewsFeed } from '@/services/newsService';
 import { formatNewsDateTime } from '@/utils/date-format';
+import { boxShadow } from '@/constants/shadows';
 
 function getParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -216,11 +217,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: c.border,
     padding: 20,
     gap: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.05 }),
   },
   metaRow: {
     flexDirection: 'row',

@@ -5,8 +5,15 @@ import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'rea
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { boxShadow } from '@/constants/shadows';
 
-export type ListCardBadge = { text: string; bg: string; color: string };
+export type ListCardBadge = {
+  text: string;
+  bg: string;
+  color: string;
+  /** Small leading glyph inside the badge, sized to the badge text. */
+  icon?: ReactNode;
+};
 
 export type ListCardMeta = {
   /** Optional small leading icon (~13px) for the line. */
@@ -89,6 +96,7 @@ export function ListCard({
         <View style={styles.right}>
           {badge ? (
             <View style={[styles.badge, { backgroundColor: badge.bg }]}>
+              {badge.icon}
               <ThemedText style={[styles.badgeText, { color: badge.color }]} numberOfLines={1}>
                 {badge.text}
               </ThemedText>
@@ -127,11 +135,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 20,
     marginBottom: 12,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.04 }),
   },
   pressed: {
     opacity: 0.72,
@@ -193,6 +197,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     maxWidth: '25%',
   },
   badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     borderRadius: 9999,
     paddingHorizontal: 10,
     paddingVertical: 3,

@@ -26,6 +26,7 @@ import { USER_PLACEHOLDER } from '@/constants/images';
 import { useTheme } from '@/context/ThemeContext';
 import type { Person } from '@/models/types';
 import { getPersonnelSuggestions } from '@/services/personService';
+import { boxShadow } from '@/constants/shadows';
 
 const SEARCH_DEBOUNCE_MS = 350;
 const RECENT_KEYWORDS_KEY = '@person_search_recent_keywords';
@@ -432,11 +433,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   input: {
     flex: 1,
@@ -518,11 +515,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.04 }),
   },
   avatarWrap: {
     width: 40,

@@ -1,10 +1,11 @@
 import { MapPin } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { boxShadow } from '@/constants/shadows';
 
 export type EventTimelineItemProps = {
   /**
@@ -12,10 +13,27 @@ export type EventTimelineItemProps = {
    * range (e.g. "09:00\n12:00"); shown as "—" when empty.
    */
   time?: string;
-  title: string;
+  /** Shorthand body: a single line. Ignored when `children` is given. */
+  title?: string;
   location?: string;
-  /** Extra meta row(s) rendered under the title (before the location). */
+  /**
+   * The card body. Given this, the row renders it verbatim and ignores
+   * `title`/`location` — that is how a screen with more to say (a booking with
+   * a lecturer and a purpose, a job with a status chip) keeps the same rail and
+   * time gutter as everything else while owning what sits beside them.
+   */
   children?: ReactNode;
+  /**
+   * Overrides for the card — background and border.
+   *
+   * For lists where each entry carries a colour of its own: a room booking is
+   * given one when it is made, and the website draws it in that colour, so the
+   * app shows the same. Callers that set a background own the contrast of
+   * whatever they render inside it.
+   */
+  cardStyle?: StyleProp<ViewStyle>;
+  /** Dot colour, so the rail marker can follow the card. Defaults to primary. */
+  dotColor?: string;
   onPress?: () => void;
 };
 
@@ -31,10 +49,14 @@ export function EventTimelineItem({
   title,
   location,
   children,
+  cardStyle,
+  dotColor,
   onPress,
 }: EventTimelineItemProps) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  // A two-line time is a start and an end; anything else is one moment.
+  const isRange = Boolean(time && time.includes('\n'));
 
   const body = (
     <>
@@ -45,21 +67,40 @@ export function EventTimelineItem({
       </View>
       <View style={styles.rail}>
         <View style={styles.railLine} />
-        <View style={styles.dot} />
+        {/* The dot marks the slot, so it sits level with the middle of the time
+            it marks: between the two lines of a start/end range, or on the
+            single line when there is only one time. Both offsets are the time
+            column's own geometry (its 20pt top padding + 16pt line height),
+            which is why they are derived from it rather than guessed. */}
+        <View
+          style={[
+            styles.dot,
+            isRange ? styles.dotRange : styles.dotSingle,
+            dotColor ? { backgroundColor: dotColor } : undefined,
+          ]}
+        />
       </View>
-      <View style={styles.card}>
-        <ThemedText style={styles.title} numberOfLines={2}>
-          {title}
-        </ThemedText>
-        {children}
-        {location ? (
-          <View style={styles.metaRow}>
-            <MapPin size={13} color={c.textMuted} />
-            <ThemedText style={styles.metaText} numberOfLines={2}>
-              {location}
+      <View style={[styles.card, cardStyle]}>
+        {/* The rail, the time gutter and this card are the shared part. What
+            goes inside the card is the caller's: pass `children` and the row
+            renders exactly that. `title`/`location` stay as a shorthand for the
+            common "one line and a place" case so simple screens need no body of
+            their own — they are ignored once `children` is given. */}
+        {children ?? (
+          <>
+            <ThemedText style={styles.title} numberOfLines={2}>
+              {title}
             </ThemedText>
-          </View>
-        ) : null}
+            {location ? (
+              <View style={styles.metaRow}>
+                <MapPin size={13} color={c.textMuted} />
+                <ThemedText style={styles.metaText} numberOfLines={2}>
+                  {location}
+                </ThemedText>
+              </View>
+            ) : null}
+          </>
+        )}
       </View>
     </>
   );
@@ -74,6 +115,11 @@ export function EventTimelineItem({
   return <View style={styles.row}>{body}</View>;
 }
 
+/** Time-column geometry the dot is aligned against. */
+const TIME_TOP = 20;
+const TIME_LINE = 16;
+const DOT_SIZE = 14;
+
 const makeStyles = (c: AppColors) => StyleSheet.create({
   row: {
     flexDirection: 'row',
@@ -82,11 +128,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   timeCol: {
     width: 38,
     alignItems: 'flex-end',
-    paddingTop: 20,
+    paddingTop: TIME_TOP,
   },
   timeText: {
     fontSize: 13,
-    lineHeight: 16,
+    lineHeight: TIME_LINE,
     fontFamily: AppFonts.psuBold,
     color: c.primary,
   },
@@ -103,14 +149,17 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: c.border,
   },
   dot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    borderRadius: DOT_SIZE / 2,
     backgroundColor: c.primary,
     borderWidth: 3,
     borderColor: c.background,
-    marginTop: 18,
   },
+  // Halfway between the two time lines — the gap the range spans.
+  dotRange: { marginTop: TIME_TOP + TIME_LINE - DOT_SIZE / 2 },
+  // Level with the middle of the one line there is.
+  dotSingle: { marginTop: TIME_TOP + TIME_LINE / 2 - DOT_SIZE / 2 },
   card: {
     flex: 1,
     backgroundColor: c.surface,
@@ -121,11 +170,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     marginVertical: 6,
     marginLeft: 2,
     gap: 5,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   title: {
     fontSize: 15,

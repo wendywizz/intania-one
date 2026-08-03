@@ -16,6 +16,7 @@ import { TEXT } from '@/constants/text';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { statsData } from '@/services/absenceService';
+import { boxShadow } from '@/constants/shadows';
 
 interface StatsData {
   staffId: string;
@@ -136,24 +137,94 @@ function InfoCard({ servantAge, budgetStartDate, budgetEndDate }: Pick<StatsData
   );
 }
 
-// Gauge tile: label + percentage ring on top, big used/total value below.
-function StatTile({ label, used, total, tint }: { label: string; used: number; total: number; tint: string }) {
+/**
+ * One quota: how much of an allowance has been used, and how much is left.
+ *
+ * A white card like everything else on the screen, with the colour carried by
+ * the icon and the bar rather than by a saturated slab — two full-bleed blocks
+ * of blue and green shouted louder than the numbers they contained, and the
+ * numbers are the point.
+ *
+ * The used figure is the headline, the allowance sits beside it in words, and
+ * the remainder is stated outright: "ยังลาได้อีกกี่วัน" is the question the
+ * screen is opened with, and making someone subtract to get it is work the
+ * screen should have done.
+ */
+function StatTile({
+  label,
+  icon,
+  used,
+  total,
+  unit,
+  tint,
+}: {
+  label: string;
+  icon: 'arrow.triangle.2.circlepath' | 'calendar';
+  used: number;
+  total: number;
+  unit: string;
+  tint: string;
+}) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const pct = getProgress(used, total);
+  const remain = total - used;
+  const over = remain < 0;
+
   return (
-    <View style={[styles.tile, { backgroundColor: tint, borderColor: tint }]}>
+    <View style={styles.tile}>
       <View style={styles.tileHeader}>
-        <ThemedText style={[styles.tileLabel, { color: c.textOnPrimary }]} numberOfLines={2}>{label}</ThemedText>
-        <View style={[styles.tileRing, { borderColor: c.textOnPrimary }]}>
-          <ThemedText style={[styles.tileRingText, { color: c.textOnPrimary }]}>{pct}%</ThemedText>
+        <View style={[styles.tileIcon, { backgroundColor: withAlpha(tint, 0.14) }]}>
+          <IconSymbol name={icon} size={16} color={tint} />
         </View>
+        <ThemedText style={styles.tileLabel} numberOfLines={2}>
+          {label}
+        </ThemedText>
       </View>
-      <ThemedText style={styles.tileValue}>
-        <ThemedText style={[styles.tileValueBig, { color: c.textOnPrimary }]}>{fmt(used)}</ThemedText>
-        <ThemedText style={[styles.tileValueDim, { color: c.textOnPrimary }]}>/{fmt(total)}</ThemedText>
+
+      <View style={styles.tileValueRow}>
+        <ThemedText style={[styles.tileValueBig, { color: tint }]}>{fmt(used)}</ThemedText>
+        <ThemedText style={styles.tileValueUnit}>{unit}</ThemedText>
+      </View>
+
+      <ThemedText style={styles.tileLimit}>
+        {fill(TEXT.ABSENCE_STATS_OF_LIMIT, { total: fmt(total), unit })}
+      </ThemedText>
+
+      {/* The bar is the only place the percentage appears — as a length rather
+          than a number, since "62%" of a leave quota is not a figure anyone
+          quotes, but "most of it is gone" is worth seeing at a glance. */}
+      <View style={styles.tileTrack}>
+        <View
+          style={[
+            styles.tileFill,
+            { width: `${pct}%`, backgroundColor: over ? c.danger : tint },
+          ]}
+        />
+      </View>
+
+      <ThemedText style={[styles.tileRemain, over && { color: c.danger }]}>
+        {over
+          ? fill(TEXT.ABSENCE_STATS_OVER_LIMIT, { over: fmt(Math.abs(remain)), unit })
+          : fill(TEXT.ABSENCE_STATS_REMAINING, { remain: fmt(remain), unit })}
       </ThemedText>
     </View>
+  );
+}
+
+/** The same colour at a fraction of its strength, as #RRGGBBAA. */
+function withAlpha(hex: string, alpha: number) {
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) return hex;
+  const aa = Math.round(alpha * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return `${hex}${aa}`;
+}
+
+function fill(template: string, values: Record<string, string | number>) {
+  return Object.keys(values).reduce(
+    (text, key) => text.replace(`{${key}}`, String(values[key])),
+    template,
   );
 }
 
@@ -260,8 +331,22 @@ export default function StatsScreen() {
         />
 
         <View style={styles.tileRow}>
-          <StatTile label={TEXT.ABSENCE_STATS_OCCURRENCES} used={usedCount} total={ABSENCE_MAX_TIMES} tint={c.info} />
-          <StatTile label={TEXT.ABSENCE_STATS_TOTAL_DAYS_LABEL} used={usedDays} total={ABSENCE_MAX_DAYS} tint={c.success} />
+          <StatTile
+            label={TEXT.ABSENCE_STATS_OCCURRENCES}
+            icon="arrow.triangle.2.circlepath"
+            used={usedCount}
+            total={ABSENCE_MAX_TIMES}
+            unit={TEXT.ABSENCE_STATS_UNIT_TIMES}
+            tint={c.info}
+          />
+          <StatTile
+            label={TEXT.ABSENCE_STATS_TOTAL_DAYS_LABEL}
+            icon="calendar"
+            used={usedDays}
+            total={ABSENCE_MAX_DAYS}
+            unit={TEXT.ABSENCE_STATS_UNIT_DAYS}
+            tint={c.success}
+          />
         </View>
 
         <View style={styles.typeListCard}>
@@ -332,11 +417,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: c.border,
     paddingVertical: 6,
     paddingHorizontal: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   infoRow: {
     flexDirection: 'row',
@@ -386,18 +467,21 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     padding: 16,
-    gap: 14,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    gap: 8,
+    boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   tileHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    alignItems: 'center',
     gap: 8,
+  },
+  tileIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   tileLabel: {
     flex: 1,
@@ -405,40 +489,48 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     lineHeight: 17,
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
-    opacity: 0.9,
   },
-  tileRing: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 3,
-    borderColor: c.primary,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  tileRingText: {
-    fontSize: 11,
-    lineHeight: 13,
-    color: c.primary,
-    fontFamily: AppFonts.psuBold,
-  },
-  tileValue: {
+  // Baseline-aligned so the unit sits on the same line as the number rather
+  // than floating beside its cap height.
+  tileValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 5,
     marginTop: 2,
   },
   tileValueBig: {
-    fontSize: 30,
-    lineHeight: 36,
-    color: c.text,
+    fontSize: 32,
+    lineHeight: 38,
     fontFamily: AppFonts.psuBold,
   },
-  tileValueDim: {
-    fontSize: 18,
-    lineHeight: 24,
+  tileValueUnit: {
+    fontSize: 14,
+    lineHeight: 19,
     color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
+  },
+  tileLimit: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: c.textFaint,
+    fontFamily: AppFonts.psuRegular,
+  },
+  tileTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: c.surfaceMuted,
+    overflow: 'hidden',
+    marginTop: 4,
+  },
+  tileFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  tileRemain: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: c.text,
     fontFamily: AppFonts.psuBold,
-    opacity: 0.8,
   },
 
   // leave-type list
@@ -456,11 +548,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     paddingHorizontal: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   typeRow: {
     flexDirection: 'row',

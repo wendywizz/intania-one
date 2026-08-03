@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "schedule-design": {
+      "source": "aidotengineer/skills",
+      "sourceType": "github",
+      "skillPath": "schedule-design/SKILL.md",
+      "computedHash": "bd68368104ae1fac45376c6a5d7719aad4799fb0e4bfbf4b2808f0a4566a7d67"
+    }
+  }
+}

@@ -1,6 +1,6 @@
-import { CalendarDays, Clock, Inbox, LogIn, LogOut } from 'lucide-react-native';
+import { CalendarDays, Clock, LogIn, LogOut } from 'lucide-react-native';
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -15,7 +15,6 @@ import { EmptyState } from "@/components/empty-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ThemedText } from "@/components/themed-text";
 import { ListCard, type ListCardBadge } from "@/components/ui/list-card";
-import { TipAlert } from "@/components/ui/tip-alert";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
@@ -25,6 +24,7 @@ import {
   type Timestamp,
 } from "@/services/timestampService";
 import { daysSince, formatFullDate } from "@/utils/date-format";
+import { boxShadow } from '@/constants/shadows';
 
 // Days a staff member has to file the forgot-timestamp request in the app.
 // Past this the request can only be made on the paper form at a PC.
@@ -206,7 +206,6 @@ export function TimestampForgotList() {
   const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const [items, setItems] = useState<Timestamp[]>([]);
-  const [cycle, setCycle] = useState({ start: "", end: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -224,10 +223,8 @@ export function TimestampForgotList() {
       try {
         const result = await getTimestampData(staffId, currentYear);
         setItems(sortItemsByDateDesc(result.data));
-        setCycle({ start: result.cycleStart, end: result.cycleEnd });
       } catch (loadError) {
         setItems([]);
-        setCycle({ start: "", end: "" });
         setError(
           loadError instanceof Error
             ? loadError.message
@@ -246,34 +243,6 @@ export function TimestampForgotList() {
       loadItems();
     }, [loadItems]),
   );
-
-  // Company attendance cycle shown as an info alert (in place of the old static
-  // description). Prefer the start/end dates the API returns; if absent, fall
-  // back to the span of the returned days.
-  const cycleText = useMemo(() => {
-    const range = (start: string, end: string) =>
-      start && end ? (start === end ? start : `${start} - ${end}`) : start || end;
-
-    if (cycle.start || cycle.end) {
-      return range(
-        cycle.start ? formatFullDate(cycle.start) : "",
-        cycle.end ? formatFullDate(cycle.end) : "",
-      );
-    }
-
-    const dated = items
-      .map((item) => getItemDateValue(item))
-      .filter(Boolean)
-      .sort((a, b) => Date.parse(a) - Date.parse(b));
-    if (!dated.length) return "";
-    return range(formatFullDate(dated[0]), formatFullDate(dated[dated.length - 1]));
-  }, [cycle, items]);
-
-  const listHeader = cycleText ? (
-    <View style={styles.listHeader}>
-      <TipAlert title={TEXT.TIMESTAMP_CYCLE_LABEL} message={cycleText} />
-    </View>
-  ) : null;
 
   if (isLoading) {
     return (
@@ -309,8 +278,16 @@ export function TimestampForgotList() {
         />
       }
       renderItem={({ item }) => <TimestampItem item={item} />}
-      ListHeaderComponent={listHeader}
-      ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.SHARED_EMPTY_DATA} />}
+      // An empty list on this screen means nothing was missed, which is worth
+      // saying outright — the grey inbox and "ไม่มีข้อมูล" read as a failure to
+      // find something.
+      ListEmptyComponent={
+        <EmptyState
+          iconName="checkmark.circle.fill"
+          tone="success"
+          message={TEXT.TIMESTAMP_FORGOT_EMPTY_TITLE}
+        />
+      }
     />
   );
 }
@@ -325,9 +302,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 16,
   },
-  listHeader: {
-    paddingBottom: 12,
-  },
   unavailableCard: {
     borderColor: "rgba(223,191,189,0.2)",
   },
@@ -338,11 +312,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: "rgba(223,191,189,0.3)",
     padding: 16,
     gap: 10,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.04 }),
   },
   itemCardUnavailable: {
     backgroundColor: c.background,

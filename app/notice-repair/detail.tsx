@@ -27,6 +27,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
+import { boxShadow } from '@/constants/shadows';
 
 // New job awaiting approval — the only status where the approver's
 // เห็นชอบ / ไม่เห็นชอบ / ยกเลิก actions are valid (see Repair_Controller).
@@ -803,11 +804,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   quarterFlex: { flex: 1 },
   approveBtn: {
     backgroundColor: c.pomegranate,
-    shadowColor: c.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3,
+    boxShadow: boxShadow(c.primary, { y: 6, blur: 8, opacity: 0.25 }),
   },
   approveText: { fontSize: 14, fontWeight: '700', color: c.textOnPrimary },
   rejectBtn: { backgroundColor: c.primarySoft, borderWidth: 1, borderColor: c.primarySoft },
@@ -834,11 +831,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: c.border,
     backgroundColor: c.surface,
     overflow: 'hidden',
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 6,
+    boxShadow: boxShadow(c.shadow, { y: 4, blur: 12, opacity: 0.12 }),
+    // Replaces the `elevation` this had before boxShadow — on Android that was
+    // also what stacked this dropdown above the row beneath it.
+    zIndex: 6,
   },
   menuItem: {
     flexDirection: 'row',

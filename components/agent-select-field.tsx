@@ -1,25 +1,13 @@
-import { Minus, Plus, Search, X } from "lucide-react-native";
-import { useMemo, useState } from "react";
-import {
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-} from "react-native";
+import { Minus } from "lucide-react-native";
+import { useMemo, useRef, useState } from "react";
+import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
+import { SelectSheet, type SelectSheetOption } from "@/components/ui/select-sheet";
 import { ThemedText } from "./themed-text";
-import { ThemedView } from "./themed-view";
 import { UserAvatar } from "./user-avatar";
-
-// Remove the default focus outline on web so the active search field shows only
-// its bottom line (RN Web only; no-op on native).
-const webNoOutline: any = Platform.OS === "web" ? { outlineStyle: "none" } : null;
 
 type AgentSelectFieldProps = {
   options: string[];
@@ -50,29 +38,25 @@ export function AgentSelectField({
 }: AgentSelectFieldProps) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const [searchText, setSearchText] = useState("");
-  const filteredOptions = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
 
-    if (!keyword) {
-      return options;
-    }
+  // The sheet owns the searching; this only maps people onto its option shape.
+  const sheetOptions = useMemo<SelectSheetOption[]>(
+    () =>
+      options.map((option) => ({
+        id: option,
+        label: option,
+        description: subtitleForOption?.(option),
+        leading: photoIdForOption?.(option) ? (
+          <UserAvatar staffId={photoIdForOption(option)} size={40} />
+        ) : undefined,
+        disabled: selectedAgents.includes(option),
+      })),
+    [options, photoIdForOption, subtitleForOption, selectedAgents],
+  );
 
-    return options.filter((option) => option.toLowerCase().includes(keyword));
-  }, [options, searchText]);
+  const handleToggle = () => onToggle();
 
-  const handleToggle = () => {
-    if (isOpen) {
-      setSearchText("");
-    }
-
-    onToggle();
-  };
-
-  const handleSelect = (agent: string) => {
-    setSearchText("");
-    onSelect(agent);
-  };
+  const handleSelect = (agent: string) => onSelect(agent);
 
   return (
     <View style={styles.field}>
@@ -94,123 +78,128 @@ export function AgentSelectField({
       {selectedAgents.length ? (
         <View style={styles.agentList}>
           {selectedAgents.map((selectedAgent, index) => (
-            <View
+            <AgentRow
               key={`${String(selectedAgent)}-${index}`}
-              style={styles.agentListItem}
-            >
-              <View style={styles.agentRow}>
-                {photoIdForOption?.(selectedAgent) ? (
-                  <UserAvatar staffId={photoIdForOption(selectedAgent)} size={34} />
-                ) : null}
-                <View style={styles.agentTextCol}>
-                  <ThemedText style={styles.agentListText} numberOfLines={1}>
-                    {selectedAgent}
-                  </ThemedText>
-                  {subtitleForOption?.(selectedAgent) ? (
-                    <ThemedText style={styles.agentSubtitle} numberOfLines={1}>
-                      {subtitleForOption(selectedAgent)}
-                    </ThemedText>
-                  ) : null}
-                </View>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={TEXT.SHARED_DELETE_THAI}
-                onPress={() => onRemove(selectedAgent)}
-                style={styles.deleteAgentButton}
-              >
-                <Minus size={18} color={c.danger} />
-              </Pressable>
-            </View>
+              agent={selectedAgent}
+              photoId={photoIdForOption?.(selectedAgent)}
+              subtitle={subtitleForOption?.(selectedAgent)}
+              styles={styles}
+              color={c}
+              onRemove={onRemove}
+            />
           ))}
         </View>
       ) : null}
 
-      <Modal
-        transparent
+      {/* The app's one way to choose from a list — the same sheet the room and
+          category pickers use. This used to be a centred fade modal with its
+          own search box and its own row layout, which made picking a stand-in
+          feel like a different app from picking anything else.
+
+          Already-chosen people stay in the list, greyed: the sheet closes on
+          each pick and is reopened to add the next, and a name vanishing
+          between openings reads as the person having gone, not as them having
+          been added. */}
+      <SelectSheet
         visible={isOpen}
-        animationType="fade"
-        onRequestClose={handleToggle}
-      >
-        <Pressable style={styles.backdrop} onPress={handleToggle}>
-          <Pressable style={styles.modalContent}>
-            <ThemedView
-              style={styles.selectModal}
-              lightColor="#FFFFFF"
-              darkColor="#151718"
-            >
-              <View style={styles.selectModalHeader}>
-                <ThemedText
-                  type="defaultSemiBold"
-                  style={styles.selectModalTitle}
-                >
-                  {TEXT.ABSENCE_DELEGATE_LABEL}
-                </ThemedText>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
-                  onPress={handleToggle}
-                  style={styles.closeButton}
-                >
-                  <X size={20} color={c.text} />
-                </Pressable>
-              </View>
-
-              <View style={styles.searchRow}>
-                <Search size={18} color={c.textMuted} />
-                <TextInput
-                  onChangeText={setSearchText}
-                  placeholder={TEXT.SHARED_SEARCH_NAME_PLACEHOLDER}
-                  placeholderTextColor="#8A969C"
-                  style={[styles.searchInput, webNoOutline]}
-                  value={searchText}
-                />
-              </View>
-
-              <ScrollView
-                style={styles.optionScroll}
-                contentContainerStyle={styles.optionScrollContent}
-                showsVerticalScrollIndicator={false}
-              >
-                {filteredOptions.length ? (
-                  filteredOptions.map((option, index) => (
-                    <Pressable
-                      key={`${option}-${index}`}
-                      accessibilityRole="button"
-                      onPress={() => handleSelect(option)}
-                      style={styles.option}
-                    >
-                      <View style={styles.agentRow}>
-                        {photoIdForOption?.(option) ? (
-                          <UserAvatar staffId={photoIdForOption(option)} size={38} />
-                        ) : null}
-                        <View style={styles.agentTextCol}>
-                          <ThemedText style={styles.optionText} numberOfLines={1}>
-                            {option}
-                          </ThemedText>
-                          {subtitleForOption?.(option) ? (
-                            <ThemedText style={styles.agentSubtitle} numberOfLines={1}>
-                              {subtitleForOption(option)}
-                            </ThemedText>
-                          ) : null}
-                        </View>
-                      </View>
-                      <View style={styles.addButton}>
-                        <Plus size={18} color={c.success} />
-                      </View>
-                    </Pressable>
-                  ))
-                ) : (
-                  <ThemedText style={styles.emptyOption}>
-                    {TEXT.SHARED_EMPTY_DATA}
-                  </ThemedText>
-                )}
-              </ScrollView>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        onClose={handleToggle}
+        title={TEXT.ABSENCE_DELEGATE_LABEL}
+        searchPlaceholder={TEXT.SHARED_SEARCH_NAME_PLACEHOLDER}
+        emptyMessage={TEXT.SHARED_EMPTY_DATA}
+        options={sheetOptions}
+        // Ten names, then another ten each time the list is scrolled to its
+        // end. The whole staff list arrives in one response, so this is about
+        // how much of it is drawn at once — a sheet that renders four hundred
+        // rows with avatars to show ten stutters on the way open.
+        pageSize={10}
+        onSelect={(option) => handleSelect(option.id)}
+      />
     </View>
+  );
+}
+
+/**
+ * One chosen stand-in, which leaves by collapsing rather than disappearing.
+ *
+ * Removing someone from a list of three is easy to do to the wrong row, and a
+ * row that vanishes on the same frame as the tap gives nothing to check against
+ * — the list simply looks different afterwards. Sliding it out to the right and
+ * closing the gap it leaves shows which row went, and shows the ones below
+ * moving up into its place rather than appearing to have been the one removed.
+ *
+ * The parent is told only when the animation finishes, so the row being
+ * animated is still in `selectedAgents` while it plays; there is nothing to
+ * keep a copy of and nothing to fall out of sync.
+ */
+function AgentRow({
+  agent,
+  photoId,
+  subtitle,
+  styles,
+  color,
+  onRemove,
+}: {
+  agent: string;
+  photoId?: string;
+  subtitle?: string;
+  styles: ReturnType<typeof makeStyles>;
+  color: AppColors;
+  onRemove: (agent: string) => void;
+}) {
+  const progress = useRef(new Animated.Value(1)).current;
+  const [removing, setRemoving] = useState(false);
+
+  const remove = () => {
+    // Guard the double tap: the row is still mounted while it plays, and a
+    // second press would fire onRemove twice for the same person.
+    if (removing) return;
+    setRemoving(true);
+
+    Animated.timing(progress, {
+      toValue: 0,
+      duration: 220,
+      easing: Easing.out(Easing.quad),
+      // Height cannot be driven natively, and the row has to collapse or the
+      // gap it leaves would close in one jump at the end.
+      useNativeDriver: false,
+    }).start(() => onRemove(agent));
+  };
+
+  return (
+    <Animated.View
+      style={[
+        styles.agentListItem,
+        {
+          opacity: progress,
+          maxHeight: progress.interpolate({ inputRange: [0, 1], outputRange: [0, 96] }),
+          transform: [
+            { translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) },
+          ],
+        },
+        removing && styles.agentListItemRemoving,
+      ]}>
+      <View style={styles.agentRow}>
+        {photoId ? <UserAvatar staffId={photoId} size={34} /> : null}
+        <View style={styles.agentTextCol}>
+          <ThemedText style={styles.agentListText} numberOfLines={1}>
+            {agent}
+          </ThemedText>
+          {subtitle ? (
+            <ThemedText style={styles.agentSubtitle} numberOfLines={1}>
+              {subtitle}
+            </ThemedText>
+          ) : null}
+        </View>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={TEXT.SHARED_DELETE_THAI}
+        onPress={remove}
+        disabled={removing}
+        style={({ pressed }) => [styles.deleteAgentButton, pressed && styles.deleteAgentPressed]}>
+        <Minus size={18} color={color.danger} />
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -298,6 +287,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  // The row is clipped while it collapses, so its content cannot spill past
+  // the shrinking height.
+  agentListItemRemoving: { overflow: "hidden" },
   deleteAgentButton: {
     width: 32,
     height: 32,
@@ -307,100 +299,5 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: 1.5,
     borderColor: c.danger,
   },
-  backdrop: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
-    padding: 24,
-  },
-  modalContent: {
-    width: "100%",
-    maxWidth: 520,
-  },
-  selectModal: {
-    width: "100%",
-    maxHeight: 540,
-    borderRadius: 8,
-    padding: 16,
-  },
-  selectModalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 12,
-  },
-  selectModalTitle: {
-    flex: 1,
-    fontSize: 16,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 20,
-    backgroundColor: `${c.text}14`,
-  },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-    paddingVertical: 6,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.inputBorder,
-  },
-  searchInput: {
-    flex: 1,
-    minHeight: 40,
-    color: c.text,
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 15,
-    paddingHorizontal: 0,
-    paddingVertical: 8,
-  },
-  optionScroll: {
-    // Fixed height so filtering the list doesn't resize the modal on every
-    // keystroke — the modal stays a constant size and only the list scrolls.
-    height: 360,
-  },
-  optionScrollContent: {
-    gap: 8,
-  },
-  option: {
-    minHeight: 48,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    paddingHorizontal: 0,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
-  },
-  optionText: {
-    flex: 1,
-    color: c.text,
-    lineHeight: 20,
-  },
-  optionActionText: {
-    fontSize: 13,
-  },
-  addButton: {
-    width: 32,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: c.success,
-  },
-  emptyOption: {
-    color: c.textMuted,
-    lineHeight: 20,
-    paddingVertical: 16,
-    textAlign: "center",
-  },
+  deleteAgentPressed: { opacity: 0.6, backgroundColor: c.dangerSoft },
 });

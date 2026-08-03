@@ -39,6 +39,7 @@ import {
 } from '@/services/biometricService';
 import { TEXT } from '@/constants/text';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { boxShadow } from '@/constants/shadows';
 
 // Resolved from package.json by app.config.js, so bumping the package version is
 // all it takes to update what this screen shows.
@@ -464,11 +465,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: c.border,
     overflow: 'hidden',
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 1, blur: 6, opacity: 0.04 }),
   },
   row: {
     flexDirection: 'row',

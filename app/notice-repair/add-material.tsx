@@ -16,6 +16,7 @@ import {
   Platform,
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { boxShadow } from '@/constants/shadows';
 
 export default function AddMaterialScreen() {
   const c = useColors();
@@ -183,11 +184,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   card: {
     backgroundColor: c.surface,
     borderRadius: 24,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 4, blur: 6, opacity: 0.06 }),
   },
   cardInner: { padding: 20, gap: 20 },
 
@@ -228,11 +225,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: c.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3,
+    boxShadow: boxShadow(c.primary, { y: 6, blur: 8, opacity: 0.25 }),
   },
 
   submitBtnText: {

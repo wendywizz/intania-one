@@ -1,4 +1,5 @@
 import { MaterialItemCard } from '@/components/notice-repair/material-item-card';
+import { InfinityLoader } from '@/components/infinity-loader';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -8,7 +9,7 @@ import type { NoticeRepairDetail } from '@/models/types';
 import { getFullDetail } from '@/services/noticeRepairService';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 export default function SupplyListScreen() {
@@ -38,7 +39,7 @@ export default function SupplyListScreen() {
       <NavTopBar title={TEXT.NOTICE_REPAIR_SUPPLY_LIST_TITLE} showHomeButton tone="primary" />
 
       {isLoading ? (
-        <ActivityIndicator style={styles.loader} size="large" color={c.primary} />
+        <InfinityLoader size={60} style={styles.loader} />
       ) : error ? (
         <View style={styles.center}>
           <ThemedText style={styles.errorText}>{error}</ThemedText>
@@ -75,7 +76,9 @@ export default function SupplyListScreen() {
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.surfaceAlt },
-  loader: { flex: 1 },
+  // Centred both ways: ActivityIndicator centred itself inside a flex:1 box,
+  // the infinity mark is a plain view and has to be told.
+  loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   errorText: { fontSize: 15, color: c.danger, textAlign: 'center' },
   scroll: { padding: 16, gap: 12 },

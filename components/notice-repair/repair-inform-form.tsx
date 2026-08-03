@@ -1,12 +1,11 @@
-import { X } from 'lucide-react-native';
-
 import { ConfirmModal } from '@/components/notice-repair/confirm-modal';
+import { InfinityLoader } from '@/components/infinity-loader';
 import { ScreenHeader } from '@/components/screen-header';
 import { SectionCard } from '@/components/section-card';
 import { useToast } from '@/components/toast-provider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
+import { SelectSheet } from '@/components/ui/select-sheet';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import type { NoticeRepairReference } from '@/models/types';
@@ -15,8 +14,8 @@ import { getCategoryIcon } from '@/utils/category-icon';
 import { useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
-  ActivityIndicator, Modal, Platform, Pressable, ScrollView,
-  StyleSheet, TextInput, useWindowDimensions, View,
+  ActivityIndicator, Platform, Pressable, ScrollView,
+  StyleSheet, TextInput, View,
 } from 'react-native';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
@@ -124,12 +123,6 @@ function reconcile(prev: RefItem | null, items: RefItem[]): RefItem | null {
   return items.find((i) => i.name === prev.name) ?? prev;
 }
 
-/** The current selection (default value) is highlighted and checked. */
-function isSameRef(a: RefItem | null | undefined, b: RefItem) {
-  if (!a) return false;
-  return (!!a.id && a.id === b.id) || a.name === b.name;
-}
-
 /** Renders the label, colouring a trailing "*" (required marker) red. */
 function FieldLabel({ text }: { text: string }) {
   const styles = useThemedStyles(makeStyles);
@@ -141,74 +134,6 @@ function FieldLabel({ text }: { text: string }) {
       {base}
       {required ? <ThemedText style={styles.required}> *</ThemedText> : null}
     </ThemedText>
-  );
-}
-
-// Option sheet for the reference pickers, styled like the absence forms'
-// select modal (centred card, X close button, hairline-separated options).
-function PickerModal({
-  visible, title, items, selected, onSelect, onClose, iconFor,
-}: {
-  visible: boolean; title: string; items: RefItem[]; selected?: RefItem | null;
-  onSelect: (item: RefItem) => void; onClose: () => void;
-  /** Leading icon for each option row. */
-  iconFor?: (item: RefItem) => IconSymbolName;
-}) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  const { width } = useWindowDimensions();
-  // Never narrower than 70% of the screen, however short the option labels are.
-  const minWidth = Math.round(width * 0.7);
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.modalWrap}>
-          <ThemedView style={[styles.selectModal, { minWidth }]} lightColor="#FFFFFF" darkColor="#151718">
-            <View style={styles.selectModalHeader}>
-              <ThemedText type="defaultSemiBold" style={styles.selectModalTitle}>{title}</ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
-                onPress={onClose}
-                style={styles.closeButton}>
-                <X size={20} color={c.text} />
-              </Pressable>
-            </View>
-
-            <ScrollView style={styles.optionScroll} contentContainerStyle={styles.optionScrollContent}>
-              {items.length ? (
-                items.map((item) => {
-                  const active = isSameRef(selected, item);
-                  return (
-                    <Pressable key={item.id || item.name} accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
-                      onPress={() => { onSelect(item); onClose(); }}
-                      style={styles.option}>
-                      <View style={styles.optionRow}>
-                        {iconFor ? (
-                          <View style={styles.optionIcon}>
-                            <IconSymbol
-                              name={iconFor(item)}
-                              size={18}
-                              color={active ? c.primary : c.textMuted}
-                            />
-                          </View>
-                        ) : null}
-                        <ThemedText style={[styles.optionText, active && styles.selectedOptionText]}>
-                          {item.name}
-                        </ThemedText>
-                      </View>
-                    </Pressable>
-                  );
-                })
-              ) : (
-                <ThemedText style={styles.emptyOption}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
-              )}
-            </ScrollView>
-          </ThemedView>
-        </Pressable>
-      </Pressable>
-    </Modal>
   );
 }
 
@@ -435,7 +360,7 @@ export function RepairInformForm({
       />
 
       {isLoading ? (
-        <ActivityIndicator style={styles.loader} size="large" color={c.primary} />
+        <InfinityLoader size={60} style={styles.loader} />
       ) : loadError ? (
         <View style={styles.center}>
           <ThemedText style={styles.errorText}>{loadError}</ThemedText>
@@ -516,14 +441,42 @@ export function RepairInformForm({
         </ScrollView>
       )}
 
-      <PickerModal visible={openPicker === 'category'} title={TEXT.NOTICE_REPAIR_FORM_WORK_CATEGORY}
-        items={categories} selected={selectedCategory} onSelect={setSelectedCategory}
+      {/* Both pickers use the shared SelectSheet, so choosing here works the
+          same way as choosing anywhere else in the app. The option ids fall back
+          to the name because some reference rows arrive without one — the same
+          allowance isSameRef() makes. */}
+      <SelectSheet
+        visible={openPicker === 'category'}
+        title={TEXT.NOTICE_REPAIR_FORM_WORK_CATEGORY}
+        options={categories.map((item) => ({
+          id: item.id || item.name,
+          label: item.name,
+          icon: getCategoryIcon(item.name),
+        }))}
+        selectedId={selectedCategory ? selectedCategory.id || selectedCategory.name : null}
+        onSelect={(option) =>
+          setSelectedCategory(
+            categories.find((item) => (item.id || item.name) === option.id) ?? null,
+          )
+        }
         onClose={() => setOpenPicker(null)}
-        iconFor={(item) => getCategoryIcon(item.name)} />
-      <PickerModal visible={openPicker === 'building'} title={TEXT.NOTICE_REPAIR_FORM_BUILDING}
-        items={buildings} selected={selectedBuilding} onSelect={setSelectedBuilding}
+      />
+      <SelectSheet
+        visible={openPicker === 'building'}
+        title={TEXT.NOTICE_REPAIR_FORM_BUILDING}
+        options={buildings.map((item) => ({
+          id: item.id || item.name,
+          label: item.name,
+          icon: 'house.fill' as const,
+        }))}
+        selectedId={selectedBuilding ? selectedBuilding.id || selectedBuilding.name : null}
+        onSelect={(option) =>
+          setSelectedBuilding(
+            buildings.find((item) => (item.id || item.name) === option.id) ?? null,
+          )
+        }
         onClose={() => setOpenPicker(null)}
-        iconFor={() => 'house.fill'} />
+      />
 
       <ConfirmModal
         visible={confirmVisible}
@@ -542,7 +495,9 @@ export function RepairInformForm({
 // bold 15px labels, and an inline submit button at the end of the form.
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
-  loader: { flex: 1 },
+  // Centred both ways: ActivityIndicator centred itself inside a flex:1 box,
+  // the infinity mark is a plain view and has to be told.
+  loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   errorText: { fontSize: 15, color: c.danger, textAlign: 'center' },
 

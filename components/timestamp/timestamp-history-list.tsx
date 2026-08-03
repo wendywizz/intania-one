@@ -1,4 +1,4 @@
-import { ChevronRight, Clock, Inbox, LogIn, LogOut } from 'lucide-react-native';
+import { ChevronRight, Clock, LogIn, LogOut } from 'lucide-react-native';
 import { useFocusEffect } from "expo-router";
 import { navPush } from "@/utils/navigation";
 import { useCallback, useState } from "react";
@@ -23,6 +23,7 @@ import {
   type TimestampHistory,
 } from "@/services/timestampService";
 import { formatDateRange, formatFullDate } from "@/utils/date-format";
+import { boxShadow } from '@/constants/shadows';
 
 const dateFields = new Set([
   "date",
@@ -263,7 +264,7 @@ export function TimestampHistoryList() {
         />
       }
       renderItem={({ item }) => <TimestampHistoryItem item={item} />}
-      ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.SHARED_NO_HISTORY} />}
+      ListEmptyComponent={<EmptyState preset="history" message={TEXT.TIMESTAMP_HISTORY_EMPTY} />}
       ListFooterComponent={
         items.length > 0 ? (
           <View style={styles.listFooter}>
@@ -298,11 +299,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: c.border,
     padding: 16,
     gap: 4,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.04 }),
   },
   statsHeading: {
     fontSize: 18,
@@ -384,11 +381,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 1, blur: 4, opacity: 0.03 }),
   },
   itemPressed: {
     opacity: 0.72,

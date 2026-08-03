@@ -15,6 +15,7 @@ import {
 } from "@/constants/types";
 import type { absence } from "@/models/types";
 import { formatDateRange } from "@/utils/date-format";
+import { boxShadow } from '@/constants/shadows';
 
 const absenceTypeLabels: Record<string, string> = {
   [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
@@ -146,11 +147,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: c.border,
     paddingVertical: 28,
     paddingHorizontal: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   itemRow: {
     flexDirection: 'row',

@@ -1,8 +1,8 @@
 import { router, useFocusEffect } from "expo-router";
-import { Clock, Inbox, LogIn, LogOut } from "lucide-react-native";
+import { InfinityLoader } from '@/components/infinity-loader';
+import { Clock, LogIn, LogOut } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -156,12 +156,12 @@ export function TimestampApprovalList() {
       ListFooterComponent={
         canLoadMore ? (
           <View style={styles.footer}>
-            <ActivityIndicator color={c.primary} />
+            <InfinityLoader size={44} strokeWidth={4} />
           </View>
         ) : null
       }
       ListEmptyComponent={
-        <EmptyState icon={Inbox} message={TEXT.TIMESTAMP_APPROVE_EMPTY} />
+        <EmptyState preset="cleared" message={TEXT.TIMESTAMP_APPROVE_EMPTY} />
       }
     />
   );

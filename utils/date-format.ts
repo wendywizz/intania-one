@@ -104,6 +104,19 @@ export function formatFullDate(value: string) {
   return dateStr(m);
 }
 
+/** The Thai weekday on its own — 'จันทร์', 'พุธ'. */
+export function formatWeekday(value: string) {
+  const m = parseDateTime(value);
+  return m ? m.format('dddd') : '';
+}
+
+/** '24 มิ.ย. 69' — for lists of many dates, where the full form is too long. */
+export function formatShortDate(value: string) {
+  const m = parseDateTime(value);
+  if (!m) return value.split(/[T ]/)[0] || value;
+  return `${m.format('D MMM')} ${String(m.year() + 543).slice(-2)}`;
+}
+
 export function formatDateRange(startDate: string, endDate: string) {
   if (!startDate && !endDate) return '';
   if (!startDate || !endDate) return formatDateOnly(startDate || endDate);

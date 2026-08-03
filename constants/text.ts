@@ -22,6 +22,9 @@ export const TEXT = {
   SHARED_DELETE_THAI: 'ลบ',
   SHARED_DEPARTMENT_LABEL: 'แผนก:',
   SHARED_EMPTY_DATA: 'ไม่มีข้อมูล',
+  SHARED_SEARCH_PLACEHOLDER: 'ค้นหา',
+  CALENDAR_SOURCE_PICKER_TITLE: 'เลือกปฏิทินผู้บริหาร',
+  SHARED_NO_SEARCH_RESULT: 'ไม่พบรายการที่ค้นหา',
   SHARED_ERROR_TITLE_THAI: 'เกิดข้อผิดพลาด',
   SHARED_HISTORY: 'ประวัติ',
   SHARED_LOADING_DATA_TITLE: 'กำลังโหลดข้อมูล',
@@ -287,6 +290,9 @@ export const TEXT = {
 
   // absence - tab labels
   ABSENCE_TAB_APPEAL: 'ยื่นลา',
+  // The way into the leave forms now that "ยื่นลา" is not a tab: an action on
+  // the pending list, the same shape booking-room uses for "จองห้อง".
+  ABSENCE_NEW_LEAVE: 'ยื่นใบลาใหม่',
   ABSENCE_TAB_WAITING: 'รออนุมัติ',
   ABSENCE_TAB_STATS: 'สถิติกาลา',
   ABSENCE_TAB_HISTORY: 'ประวัติการลา',
@@ -364,6 +370,12 @@ export const TEXT = {
   ABSENCE_STATS_LATE_TITLE: 'มาสาย',
   ABSENCE_STATS_UNIT_TIMES: 'ครั้ง',
   ABSENCE_STATS_UNIT_DAYS: 'วัน',
+  // The two quota tiles: what has been used out of what is allowed, and what
+  // is left. The remainder is the number people actually act on — "ยังลาได้อีก
+  // กี่วัน" — so it is stated rather than left to be worked out.
+  ABSENCE_STATS_OF_LIMIT: 'จากสิทธิ์ {total} {unit}',
+  ABSENCE_STATS_REMAINING: 'เหลือ {remain} {unit}',
+  ABSENCE_STATS_OVER_LIMIT: 'เกินสิทธิ์ {over} {unit}',
 
   // absence - History tab
   ABSENCE_HISTORY_SUBTITLE: 'แสดงประวัติการลาทั้งหมดของคุณ',
@@ -706,6 +718,194 @@ export const TEXT = {
   PERSON_SEARCH_TITLE: 'ค้นหาบุคลากร',
   PERSON_SEARCH_SUBTITLE: 'ค้นหาบุคลากรในคณะฯ',
 
+  // Booking Room (module key: booking_room)
+  BOOKING_ROOM_MENU_TITLE: 'จองห้อง',
+  BOOKING_ROOM_TAB_CURRENT: 'รายการจอง',
+  BOOKING_ROOM_TAB_SCHEDULE: 'ตารางจอง',
+  BOOKING_ROOM_TAB_HISTORY: 'ประวัติจอง',
+  BOOKING_ROOM_CURRENT_EMPTY: 'ยังไม่มีรายการจองห้องเรียน',
+  BOOKING_ROOM_CURRENT_ERROR: 'โหลดรายการจองไม่สำเร็จ',
+  BOOKING_ROOM_NEED_SIGNIN: 'กรุณาเข้าสู่ระบบเพื่อดูรายการจองของคุณ',
+  BOOKING_ROOM_ADD_BOOKING: 'จองห้องเรียน',
+  BOOKING_ROOM_SLOT_UNIT: 'ครั้ง',
+  BOOKING_ROOM_TEACHER_LABEL: 'ผู้สอน/ผู้รับผิดชอบ',
+  BOOKING_ROOM_CREATE_TITLE: 'เลือกประเภทการจอง',
+  // The nav bar names the destination ("จองห้อง"); the heading inside the page
+  // states the step ("เลือกประเภทการจอง"). Both were the same string, which
+  // read as the title printed twice.
+  BOOKING_ROOM_CREATE_NAV_TITLE: 'จองห้อง',
+  BOOKING_ROOM_CREATE_DESCRIPTION:
+    'เลือกรูปแบบการจองห้องที่ต้องการ ระบบจะนำคุณไปยังแบบฟอร์มสำหรับกรอกรายละเอียดการจอง',
+  BOOKING_ROOM_GENERAL_TITLE: 'จองทั่วไป',
+  BOOKING_ROOM_GENERAL_DESCRIPTION: 'จองเป็นครั้ง ระบุวันและเวลาที่ต้องการ',
+  BOOKING_ROOM_TERM_TITLE: 'จองเทอม',
+  BOOKING_ROOM_TERM_DESCRIPTION: 'จองต่อเนื่องตลอดภาคการศึกษา',
+  BOOKING_ROOM_PERIOD_TITLE: 'จองช่วง',
+  BOOKING_ROOM_PERIOD_DESCRIPTION: 'จองต่อเนื่องตามช่วงวันที่ที่กำหนด',
+  BOOKING_ROOM_FORM_PLACEHOLDER: 'แบบฟอร์มจองห้องอยู่ระหว่างพัฒนา',
+  BOOKING_ROOM_SCHEDULE_EMPTY: 'ยังไม่มีตารางจองห้องเรียน',
+  BOOKING_ROOM_SCHEDULE_ROOM_LABEL: 'ห้อง',
+  BOOKING_ROOM_SCHEDULE_PICK_ROOM: 'เลือกห้อง',
+  BOOKING_ROOM_SCHEDULE_PICK_DATE: 'เลือกวันที่',
+  // Prefixes the week's date range inside the date picker — the picker chooses
+  // a week, not a day, so it names the week it is currently on.
+  BOOKING_ROOM_SCHEDULE_WEEK_SHOWN: 'สัปดาห์ที่แสดง',
+  BOOKING_ROOM_SCHEDULE_SEARCH_ROOM: 'ค้นหาห้อง',
+  BOOKING_ROOM_SCHEDULE_NO_ROOM_MATCH: 'ไม่พบห้องที่ค้นหา',
+  BOOKING_ROOM_SCHEDULE_PREV_WEEK: 'สัปดาห์ก่อน',
+  BOOKING_ROOM_SCHEDULE_NEXT_WEEK: 'สัปดาห์ถัดไป',
+  BOOKING_ROOM_SCHEDULE_THIS_WEEK: 'สัปดาห์นี้',
+  BOOKING_ROOM_SCHEDULE_DAY_FREE: 'ว่างทั้งวัน',
+  BOOKING_ROOM_SCHEDULE_TODAY: 'วันนี้',
+  BOOKING_ROOM_SCHEDULE_BOOKING_UNIT: 'รายการ',
+  BOOKING_ROOM_SCHEDULE_WEEK_FREE: 'สัปดาห์นี้ยังไม่มีการจอง',
+  BOOKING_ROOM_SCHEDULE_CAPACITY: 'ความจุ',
+  BOOKING_ROOM_SCHEDULE_SEAT_UNIT: 'ที่นั่ง',
+  BOOKING_ROOM_SCHEDULE_LOAD_ERROR: 'โหลดตารางจองไม่สำเร็จ',
+  BOOKING_ROOM_HISTORY_EMPTY: 'ยังไม่มีประวัติการจองห้องเรียน',
+  BOOKING_ROOM_HISTORY_ERROR: 'โหลดประวัติการจองไม่สำเร็จ',
+  BOOKING_ROOM_BOOKED_AT_LABEL: 'จองเมื่อ',
+  BOOKING_ROOM_DETAIL_TITLE: 'รายละเอียดการจอง',
+  BOOKING_ROOM_DETAIL_ERROR: 'โหลดรายละเอียดการจองไม่สำเร็จ',
+  BOOKING_ROOM_DETAIL_INFO: 'ข้อมูลการจอง',
+  BOOKING_ROOM_DETAIL_SLOTS: 'วันและเวลาที่จอง',
+  BOOKING_ROOM_DETAIL_NO_SLOTS: 'ไม่มีวันและเวลาที่จอง',
+  BOOKING_ROOM_REF_ID_SHORT: 'เลขจอง',
+  BOOKING_ROOM_SUBJECT_LABEL: 'วิชา/กิจกรรม',
+  BOOKING_ROOM_SECTION_LABEL: 'ตอน',
+  BOOKING_ROOM_TERM_LABEL: 'ภาคการศึกษา',
+  BOOKING_ROOM_OBJECTIVE_LABEL: 'รายละเอียด',
+  BOOKING_ROOM_SOFTWARE_LABEL: 'โปรแกรมที่ต้องการ',
+  BOOKING_ROOM_END_OF_LIST: 'แสดงครบทุกรายการแล้ว',
+
+  // จองทั่วไป form
+  BOOKING_ROOM_FORM_LOAD_ERROR: 'โหลดแบบฟอร์มจองห้องไม่สำเร็จ',
+  BOOKING_ROOM_SUBMIT_ERROR: 'บันทึกการจองไม่สำเร็จ',
+  // Cancelling a booking. The confirm names how many dates go with it, because
+  // one term booking can hold sixty and the row that led here shows none of
+  // them — agreeing to "cancel this booking" should not be a surprise.
+  BOOKING_ROOM_DELETE_ACTION: 'ยกเลิกการจองนี้',
+  BOOKING_ROOM_DELETE_CONFIRM_TITLE: 'ยกเลิกการจอง',
+  BOOKING_ROOM_DELETE_CONFIRM_ONE: 'ต้องการยกเลิกการจองนี้ใช่หรือไม่',
+  BOOKING_ROOM_DELETE_CONFIRM_MANY: 'การจองนี้มี {count} ช่วงเวลา ทั้งหมดจะถูกยกเลิก',
+  BOOKING_ROOM_DELETE_CONFIRM_YES: 'ยกเลิกการจอง',
+  BOOKING_ROOM_DELETE_CONFIRM_NO: 'ไม่ยกเลิก',
+  BOOKING_ROOM_DELETE_SUCCESS: 'ยกเลิกการจองแล้ว',
+  BOOKING_ROOM_DELETE_ERROR: 'ยกเลิกการจองไม่สำเร็จ',
+  // Cancelling one date out of a booking. Only dates still ahead can go, so the
+  // hint says which ones are tappable rather than leaving it to be discovered.
+  BOOKING_ROOM_SLOT_DELETE_HINT: 'ยกเลิกได้เฉพาะวันที่ยังไม่ถึง',
+  // The link from the rule summary to the full list of dates, and that screen.
+  BOOKING_ROOM_SLOT_SHOW_ALL: 'แสดงรายการจองทั้งหมด ({count})',
+  BOOKING_ROOM_SLOT_LIST_TITLE: 'รายการจอง',
+  BOOKING_ROOM_SLOT_LIST_PAST: 'ผ่านมาแล้ว',
+  BOOKING_ROOM_SLOT_LIST_NEXT: 'ครั้งถัดไป',
+  BOOKING_ROOM_SLOT_LIST_UPCOMING: 'ยังไม่ถึง',
+  BOOKING_ROOM_SLOT_LIST_SUMMARY: 'ทั้งหมด {count} ครั้ง · เหลืออีก {remaining} ครั้ง',
+  BOOKING_ROOM_SLOT_DELETE_TITLE: 'ยกเลิกวันที่จอง',
+  BOOKING_ROOM_SLOT_DELETE_ONE_ACTION: 'ยกเลิกวันนี้',
+  BOOKING_ROOM_SLOT_DELETE_MESSAGE: 'ยกเลิกการจองวันที่ {date} เวลา {time} ใช่หรือไม่',
+  BOOKING_ROOM_SLOT_DELETE_LAST: 'นี่เป็นวันสุดท้ายของการจองนี้ การจองทั้งรายการจะถูกยกเลิก',
+  BOOKING_ROOM_SLOT_DELETE_SUCCESS: 'ยกเลิกวันที่จองแล้ว',
+  BOOKING_ROOM_SLOT_DELETE_ERROR: 'ยกเลิกวันที่จองไม่สำเร็จ',
+  BOOKING_ROOM_SUBMIT: 'บันทึกการจอง',
+  BOOKING_ROOM_SUBMIT_SUCCESS: 'บันทึกการจองเรียบร้อย',
+  BOOKING_ROOM_EXTRA_TOGGLE: 'จองรายวิชาอื่นๆ/กิจกรรมนอกตารางเรียน',
+  BOOKING_ROOM_SUBJECT_PICK: 'เลือกรายวิชา',
+  BOOKING_ROOM_SUBJECT_SEARCH: 'ค้นหารายวิชา',
+  BOOKING_ROOM_NO_SUBJECT: 'ไม่พบรายวิชาที่สอนในภาคการศึกษานี้',
+  BOOKING_ROOM_NO_SUBJECT_HINT: 'จองได้เฉพาะแบบ "รายวิชาอื่นๆ/กิจกรรม" เท่านั้น',
+  BOOKING_ROOM_EXTRA_SUBJECT_LABEL: 'รหัสวิชา/ชื่อโครงการ',
+  BOOKING_ROOM_EXTRA_SECTION_LABEL: 'ตอน (section)',
+  BOOKING_ROOM_EXTRA_OBJECTIVE_LABEL: 'ชื่อวิชา/รายละเอียด',
+  BOOKING_ROOM_DATE_LABEL: 'วันที่',
+  BOOKING_ROOM_START_TIME_LABEL: 'เวลาเริ่ม',
+  BOOKING_ROOM_END_TIME_LABEL: 'เวลาสิ้นสุด',
+  // The start/end pair carries its identity in the placeholder, the way the
+  // absence date pair does — there is no label above either field.
+  BOOKING_ROOM_PICK_START_TIME: 'เลือกเวลาเริ่ม',
+  BOOKING_ROOM_PICK_END_TIME: 'เลือกเวลาสิ้นสุด',
+  BOOKING_ROOM_COLOR_LABEL: 'สีในตาราง',
+  BOOKING_ROOM_ROOM_PICK: 'เลือกห้อง',
+  BOOKING_ROOM_ROOM_PLACEHOLDER: 'แตะเพื่อเลือกห้อง',
+  BOOKING_ROOM_ROOM_UNAVAILABLE: 'ถูกจองแล้ว',
+  BOOKING_ROOM_EQUIPMENT_PROJECTOR: 'โปรเจกเตอร์',
+  BOOKING_ROOM_EQUIPMENT_MIC: 'ไมโครโฟน',
+  BOOKING_ROOM_EQUIPMENT_NONE: 'ไม่มีอุปกรณ์ในห้อง',
+  BOOKING_ROOM_ROOM_NONE_FREE: 'ไม่มีห้องว่างในช่วงเวลานี้',
+  BOOKING_ROOM_TIME_ORDER_ERROR: 'เวลาสิ้นสุดต้องหลังเวลาเริ่ม',
+  BOOKING_ROOM_REQUIRED_ERROR: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+  BOOKING_ROOM_FIELD_REQUIRED: 'กรุณากรอกข้อมูลนี้',
+  BOOKING_ROOM_FIELD_SELECT_REQUIRED: 'กรุณาเลือกข้อมูลนี้',
+  BOOKING_ROOM_CONFIRM_TITLE: 'ยืนยันการจองห้อง',
+  BOOKING_ROOM_CONFIRM_MESSAGE: 'ตรวจสอบข้อมูลก่อนบันทึก เมื่อบันทึกแล้วห้องจะถูกจองทันที',
+  BOOKING_ROOM_CONFIRM_ACTION: 'ยืนยันการจอง',
+  BOOKING_ROOM_CONFIRM_CANCEL: 'ตรวจสอบอีกครั้ง',
+  // Shown under a disabled submit on both booking forms — a dead button with
+  // no explanation is a dead end, so this says what to do about it.
+  BOOKING_ROOM_BLOCKED_PICK_SUBJECT: 'เลือกรายวิชา หรือเปิด "จองรายวิชาอื่นๆ" ก่อนจึงจะจองได้',
+  BOOKING_ROOM_BLOCKED_NO_SUBJECT: 'เปิด "จองรายวิชาอื่นๆ" ก่อนจึงจะจองได้',
+
+  // --- จองรายเทอม ---
+  // Ticking a weekday books it every week of the term, so the wording is about
+  // counts and repetition rather than single dates.
+  BOOKING_ROOM_TERM_STEP_DAYS: 'เลือกวันและเวลา',
+  BOOKING_ROOM_TERM_VALUE: 'เทอม {term}/{year}',
+  BOOKING_ROOM_TERM_RANGE: '{start} – {end}',
+  BOOKING_ROOM_TERM_DAY_COUNT: '{count} ครั้ง',
+  BOOKING_ROOM_TERM_PAST_NOTE: 'ผ่านมาแล้ว {count} ครั้ง',
+  BOOKING_ROOM_TERM_TOTAL: 'รวมทั้งหมด {count} ครั้ง',
+  BOOKING_ROOM_TERM_NO_DAY: 'กรุณาเลือกอย่างน้อย 1 วัน',
+  BOOKING_ROOM_TERM_DAY_INCOMPLETE: 'กรอกเวลาและห้องให้ครบทุกวันที่เลือก',
+  BOOKING_ROOM_TERM_ROOM_SHARED: 'ใช้ร่วมกับ {subject}',
+  BOOKING_ROOM_TERM_ROOM_MINE: 'รายการจองของคุณ',
+  BOOKING_ROOM_TERM_PAST_WARNING:
+    'ภาคการศึกษานี้เริ่มไปแล้ว ระบบจะบันทึกสัปดาห์ที่ผ่านมาด้วย เช่นเดียวกับการจองผ่านเว็บไซต์',
+  BOOKING_ROOM_TERM_CONFIRM_TITLE: 'ยืนยันการจองรายเทอม',
+  BOOKING_ROOM_TERM_SUBMIT_SUCCESS: 'บันทึกการจองรายเทอมเรียบร้อย',
+
+  // --- จองเป็นช่วง ---
+  // The term form with the range typed in, so the wording is about the range
+  // and what it works out to.
+  BOOKING_ROOM_PERIOD_STEP_RANGE: 'ช่วงวันที่',
+  BOOKING_ROOM_PERIOD_FROM: 'วันที่เริ่ม',
+  BOOKING_ROOM_PERIOD_TO: 'วันที่สิ้นสุด',
+  BOOKING_ROOM_PERIOD_SPAN: 'ครอบคลุม {count} วัน',
+  BOOKING_ROOM_PERIOD_NEED_RANGE: 'เลือกช่วงวันที่ก่อนจึงจะเลือกวันและเวลาได้',
+  // --- Booking detail: the slot list ---
+  // A term booking is dozens of rows that are really two or three repeating
+  // rules, so the detail screen shows the rules and keeps the dates behind a
+  // tap.
+  BOOKING_ROOM_SLOT_EVERY: 'ทุกวัน{day}',
+  BOOKING_ROOM_SLOT_SOME: 'วัน{day}',
+  BOOKING_ROOM_SLOT_TOTAL: 'ทั้งหมด {count} ครั้ง',
+  BOOKING_ROOM_SLOT_ROOM_COUNT: '{count} ห้อง',
+  BOOKING_ROOM_SLOT_NEXT: 'ครั้งถัดไป {date}',
+  BOOKING_ROOM_SLOT_FINISHED: 'สิ้นสุดแล้ว',
+  BOOKING_ROOM_SLOT_REMAINING: 'เหลืออีก {count} ครั้ง',
+  BOOKING_ROOM_SLOT_SHOW_DATES: 'ดูวันที่ทั้งหมด ({count})',
+  BOOKING_ROOM_SLOT_HIDE_DATES: 'ซ่อนวันที่',
+  // The booking type, spelled out at the head of the slot list. The label on
+  // its own ("จองเทอม") names the form that was filled in; the line under it
+  // says why one booking holds thirty-two dates, which is the question the
+  // list itself raises.
+  BOOKING_ROOM_SLOT_TYPE_DAY: 'จองครั้งเดียว เฉพาะวันที่เลือกไว้',
+  BOOKING_ROOM_SLOT_TYPE_TERM: 'จองซ้ำทุกสัปดาห์ตลอดภาคการศึกษา',
+  BOOKING_ROOM_SLOT_TYPE_PERIOD: 'จองซ้ำทุกสัปดาห์ในช่วงวันที่ที่กำหนด',
+  BOOKING_ROOM_SLOT_TYPE_UNKNOWN: 'วันและเวลาที่จองไว้ทั้งหมด',
+
+  BOOKING_ROOM_PERIOD_CONFIRM_TITLE: 'ยืนยันการจองเป็นช่วง',
+  BOOKING_ROOM_PERIOD_SUBMIT_SUCCESS: 'บันทึกการจองเป็นช่วงเรียบร้อย',
+  // The booking form is answered in order — each step needs the one before it,
+  // because "which rooms are free" has no answer until the day and the hours
+  // are known.
+  BOOKING_ROOM_STEP_1_TITLE: 'เลือกวันที่',
+  BOOKING_ROOM_STEP_2_TITLE: 'เลือกช่วงเวลา',
+  BOOKING_ROOM_STEP_3_TITLE: 'เลือกห้อง',
+  BOOKING_ROOM_STEP_NEED_DATE: 'กรุณาเลือกวันที่ก่อน',
+  BOOKING_ROOM_STEP_NEED_START_TIME: 'กรุณาเลือกเวลาเริ่มก่อน',
+  BOOKING_ROOM_STEP_NEED_TIME: 'กรุณาเลือกเวลาเริ่มและเวลาสิ้นสุดก่อน',
+
   // Examiner / Examinar
   EXAMINER_MENU_TITLE: 'ตารางคุมสอบ',
   EXAMINAR_HEADER_TITLE: 'ตารางคุมสอบ',
@@ -752,6 +952,11 @@ export const TEXT = {
   TIMESTAMP_DESCRIPTION: 'หน้านี้คือหน้าลืมลงเวลา',
   TIMESTAMP_TITLE: 'การลงเวลา',
   TIMESTAMP_FORGOT_TAB: 'ลืมลงเวลา',
+  // Names the list that is empty, not just "ไม่มีข้อมูล" — the same screen has
+  // a history tab beside it, and a bare "no data" does not say which of the two
+  // is empty.
+  TIMESTAMP_FORGOT_EMPTY_TITLE: 'ไม่มีข้อมูลลืมลงเวลา',
+  TIMESTAMP_HISTORY_EMPTY: 'ไม่มีประวัติการยื่นขอแก้ไข',
   TIMESTAMP_LIST_SUBTITLE: 'รายการคำขอลืมลงเวลา',
   TIMESTAMP_FORGOT_HISTORY_SUBTITLE: 'ประวัติการลืมลงเวลา',
 
@@ -763,7 +968,7 @@ export const TEXT = {
   TIMESTAMP_APPROVE_EMPTY: 'ไม่มีรายการรอการรับรอง',
   TIMESTAMP_APPROVE_PENDING_TAB: 'รอการรับรอง',
   TIMESTAMP_APPROVE_HISTORY_TAB: 'ประวัติการรับรอง',
-  TIMESTAMP_APPROVE_HISTORY_EMPTY: 'ไม่มีประวัติการพิจารณา',
+  TIMESTAMP_APPROVE_HISTORY_EMPTY: 'ไม่มีประวัติการรับรอง',
   TIMESTAMP_APPROVE_STATUS_APPROVED: 'รับรองแล้ว',
   TIMESTAMP_APPROVE_STATUS_REJECTED: 'ไม่รับรอง',
   TIMESTAMP_APPROVE_STATUS_PENDING: 'รออนุมัติ',

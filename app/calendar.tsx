@@ -10,6 +10,7 @@ import {
     StyleSheet,
     View,
 } from "react-native";
+import { boxShadow } from '@/constants/shadows';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { Calendar, LocaleConfig, type DateData } from "react-native-calendars";
 import type { MarkedDates } from "react-native-calendars/src/types";
@@ -39,6 +40,7 @@ import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { UserAvatar } from "@/components/user-avatar";
 import { ThemedView } from "@/components/themed-view";
+import { SelectSheet } from "@/components/ui/select-sheet";
 import { EventTimelineItem } from "@/components/ui";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
@@ -186,12 +188,29 @@ export default function CalendarScreen() {
       // enough; the dot under it looks noisy.
       marked: false,
       customStyles: {
-        container: { backgroundColor: c.primary, borderRadius: 10 },
+        // Blue, not brand red: red is what marks today, and the day the user
+        // tapped is their own mark rather than a property of the day.
+        container: { backgroundColor: c.belizeHole, borderRadius: 10 },
         text: { color: c.textOnPrimary },
       },
     };
     return marks;
-  }, [events, selectedDate, c.primary, c.primarySoft, c.textOnPrimary]);
+  }, [events, selectedDate, c.primary, c.belizeHole, c.primarySoft, c.textOnPrimary]);
+
+  // Mapped once so the sheet gets plain data; the avatar is the leading node.
+  const sourceOptions = useMemo(
+    () =>
+      sources.map((source) => {
+        const { position, person } = splitSourceName(source.name);
+        return {
+          id: String(source.source),
+          label: position,
+          description: person,
+          leading: <UserAvatar staffId={source.uniId} size={40} />,
+        };
+      }),
+    [sources],
+  );
 
   const selectedEvents = useMemo(
     () => events.filter((event) => event.date === selectedDate),
@@ -203,7 +222,7 @@ export default function CalendarScreen() {
       backgroundColor: c.surface,
       calendarBackground: c.surface,
       textSectionTitleColor: c.textMuted,
-      selectedDayBackgroundColor: c.primary,
+      selectedDayBackgroundColor: c.belizeHole,
       selectedDayTextColor: c.textOnPrimary,
       todayTextColor: c.primary,
       dayTextColor: c.text,
@@ -412,72 +431,25 @@ export default function CalendarScreen() {
           <ChevronDown size={24} color={c.primary} />
         </Pressable>
 
-        {/* Source picker modal */}
-        <Modal
-          transparent
+        {/* Source picker — the app's shared select sheet, so choosing an
+            executive works like every other choice in the app. The avatar rides
+            along as the option's `leading` node, and the name splits across the
+            label (position) and description (person) the same way it did here. */}
+        <SelectSheet
           visible={sourceModalOpen}
-          animationType="fade"
-          onRequestClose={() => setSourceModalOpen(false)}
-        >
-          <Pressable style={styles.backdrop} onPress={() => setSourceModalOpen(false)}>
-            <Pressable style={styles.modalWrap}>
-              <View style={styles.selectModal}>
-                <View style={styles.modalHeader}>
-                  <ThemedText style={styles.modalTitle} type="defaultSemiBold">
-                    Calendar
-                  </ThemedText>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
-                    onPress={() => setSourceModalOpen(false)}
-                    style={styles.closeBtn}
-                  >
-                    <X size={20} color={c.text} />
-                  </Pressable>
-                </View>
-                <ScrollView
-                  style={styles.optionScroll}
-                  contentContainerStyle={styles.optionScrollContent}
-                >
-                  {sources.length ? (
-                    sources.map((source, index) => {
-                      const active = selectedSource?.source === source.source;
-                      const { position, person } = splitSourceName(source.name);
-                      return (
-                        <Pressable
-                          key={`${String(source.source)}-${index}`}
-                          accessibilityRole="button"
-                          onPress={() => handleSelectSource(source)}
-                          style={[styles.option, active && styles.optionActive]}
-                        >
-                          <UserAvatar staffId={source.uniId} size={40} />
-                          <View style={styles.optionTextCol}>
-                            <ThemedText
-                              numberOfLines={2}
-                              style={[styles.optionPosition, active && styles.optionActiveText]}
-                            >
-                              {position}
-                            </ThemedText>
-                            {person ? (
-                              <ThemedText
-                                numberOfLines={2}
-                                style={[styles.optionPerson, active && styles.optionActiveText]}
-                              >
-                                {person}
-                              </ThemedText>
-                            ) : null}
-                          </View>
-                        </Pressable>
-                      );
-                    })
-                  ) : (
-                    <ThemedText style={styles.optionEmpty}>{TEXT.SHARED_EMPTY_DATA}</ThemedText>
-                  )}
-                </ScrollView>
-              </View>
-            </Pressable>
-          </Pressable>
-        </Modal>
+          onClose={() => setSourceModalOpen(false)}
+          title={TEXT.CALENDAR_SOURCE_PICKER_TITLE}
+          // No search here whatever the count: the executives are a short, fixed
+          // list people recognise by face, so a search box is one more thing
+          // between the tap and the choice.
+          searchable={false}
+          options={sourceOptions}
+          selectedId={selectedSource?.source}
+          onSelect={(option) => {
+            const source = sources.find((s) => String(s.source) === option.id);
+            if (source) handleSelectSource(source);
+          }}
+        />
 
         {/* Calendar */}
         {!eventLoadFailed && (
@@ -574,11 +546,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   sourceText: {
     flex: 1,
@@ -597,11 +565,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     paddingBottom: 4,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   // ─── Calendar header (month / year + arrows) ─────────────────────
   calHeader: {
@@ -713,11 +677,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 16,
     backgroundColor: c.surface,
     padding: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 8,
+    boxShadow: boxShadow(c.shadow, { y: 4, blur: 12, opacity: 0.12 }),
   },
   modalHeader: {
     flexDirection: "row",

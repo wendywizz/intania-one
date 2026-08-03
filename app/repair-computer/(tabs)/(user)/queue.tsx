@@ -17,6 +17,7 @@ import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { workerQueue } from "@/services/repairComputerService";
+import { boxShadow } from '@/constants/shadows';
 
 type WorkerQueueItem = Record<string, unknown>;
 
@@ -353,11 +354,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: 'rgba(223, 191, 189, 0.3)',
     padding: 16,
     gap: 14,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.04 }),
   },
   workerPhoto: {
     width: 52,

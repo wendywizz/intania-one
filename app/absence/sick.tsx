@@ -30,6 +30,8 @@ import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ScreenHeader } from "@/components/screen-header";
 import { SectionCard } from "@/components/section-card";
+import { UserAvatar } from "@/components/user-avatar";
+import { SelectSheet } from "@/components/ui/select-sheet";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { ENDPOINTS } from "@/constants/endpoints";
@@ -204,8 +206,11 @@ function parseDateParamValue(value: string) {
 }
 
 function getHalfDayLabel(value: string) {
+  // Empty, not "0". A saved request with no half-day carries part_flag = 0 and
+  // the picker offers no such option, so the field had nothing to match and
+  // showed the raw "0" where its placeholder belonged.
   if (!value || value === "0") {
-    return "0";
+    return "";
   }
 
   const halfDayIndex = Number(value) - 1;
@@ -220,6 +225,13 @@ const halfDayOptions: SelectOption[] = [
   { label: TEXT.ABSENCE_HALF_DAY_LAST_MORNING, value: "3" },
   { label: TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING, value: "4" },
 ];
+
+/**
+ * Everything except "none" — the form only ever offers real half-days.
+ *
+ * Named once so the field and the sheet cannot end up showing different lists.
+ */
+const halfDayChoices = halfDayOptions.filter((option) => option.value !== "0");
 
 const FILE_PICKER_LABEL = TEXT.ABSENCE_MEDICAL_CERTIFICATE_LABEL;
 const FILE_PICKER_ACTION = TEXT.ABSENCE_MEDICAL_CERTIFICATE_ACTION;
@@ -1036,17 +1048,35 @@ export default function SickScreen() {
             placeholder={TEXT.ABSENCE_APPROVER_PLACEHOLDER}
             value={approver}
             options={approverOptions}
-            isOpen={openSelect === "approver"}
+            isOpen={false}
             hasError={Boolean(validationErrors.approver)}
             errorMessage={validationErrors.approver}
-            onToggle={() =>
-              setOpenSelect(openSelect === "approver" ? null : "approver")
-            }
-            onSelect={(value, option) => {
-              setApprover(value);
+            onToggle={() => setOpenSelect("approver")}
+            onSelect={() => {}}
+          />
+
+          {/* The approver list carries a face and a position, so each option
+              keeps its avatar and puts the position on the second line — the
+              same shape the executive-calendar picker uses. */}
+          <SelectSheet
+            visible={openSelect === "approver"}
+            onClose={() => setOpenSelect(null)}
+            title={TEXT.ABSENCE_APPROVER_LABEL}
+            options={approverOptions.map((option) => ({
+              id: option.value,
+              label: option.title || option.label,
+              description: option.subtitle,
+              searchText: option.label,
+              leading: option.photoId ? (
+                <UserAvatar staffId={option.photoId} size={40} />
+              ) : undefined,
+            }))}
+            selectedId={approver}
+            onSelect={(picked) => {
+              const option = approverOptions.find((o) => o.value === picked.id);
+              setApprover(picked.id);
               setApproverStaffId(option?.staffId ?? "");
               clearValidationError("approver");
-              setOpenSelect(null);
             }}
           />
         </SectionCard>
@@ -1116,19 +1146,30 @@ export default function SickScreen() {
             ) : null}
           </View>
 
+          {/* The field itself stays as it is — only the list moved. It opens the
+              shared SelectSheet instead of expanding in place, so choosing a
+              half-day works like every other choice in the app. `isOpen` is
+              always false because the sheet, not the field, now shows options. */}
           <SelectField
             label={TEXT.ABSENCE_HALF_DAY_LABEL}
             placeholder={TEXT.ABSENCE_HALF_DAY_PLACEHOLDER}
             value={halfDay}
-            options={halfDayOptions.filter((option) => option.value !== "0")}
-            isOpen={openSelect === "halfDay"}
-            onToggle={() =>
-              setOpenSelect(openSelect === "halfDay" ? null : "halfDay")
-            }
-            onSelect={(value) => {
-              setHalfDay(value);
-              setOpenSelect(null);
-            }}
+            options={halfDayChoices}
+            isOpen={false}
+            onToggle={() => setOpenSelect("halfDay")}
+            onSelect={() => {}}
+          />
+
+          <SelectSheet
+            visible={openSelect === "halfDay"}
+            onClose={() => setOpenSelect(null)}
+            title={TEXT.ABSENCE_HALF_DAY_LABEL}
+            options={halfDayChoices.map((option) => ({
+              id: option.value,
+              label: option.label,
+            }))}
+            selectedId={halfDay}
+            onSelect={(option) => setHalfDay(option.id)}
           />
         </SectionCard>
 

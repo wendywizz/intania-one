@@ -123,6 +123,28 @@ The key of OpenID use different key I will put the detail in .env file of "intan
 
 About Push Notification the app can receive notification every environment such as Expo Web browser, Emulator and Real Device
 
+# Staff identity — two different IDs
+
+Every staff member has two ids, both columns of the same row in `CENTRAL.STAFF_INFO`:
+
+- **`UNI_STAFF_ID`** — the auth id returned by OpenID. **This is the one the app uses**,
+  the one scooba-service speaks, and the one push notifications are addressed to (the
+  `device` table keys `owner` on it). Anything the app sends as `staff_id` is this.
+- **`STAFF_ID`** — an internal PK the web backends join on. The app should never see or
+  send it; if a screen ends up holding one, something upstream returned the wrong field.
+
+Watch for API payloads that carry both — the repair-computer job detail returns
+`staffId` / `worker` / `foreman` (internal) alongside `staff_uni_id` / `worker_uni_id` /
+`foreman_uni_id`. Use the `*_uni_id` fields. Both are numeric strings, so a mix-up is
+invisible: it just addresses a stranger, or nobody.
+
+Where a screen must forward the requester's identity for a notification (absence and
+timestamp approvals do, because Phoenix's encoded ids contain no staff id), it forwards
+`request_staff_id` — again the `UNI_STAFF_ID`.
+
+See `scooba-service/CONTEXT.md` for the server-side rules and the per-site conversion
+helpers.
+
 # Sending requests
 - The app does not send requests and receive responses directly from the real application but there is a gateway service called “scooba-service” as a medium. But the auth system and news rss feed call to service directly
 - Every submit action that sends a POST, PUT, or DELETE request must show a YES/NO confirmation modal before sending the request.

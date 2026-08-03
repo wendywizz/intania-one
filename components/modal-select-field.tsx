@@ -1,11 +1,9 @@
-import { X } from "lucide-react-native";
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
+import { type AppColors, useThemedStyles } from '@/constants/theme';
 
-import { TEXT } from "@/constants/text";
+import { SelectSheet } from "@/components/ui/select-sheet";
 import { ThemedText } from "./themed-text";
-import { ThemedView } from "./themed-view";
 
 export type ModalSelectOption = {
   label: string;
@@ -34,7 +32,6 @@ export function ModalSelectField({
   buttonStyle,
   onSelect,
 }: ModalSelectFieldProps) {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const selectedOption = options.find((option) => option.value === value);
   const [isOpen, setIsOpen] = useState(false);
@@ -58,58 +55,17 @@ export function ModalSelectField({
         </ThemedText>
       </Pressable>
 
-      <Modal transparent visible={isOpen} animationType="fade" onRequestClose={close}>
-        <Pressable style={styles.backdrop} onPress={close}>
-          <Pressable style={styles.modalContent}>
-            <ThemedView
-              style={styles.selectModal}
-              lightColor="#FFFFFF"
-              darkColor="#151718"
-            >
-              <View style={styles.selectModalHeader}>
-                <ThemedText type="defaultSemiBold" style={styles.selectModalTitle}>
-                  {title}
-                </ThemedText>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
-                  onPress={close}
-                  style={styles.closeButton}
-                >
-                  <X size={20} color={c.text} />
-                </Pressable>
-              </View>
-
-              <ScrollView
-                style={styles.optionScroll}
-                contentContainerStyle={styles.optionScrollContent}
-              >
-                {options.length ? (
-                  options.map((option) => (
-                    <Pressable
-                      key={option.value}
-                      accessibilityRole="button"
-                      onPress={() => {
-                        onSelect(option.value);
-                        close();
-                      }}
-                      style={styles.option}
-                    >
-                      <ThemedText style={styles.optionText}>
-                        {option.label}
-                      </ThemedText>
-                    </Pressable>
-                  ))
-                ) : (
-                  <ThemedText style={styles.emptyOption}>
-                    {TEXT.SHARED_EMPTY_DATA}
-                  </ThemedText>
-                )}
-              </ScrollView>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {/* The list is the app-wide SelectSheet, so a year/term/period choice
+          looks and behaves like every other choice. Only the trigger above is
+          this component's own — it has a distinct field look callers rely on. */}
+      <SelectSheet
+        visible={isOpen}
+        onClose={close}
+        title={title}
+        options={options.map((option) => ({ id: option.value, label: option.label }))}
+        selectedId={value}
+        onSelect={(option) => onSelect(option.id)}
+      />
     </>
   );
 }

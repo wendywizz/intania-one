@@ -8,6 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
+import { boxShadow } from '@/constants/shadows';
 
 type IconName = 'cross.fill' | 'briefcase.fill' | 'sun.max.fill' | 'figure.child';
 
@@ -45,7 +46,11 @@ export default function ChooseAbsenceScreen() {
   const gutter = useScreenGutter();
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title="ยื่นลา" backHref="/" titleInNavBar showHomeButton={false} />
+      {/* Back to the pending list, which is the only way in here now that
+          "ยื่นลา" is not a tab — going to the dashboard instead would drop the
+          person out of the module they are halfway through. The home button is
+          there for the times they do want to leave. */}
+      <ScreenHeader title="ยื่นลา" backHref="/absence/pending" titleInNavBar showHomeButton />
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]} showsVerticalScrollIndicator={false}>
         <View style={styles.intro}>
           <ThemedText style={styles.screenTitle}>เลือกประเภทการลา</ThemedText>
@@ -115,11 +120,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 22,
     paddingHorizontal: 16,
     gap: 14,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
   },
   iconBg: {
     width: 44,

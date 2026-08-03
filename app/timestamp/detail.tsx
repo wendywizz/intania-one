@@ -26,6 +26,7 @@ import { SectionCard } from "@/components/section-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { UserAvatar } from "@/components/user-avatar";
+import { SelectSheet } from "@/components/ui/select-sheet";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
@@ -38,6 +39,7 @@ import {
   type Timestamp,
 } from "@/services/timestampService";
 import { formatFullDate } from "@/utils/date-format";
+import { boxShadow } from '@/constants/shadows';
 
 type Approver = {
   firstNameTH?: string;
@@ -842,71 +844,28 @@ export default function TimestampDetailScreen() {
           </Pressable>
         ) : null}
       </View>
-      <Modal
-        transparent
+      {/* The app-wide select sheet: same list, same animation, same rows as
+          every other picker. Each approver keeps their photo, with the position
+          on the first line and the name beneath it. */}
+      <SelectSheet
         visible={isApproverOpen}
-        animationType="fade"
-        onRequestClose={() => setIsApproverOpen(false)}
-      >
-        <Pressable
-          style={styles.backdrop}
-          onPress={() => setIsApproverOpen(false)}
-        >
-          <Pressable style={styles.modalContent}>
-            <ThemedView
-              style={styles.selectModal}
-              lightColor="#FFFFFF"
-              darkColor="#151718"
-            >
-              <View style={styles.selectModalHeader}>
-                <ThemedText type="defaultSemiBold" style={styles.selectModalTitle}>
-                  {TEXT.TIMESTAMP_APPROVER_LIST_TITLE}
-                </ThemedText>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={TEXT.SHARED_CLOSE_THAI}
-                  onPress={() => setIsApproverOpen(false)}
-                  style={styles.closeButton}
-                >
-                  <X size={20} color={c.text} />
-                </Pressable>
-              </View>
-
-              <ScrollView
-                style={styles.optionScroll}
-                contentContainerStyle={styles.optionScrollContent}
-              >
-                {approverOptions.length ? (
-                  approverOptions.map((option) => (
-                    <Pressable
-                      key={`${option.value}-${option.staffId}`}
-                      accessibilityRole="button"
-                      onPress={() => handleSelectApprover(option)}
-                      style={styles.option}
-                    >
-                      <UserAvatar staffId={option.photoId} size={36} />
-                      <View style={styles.optionTextCol}>
-                        <ThemedText style={styles.optionPosition} numberOfLines={2}>
-                          {option.position || option.label}
-                        </ThemedText>
-                        {option.name ? (
-                          <ThemedText style={styles.optionName} numberOfLines={1}>
-                            {option.name}
-                          </ThemedText>
-                        ) : null}
-                      </View>
-                    </Pressable>
-                  ))
-                ) : (
-                  <ThemedText style={styles.emptyOption}>
-                    {TEXT.SHARED_EMPTY_DATA}
-                  </ThemedText>
-                )}
-              </ScrollView>
-            </ThemedView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        onClose={() => setIsApproverOpen(false)}
+        title={TEXT.TIMESTAMP_SELECT_APPROVER}
+        options={approverOptions.map((option) => ({
+          id: option.value,
+          label: option.position || option.label,
+          description: option.name,
+          searchText: option.label,
+          leading: option.photoId ? (
+            <UserAvatar staffId={option.photoId} size={40} />
+          ) : undefined,
+        }))}
+        selectedId={approver}
+        onSelect={(picked) => {
+          const option = approverOptions.find((o) => o.value === picked.id);
+          if (option) handleSelectApprover(option);
+        }}
+      />
       <Modal
         transparent
         visible={isConfirmVisible}
@@ -1060,11 +1019,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: "rgba(223,191,189,0.3)",
     padding: 14,
     marginBottom: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    boxShadow: boxShadow(c.shadow, { y: 1, blur: 4, opacity: 0.04 }),
   },
   contextIconCircle: {
     width: 44,
@@ -1131,11 +1086,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: c.border,
     padding: 16,
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.05 }),
   },
   sectionCard: {
     marginBottom: 12,

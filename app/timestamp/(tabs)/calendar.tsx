@@ -22,6 +22,7 @@ import {
   getTimestampCalendar,
   type TimestampCalendarDay,
 } from '@/services/timestampService';
+import { boxShadow } from '@/constants/shadows';
 
 moment.locale('th');
 
@@ -167,7 +168,10 @@ export default function TimestampCalendarScreen() {
   const [year, setYear] = useState(today.year());
   const [month, setMonth] = useState(today.month() + 1); // 1-12
   const [days, setDays] = useState<TimestampCalendarDay[]>([]);
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  // Today, selected on open. The month shown starts on the current one, so the
+  // day panel below the grid has something in it from the first frame — an
+  // empty panel invited a tap to find out what the screen was for.
+  const [selectedDay, setSelectedDay] = useState<number | null>(today.date());
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -362,7 +366,12 @@ export default function TimestampCalendarScreen() {
           <>
             <View style={styles.timeRow}>
               <View style={styles.timeBox}>
-                <LogIn size={18} color="#1E7E34" />
+                {/* The glyph in a tinted circle, the shape every other icon on
+                    this screen already has — bare it read as decoration beside
+                    the time rather than as a label for it. */}
+                <View style={[styles.timeIcon, { backgroundColor: 'rgba(30,126,52,0.12)' }]}>
+                  <LogIn size={18} color="#1E7E34" />
+                </View>
                 <View>
                   <ThemedText style={styles.timeLabel}>{TEXT.TIMESTAMP_CALENDAR_IN}</ThemedText>
                   <ThemedText style={styles.timeValue}>{selectedData?.inTime || '—'}</ThemedText>
@@ -376,7 +385,9 @@ export default function TimestampCalendarScreen() {
               </View>
               <View style={styles.timeDivider} />
               <View style={styles.timeBox}>
-                <LogOut size={18} color="#B45309" />
+                <View style={[styles.timeIcon, { backgroundColor: 'rgba(180,83,9,0.12)' }]}>
+                  <LogOut size={18} color="#B45309" />
+                </View>
                 <View>
                   <ThemedText style={styles.timeLabel}>{TEXT.TIMESTAMP_CALENDAR_OUT}</ThemedText>
                   <ThemedText style={styles.timeValue}>{selectedData?.outTime || '—'}</ThemedText>
@@ -564,11 +575,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: c.border,
     overflow: 'hidden',
-    shadowColor: c.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.04 }),
   },
   // The inner day pill; the shared MonthCalendar provides the card, primary
   // header band, weekday row and 1/7 grid columns around it.
@@ -585,7 +592,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderColor: c.primary,
   },
   daySelected: {
-    backgroundColor: c.primary,
+    // Blue, not brand red: red already means "today" on the cell next to it,
+    // and a selection is the user's own mark rather than a state of the day.
+    backgroundColor: c.belizeHole,
   },
   dayNumber: {
     fontSize: 14,
@@ -699,6 +708,17 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  // Tinted circle behind the in/out glyph. The tint is set at the call site so
+  // each direction keeps its own colour — green for arriving, amber for
+  // leaving — at the same strength.
+  timeIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   timeDivider: {
     width: 1,

@@ -13,7 +13,14 @@ import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors } from '@/constants/theme';
 import { scaleFont } from '@/utils/font-scale';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'dangerOutline';
+export type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'ghost'
+  | 'danger'
+  | 'dangerOutline'
+  | 'primaryOutline'
+  | 'accentOutline';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 type ButtonProps = {
@@ -53,6 +60,28 @@ function palette(c: AppColors, variant: ButtonVariant) {
     // does not shout from across the screen the way a solid red slab does.
     case 'dangerOutline':
       return { bg: 'transparent', border: c.danger, fg: c.danger, borderWidth: OUTLINE_BORDER_WIDTH };
+    // The brand colour as an outline: a secondary action that still speaks in
+    // the app's own voice. `primary` itself, not the fixed pomegranate the
+    // filled variant uses — as a line rather than a fill it keeps its contrast
+    // in both themes, so it can follow the theme's own accent.
+    case 'primaryOutline':
+      return {
+        bg: 'transparent',
+        border: c.primary,
+        fg: c.primary,
+        borderWidth: OUTLINE_BORDER_WIDTH,
+      };
+    // An outlined action that is neither the brand's nor destructive — going
+    // somewhere else in the same record, say. Blue, the same one the calendars
+    // fill a chosen date with, so "this is navigation, not a decision" reads
+    // the same wherever it appears.
+    case 'accentOutline':
+      return {
+        bg: 'transparent',
+        border: c.belizeHole,
+        fg: c.belizeHole,
+        borderWidth: OUTLINE_BORDER_WIDTH,
+      };
     case 'primary':
     // Pomegranate rather than `primary`: the brand red washes out to pink as a
     // fill in dark mode, and this holds one red across both themes.
