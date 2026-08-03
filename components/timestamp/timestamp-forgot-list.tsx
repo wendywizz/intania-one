@@ -283,8 +283,11 @@ export function TimestampForgotList() {
       // find something.
       ListEmptyComponent={
         <EmptyState
-          iconName="checkmark.circle.fill"
-          tone="success"
+          // Quiet: an empty list here is the screen's normal state, not an
+          // event worth a coloured medallion. The clock says which list is
+          // empty before the words do.
+          iconName="clock.fill"
+          tone="quiet"
           message={TEXT.TIMESTAMP_FORGOT_EMPTY_TITLE}
         />
       }

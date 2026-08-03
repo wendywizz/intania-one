@@ -147,6 +147,8 @@ helpers.
 
 # Sending requests
 - The app does not send requests and receive responses directly from the real application but there is a gateway service called “scooba-service” as a medium. But the auth system and news rss feed call to service directly
+- **Startup connection check.** `components/connection-gate.tsx` (`ConnectionGate`, outermost in `app/_layout.tsx`) pings `GET /api/health` on scooba-service and renders **nothing below itself** — not the app lock, not the navigator — until it answers. So no screen fires requests at a gateway we haven't reached, and nobody is asked for a face or passcode to arrive at a "cannot connect" notice. The probe requires the gateway's own JSON body, not just a 200 — the production host answers 200 with a placeholder for unknown paths.
+- Both outcomes are the **same screen with different content** (loader ↔ `ErrorState` + retry). Do not turn the failure into its own route: mounting the navigator in order to redirect flashes the home screen for a frame on the way there.
 - Every submit action that sends a POST, PUT, or DELETE request must show a YES/NO confirmation modal before sending the request.
 - After the user confirms, show the loading/prefix animation and wait 1000ms before sending the request.
 - After receiving the response data, wait 1500ms before continuing to the next operation.

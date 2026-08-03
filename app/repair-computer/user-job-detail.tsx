@@ -26,8 +26,9 @@ import { AppFonts } from "@/constants/fonts";
 import { PersonListCard, type PersonListEntry } from "@/components/ui/person-list-card";
 import { REPAIR_STATUS_NEW_JOB } from "@/constants/types";
 import type { RepairComputer } from "@/models/types";
+import { useToast } from "@/components/toast-provider";
 import { getPersonPhoto } from "@/services/personService";
-import { getJobDetail, update } from "@/services/repairComputerService";
+import { getJobDetail, removeJob, update } from "@/services/repairComputerService";
 import { formatDateTime } from "@/utils/date-format";
 import { getRepairStatusBadgeStyle } from "@/utils/repair-computer-status";
 import { USER_PLACEHOLDER } from "@/constants/images";
@@ -135,8 +136,14 @@ export default function UserJobDetailScreen() {
   const [phone, setPhone] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "">("");
+  // The success toast has to outlive this screen — we navigate back to the list
+  // the moment the job is gone — so the delete path talks to the global toast
+  // directly instead of going through the local-state <AppToast/> shim.
+  const { showToast } = useToast();
 
   const loadDetail = useCallback(async () => {
     if (!jobId) {
@@ -202,8 +209,38 @@ export default function UserJobDetailScreen() {
     router.replace(backHref as Parameters<typeof router.replace>[0]);
   };
 
+  const handleDelete = async () => {
+    if (!jobId || isDeleting) return;
+    setIsDeleteConfirmOpen(false);
+    setIsDeleting(true);
+    setToastMessage("");
+    setToastType("");
+    try {
+      const result = await removeJob(jobId);
+      showToast(
+        result.message || TEXT.REPAIR_COMPUTER_JOB_DELETED_SUCCESS_MESSAGE,
+        "success",
+      );
+      // The list reloads on focus, so it comes back without the deleted row.
+      router.replace(backHref as Parameters<typeof router.replace>[0]);
+    } catch (err) {
+      setToastType("error");
+      setToastMessage(
+        err instanceof Error
+          ? err.message
+          : TEXT.REPAIR_COMPUTER_UNABLE_TO_DELETE_JOB,
+      );
+      setIsDeleting(false);
+    }
+  };
+
   const statusId = getJobText(data, statusIdFields);
   const isEditable = statusId === REPAIR_STATUS_NEW_JOB || statusId === "";
+  // Withdrawing is only the informer's call while the job is still new (status
+  // 0) — the same rule the swipe-to-delete action on the list applies. Unlike
+  // `isEditable` an unknown status does not qualify: never offer to delete a job
+  // whose state we could not read.
+  const canRemove = statusId === REPAIR_STATUS_NEW_JOB;
   const statusName = getJobText(data, statusNameFields) || statusId || TEXT_NONE;
   const repairTypeName = getJobText(data, repairTypeNameFields);
   const informDateTime = getJobText(data, [
@@ -371,18 +408,34 @@ export default function UserJobDetailScreen() {
   };
 
   const renderFooterActions = () => {
-    if (isLoading || error || !isEditable) {
+    if (isLoading || error || (!isEditable && !canRemove)) {
       return null;
     }
 
     return (
-      <FloatingActionBar disabled={isUpdating}>
-        <Button
-          title={TEXT.SHARED_UPDATE}
-          fullWidth
-          loading={isUpdating}
-          onPress={() => setIsConfirmOpen(true)}
-        />
+      <FloatingActionBar disabled={isUpdating || isDeleting}>
+        {/* Update and remove share one line: flex 3 against flex 1 splits the
+            row 75/25. When only one of them applies it takes the full width. */}
+        <View style={styles.actionRow}>
+          {isEditable ? (
+            <Button
+              title={TEXT.SHARED_UPDATE}
+              style={canRemove ? styles.actionPrimary : styles.actionFull}
+              loading={isUpdating}
+              onPress={() => setIsConfirmOpen(true)}
+            />
+          ) : null}
+          {canRemove ? (
+            <Button
+              title={TEXT.DELETE}
+              variant="dangerOutline"
+              icon="trash.fill"
+              style={isEditable ? styles.actionSecondary : styles.actionFull}
+              loading={isDeleting}
+              onPress={() => setIsDeleteConfirmOpen(true)}
+            />
+          ) : null}
+        </View>
       </FloatingActionBar>
     );
   };
@@ -414,11 +467,23 @@ export default function UserJobDetailScreen() {
         onCancel={() => setIsConfirmOpen(false)}
       />
 
+      <ConfirmDialog
+        visible={isDeleteConfirmOpen}
+        title={TEXT.CONFIRM_DELETE}
+        message={TEXT.REPAIR_COMPUTER_DELETE_CONFIRM_MESSAGE}
+        confirmLabel={TEXT.DELETE}
+        cancelLabel={TEXT.CANCEL}
+        destructive
+        loading={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+      />
+
       <AppToast
         message={toastMessage}
         type={toastType === "error" ? "error" : "success"}
       />
-      <SubmittingOverlay visible={isUpdating} />
+      <SubmittingOverlay visible={isUpdating || isDeleting} />
     </ThemedView>
   );
 }
@@ -441,6 +506,23 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   form: {
     gap: 14,
     paddingBottom: 10,
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  actionPrimary: {
+    flex: 3,
+  },
+  actionSecondary: {
+    flex: 1,
+    // A quarter of a narrow phone leaves ~80pt: the button's default 20pt side
+    // padding would squeeze the icon and label and ellipsize "ลบ".
+    paddingHorizontal: 8,
+  },
+  actionFull: {
+    flex: 1,
   },
   field: {
     paddingHorizontal: 0,

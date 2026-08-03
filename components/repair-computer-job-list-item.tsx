@@ -6,6 +6,8 @@ import { TEXT } from '@/constants/text';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
+import { AppFonts } from '@/constants/fonts';
+import { REPAIR_STATUS_NEW_JOB } from '@/constants/types';
 import type { RepairComputer } from '@/models/types';
 import { getRepairComputerTypeIcon } from '@/utils/category-icon';
 import { formatDateTime } from '@/utils/date-format';
@@ -40,6 +42,25 @@ export function getRepairComputerJobId(job: RepairComputer) {
   return getRepairComputerJobText(job, jobIdFields);
 }
 
+// Legacy rows often carry a filler asset code — '-', '.', '/', a lone space —
+// where the user left the field blank. Punctuation on its own says nothing, so
+// treat those the same as empty and drop the line rather than print the filler.
+const FILLER_ONLY = /^[-_.,;:/\\|*#()[\]{}<>+~"'`\s]+$/;
+
+function hasRealValue(value: string) {
+  return value.trim() !== '' && !FILLER_ONLY.test(value);
+}
+
+/**
+ * Whether the informer may still withdraw this job. Only while it sits at "new"
+ * (status 0, รอการรับเรื่อง) — once a foreman has taken it, cancelling is their
+ * call, not the informer's. Shared by the swipe action here and the remove
+ * button on the job-detail screen so both apply the one rule.
+ */
+export function isRepairComputerJobRemovable(job: RepairComputer) {
+  return getRepairComputerJobText(job, statusIdFields) === REPAIR_STATUS_NEW_JOB;
+}
+
 type RepairComputerJobListItemProps = {
   job: RepairComputer;
   fallbackTitle?: string;
@@ -54,7 +75,8 @@ export function RepairComputerJobListItem({ job, fallbackTitle = TEXT.REPAIR_COM
   const styles = useThemedStyles(makeStyles);
   const jobId = getRepairComputerJobId(job);
   const jobTitle = getRepairComputerJobText(job, repairTypeOnly ? repairTypeTitleFields : titleFields) || fallbackTitle || jobId || '-';
-  const supplyCode = getRepairComputerJobText(job, supplyFields);
+  const rawSupplyCode = getRepairComputerJobText(job, supplyFields);
+  const supplyCode = hasRealValue(rawSupplyCode) ? rawSupplyCode : '';
   const repairType = getRepairComputerJobText(job, repairTypeTitleFields);
   const repairTypeId = getRepairComputerJobText(job, repairTypeIdFields);
   // Only show the repair-type row when it adds info beyond the title (avoids the
@@ -82,13 +104,20 @@ export function RepairComputerJobListItem({ job, fallbackTitle = TEXT.REPAIR_COM
     />
   );
 
-  if (!onDelete) {
+  // Only a job nobody has picked up yet (status 0) can be withdrawn.
+  if (!onDelete || !isRepairComputerJobRemovable(job)) {
     return content;
   }
 
   const renderRightActions = () => (
-    <Pressable accessibilityRole="button" onPress={() => onDelete(job)} style={styles.deleteAction}>
-      <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={TEXT.DELETE}
+      onPress={() => onDelete(job)}
+      style={({ pressed }) => [styles.deleteAction, pressed && styles.deleteActionPressed]}
+    >
+      <IconSymbol name="trash.fill" size={20} color="#FFFFFF" />
+      <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" style={styles.deleteActionText}>
         {TEXT.DELETE}
       </ThemedText>
     </Pressable>
@@ -106,8 +135,21 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     width: 96,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
     borderRadius: 12,
     backgroundColor: c.pomegranate,
     marginLeft: 8,
+    // The swipe row is as tall as the ListCard *plus* the 12px bottom margin it
+    // carries, so the action has to repeat that margin — otherwise the red slab
+    // hangs below the card it belongs to.
+    marginBottom: 12,
+  },
+  deleteActionPressed: {
+    opacity: 0.85,
+  },
+  deleteActionText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: AppFonts.psuBold,
   },
 });

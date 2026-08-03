@@ -36,7 +36,6 @@ import { getUserCurrentJob, removeJob } from "@/services/repairComputerService";
 
 const ESTIMATED_ITEM_HEIGHT = 132;
 const LIST_VERTICAL_CHROME = 260;
-const statusFields = ["status", "state", "statusId", "status_id"];
 
 function getJobKey(job: RepairComputer, index: number) {
   return `${getRepairComputerJobId(job) || "repair-job"}-${index}`;
@@ -60,27 +59,6 @@ function getHasMore(
 
   const pageCount = Array.isArray(result.data) ? result.data.length : 0;
   return pageCount >= pageSize;
-}
-
-function getJobText(job: RepairComputer, fields: string[]) {
-  for (const field of fields) {
-    const value = job[field];
-
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-
-    if (typeof value === "number") {
-      return String(value);
-    }
-  }
-
-  return "";
-}
-
-function canEditJob(job: RepairComputer) {
-  const status = getJobText(job, statusFields);
-  return status === "" || Number(status) === 0;
 }
 
 function blurActiveWebElement() {
@@ -236,8 +214,6 @@ export default function RepairComputerCurrentJobScreen() {
 
   const handleDelete = async () => {
     const jobId = selectedJob ? getRepairComputerJobId(selectedJob) : "";
-    console.log("[handleDelete] selectedJob keys:", selectedJob ? Object.keys(selectedJob) : null);
-    console.log("[handleDelete] jobId:", JSON.stringify(jobId));
 
     if (!jobId || isDeleting) {
       return;

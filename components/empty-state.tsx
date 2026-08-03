@@ -58,11 +58,17 @@ type EmptyStateProps = {
    */
   description?: string;
   /**
-   * `success` when an empty list is the good outcome — no missed timestamps, no
-   * outstanding requests. A grey inbox reads as "nothing found"; a green tick
-   * reads as "nothing wrong", and on those screens the second is the truth.
+   * How loudly the state is drawn.
+   *
+   * - `neutral` — the framed look: glyph in a tinted circle, dark message.
+   * - `success` — the same frame in green, for when empty is the good outcome.
+   * - `quiet` — no frame at all. A large glyph one step darker than the page
+   *   and a muted line under it: present, legible, and not competing with the
+   *   screen's own controls. An empty list is the absence of content, and
+   *   drawing a bordered medallion in the middle of the screen to announce it
+   *   gives nothing more weight than everything.
    */
-  tone?: 'neutral' | 'success';
+  tone?: 'neutral' | 'success' | 'quiet';
   style?: StyleProp<ViewStyle>;
 };
 
@@ -88,19 +94,30 @@ export function EmptyState({
   // half of it without falling back to spelling out both.
   const resolved = preset ? EMPTY_PRESETS[preset] : undefined;
   const glyphName = iconName ?? resolved?.iconName;
-  const success = (tone ?? resolved?.tone ?? 'neutral') === 'success';
-  const glyphColor = success ? c.success : c.textFaint;
+  const actualTone = tone ?? resolved?.tone ?? 'neutral';
+  const success = actualTone === 'success';
+  const quiet = actualTone === 'quiet';
+
+  // `borderStrong` is the one step above the page colour in both themes — dark
+  // enough to read against the background, light enough to stay a background
+  // element itself.
+  const glyphColor = quiet ? c.borderStrong : success ? c.success : c.textFaint;
+  const glyphSize = quiet ? 76 : 52;
+
+  const glyph = glyphName ? (
+    <IconSymbol name={glyphName} size={glyphSize} color={glyphColor} />
+  ) : Icon ? (
+    <Icon size={glyphSize} color={glyphColor} strokeWidth={1.5} />
+  ) : null;
 
   return (
-    <View style={[styles.wrap, style]}>
-      <View style={[styles.circle, success && styles.circleSuccess]}>
-        {glyphName ? (
-          <IconSymbol name={glyphName} size={52} color={glyphColor} />
-        ) : Icon ? (
-          <Icon size={52} color={glyphColor} strokeWidth={1.75} />
-        ) : null}
-      </View>
-      <ThemedText style={[styles.message, success && styles.messageSuccess]} type="defaultSemiBold">
+    <View style={[styles.wrap, quiet && styles.wrapQuiet, style]}>
+      {quiet ? glyph : (
+        <View style={[styles.circle, success && styles.circleSuccess]}>{glyph}</View>
+      )}
+      <ThemedText
+        style={[styles.message, success && styles.messageSuccess, quiet && styles.messageQuiet]}
+        type="defaultSemiBold">
         {message}
       </ThemedText>
       {description ? (
@@ -134,6 +151,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // No frame, and a little more air between the glyph and the line: with
+  // nothing enclosing them, the gap is what holds them together as one mark.
+  wrapQuiet: { gap: 12 },
   circleSuccess: {
     backgroundColor: c.successSoft,
     borderColor: 'transparent',
@@ -146,6 +166,13 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   messageSuccess: {
     color: c.success,
+  },
+  // Muted, not full-strength text: the sentence belongs to the same quiet layer
+  // as the glyph above it.
+  messageQuiet: {
+    color: c.textMuted,
+    fontSize: 15,
+    lineHeight: 22,
   },
   description: {
     color: c.textMuted,

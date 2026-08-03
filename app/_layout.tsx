@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { BiometricGate } from '@/components/biometric-gate';
+import { ConnectionGate } from '@/components/connection-gate';
 import { ToastProvider } from '@/components/toast-provider';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
@@ -75,9 +76,13 @@ export default function RootLayout() {
         <AuthProvider>
           <ThemeProvider>
             <ToastProvider>
-              <BiometricGate>
-                <AppStack />
-              </BiometricGate>
+              {/* Outermost gate: nothing below it mounts — not the app lock,
+                  not the navigator — until scooba-service has answered. */}
+              <ConnectionGate>
+                <BiometricGate>
+                  <AppStack />
+                </BiometricGate>
+              </ConnectionGate>
             </ToastProvider>
           </ThemeProvider>
         </AuthProvider>

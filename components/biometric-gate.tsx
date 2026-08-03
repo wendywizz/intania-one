@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { Check } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -51,17 +52,27 @@ type Status = 'checking' | 'locked' | 'unlocking' | 'unlocked';
 
 /**
  * Wraps the app in a Face ID / fingerprint lock when "Biometric Login" is on in
- * Settings. The screen behind stays mounted (so navigation state survives) but is
- * fully covered by an opaque overlay until the scan succeeds.
+ * Settings. The screen behind stays mounted but is fully covered by an opaque
+ * overlay until the scan succeeds.
  *
  * A cold start always prompts; returning from the background only prompts after
  * RELOCK_AFTER_MS away, so ducking out to another app and back doesn't re-scan.
+ *
+ * Unlocking a lock that went up on a *return* hands back the home screen rather
+ * than the page the user left: after that long away, whatever was open is stale,
+ * and a half-filled form or a detail page reached by a since-forgotten path is
+ * not where anyone wants to resume. A cold start is already at home, so only the
+ * return case navigates.
  *
  * The prompt is biometrics-only to begin with — the device passcode is offered
  * after SCANS_BEFORE_PASSCODE failed scans, or immediately if the OS locks
  * biometrics out, so a face that won't scan can never bar the way in.
  *
  * No-ops on web and on devices without enrolled biometrics.
+ *
+ * Mounted behind `ConnectionGate`, so it is only ever reached once the gateway
+ * has answered — nobody is asked for a face or a passcode to arrive at a
+ * "cannot connect" notice.
  */
 export function BiometricGate({ children }: { children: React.ReactNode }) {
   const styles = useThemedStyles(makeStyles);
@@ -95,6 +106,9 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
   const needsDeviceFallbackRef = useRef(false);
   // The lock applies once per launch; see the cold-start effect below.
   const didInitialCheckRef = useRef(false);
+  // Set when the current lock went up because the app came back from the
+  // background, which is the only case that resets navigation on unlock.
+  const isReturnLockRef = useRef(false);
 
   // Success choreography: the scan icon gives way to a tick, then the whole
   // overlay fades and eases back to hand the app over.
@@ -114,6 +128,16 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
   /** Plays the unlock animation, then reveals the app underneath. */
   const revealApp = useCallback(() => {
     setStatus('unlocking');
+
+    // Done here, at the top of the reveal, because the overlay is still fully
+    // opaque: the stack unwinds out of sight and the cover lifts onto home,
+    // instead of the user watching their screens pop away one by one.
+    if (isReturnLockRef.current) {
+      isReturnLockRef.current = false;
+      if (router.canDismiss()) router.dismissAll();
+      router.replace('/');
+    }
+
     if (Platform.OS !== 'web') {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }
@@ -317,6 +341,7 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
         if (!plan.locked) return;
         // Each lock starts over: biometrics first, password only after failures.
         resetOverlay();
+        isReturnLockRef.current = true;
         startLock(plan);
       });
     };

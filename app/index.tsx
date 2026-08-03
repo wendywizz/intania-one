@@ -160,7 +160,10 @@ const MENU_ITEMS: readonly { title: string; href: string; icon: IconName }[] = [
 
 function getDateString() {
   const n = new Date();
-  return `${TEXT.HOME_DAY_NAMES[n.getDay()]} ${n.getDate()} ${TEXT.HOME_MONTH_NAMES[n.getMonth()]} ${n.getFullYear()}`;
+  // Buddhist year, as every other date in the app is shown — the greeting was
+  // the one place still reading 2026 while the screens below it said 2569.
+  const year = n.getFullYear() + 543;
+  return `${TEXT.HOME_DAY_NAMES[n.getDay()]} ${n.getDate()} ${TEXT.HOME_MONTH_NAMES[n.getMonth()]} ${year}`;
 }
 
 function getFirstName(user: AuthUser | null) {
@@ -381,7 +384,10 @@ function UpcomingShiftSection({ data, loading, error, onReload, upcomingExams, a
 
   return (
     <View style={s.coverCard}>
-      <Text style={s.coverTitle}>{TEXT.HOME_UPCOMING_SHIFT_TITLE}</Text>
+      {/* The title is part of the content, not the frame: while the summary is
+          still loading we don't yet know whether there is anything to show, so
+          heading an empty spinner would be a promise we might not keep. */}
+      {!loading && <Text style={s.coverTitle}>{TEXT.HOME_UPCOMING_SHIFT_TITLE}</Text>}
 
       {loading ? (
         <View style={s.stateWrap}>
@@ -1284,8 +1290,8 @@ const makeStyles = (m: M) => StyleSheet.create({
   },
   greeting: {
     fontFamily: F.semibold,
-    fontSize: 23,
-    lineHeight: 29,
+    fontSize: 20,
+    lineHeight: 26,
     color: m.onCanvas,
   },
   date: {

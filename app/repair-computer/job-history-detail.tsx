@@ -236,14 +236,17 @@ export default function JobHistoryDetailScreen() {
             </View>
           }
           rows={[
-            { label: TEXT.REPAIR_COMPUTER_DETAIL, value: repairTypeName, icon: "wrench.fill" },
+            { label: TEXT.REPAIR_COMPUTER_REPAIR_TYPE_LABEL, value: repairTypeName, icon: "wrench.fill" },
             { label: TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL, value: supplyCode, icon: "doc.text.fill" },
             {
               label: TEXT.REPAIR_COMPUTER_INFORM_DATE_LABEL,
               value: informDateTime ? formatDateTime(informDateTime) : "",
               icon: "calendar",
             },
-            { label: TEXT.REPAIR_COMPUTER_DETAIL_LABEL, value: detail, icon: "text.bubble" },
+            // The reporter's own words are the point of a history record, so the
+            // row stays even when they left it blank — an explicit "-" reads as
+            // "nothing was written", where a missing row reads as a bug.
+            { label: TEXT.REPAIR_COMPUTER_DETAIL_LABEL, value: detail || TEXT_NONE, icon: "text.bubble" },
           ]}
         />
 

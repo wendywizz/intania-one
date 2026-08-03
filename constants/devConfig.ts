@@ -18,7 +18,7 @@
 //export const DEV_STAFF_ID: string = '0000297'; // มนตรี
 //export const DEV_STAFF_ID: string = '0008284'; // นิคม
 //export const DEV_STAFF_ID: string = '0000321'; // เสกสรร
-export const DEV_STAFF_ID: string = '0008380'; // ธนิยา
+//export const DEV_STAFF_ID: string = '0008380'; // ธนิยา
 //export const DEV_STAFF_ID: string = '0000301'; // พี่อ้อ
 //export const DEV_STAFF_ID: string = '0011688'; // พี่คมเนต
 //export const DEV_STAFF_ID: string = '0039506'; // ปาย

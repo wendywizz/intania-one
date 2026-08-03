@@ -124,6 +124,14 @@ export const TEXT = {
   EDIT_PROFILE_SAVING: 'กำลังบันทึก…',
   EDIT_PROFILE_SAVE: 'บันทึกการเปลี่ยนแปลง',
 
+  // Service reachability (startup probe against scooba-service)
+  SERVICE_CHECK_CONNECTING: 'กำลังเชื่อมต่อระบบ',
+  SERVICE_UNAVAILABLE_TITLE: 'ไม่สามารถเชื่อมต่อระบบได้',
+  SERVICE_UNAVAILABLE_MESSAGE:
+    'ขณะนี้แอปพลิเคชันไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง',
+  SERVICE_UNAVAILABLE_RETRY: 'ลองเชื่อมต่ออีกครั้ง',
+  SERVICE_UNAVAILABLE_RETRYING: 'กำลังเชื่อมต่อ…',
+
   // Biometric app lock
   BIOMETRIC_LOCK_TITLE: 'ปลดล็อกแอปพลิเคชัน',
   BIOMETRIC_LOCK_DESCRIPTION: 'ยืนยันตัวตนด้วยใบหน้าหรือลายนิ้วมือเพื่อเข้าใช้งาน',

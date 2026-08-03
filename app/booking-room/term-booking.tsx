@@ -462,7 +462,7 @@ export default function TermBookingScreen() {
         <SectionCard>
           <View style={styles.field}>
             <View style={styles.toggleRow}>
-              <ThemedText style={styles.fieldLabel}>
+              <ThemedText style={[styles.fieldLabel, styles.toggleLabel]}>
                 {TEXT.BOOKING_ROOM_EXTRA_TOGGLE}
               </ThemedText>
               {/* Never disabled, even with no subjects to pick — that is
@@ -1061,7 +1061,17 @@ const makeStyles = (c: AppColors) =>
     fieldError: { fontSize: 12, lineHeight: 17, color: c.danger },
     hint: { fontSize: 12, lineHeight: 17, color: c.textMuted },
 
-    toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    // The label wraps and the switch keeps its size: without flex on the text,
+    // a long Thai label lays out at its full intrinsic width and pushes the
+    // switch past the right edge of the card — off the screen on a phone,
+    // where there is no spare width to absorb it.
+    toggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    toggleLabel: { flex: 1 },
 
     termRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     termText: { flex: 1, gap: 2 },

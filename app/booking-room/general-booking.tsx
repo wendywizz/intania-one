@@ -482,7 +482,7 @@ export default function GeneralBookingScreen() {
         <SectionCard>
           <View style={styles.field}>
             <View style={styles.toggleRow}>
-              <ThemedText style={styles.fieldLabel}>
+              <ThemedText style={[styles.fieldLabel, styles.toggleLabel]}>
                 {TEXT.BOOKING_ROOM_EXTRA_TOGGLE}
               </ThemedText>
               {/* Never disabled, even with no subjects to pick — starting off,
@@ -1138,7 +1138,17 @@ const makeStyles = (c: AppColors) =>
     // yet", told as an aside rather than as a verdict on something typed.
     stepWarning: { flex: 1, fontSize: 12, lineHeight: 17, color: c.danger, fontStyle: 'italic' },
 
-    toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    // The label wraps and the switch keeps its size: without flex on the text,
+    // a long Thai label lays out at its full intrinsic width and pushes the
+    // switch past the right edge of the card — off the screen on a phone,
+    // where there is no spare width to absorb it.
+    toggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    toggleLabel: { flex: 1 },
 
     dateRow: { flexDirection: 'row', gap: 12 },
     timeRow: { flexDirection: 'row', gap: 12 },

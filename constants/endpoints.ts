@@ -39,6 +39,7 @@ export const OPENID_USERINFO_URL = `${OPENID_BASE_URL}/application/o/userinfo/`;
 export const ENDPOINTS = {
   scooba: API_BASE_URL,
   scooba_dev: API_BASE_URL,
+  health: `${API_BASE_URL}/api/health`,
   staffNewsFeed: `${API_BASE_URL}/api/news`,
   timestamp: `${API_BASE_URL}/api/timestamp`,
   absence: `${API_BASE_URL}/api/absence`,
