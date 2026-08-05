@@ -19,6 +19,7 @@ import { useNoticeRepairStaffId } from '@/hooks/useNoticeRepairStaffId';
 import { Tabs, router, usePathname } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { ABSOLUTE_FILL } from '@/constants/layout';
 import { scaleFont } from '@/utils/font-scale';
 
 function getRoleRoute(pathname: string): NoticeRepairRole | null {
@@ -191,5 +192,5 @@ export default function NoticeRepairTabLayout() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  overlay: { ...StyleSheet.absoluteFillObject, zIndex: 10 },
+  overlay: { ...ABSOLUTE_FILL, zIndex: 10 },
 });

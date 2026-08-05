@@ -13,13 +13,11 @@
  * segment, so the segment changes colour as it travels — which is what makes it
  * read as the icon's own mark and not as a coloured worm.
  */
-import { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { useColors } from '@/constants/theme';
-
-const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 /**
  * A lemniscate in a 100×48 box, as two mirrored loops meeting at the centre.
@@ -73,34 +71,42 @@ export function InfinityLoader({
   backdrop = true,
 }: InfinityLoaderProps) {
   const c = useColors();
-  const progress = useRef(new Animated.Value(0)).current;
+
+  /**
+   * The dash offset is stepped in React rather than through an animation
+   * library, and the `Path` below is a plain one.
+   *
+   * Both drivers reach an SVG attribute through react-native-svg's web
+   * `setNativeProps`, which reads its updates out of `props.style` — the shape
+   * Reanimated sends, not the one RN's own `Animated` sends. Animating through
+   * either one therefore works on native and breaks on web, in the two
+   * different ways this loader has already broken. One number per frame owes
+   * nothing to either, so it renders the same on both.
+   *
+   * The cost is a re-render per frame, which is affordable here and nowhere
+   * else: this is one small `Svg` with two paths, on screen only while
+   * something is loading. Don't copy the pattern to anything larger.
+   */
+  const [dashOffset, setDashOffset] = useState(PATH_LENGTH);
 
   useEffect(() => {
-    const animation = Animated.loop(
-      Animated.timing(progress, {
-        toValue: 1,
-        duration,
-        easing: Easing.linear,
-        // strokeDashoffset is an SVG attribute, not a transform — the native
-        // driver cannot animate it.
-        useNativeDriver: false,
-      }),
-    );
+    let frame: number;
+    let startedAt: number | null = null;
 
-    animation.start();
-    return () => animation.stop();
-  }, [progress, duration]);
+    const step = (now: number) => {
+      startedAt ??= now;
+      // Wrapped on the period rather than restarted, so a dropped frame shifts
+      // the segment's phase instead of jumping it back to the start.
+      const progress = ((now - startedAt) % duration) / duration;
+      // Counts down through one full length so the segment travels forwards;
+      // the dash pattern repeats, so the loop is seamless with no visible reset.
+      setDashOffset(PATH_LENGTH * (1 - progress));
+      frame = requestAnimationFrame(step);
+    };
 
-  // Counts down through one full length so the segment travels forwards; the
-  // dash pattern repeats, so the loop is seamless with no reset visible.
-  const dashOffset = useMemo(
-    () =>
-      progress.interpolate({
-        inputRange: [0, 1],
-        outputRange: [PATH_LENGTH, 0],
-      }),
-    [progress],
-  );
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [duration]);
 
   const height = (size * 48) / 100;
 
@@ -145,7 +151,7 @@ export function InfinityLoader({
           strokeLinecap="round"
         />
 
-        <AnimatedPath
+        <Path
           d={PATH}
           fill="none"
           stroke="url(#infinityStroke)"

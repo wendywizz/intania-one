@@ -5,6 +5,12 @@ const OPENID_DISCOVERY_URL = `${OPENID_BASE_URL}/.well-known/openid-configuratio
 
 const expoExtra = (Constants.expoConfig?.extra ?? {}) as Record<string, string>;
 
+/**
+ * Reads a public env var. Metro only inlines `process.env.EXPO_PUBLIC_X` when
+ * it is written out literally, so a dynamic lookup like this one only ever
+ * resolves through `extra` — every key read here must also be listed in
+ * app.config.js so it gets copied there.
+ */
 function getEnvValue(name: string, fallback = '') {
   return expoExtra[name] ?? process.env[name] ?? fallback;
 }

@@ -1,4 +1,4 @@
-﻿import { CalendarCheck, CalendarDays, ChevronRight, MapPin } from 'lucide-react-native';
+﻿import { CalendarDays, ChevronRight, MapPin } from 'lucide-react-native';
 import { TEXT } from "@/constants/text";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -169,7 +169,7 @@ export default function IncomingMeetingScreen() {
         ItemSeparatorComponent={({ leadingItem }: { leadingItem: ListRow }) =>
           leadingItem.type === "date-header" ? null : <View style={styles.separator} />
         }
-        ListEmptyComponent={<EmptyState icon={CalendarCheck} message={TEXT.MEETING_NO_INCOMING_MEETINGS} />}
+        ListEmptyComponent={<EmptyState preset="meeting" message={TEXT.MEETING_NO_INCOMING_MEETINGS} />}
       />
     </ThemedView>
   );

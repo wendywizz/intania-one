@@ -4,5 +4,5 @@ import { useNoticeRepairRole } from '@/context/NoticeRepairRoleContext';
 
 export default function Screen() {
   const { staffId } = useNoticeRepairRole();
-  return <NoticeRepairListScreen title={TEXT.NOTICE_REPAIR_TAB_PENDING_RECEIPT} listType="admin_pending" staffId={staffId} />;
+  return <NoticeRepairListScreen title={TEXT.NOTICE_REPAIR_TAB_PENDING_RECEIPT} listType="admin_pending" staffId={staffId} emptyMessage={TEXT.NOTICE_REPAIR_EMPTY_PENDING_RECEIPT} />;
 }

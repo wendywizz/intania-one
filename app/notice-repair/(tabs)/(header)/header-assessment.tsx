@@ -9,8 +9,17 @@ export default function Screen() {
       title={TEXT.NOTICE_REPAIR_TAB_ASSESSMENT}
       staffId={staffId}
       segments={[
-        { label: TEXT.NOTICE_REPAIR_TAB_WAITING_ESTIMATE, listType: 'header_waiting_estimate', detailPathname: '/notice-repair/header-estimate-detail' },
-        { label: TEXT.NOTICE_REPAIR_TAB_ESTIMATED, listType: 'header_estimated' },
+        {
+          label: TEXT.NOTICE_REPAIR_TAB_WAITING_ESTIMATE,
+          listType: 'header_waiting_estimate',
+          detailPathname: '/notice-repair/header-estimate-detail',
+          emptyMessage: TEXT.NOTICE_REPAIR_EMPTY_WAITING_ESTIMATE,
+        },
+        {
+          label: TEXT.NOTICE_REPAIR_TAB_ESTIMATED,
+          listType: 'header_estimated',
+          emptyMessage: TEXT.NOTICE_REPAIR_EMPTY_ESTIMATED,
+        },
       ]}
     />
   );

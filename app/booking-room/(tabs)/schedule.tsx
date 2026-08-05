@@ -257,12 +257,12 @@ export default function BookingRoomScheduleScreen() {
     }
 
     if (!schedule) {
-      return <EmptyState iconName="calendar-range" message={TEXT.BOOKING_ROOM_SCHEDULE_EMPTY} />;
+      return <EmptyState preset="schedule" message={TEXT.BOOKING_ROOM_SCHEDULE_EMPTY} />;
     }
 
     if (schedule.bookings.length === 0) {
       return (
-        <EmptyState iconName="calendar-range" message={TEXT.BOOKING_ROOM_SCHEDULE_WEEK_FREE} />
+        <EmptyState preset="schedule" message={TEXT.BOOKING_ROOM_SCHEDULE_WEEK_FREE} />
       );
     }
 

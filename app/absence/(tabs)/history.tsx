@@ -17,7 +17,6 @@ import {
   getStatusBadge,
 } from '@/components/absence/absence-list-item';
 import { ErrorState } from '@/components/error-state';
-import { Inbox } from 'lucide-react-native';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
@@ -177,7 +176,7 @@ export default function HistoryScreen() {
             </View>
           ) : null
         }
-        ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.SHARED_NO_HISTORY} />}
+        ListEmptyComponent={<EmptyState preset="history" message={TEXT.ABSENCE_HISTORY_EMPTY} />}
       />
     );
   };

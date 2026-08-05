@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { ActivityIndicator, Alert, Animated, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppToast } from '@/components/app-toast';
@@ -224,6 +224,9 @@ export default function MyProfileScreen() {
         backHref="/"
         titleInNavBar
         tone="primary"
+        // Back already goes home, so the house is a second button to the same
+        // place — the bell is the only action worth the slot here.
+        showHomeButton={false}
         rightContent={
           <Pressable
             accessibilityRole="button"

@@ -16,7 +16,7 @@ Expo-Go-*.apk
 
 # Native
 .kotlin/
-*.orig.*
+*.orig.*,*
 *.jks
 *.p8
 *.p12
@@ -43,3 +43,7 @@ app-example
 # generated native folders
 /ios
 /android
+
+# local environment files
+.env*.local
+

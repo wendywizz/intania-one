@@ -17,7 +17,8 @@ export default function WorkerHistoryScreen() {
     <RepairComputerJobListScreen
       title={TEXT.SHARED_HISTORY}
       description={TEXT.REPAIR_COMPUTER_VIEW_WORKER_HISTORY_DESCRIPTION}
-      emptyMessage={TEXT.SHARED_NO_HISTORY}
+      emptyMessage={TEXT.REPAIR_COMPUTER_NO_JOB_HISTORY}
+      emptyPreset="history"
       errorMessage={TEXT.SHARED_UNABLE_TO_LOAD_HISTORY}
       loadingTitle={TEXT.SHARED_LOADING_HISTORY}
       loadPage={loadPage}

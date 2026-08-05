@@ -1,4 +1,3 @@
-import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -24,20 +23,21 @@ export const unstable_settings = {
 function AppStack() {
   const { isDarkMode } = useTheme();
   return (
-    <NavThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
+    <>
       {/* Screens draw their own <NavTopBar/>, so the navigator header is off by
           default. Listing routes one by one meant a new route that forgot its
           entry got the native header *as well as* its NavTopBar — two stacked
           bars. Opting out here makes that impossible. */}
       <Stack screenOptions={{ headerShown: false }} />
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-    </NavThemeProvider>
+    </>
   );
 }
 
 export default function RootLayout() {
   const [loaded] = useFonts({
-    // Sukhumvit Set — app-wide typeface (Thin/Light/Text/Medium/SemiBold/Bold).
+    // Sukhumvit Set — currently referenced by nothing; kept registered only so a
+    // screen that hardcodes one of these names still renders. Safe to drop.
     SukhumvitSet_Thin: require('../assets/fonts/Sukhumvit-Set/SukhumvitSet-Thin.ttf'),
     SukhumvitSet_Light: require('../assets/fonts/Sukhumvit-Set/SukhumvitSet-Light.ttf'),
     SukhumvitSet_Text: require('../assets/fonts/Sukhumvit-Set/SukhumvitSet-Text.ttf'),
@@ -48,7 +48,8 @@ export default function RootLayout() {
     PSUStidti_Lt: require('../assets/fonts/PSU-Stidti/psu-stidti-light.ttf'),
     PSUStidti_Rg: require('../assets/fonts/PSU-Stidti/psu-stidti-regular.ttf'),
     PSUStidti_Bd: require('../assets/fonts/PSU-Stidti/psu-stidti-bold.ttf'),
-    // Sarabun — app-wide typeface (Light/Regular/Medium/SemiBold/Bold).
+    // Sarabun — app-wide typeface (Light/Regular/Medium/SemiBold/Bold), used for
+    // every label including the bottom tab bar. Covers Thai and Latin.
     Sarabun_Lt: require('../assets/fonts/Sarabun/Sarabun-Light.ttf'),
     Sarabun_Rg: require('../assets/fonts/Sarabun/Sarabun-Regular.ttf'),
     Sarabun_Md: require('../assets/fonts/Sarabun/Sarabun-Medium.ttf'),
@@ -90,4 +91,3 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
-

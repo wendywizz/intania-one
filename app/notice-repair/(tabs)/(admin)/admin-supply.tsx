@@ -13,10 +13,12 @@ export default function Screen() {
         {
           label: TEXT.NOTICE_REPAIR_TAB_SUPPLY_MATERIAL,
           listType: 'supply_material',
+          emptyMessage: TEXT.NOTICE_REPAIR_EMPTY_SUPPLY_MATERIAL,
         },
         {
           label: TEXT.NOTICE_REPAIR_TAB_DEPT_SUPPLY,
           listType: 'dept_supply_response',
+          emptyMessage: TEXT.NOTICE_REPAIR_EMPTY_DEPT_SUPPLY,
         },
       ]}
     />

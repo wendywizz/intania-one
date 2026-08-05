@@ -70,7 +70,8 @@ export default function ForemanHistoryScreen() {
       <RepairComputerJobListScreen
         key="supply"
         title={TEXT.SHARED_HISTORY}
-        emptyMessage={TEXT.SHARED_NO_HISTORY}
+        emptyMessage={TEXT.REPAIR_COMPUTER_NO_SUPPLY_HISTORY}
+        emptyPreset="history"
         errorMessage={TEXT.SHARED_UNABLE_TO_LOAD_HISTORY}
         loadingTitle={TEXT.SHARED_LOADING_HISTORY}
         loadPage={loadSupplyHistory}
@@ -86,7 +87,8 @@ export default function ForemanHistoryScreen() {
     <RepairComputerJobListScreen
       key="job"
       title={TEXT.SHARED_HISTORY}
-      emptyMessage={TEXT.SHARED_NO_HISTORY}
+      emptyMessage={TEXT.REPAIR_COMPUTER_NO_JOB_HISTORY}
+      emptyPreset="history"
       errorMessage={TEXT.SHARED_UNABLE_TO_LOAD_HISTORY}
       loadingTitle={TEXT.SHARED_LOADING_HISTORY}
       loadPage={loadJobHistory}
@@ -101,6 +103,9 @@ export default function ForemanHistoryScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   topTabBar: {
     flexDirection: 'row',
+    // Hairline on top so the tab bar reads as its own strip, split from the nav bar above.
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.border,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: c.border,
   },

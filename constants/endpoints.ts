@@ -23,6 +23,13 @@ const APP_MODE = ENV.appMode;
 export const DEVELOPMENT_API_BASE_URL =
   ENV.apiBaseUrl ||
   (EXPO_OS === 'android' ? 'http://10.0.2.2:1337' : API_DOMAINS.development);
+
+/**
+ * Which scooba-service this build talks to. One gateway for the whole app: the
+ * per-module development/production split lives on the gateway itself
+ * (scooba-service config/module-modes.js), because what differs per module is
+ * the upstream system and its database, which only the gateway can reach.
+ */
 export const API_BASE_URL =
   ENV.apiBaseUrl ||
   (APP_MODE === 'production' ? API_DOMAINS.production : DEVELOPMENT_API_BASE_URL);
@@ -36,19 +43,50 @@ export const OPENID_AUTHORIZE_URL = `${OPENID_BASE_URL}/application/o/authorize/
 export const OPENID_TOKEN_URL = `${OPENID_BASE_URL}/application/o/token/`;
 export const OPENID_USERINFO_URL = `${OPENID_BASE_URL}/application/o/userinfo/`;
 
+/**
+ * Full URLs, grouped by the module that owns them. Every group hangs off the
+ * same gateway — which upstream and database a module reaches behind it is the
+ * gateway's decision, not this file's.
+ */
 export const ENDPOINTS = {
+  // --- core ----------------------------------------------------------------
   scooba: API_BASE_URL,
-  scooba_dev: API_BASE_URL,
   health: `${API_BASE_URL}/api/health`,
   staffNewsFeed: `${API_BASE_URL}/api/news`,
-  timestamp: `${API_BASE_URL}/api/timestamp`,
-  absence: `${API_BASE_URL}/api/absence`,
-  repairComputer: `${API_BASE_URL}/api/repair-computer`,  
-  person: `${API_BASE_URL}/api/person`,
   staffInfo: `${API_BASE_URL}/api/staff-info`,
   personUpdateInfo: `${API_BASE_URL}/api/person/update-info`,
   personUploadPhoto: `${API_BASE_URL}/api/person/upload-photo`,
+  pushRegisterDevice: `${API_BASE_URL}/api/push/register-device`,
+  photoBase: PHOTO_BASE_URL,
+
+  // --- absence -------------------------------------------------------------
+  absence: `${API_BASE_URL}/api/absence`,
+
+  // --- timestamp -----------------------------------------------------------
+  timestamp: `${API_BASE_URL}/api/timestamp`,
+
+  // --- meeting -------------------------------------------------------------
   meeting: `${API_BASE_URL}/api/meeting`,
+  meetingTopics: `${API_BASE_URL}/api/meeting/topics`,
+  meetingPdf: `${API_BASE_URL}/api/meeting/pdf`,
+
+  // --- repair-computer -----------------------------------------------------
+  repairComputer: `${API_BASE_URL}/api/repair-computer`,
+
+  // --- person-search -------------------------------------------------------
+  person: `${API_BASE_URL}/api/person`,
+
+  // --- examinar ------------------------------------------------------------
+  examinar: `${API_BASE_URL}/api/examinar`,
+  examinarDetail: `${API_BASE_URL}/api/examinar/detail`,
+
+  // --- executive-calendar --------------------------------------------------
+  // A Strapi content type, so this one is a base plus a path joined at call
+  // time rather than a full URL.
+  scooba_dev: API_BASE_URL,
+  execCalendar: '/api/exec-calendars',
+
+  // --- booking-room --------------------------------------------------------
   bookingRoomRooms: `${API_BASE_URL}/api/booking-room/rooms`,
   bookingRoomSchedule: `${API_BASE_URL}/api/booking-room/schedule`,
   bookingRoomMyBookings: `${API_BASE_URL}/api/booking-room/my-bookings`,
@@ -66,8 +104,8 @@ export const ENDPOINTS = {
   bookingRoomPeriodDays: `${API_BASE_URL}/api/booking-room/book/period-days`,
   bookingRoomPeriodRooms: `${API_BASE_URL}/api/booking-room/book/period-rooms`,
   bookingRoomPeriodCreate: `${API_BASE_URL}/api/booking-room/book/period-create`,
-  meetingTopics: `${API_BASE_URL}/api/meeting/topics`,
-  meetingPdf: `${API_BASE_URL}/api/meeting/pdf`,
+
+  // --- notice-repair -------------------------------------------------------
   noticeRepair: `${API_BASE_URL}/api/notice-repair`,
   noticeRepairRoleCheck: `${API_BASE_URL}/api/role/check`,
   noticeRepairApproveNew: `${API_BASE_URL}/api/repair/approve_new`,
@@ -76,7 +114,7 @@ export const ENDPOINTS = {
   noticeRepairAdminFinished: `${API_BASE_URL}/api/repair/admin_finished`,
   noticeRepairSupplyMaterial: `${API_BASE_URL}/api/repair/supply_material`,
   noticeRepairDeptSupply: `${API_BASE_URL}/api/repair/dept_supply_response`,
-    noticeRepairRefWorkCategories: `${API_BASE_URL}/api/notice-repair/work_categories`,
+  noticeRepairRefWorkCategories: `${API_BASE_URL}/api/notice-repair/work_categories`,
   noticeRepairRefBuildings: `${API_BASE_URL}/api/notice-repair/buildings`,
   noticeRepairAdminAccept: `${API_BASE_URL}/api/repair/accept`,
   noticeRepairAdminReject: `${API_BASE_URL}/api/repair/reject`,
@@ -102,11 +140,6 @@ export const ENDPOINTS = {
   noticeRepairRequisition: `${API_BASE_URL}/api/repair/requisition`,
   noticeRepairRequisitionRequesters: `${API_BASE_URL}/api/repair/requisition_requesters`,
   noticeRepairRequisitionSave: `${API_BASE_URL}/api/repair/requisition_save`,
-  photoBase: PHOTO_BASE_URL,
-  execCalendar: '/api/exec-calendars',
-  pushRegisterDevice: `${API_BASE_URL}/api/push/register-device`,
-  examinar: `${API_BASE_URL}/api/examinar`,
-  examinarDetail: `${API_BASE_URL}/api/examinar/detail`,
 };
 
 export const METRO_PROXY_ENDPOINTS = {

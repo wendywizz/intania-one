@@ -306,7 +306,7 @@ export default function RepairComputerQueueScreen() {
             onPhotoError={handlePhotoError}
           />
         )}
-        ListEmptyComponent={<EmptyState iconName="tray.fill" message={TEXT.REPAIR_COMPUTER_NO_WORKER_QUEUE} />}
+        ListEmptyComponent={<EmptyState preset="repair" message={TEXT.REPAIR_COMPUTER_NO_WORKER_QUEUE} />}
       />
     );
   };

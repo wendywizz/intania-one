@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Building2, Phone, Search, SearchX } from 'lucide-react-native';
+import { Building2, Phone, Search } from 'lucide-react-native';
 import { TEXT } from '@/constants/text';
 import { StatusBar } from 'expo-status-bar';
 import { Image } from 'expo-image';
@@ -308,10 +308,22 @@ export default function PersonSearchScreen() {
         </View>
       );
     }
+    // Before a search has been made this is a prompt, not a result — it keeps
+    // the plain glyph, because a "nothing found" drawing would be answering a
+    // question the reader has not asked yet.
     if (trimmedLength < 2) {
-      return <EmptyState icon={Search} message={TEXT.PERSON_SEARCH_SUBTITLE} />;
+      return <EmptyState icon={Search} tone="quiet" message={TEXT.PERSON_SEARCH_PROMPT} />;
     }
-    return <EmptyState icon={SearchX} message={TEXT.SHARED_EMPTY_DATA} />;
+    // A search that came back with nothing: quote the words back, so the reader
+    // can see it was their spelling that was searched for and not something the
+    // screen invented.
+    return (
+      <EmptyState
+        preset="search"
+        message={`${TEXT.PERSON_SEARCH_NO_RESULT} “${keyword.trim()}”`}
+        description={TEXT.PERSON_SEARCH_NO_RESULT_HINT}
+      />
+    );
   };
 
   return (

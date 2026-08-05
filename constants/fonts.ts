@@ -1,5 +1,5 @@
-// Sarabun — applied app-wide. Registered in app/_layout.
-// Title/emphasis text uses SemiBold; general/body text uses Regular.
+// Sarabun — applied app-wide, bottom tab-bar labels included. Registered in
+// app/_layout. Title/emphasis text uses SemiBold; general/body text uses Regular.
 // ("italic" maps to the nearest upright weight since no italic is loaded.)
 export const AppFonts = {
   psuRegular: 'Sarabun_Rg',

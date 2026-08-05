@@ -74,6 +74,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   topTabBar: {
     flexDirection: "row",
     backgroundColor: c.surface,
+    // Hairline on top so the tab bar reads as its own strip, split from the nav bar above.
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.border,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: c.border,
   },

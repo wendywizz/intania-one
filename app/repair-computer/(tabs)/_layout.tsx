@@ -16,6 +16,7 @@ import {
 } from '@/constants/types';
 import { AppFonts } from '@/constants/fonts';
 import { useColors } from '@/constants/theme';
+import { ABSOLUTE_FILL } from '@/constants/layout';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { RepairComputerRoleProvider } from '@/context/RepairComputerRoleContext';
@@ -315,7 +316,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...ABSOLUTE_FILL,
     zIndex: 10,
   },
 });

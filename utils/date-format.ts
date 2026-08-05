@@ -37,6 +37,18 @@ function beYear(m: moment.Moment) {
   return m.year() + 543;
 }
 
+/**
+ * Buddhist-era label for a bare year, which the app shows everywhere. Values
+ * already past 2400 are treated as B.E. and passed through untouched — some
+ * endpoints hand back the Thai year while others echo the C.E. one we sent
+ * them, and the two ranges cannot overlap for any year we display.
+ */
+export function toBuddhistYear(value: string | number): string {
+  const n = typeof value === 'number' ? value : parseInt(String(value).trim(), 10);
+  if (!Number.isFinite(n)) return String(value ?? '');
+  return String(n > 2400 ? n : n + 543);
+}
+
 function dateStr(m: moment.Moment) {
   return `${m.format('DD MMMM')} ${beYear(m)}`;
 }

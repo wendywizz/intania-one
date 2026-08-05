@@ -10,6 +10,7 @@ import {
 import { type AppColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
+import { EmptyState } from "@/components/empty-state";
 import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
@@ -225,7 +226,10 @@ export default function SelectForemanScreen() {
     }
 
     if (visibleForemen.length === 0) {
-      return <ThemedText style={styles.emptyMessage}>{TEXT.REPAIR_COMPUTER_NO_FOREMAN}</ThemedText>;
+      // This is the whole screen when it happens — a picker with nobody to pick
+      // — so it gets the full state rather than a line of grey text where the
+      // list should have been.
+      return <EmptyState preset="people" message={TEXT.REPAIR_COMPUTER_NO_FOREMAN} />;
     }
 
     return (

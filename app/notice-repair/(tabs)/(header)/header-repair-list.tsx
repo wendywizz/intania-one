@@ -22,8 +22,19 @@ export default function Screen() {
       title={TEXT.NOTICE_REPAIR_TAB_REPAIR_LIST}
       staffId={staffId}
       segments={[
-        { label: TEXT.NOTICE_REPAIR_TAB_CURRENT, listType: 'header_current', workCategory },
-        { label: TEXT.NOTICE_REPAIR_TAB_DONE, listType: 'header_done', workCategory },
+        {
+          label: TEXT.NOTICE_REPAIR_TAB_CURRENT,
+          listType: 'header_current',
+          workCategory,
+          emptyMessage: TEXT.NOTICE_REPAIR_EMPTY_IN_PROGRESS,
+        },
+        {
+          label: TEXT.NOTICE_REPAIR_TAB_DONE,
+          listType: 'header_done',
+          workCategory,
+          emptyMessage: TEXT.NOTICE_REPAIR_EMPTY_DONE,
+          emptyPreset: 'history',
+        },
       ]}
     />
   );

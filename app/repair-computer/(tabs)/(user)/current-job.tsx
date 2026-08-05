@@ -26,6 +26,7 @@ import {
 } from "@/components/repair-computer-job-list-item";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { Button } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { AppFonts } from "@/constants/fonts";
 import { USER_ID } from "@/constants/user";
@@ -244,6 +245,11 @@ export default function RepairComputerCurrentJobScreen() {
     }
   };
 
+  const openNewJob = useCallback(
+    () => navPush('/repair-computer/inform' as Parameters<typeof navPush>[0]),
+    [],
+  );
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -293,23 +299,25 @@ export default function RepairComputerCurrentJobScreen() {
         }
         onEndReached={loadMoreJobs}
         onEndReachedThreshold={0.4}
+        // Only while there are jobs listed: with none, the same action is drawn
+        // as a plain button under the empty state's message instead.
         ListHeaderComponent={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={TEXT.REPAIR_COMPUTER_ADD_NEW_JOB}
-            onPress={() =>
-              navPush('/repair-computer/inform' as Parameters<typeof navPush>[0])
-            }
-            style={({ pressed }) => [
-              styles.addJobButton,
-              pressed && styles.addJobButtonPressed,
-            ]}
-          >
-            <IconSymbol name="plus" size={20} color={c.primary} />
-            <ThemedText style={styles.addJobText}>
-              {TEXT.REPAIR_COMPUTER_ADD_NEW_JOB}
-            </ThemedText>
-          </Pressable>
+          jobs.length === 0 ? null : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={TEXT.REPAIR_COMPUTER_ADD_NEW_JOB}
+              onPress={openNewJob}
+              style={({ pressed }) => [
+                styles.addJobButton,
+                pressed && styles.addJobButtonPressed,
+              ]}
+            >
+              <IconSymbol name="plus" size={20} color={c.primary} />
+              <ThemedText style={styles.addJobText}>
+                {TEXT.REPAIR_COMPUTER_ADD_NEW_JOB}
+              </ThemedText>
+            </Pressable>
+          )
         }
         renderItem={({ item }) => (
           <RepairComputerJobListItem
@@ -325,7 +333,19 @@ export default function RepairComputerCurrentJobScreen() {
             </View>
           ) : null
         }
-        ListEmptyComponent={<EmptyState iconName="tray.fill" message={TEXT.REPAIR_COMPUTER_NO_CURRENT_JOBS} />}
+        ListEmptyComponent={
+          <EmptyState
+            preset="repair"
+            message={TEXT.REPAIR_COMPUTER_NO_CURRENT_JOBS}
+            action={
+              <Button
+                title={TEXT.REPAIR_COMPUTER_ADD_NEW_JOB}
+                icon="plus"
+                onPress={openNewJob}
+              />
+            }
+          />
+        }
       />
     );
   };

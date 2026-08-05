@@ -243,7 +243,7 @@ export default function RepairComputerHistoryScreen() {
             </View>
           ) : null
         }
-        ListEmptyComponent={<EmptyState iconName="tray.fill" message={TEXT.SHARED_NO_HISTORY} />}
+        ListEmptyComponent={<EmptyState preset="history" message={TEXT.REPAIR_COMPUTER_NO_JOB_HISTORY} />}
       />
     );
   };

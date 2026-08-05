@@ -9,6 +9,8 @@ export default function Screen() {
       title={TEXT.NOTICE_REPAIR_TAB_HISTORY}
       listType="informer_history"
       staffId={staffId}
+      emptyMessage={TEXT.NOTICE_REPAIR_EMPTY_INFORMER_HISTORY}
+      emptyPreset="history"
     />
   );
 }

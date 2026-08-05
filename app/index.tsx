@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
 
@@ -125,7 +125,7 @@ function useMStyles<T extends StyleSheet.NamedStyles<T>>(factory: (m: M) => T): 
 const F = {
   light: 'Sarabun_Lt',
   regular: 'Sarabun_Rg',
-  medium: 'Sarabun_Rg',
+  medium: 'Sarabun_Md',
   semibold: 'Sarabun_Sb',
 } as const;
 
@@ -377,17 +377,17 @@ function UpcomingShiftSection({ data, loading, error, onReload, upcomingExams, a
     onPress: to('/examinar'),
   });
 
-  // Nothing pending: drop the whole section rather than showing an empty card.
-  // Loading and error still render, so the section doesn't pop in and out while
-  // fetching and the retry button stays reachable.
-  if (!loading && !error && tiles.length === 0) return null;
+  // Loaded, and nothing outstanding.
+  const isEmpty = !loading && !error && tiles.length === 0;
 
   return (
     <View style={s.coverCard}>
-      {/* The title is part of the content, not the frame: while the summary is
-          still loading we don't yet know whether there is anything to show, so
-          heading an empty spinner would be a promise we might not keep. */}
-      {!loading && <Text style={s.coverTitle}>{TEXT.HOME_UPCOMING_SHIFT_TITLE}</Text>}
+      {/* The title is part of the content, not the frame: it heads a list of
+          pending work, so it only appears when there is some. While loading we
+          don't yet know, and when there is none the message says so on its own
+          — a heading above it would announce a list that isn't there. The error
+          state keeps it, because there the work is unknown, not absent. */}
+      {!loading && !isEmpty && <Text style={s.coverTitle}>{TEXT.HOME_UPCOMING_SHIFT_TITLE}</Text>}
 
       {loading ? (
         <View style={s.stateWrap}>
@@ -406,6 +406,15 @@ function UpcomingShiftSection({ data, loading, error, onReload, upcomingExams, a
             <IconSymbol name="arrow.triangle.2.circlepath" size={16} color={m.accent} />
             <Text style={s.reloadBtnText}>{TEXT.SHARED_RETRY}</Text>
           </Pressable>
+        </View>
+      ) : isEmpty ? (
+        // The section used to unmount itself here, which read as a failure to
+        // load — the row was simply absent, with no way to tell "nothing
+        // pending" from "never arrived". Saying so is the answer, and it is a
+        // good one: the tick is the point.
+        <View style={s.stateWrap}>
+          <IconSymbol name="checkmark.circle.fill" size={22} color={m.textFaint} />
+          <Text style={s.emptyText}>{TEXT.HOME_SHIFT_EMPTY}</Text>
         </View>
       ) : (
         <ScrollView
@@ -431,16 +440,17 @@ const makeShiftStyles = (m: M) => StyleSheet.create({
   // the page padding and fills a shade darker than the canvas, so the title +
   // cards sit on one grouped zone rather than floating on the background.
   // A negative top margin fully cancels the inter-section gap so this band's top
-  // edge butts directly against the news band; the larger vertical padding gives
-  // it its own internal breathing room instead.
+  // edge butts directly against the news band; its own vertical padding gives it
+  // internal breathing room instead. Bottom stays a little deeper than top — the
+  // band above supplies part of the top edge, nothing supplies the bottom one.
   coverCard: {
     gap: 14,
     marginHorizontal: -D.pad,
     marginTop: -40,
     backgroundColor: m.fill,
     paddingHorizontal: D.pad,
-    paddingTop: 32,
-    paddingBottom: 38,
+    paddingTop: 22,
+    paddingBottom: 26,
   },
   coverTitle: {
     fontFamily: F.semibold,

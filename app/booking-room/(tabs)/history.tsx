@@ -249,7 +249,7 @@ export default function BookingRoomHistoryScreen() {
             onRetry={() => void loadFirstPage()}
           />
         ) : (
-          <ErrorState variant="empty" message={TEXT.BOOKING_ROOM_NEED_SIGNIN} />
+          <ErrorState variant="empty" art={null} message={TEXT.BOOKING_ROOM_NEED_SIGNIN} />
         )}
       </ThemedView>
     );
@@ -284,7 +284,7 @@ export default function BookingRoomHistoryScreen() {
         onEndReached={() => void loadMore()}
         onEndReachedThreshold={0.3}
         ListEmptyComponent={
-          <EmptyState iconName="history" message={TEXT.BOOKING_ROOM_HISTORY_EMPTY} />
+          <EmptyState preset="history" message={TEXT.BOOKING_ROOM_HISTORY_EMPTY} />
         }
         ListFooterComponent={listFooter()}
       />

@@ -1,4 +1,4 @@
-﻿import { ChevronRight, History, MapPin } from 'lucide-react-native';
+﻿import { ChevronRight, MapPin } from 'lucide-react-native';
 import { TEXT } from "@/constants/text";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -178,7 +178,7 @@ export default function MeetingHistoryScreen() {
           leadingItem.type === "date-header" ? null : <View style={styles.separator} />
         }
         ListFooterComponent={listFooter}
-        ListEmptyComponent={<EmptyState icon={History} message={TEXT.MEETING_NO_HISTORY} />}
+        ListEmptyComponent={<EmptyState preset="meeting" message={TEXT.MEETING_NO_HISTORY} />}
       />
     </ThemedView>
   );

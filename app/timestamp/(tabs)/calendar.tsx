@@ -6,6 +6,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
+import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
@@ -401,13 +402,23 @@ export default function TimestampCalendarScreen() {
             ) : null}
           </>
         ) : (
-          <ThemedText style={styles.detailEmpty}>
-            {status === 'holiday' && selectedData?.holidayName
-              ? selectedData.holidayName
-              : status === 'leave'
-                ? getLeaveLabel(selectedData)
-                : getDayMessage(status, selectedData?.note ?? '')}
-          </ThemedText>
+          // A day with no in/out times at all: a holiday, a leave day, or one
+          // the system simply has nothing for. The card is otherwise a date and
+          // one grey line, which reads as a row that failed to render — the
+          // drawing makes it an answer.
+          <EmptyState
+            preset="timestamp"
+            artWidth={96}
+            backgroundColor={c.surface}
+            style={styles.detailEmptyState}
+            message={
+              status === 'holiday' && selectedData?.holidayName
+                ? selectedData.holidayName
+                : status === 'leave'
+                  ? getLeaveLabel(selectedData)
+                  : getDayMessage(status, selectedData?.note ?? '')
+            }
+          />
         )}
 
         {isForgetDay && selectedData && canRequest ? (
@@ -755,11 +766,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: LATE_COLOR,
     fontFamily: AppFonts.psuBold,
   },
-  detailEmpty: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: c.textMuted,
-    fontFamily: AppFonts.psuRegular,
+  // Inside a card, so it does not stretch to fill a screen it does not own.
+  detailEmptyState: {
+    flex: 0,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
   },
   detailCaption: {
     fontSize: 12,

@@ -1,10 +1,10 @@
-import { Inbox } from 'lucide-react-native';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, type EmptyPreset } from '@/components/empty-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { NoticeRepairJobCard } from '@/components/notice-repair/notice-repair-job-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
@@ -27,6 +27,14 @@ export type NoticeRepairSegment = {
   detailPathname?: string;
   /** Extra work_category filter passed to the list endpoint for this segment. */
   workCategory?: string | number;
+  /**
+   * What to say when *this* segment is empty. Segments sit side by side under
+   * one title, so a shared "ไม่มีรายการแจ้งซ่อม" never says which of them the
+   * reader just emptied.
+   */
+  emptyMessage?: string;
+  /** Which picture this segment's empty state gets. Defaults to `notice`. */
+  emptyPreset?: EmptyPreset;
 };
 
 type Props = {
@@ -44,13 +52,17 @@ type Props = {
   detailPathname?: string;
   /** Extra work_category filter passed to the list endpoint (single-list mode). */
   workCategory?: string | number;
+  /** What to say when the list is empty (single-list mode). */
+  emptyMessage?: string;
+  /** Which picture the empty state gets. Defaults to `notice`. */
+  emptyPreset?: EmptyPreset;
 };
 
 function getPageSize(height: number) {
   return Math.max(5, Math.ceil((height - CHROME_HEIGHT) / ITEM_HEIGHT));
 }
 
-export function NoticeRepairListScreen({ title, listType, staffId, segments, onAddPress, addLabel, detailPathname, workCategory }: Props) {
+export function NoticeRepairListScreen({ title, listType, staffId, segments, onAddPress, addLabel, detailPathname, workCategory, emptyMessage, emptyPreset }: Props) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const { roleSwitcher, currentRole } = useNoticeRepairRole();
@@ -60,6 +72,14 @@ export function NoticeRepairListScreen({ title, listType, staffId, segments, onA
   const [activeSegment, setActiveSegment] = useState(0);
   const currentListType = segments ? segments[activeSegment].listType : (listType ?? '');
   const currentWorkCategory = segments ? segments[activeSegment].workCategory : workCategory;
+  // The segment's own wording wins; the screen-level one is the fallback for
+  // single-list mode and for segments that have not been given their own.
+  const currentEmptyMessage =
+    (segments ? segments[activeSegment].emptyMessage : emptyMessage) ??
+    emptyMessage ??
+    TEXT.NOTICE_REPAIR_NO_ITEMS;
+  const currentEmptyPreset =
+    (segments ? segments[activeSegment].emptyPreset : emptyPreset) ?? emptyPreset ?? 'notice';
 
   // `jobs` is everything fetched so far; `visibleCount` is how much of it the
   // list actually renders. Most upstream endpoints hand back the whole list in
@@ -141,8 +161,12 @@ export function NoticeRepairListScreen({ title, listType, staffId, segments, onA
     if (hasMoreOnServer) load(jobs.length);
   }, [isLoading, isRefreshing, isLoadingMore, visibleCount, jobs.length, hasMoreOnServer, pageSize, load]);
 
+  const isEmpty = visibleJobs.length === 0;
+
   // Dashed "add" row pinned above the list, matching the repair-computer module.
-  const addButton = onAddPress ? (
+  // Only while there are rows: with none, the same action is drawn as a plain
+  // button under the empty state's message, where the reader is already looking.
+  const addButton = onAddPress && !isEmpty ? (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={addLabel}
@@ -205,16 +229,22 @@ export function NoticeRepairListScreen({ title, listType, staffId, segments, onA
           data={visibleJobs}
           keyExtractor={(item, i) => `${item.repair_id}-${i}`}
           renderItem={({ item }) => <NoticeRepairJobCard job={item} onPress={openDetail} />}
-          contentContainerStyle={
-            visibleJobs.length === 0
-              ? [styles.emptyContainer, onAddPress ? styles.emptyContainerWithAdd : null]
-              : styles.list
-          }
+          contentContainerStyle={isEmpty ? styles.emptyContainer : styles.list}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.3}
           ListHeaderComponent={addButton}
-          ListEmptyComponent={<EmptyState icon={Inbox} message={TEXT.NOTICE_REPAIR_NO_ITEMS} />}
+          ListEmptyComponent={
+            <EmptyState
+              preset={currentEmptyPreset}
+              message={currentEmptyMessage}
+              action={
+                onAddPress && addLabel ? (
+                  <Button title={addLabel} icon="plus" onPress={onAddPress} />
+                ) : null
+              }
+            />
+          }
           ListFooterComponent={
             isLoadingMore || hasMore ? <ActivityIndicator style={styles.footer} /> : null
           }
@@ -229,6 +259,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   topTabBar: {
     flexDirection: 'row',
     backgroundColor: c.surface,
+    // Hairline on top so the tab bar reads as its own strip, split from the nav bar above.
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.border,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: c.border,
   },
@@ -245,7 +278,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   topTabIndicatorActive: { backgroundColor: c.primary },
   list: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 16 },
   emptyContainer: { flexGrow: 1 },
-  emptyContainerWithAdd: { paddingHorizontal: 16, paddingTop: 24 },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',

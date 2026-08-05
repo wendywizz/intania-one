@@ -7,6 +7,7 @@ import {NavTopBar} from '@/components/nav-top-bar';
 import {ThemedText} from '@/components/themed-text';
 import {ThemedView} from '@/components/themed-view';
 import {AUTH} from '@/constants/auth';
+import {ABSOLUTE_FILL} from '@/constants/layout';
 import {TEXT} from '@/constants/text';
 import {type AppColors, useThemedStyles} from '@/constants/theme';
 import * as authService from '@/services/authService';
@@ -145,7 +146,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flex: 1,
   },
   loading: {
-    ...StyleSheet.absoluteFillObject,
+    ...ABSOLUTE_FILL,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: c.surface,

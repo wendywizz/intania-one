@@ -10,6 +10,7 @@ export default function Screen() {
       title={TEXT.NOTICE_REPAIR_TAB_CURRENT}
       listType="informer_current"
       staffId={staffId}
+      emptyMessage={TEXT.NOTICE_REPAIR_EMPTY_INFORMER_CURRENT}
       onAddPress={() => navPush('/notice-repair/inform' as Parameters<typeof navPush>[0])}
       addLabel={TEXT.NOTICE_REPAIR_TAB_INFORM}
     />

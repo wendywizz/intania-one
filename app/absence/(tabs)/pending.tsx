@@ -1,5 +1,4 @@
 import { useFocusEffect } from 'expo-router';
-import { Inbox } from 'lucide-react-native';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
@@ -16,6 +15,7 @@ import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
@@ -111,6 +111,31 @@ export default function PendingScreen() {
    */
   const canRequestLeave = !isLoading && !error && !items.remain && !items.cancel;
 
+  // Having any approval item means this user is a boss → show both tabs.
+  // Otherwise they are a general user → only their own "อนุมัติผู้ยื่นลา".
+  const isBoss = approving.length > 0;
+
+  /**
+   * Where the "ยื่นลา" button goes.
+   *
+   * With cards on screen it stays the dashed row above the list — it is one
+   * option among the things already there. With none, the list is a picture and
+   * a line of text in the middle of the screen, and the button belongs directly
+   * under them as the answer to "so what now?" rather than stranded at the top
+   * of an otherwise blank page.
+   *
+   * The user's own list is empty exactly when `canRequestLeave` is true (a
+   * waiting request is what fills it), so the only visible-but-empty list this
+   * has to ask about is which tab a boss is on. A boss's approval queue is
+   * never empty — one item in it is what makes them a boss here.
+   */
+  const emptyListVisible = canRequestLeave && (!isBoss || activeTab === 'mine');
+
+  const openNewLeave = useCallback(
+    () => navPush('/absence' as Parameters<typeof navPush>[0]),
+    [],
+  );
+
   const openDetail = useCallback((item: absence) => {
     const type = getAbsenceType(item);
     navPush({
@@ -133,14 +158,15 @@ export default function PendingScreen() {
     } as Parameters<typeof navPush>[0]);
   }, []);
 
-  const renderEmpty = () => (
-    <EmptyState icon={Inbox} message={TEXT.SHARED_NO_ITEMS} />
-  );
-
   // A scrollable list body that either lists the cards or, when empty, shows the
-  // centered "ไม่มีรายการ" state. `topGap` adds room below the navbar when there
-  // is no tab bar above the list (general-user view).
-  const renderList = (hasItems: boolean, children: ReactNode, topGap = false) => (
+  // centered empty state that belongs to *that* list. `topGap` adds room below
+  // the navbar when there is no tab bar above the list (general-user view).
+  const renderList = (
+    hasItems: boolean,
+    children: ReactNode,
+    empty: ReactNode,
+    topGap = false,
+  ) => (
     <ScrollView
       style={styles.sectionScroll}
       contentContainerStyle={
@@ -150,7 +176,7 @@ export default function PendingScreen() {
       }
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadData(true)} />}
     >
-      {hasItems ? children : renderEmpty()}
+      {hasItems ? children : empty}
     </ScrollView>
   );
 
@@ -170,9 +196,6 @@ export default function PendingScreen() {
     }
 
     const mineCount = (items.remain ? 1 : 0) + (items.cancel ? 1 : 0);
-    // Having any approval item means this user is a boss → show both tabs.
-    // Otherwise they are a general user → only their own "อนุมัติผู้ยื่นลา".
-    const isBoss = approving.length > 0;
 
     const mineList = renderList(
       mineCount > 0,
@@ -184,6 +207,17 @@ export default function PendingScreen() {
           <AbsenceListItem item={items.cancel} badge={PENDING_BADGE} showDetails onPress={openDetail} />
         ) : null}
       </>,
+      // Nothing of this person's is waiting on anyone — a calendar with a tick,
+      // not the grey inbox that reads as "we found nothing".
+      <EmptyState
+        preset="pending"
+        message={TEXT.ABSENCE_MINE_EMPTY}
+        action={
+          canRequestLeave ? (
+            <Button title={TEXT.ABSENCE_NEW_LEAVE} icon="plus" onPress={openNewLeave} />
+          ) : null
+        }
+      />,
       !isBoss,
     );
 
@@ -203,6 +237,9 @@ export default function PendingScreen() {
           onPress={openApproval}
         />
       )),
+      // The approver's queue: empty here means everything sent to them has been
+      // dealt with, which is the good outcome.
+      <EmptyState preset="cleared" message={TEXT.ABSENCE_APPROVE_QUEUE_EMPTY} />,
     );
 
     const tabs: { key: PendingTab; label: string }[] = [
@@ -250,8 +287,11 @@ export default function PendingScreen() {
           Hidden while a request of this person's is still waiting — the system
           allows one at a time, so offering to start another would only lead to
           a form that cannot be submitted. The pending card below is the answer
-          to "why not": it is the request in the way. */}
-      {canRequestLeave ? (
+          to "why not": it is the request in the way.
+
+          Also hidden when the list below is empty: the same action is drawn
+          under the empty state's message instead (see `emptyListVisible`). */}
+      {canRequestLeave && !emptyListVisible ? (
         <View style={[styles.addRow, { paddingHorizontal: gutter }]}>
           <Pressable
             accessibilityRole="button"
@@ -325,6 +365,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   topTabBar: {
     flexDirection: 'row',
     backgroundColor: c.surface,
+    // Hairline on top so the tab bar reads as its own strip, split from what sits above it.
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.border,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: c.border,
   },

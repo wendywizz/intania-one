@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
-import { EmptyState } from "@/components/empty-state";
+import { EmptyState, type EmptyPreset } from "@/components/empty-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import {
@@ -39,6 +39,12 @@ type RepairComputerJobListScreenProps = {
   title: string;
   description?: string;
   emptyMessage: string;
+  /**
+   * Which kind of empty this list is. Defaults to the toolbox: every screen
+   * built on this one is a queue of repair jobs, and an empty queue there means
+   * nothing is broken. History lists pass `history` instead.
+   */
+  emptyPreset?: EmptyPreset;
   errorMessage: string;
   loadingTitle: string;
   loadPage: (
@@ -98,6 +104,7 @@ export function RepairComputerJobListScreen({
   title,
   description,
   emptyMessage,
+  emptyPreset = "repair",
   errorMessage,
   loadingTitle,
   loadPage,
@@ -275,7 +282,7 @@ export function RepairComputerJobListScreen({
             </View>
           ) : null
         }
-        ListEmptyComponent={<EmptyState iconName="tray.fill" message={emptyMessage} />}
+        ListEmptyComponent={<EmptyState preset={emptyPreset} message={emptyMessage} />}
       />
     );
   };

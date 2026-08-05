@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronRight, Clock, ClipboardX } from 'lucide-react-native';
+import { CalendarDays, ChevronRight, Clock } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -24,6 +24,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import type { ExamTask } from '@/models/types';
 import { listExamTasks } from '@/services/examinarService';
+import { toBuddhistYear } from '@/utils/date-format';
 import { boxShadow } from '@/constants/shadows';
 
 // ─── Filter options ────────────────────────────────────────────────────────────
@@ -31,7 +32,7 @@ import { boxShadow } from '@/constants/shadows';
 const currentYear = new Date().getFullYear();
 const YEAR_OPTIONS: ModalSelectOption[] = Array.from({ length: 4 }, (_, i) => {
   const y = currentYear - 3 + i;
-  return { label: String(y + 543), value: String(y) };
+  return { label: toBuddhistYear(y), value: String(y) };
 });
 
 const TERM_OPTIONS: ModalSelectOption[] = [
@@ -315,7 +316,9 @@ export default function ExaminarListScreen() {
             renderItem={({ item }) => (
               <ExamCard task={item} year={year} term={term} period={period} />
             )}
-            ListEmptyComponent={<EmptyState icon={ClipboardX} message={TEXT.EXAMINAR_NO_EXAMS} />}
+            ListEmptyComponent={
+              <EmptyState preset="exam" message={TEXT.EXAMINAR_NO_EXAMS} />
+            }
           />
         )}
       </View>

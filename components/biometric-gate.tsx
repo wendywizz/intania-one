@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { AppFonts } from '@/constants/fonts';
 import { PasscodePad } from '@/components/passcode-pad';
 import { APP_ICON } from '@/constants/images';
+import { ABSOLUTE_FILL } from '@/constants/layout';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -472,11 +473,11 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   root: { flex: 1 },
   cover: {
-    ...StyleSheet.absoluteFillObject,
+    ...ABSOLUTE_FILL,
     backgroundColor: c.background,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...ABSOLUTE_FILL,
     backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -487,7 +488,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   // Ignores the column's layout entirely so the tick lands mid-screen whether
   // the lock showed a button or a full keypad.
   successCenter: {
-    ...StyleSheet.absoluteFillObject,
+    ...ABSOLUTE_FILL,
     alignItems: 'center',
     justifyContent: 'center',
   },

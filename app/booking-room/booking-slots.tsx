@@ -16,9 +16,9 @@ import { InfinityLoader } from '@/components/infinity-loader';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 
+import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { ScreenHeader } from '@/components/screen-header';
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useToast } from '@/components/toast-provider';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -143,7 +143,10 @@ export default function BookingSlotsScreen() {
     return (
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {groups.length === 0 ? (
-          <ThemedText style={styles.noSlots}>{TEXT.BOOKING_ROOM_DETAIL_NO_SLOTS}</ThemedText>
+          // A booking whose slots have all been removed: the screen is empty,
+          // and a grey line at the top of it reads as a loading glitch rather
+          // than as an answer.
+          <EmptyState preset="schedule" message={TEXT.BOOKING_ROOM_DETAIL_NO_SLOTS} />
         ) : (
           groups.map((group) => (
             <SlotGroupCard
@@ -203,7 +206,8 @@ export default function BookingSlotsScreen() {
 const makeStyles = (c: AppColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: c.background },
-    scroll: { padding: 16, paddingTop: 16, paddingBottom: 32, gap: 12 },
+    // flexGrow so the empty state has a full screen to centre itself in; with
+    // cards in the list it changes nothing.
+    scroll: { flexGrow: 1, padding: 16, paddingTop: 16, paddingBottom: 32, gap: 12 },
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    noSlots: { fontSize: 15, color: c.textMuted, paddingVertical: 12 },
   });

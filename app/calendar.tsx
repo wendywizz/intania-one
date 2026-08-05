@@ -1,4 +1,4 @@
-﻿import { ChevronDown, ChevronLeft, ChevronRight, CalendarX, X } from 'lucide-react-native';
+﻿import { ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -400,6 +400,16 @@ export default function CalendarScreen() {
 
   const eventLoadFailed = Boolean(errorMessage);
 
+  // A month's events are fetched as a block, so while the next month is in
+  // flight `events` still holds the previous one's — leaving those rows under
+  // the loader reads as "here are the results", and they then swap out under
+  // the reader. The loader stands alone instead.
+  //
+  // Pull-to-refresh is exempt: its control already says the screen is working,
+  // and it is re-fetching what is on screen, so blanking the list would be a
+  // flash for no new information.
+  const showLoader = loadingEvents && !refreshing;
+
   return (
     <ThemedView style={styles.container}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
@@ -473,7 +483,7 @@ export default function CalendarScreen() {
       <View style={styles.eventsPane}>
         <FlatList
           style={styles.eventList}
-          data={selectedEvents}
+          data={showLoader ? [] : selectedEvents}
           keyExtractor={(item, index) => `${String(item.id || "event")}-${index}`}
           renderItem={renderEvent}
           contentContainerStyle={styles.eventListContent}
@@ -492,7 +502,7 @@ export default function CalendarScreen() {
                   {formatSelectedDate(selectedDate)}
                 </ThemedText>
               </View>
-              {loadingEvents ? (
+              {showLoader ? (
                 <LoadingAnimate
                   fill={false}
                   title={TEXT.SHARED_LOADING_DATA_TITLE}
@@ -502,7 +512,7 @@ export default function CalendarScreen() {
             </>
           }
           ListEmptyComponent={
-            loadingEvents ? null : errorMessage ? (
+            showLoader ? null : errorMessage ? (
               <View style={styles.errorBox}>
                 <ThemedText style={styles.errorTitle}>
                   {TEXT.SHARED_UNABLE_TO_COMPLETE}
@@ -513,7 +523,7 @@ export default function CalendarScreen() {
                 </Pressable>
               </View>
             ) : (
-              <EmptyState icon={CalendarX} message={TEXT.SHARED_EMPTY_DATA} />
+              <EmptyState preset="schedule" message={TEXT.CALENDAR_DAY_EMPTY} />
             )
           }
         />

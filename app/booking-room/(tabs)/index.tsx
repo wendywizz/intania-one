@@ -22,6 +22,7 @@ import { ErrorState } from '@/components/error-state';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import { AppFonts } from '@/constants/fonts';
@@ -88,16 +89,38 @@ export default function BookingRoomCurrentScreen() {
     }, [load]),
   );
 
+  const openNewBooking = useCallback(
+    () => navPush('/booking-room/select-booking' as Parameters<typeof navPush>[0]),
+    [],
+  );
+
   const addButton = (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={TEXT.BOOKING_ROOM_ADD_BOOKING}
-      onPress={() => navPush('/booking-room/select-booking' as Parameters<typeof navPush>[0])}
+      onPress={openNewBooking}
       style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}>
       <IconSymbol name="plus" size={20} color={c.primary} />
       <ThemedText style={styles.addButtonText}>{TEXT.BOOKING_ROOM_ADD_BOOKING}</ThemedText>
     </Pressable>
   );
+
+  // Whether the list is still being fetched — the same question `body()` asks
+  // to decide on the loader. `loading` goes true again on every focus, so this
+  // is also the state the screen passes through on the way back from a form.
+  const listUnknown = loading || (authLoading && !staffId);
+
+  // Nothing booked yet → the dashed row above the list goes away and the same
+  // action is drawn under the empty state's message instead, so the one thing
+  // to do about an empty screen sits where the eye already is.
+  const isEmpty = !listUnknown && Boolean(staffId) && !error && bookings.length === 0;
+
+  // The row sits above the body rather than inside it, so unlike the loader it
+  // would otherwise stay on screen while the list reloads — and for the half
+  // second before an empty answer comes back it is the dashed row that shows,
+  // then swaps for the button under the empty state. Which of the two is right
+  // is not known until the list is, so neither is drawn until then.
+  const showAddRow = !listUnknown && !isEmpty;
 
   const body = () => {
     // Still waiting on the session: without this the screen would flash the
@@ -112,7 +135,7 @@ export default function BookingRoomCurrentScreen() {
     }
 
     if (!staffId) {
-      return <ErrorState variant="empty" message={TEXT.BOOKING_ROOM_NEED_SIGNIN} />;
+      return <ErrorState variant="empty" art={null} message={TEXT.BOOKING_ROOM_NEED_SIGNIN} />;
     }
 
     if (error) {
@@ -126,7 +149,15 @@ export default function BookingRoomCurrentScreen() {
     }
 
     if (bookings.length === 0) {
-      return <EmptyState iconName="door.open" message={TEXT.BOOKING_ROOM_CURRENT_EMPTY} />;
+      return (
+        <EmptyState
+          preset="room"
+          message={TEXT.BOOKING_ROOM_CURRENT_EMPTY}
+          action={
+            <Button title={TEXT.BOOKING_ROOM_ADD_BOOKING} icon="plus" onPress={openNewBooking} />
+          }
+        />
+      );
     }
 
     return bookings.map((booking) => {
@@ -194,7 +225,7 @@ export default function BookingRoomCurrentScreen() {
             tintColor={c.primary}
           />
         }>
-        {addButton}
+        {showAddRow ? addButton : null}
         {body()}
       </ScrollView>
     </ThemedView>
