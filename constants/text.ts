@@ -26,6 +26,8 @@ export const TEXT = {
   CALENDAR_SOURCE_PICKER_TITLE: 'เลือกปฏิทินผู้บริหาร',
   SHARED_NO_SEARCH_RESULT: 'ไม่พบรายการที่ค้นหา',
   SHARED_ERROR_TITLE_THAI: 'เกิดข้อผิดพลาด',
+  /** Shown when a module's App row has `active` unticked — not a fault. */
+  SHARED_MODULE_DISABLED_TITLE: 'ปิดให้บริการชั่วคราว',
   SHARED_HISTORY: 'ประวัติ',
   SHARED_LOADING_DATA_TITLE: 'กำลังโหลดข้อมูล',
   SHARED_LOADING_DESCRIPTION: 'กรุณารอสักครู่',
@@ -70,8 +72,9 @@ export const TEXT = {
   HOME_SIGNING_OUT_TITLE: 'กำลังออกจากระบบ',
   HOME_TITLE: 'หน้าหลัก',
   HOME_VIEW_PROFILE_A11Y: 'ดูโปรไฟล์',
-  HOME_UPCOMING_SHIFT_TITLE: 'งานที่รอดำเนินการ',
+  HOME_UPCOMING_SHIFT_TITLE: 'กิจกรรมที่รอดำเนินการ',
   HOME_SHIFT_LOAD_ERROR: 'โหลดข้อมูลไม่สำเร็จ',
+  HOME_SHIFT_EMPTY: 'ไม่มีกิจกรรมที่รอดำเนินการ',
   HOME_SHIFT_NEW_JOB: 'งานใหม่',
   HOME_SHIFT_CURRENT_JOB: 'งานปัจจุบัน',
   HOME_SHIFT_MEETINGS_TODAY: 'การประชุมวันนี้',
@@ -233,6 +236,7 @@ export const TEXT = {
   ABSENCE_HALF_DAY_PLACEHOLDER: 'เลือกตัวเลือกลาครึ่งวัน',
   ABSENCE_HISTORY_TAB_TITLE: 'ประวัติ',
   ABSENCE_HISTORY_TITLE: 'ประวัติการลา',
+  ABSENCE_HISTORY_EMPTY: 'ยังไม่มีประวัติการลา',
   ABSENCE_INIT_LOAD_ERROR_MESSAGE: 'ไม่สามารถโหลดข้อมูลตั้งต้นได้',
   ABSENCE_INITIAL_DATA_LOADED: 'โหลดข้อมูลตั้งต้นเรียบร้อยแล้ว',
   ABSENCE_INVALID_WEEKEND_DATE_MESSAGE: 'กรุณาเลือกวันจันทร์ถึงวันศุกร์',
@@ -338,6 +342,11 @@ export const TEXT = {
   ABSENCE_APPROVE_TAB: 'อนุมัติการลาของผู้อื่น',
   ABSENCE_MINE_TAB: 'อนุมัติการลาของฉัน',
   ABSENCE_APPROVE_EMPTY: 'ไม่มีคำขอลาที่รออนุมัติ',
+  // Two empty lists sit behind the same pair of tabs, so each has to name whose
+  // requests are missing — a shared "ไม่มีรายการ" does not say which tab is
+  // empty, and the reader is looking at the tab that is.
+  ABSENCE_APPROVE_QUEUE_EMPTY: 'ไม่มีคำขอลาที่ต้องอนุมัติ',
+  ABSENCE_MINE_EMPTY: 'คุณไม่มีคำขอลาที่รออนุมัติ',
   ABSENCE_APPROVE_SUBTITLE: 'คำขอลาที่รอให้คุณอนุมัติ',
   ABSENCE_MINE_SUBTITLE: 'คำขอลาของคุณที่รอการอนุมัติ',
 
@@ -451,6 +460,25 @@ export const TEXT = {
   NOTICE_REPAIR_NO_ACCESS_TITLE: 'ไม่มีสิทธิ์เข้าใช้งาน',
   NOTICE_REPAIR_NO_ACCESS_MESSAGE: 'บัญชีของคุณไม่มีสิทธิ์ใช้งานระบบแจ้งซ่อมสาธารณูปการ กรุณาติดต่อผู้ดูแลระบบ',
   NOTICE_REPAIR_NO_ITEMS: 'ไม่มีรายการแจ้งซ่อม',
+  // One list screen serves every role and every tab in this module, so each
+  // list names what is missing from *it*. "ไม่มีรายการแจ้งซ่อม" on all twenty
+  // of them tells a reader who is staring at one particular tab nothing.
+  NOTICE_REPAIR_EMPTY_INFORMER_CURRENT: 'ไม่มีรายการแจ้งซ่อมที่กำลังดำเนินการ',
+  NOTICE_REPAIR_EMPTY_INFORMER_HISTORY: 'ไม่มีประวัติการแจ้งซ่อม',
+  NOTICE_REPAIR_EMPTY_PENDING_APPROVAL: 'ไม่มีรายการรออนุมัติ',
+  NOTICE_REPAIR_EMPTY_APPROVED_REPAIRABLE: 'ไม่มีประวัติรายการที่อนุมัติให้ซ่อม',
+  NOTICE_REPAIR_EMPTY_APPROVED_UNREPAIRABLE: 'ไม่มีประวัติรายการที่ซ่อมไม่ได้',
+  NOTICE_REPAIR_EMPTY_PENDING_RECEIPT: 'ไม่มีรายการรอรับเรื่อง',
+  NOTICE_REPAIR_EMPTY_WAITING_ESTIMATE: 'ไม่มีงานที่รอประเมิน',
+  NOTICE_REPAIR_EMPTY_ESTIMATED: 'ไม่มีงานที่ประเมินแล้ว',
+  NOTICE_REPAIR_EMPTY_IN_PROGRESS: 'ไม่มีงานที่กำลังดำเนินการ',
+  NOTICE_REPAIR_EMPTY_DONE: 'ไม่มีงานที่เสร็จสิ้น',
+  NOTICE_REPAIR_EMPTY_REPAIR_RECORD: 'ไม่มีบันทึกการซ่อม',
+  NOTICE_REPAIR_EMPTY_ACCEPTANCE: 'ไม่มีงานที่รอตรวจรับ',
+  NOTICE_REPAIR_EMPTY_CANNOT_REPAIR: 'ไม่มีรายการที่ซ่อมไม่ได้',
+  NOTICE_REPAIR_EMPTY_SUPPLY_MATERIAL: 'ไม่มีรายการขอจัดหาวัสดุ',
+  NOTICE_REPAIR_EMPTY_DEPT_SUPPLY: 'ไม่มีรายการที่หน่วยงานตอบรับ',
+  NOTICE_REPAIR_EMPTY_ASSIGNED: 'ไม่มีงานที่ได้รับมอบหมาย',
   NOTICE_REPAIR_ERROR_LOAD: 'ไม่สามารถโหลดรายการแจ้งซ่อมได้',
   NOTICE_REPAIR_SELECT_ROLE: 'เลือกบทบาท',
   NOTICE_REPAIR_PENDING_NEW: 'งานใหม่',
@@ -581,6 +609,10 @@ export const TEXT = {
   REPAIR_COMPUTER_NO_JOBS_TO_MANAGE: 'ไม่มีงานที่ต้องจัดการ',
   REPAIR_COMPUTER_NO_NEW_JOBS: 'ไม่มีงานใหม่',
   REPAIR_COMPUTER_NO_WORKER_QUEUE: 'ไม่มีคิวช่าง',
+  // The two history tabs sit behind one screen, so each names its own list —
+  // a shared "ไม่มีประวัติ" leaves the reader unsure which tab they emptied.
+  REPAIR_COMPUTER_NO_JOB_HISTORY: 'ไม่มีประวัติงานซ่อม',
+  REPAIR_COMPUTER_NO_SUPPLY_HISTORY: 'ไม่มีประวัติการอนุมัติเบิก',
   REPAIR_COMPUTER_PENDING_JOB_TYPE: 'รอประเมินงาน',
   REPAIR_COMPUTER_PHONE: 'โทรศัพท์',
   REPAIR_COMPUTER_PHONE_LABEL: 'โทรศัพท์:',
@@ -720,11 +752,21 @@ export const TEXT = {
   CALENDAR_HEADER_TITLE: 'ปฏิทินผู้บริหาร',
   CALENDAR_SUBTITLE: 'แสดงกำหนดการต่างๆ ของผู้บริหาร',
   CALENDAR_ALL_DAY: 'ทั้งวัน',
+  // The list under the month always belongs to the day tapped above it, so the
+  // empty state says *that day* rather than "ไม่มีข้อมูล", which reads as though
+  // the whole calendar failed to load.
+  CALENDAR_DAY_EMPTY: 'วันที่เลือกไม่มีกิจกรรม',
 
   // Person Search
   PERSON_SEARCH_DESCRIPTION: 'หน้านี้คือหน้าค้นหาบุคลากร',
   PERSON_SEARCH_TITLE: 'ค้นหาบุคลากร',
   PERSON_SEARCH_SUBTITLE: 'ค้นหาบุคลากรในคณะฯ',
+  // The state before anything has been typed says what to do; the one after a
+  // fruitless search says what was searched for and what else to try. The old
+  // shared "ไม่มีข้อมูล" did neither.
+  PERSON_SEARCH_PROMPT: 'พิมพ์อย่างน้อย 2 ตัวอักษรเพื่อค้นหาบุคลากร',
+  PERSON_SEARCH_NO_RESULT: 'ไม่พบบุคลากรที่ตรงกับ',
+  PERSON_SEARCH_NO_RESULT_HINT: 'ลองค้นด้วยชื่อ นามสกุล หรือชื่อหน่วยงาน',
 
   // Booking Room (module key: booking_room)
   BOOKING_ROOM_MENU_TITLE: 'จองห้อง',
@@ -934,7 +976,11 @@ export const TEXT = {
   EXAMINAR_SUBJECT_LIST_HEADING: 'รายวิชาสอบ',
   EXAMINAR_PARTNERS_HEADING: 'ผู้คุมสอบ',
   EXAMINAR_LOADING: 'กำลังโหลดตารางคุมสอบ...',
-  EXAMINAR_NO_EXAMS: 'ไม่พบตารางคุมสอบ',
+  // Names the filter, not just the absence: this list is always scoped to the
+  // year/term/period chosen in the bar above it, and "ไม่พบตารางคุมสอบ" alone
+  // reads as "you have no exam duty at all" when it only means "not in this
+  // period" — the one thing the reader can do something about.
+  EXAMINAR_NO_EXAMS: 'ไม่มีตารางคุมสอบในช่วงที่เลือก',
   EXAMINAR_UNABLE_TO_LOAD: 'ไม่สามารถโหลดข้อมูลตารางคุมสอบได้',
   EXAMINAR_TERM_1: 'เทอม 1',
   EXAMINAR_TERM_2: 'เทอม 2',

@@ -15,7 +15,15 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import {
+  EmptyIllustration,
+  type EmptyIllustrationName,
+} from '@/components/empty-illustration';
 import { ThemedText } from '@/components/themed-text';
+import {
+  isModuleDisabledText as isModuleDisabled,
+  moduleDisabledText,
+} from '@/constants/module-status';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
@@ -33,13 +41,24 @@ type VariantStyle = {
   icon: LucideIcon;
   iconColor: string;
   circleColor: string;
+  /**
+   * The picture drawn instead of the medallion. `error` keeps the medallion:
+   * a red-tinted alert circle is a signal in its own right, and a grey drawing
+   * would soften something that is meant to read as a fault.
+   */
+  art?: EmptyIllustrationName;
 };
 
 function getVariants(c: AppColors): Record<ErrorStateVariant, VariantStyle> {
   return {
     error: { icon: CircleAlert, iconColor: c.primary, circleColor: c.primarySoft },
-    empty: { icon: Inbox, iconColor: c.textMuted, circleColor: c.surfaceAlt },
-    offline: { icon: WifiOff, iconColor: c.warning, circleColor: c.warningSoft },
+    empty: { icon: Inbox, iconColor: c.textMuted, circleColor: c.surfaceAlt, art: 'positive' },
+    offline: {
+      icon: WifiOff,
+      iconColor: c.warning,
+      circleColor: c.warningSoft,
+      art: 'offline',
+    },
   };
 }
 
@@ -56,6 +75,12 @@ type ErrorStateProps = {
   backLabel?: string;
   /** Full control over the rendered actions; overrides onRetry/onBack. */
   actions?: ErrorStateAction[];
+  /**
+   * The picture above the title. Comes from the variant; pass it to override,
+   * or `null` to fall back to the icon medallion. A screen whose load failure
+   * is really a lost connection can pass `art="offline"`.
+   */
+  art?: EmptyIllustrationName | null;
   fill?: boolean;
   style?: StyleProp<ViewStyle>;
   children?: ReactNode;
@@ -103,17 +128,35 @@ export function ErrorState({
   onBack,
   backLabel,
   actions,
+  art,
   fill = true,
   style,
   children,
 }: ErrorStateProps) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const variantStyle = getVariants(c)[variant];
-  const IconComponent = variantStyle.icon;
 
-  const resolvedTitle =
-    title ?? (variant === 'empty' ? TEXT.SHARED_EMPTY_DATA : TEXT.SHARED_ERROR_TITLE_THAI);
+  /**
+   * A module switched off in the admin panel is not a fault, and must not be
+   * dressed as one: the red alert medallion and "something went wrong" tell
+   * people to retry and then to report a bug, when in fact somebody turned the
+   * module off on purpose and there is nothing to fix.
+   *
+   * Handled here rather than at each call site because every screen already
+   * funnels its failure into `message`, so one place covers all of them —
+   * including screens added later, which is what keeps this from drifting.
+   */
+  const disabled = isModuleDisabled(message);
+  const effectiveVariant = disabled ? 'offline' : variant;
+  const variantStyle = getVariants(c)[effectiveVariant];
+  const IconComponent = variantStyle.icon;
+  // `null` is a deliberate "no picture"; `undefined` leaves it to the variant.
+  const illustration = art === null ? undefined : (art ?? variantStyle.art);
+
+  const resolvedMessage = disabled ? moduleDisabledText(message) : message;
+  const resolvedTitle = disabled
+    ? TEXT.SHARED_MODULE_DISABLED_TITLE
+    : (title ?? (variant === 'empty' ? TEXT.SHARED_EMPTY_DATA : TEXT.SHARED_ERROR_TITLE_THAI));
 
   let resolvedActions: ErrorStateAction[];
   if (actions) {
@@ -140,15 +183,26 @@ export function ErrorState({
 
   return (
     <View style={[styles.container, fill && styles.fill, style]}>
-      <View style={[styles.iconCircle, { backgroundColor: variantStyle.circleColor }]}>
-        <IconComponent size={34} color={variantStyle.iconColor} />
-      </View>
+      {illustration ? (
+        <EmptyIllustration name={illustration} style={styles.art} />
+      ) : (
+        <View style={[styles.iconCircle, { backgroundColor: variantStyle.circleColor }]}>
+          <IconComponent size={34} color={variantStyle.iconColor} />
+        </View>
+      )}
 
-      <ThemedText type="subtitle" style={styles.title}>
+      {/* With a drawing above them the two lines are set in the drawing's own
+          greys, so the state reads as one tone rather than as art with a
+          full-strength headline under it. */}
+      <ThemedText type="subtitle" style={[styles.title, illustration && styles.titleWithArt]}>
         {resolvedTitle}
       </ThemedText>
 
-      {message ? <ThemedText style={styles.message}>{message}</ThemedText> : null}
+      {resolvedMessage ? (
+        <ThemedText style={[styles.message, illustration && styles.messageWithArt]}>
+          {resolvedMessage}
+        </ThemedText>
+      ) : null}
 
       {children}
 
@@ -177,6 +231,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   fill: {
     flex: 1,
   },
+  // Sits where the medallion sat, less the space the drawing already carries
+  // under its own ground shadow.
+  art: {
+    marginBottom: 8,
+  },
   iconCircle: {
     width: 76,
     height: 76,
@@ -187,16 +246,22 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   title: {
     textAlign: 'center',
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 16,
+    lineHeight: 23,
+  },
+  titleWithArt: {
+    color: c.textMuted,
   },
   message: {
     marginTop: 8,
     maxWidth: 320,
     color: c.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 19,
     textAlign: 'center',
+  },
+  messageWithArt: {
+    color: c.textFaint,
   },
   actions: {
     marginTop: 24,

@@ -1,3 +1,9 @@
+import { ENV } from "../constants/config";
+import {
+  MODULE_DISABLED,
+  isModuleDisabledText,
+  moduleDisabledText,
+} from "../constants/module-status";
 import { API_BASE_URL, LOCAL_URL_BASE } from "../constants/endpoints";
 
 const TIMEOUT_MS = 10000;
@@ -49,7 +55,7 @@ export async function fetchWithApiDelay(
   init?: RequestInit,
 ) {
   await waitApiDelay();
-  return fetch(input, init);
+  return fetch(input, withApiToken(input, init));
 }
 
 function createUrl(
@@ -98,6 +104,39 @@ export function createLocalUrl(
   return `${url.pathname}${url.search}`;
 }
 
+function requestUrl(input: RequestInfo | URL) {
+  if (typeof input === "string") return input;
+  if (input instanceof URL) return input.toString();
+  return (input as Request).url ?? "";
+}
+
+/**
+ * Attach the Strapi API token to calls on our own API.
+ *
+ * Every service reaches the network through fetchWithTimeout, so adding the
+ * header here covers the whole app. Two rules keep it from doing harm:
+ * the token is only ever sent to API_BASE_URL — never to PSU SSO, the news
+ * feed, or any other host — and a caller that set its own Authorization
+ * header keeps it, which is what lets the SSO calls carry a user token instead.
+ */
+function withApiToken(input: RequestInfo | URL, init?: RequestInit): RequestInit | undefined {
+  const token = ENV.scoobaApiKey.trim();
+  if (!token || !requestUrl(input).startsWith(API_BASE_URL)) {
+    return init;
+  }
+
+  const headers = { ...((init?.headers as Record<string, string> | undefined) ?? {}) };
+  const hasAuth = Object.keys(headers).some(
+    (key) => key.toLowerCase() === "authorization",
+  );
+
+  if (hasAuth) {
+    return init;
+  }
+
+  return { ...init, headers: { ...headers, Authorization: `Bearer ${token}` } };
+}
+
 export async function fetchWithTimeout(
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -109,7 +148,7 @@ export async function fetchWithTimeout(
 
   try {
     return await fetch(input, {
-      ...init,
+      ...withApiToken(input, init),
       signal: controller.signal,
     });
   } catch (error) {
@@ -127,6 +166,16 @@ export async function fetchWithTimeout(
   }
 }
 
+/** Whether a caught error is "this module is switched off" rather than a fault. */
+export function isModuleDisabled(error: unknown) {
+  return error instanceof Error && isModuleDisabledText(error.message);
+}
+
+/** The wording the server gave, without the marker the app matches on. */
+export function moduleDisabledMessage(error: unknown) {
+  return isModuleDisabled(error) ? moduleDisabledText((error as Error).message) : "";
+}
+
 export async function requestJson<T = JsonMap>(
   url: string,
   init?: RequestInit,
@@ -141,6 +190,22 @@ export async function requestJson<T = JsonMap>(
   const text = await response.text();
 
   if (!response.ok || !text) {
+    // A switched-off module has to survive as something the UI can tell apart:
+    // collapsing it into "เซิร์ฟเวอร์ขัดข้อง" would show people a fault when
+    // nothing is broken. The marker is carried in the message because every
+    // screen here stores the error as a plain string.
+    if (response.status === 503 && text) {
+      try {
+        const body = JSON.parse(text) as { error?: { name?: string; message?: string } };
+        if (body?.error?.name === "ModuleDisabled") {
+          throw new Error(`${MODULE_DISABLED} ${body.error.message ?? ""}`.trim());
+        }
+      } catch (error) {
+        if (isModuleDisabled(error)) throw error;
+        // Not our envelope — fall through to the generic message below.
+      }
+    }
+
     throw new Error(MESSAGE_SERVER_ERROR);
   }
 
