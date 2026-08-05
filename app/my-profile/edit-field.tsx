@@ -13,14 +13,15 @@ import {
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AppToast } from '@/components/app-toast';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useToast } from '@/components/toast-provider';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
-import { updatePersonInfo } from '@/services/personService';
+import { updateMyProfileInfo } from '@/services/myProfileService';
 
 // The focused underline is our focus affordance, so suppress the browser's own
 // outline on web (same helper the absence forms use).
@@ -51,41 +52,55 @@ const FIELD_CONFIG: Record<Field, {
   },
 };
 
-export default function EditProfileFieldScreen() {
+export default function EditMyProfileFieldScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const { showToast } = useToast();
   const params = useLocalSearchParams<{ field?: string; value?: string; staffId?: string }>();
   const field = (params.field === 'email' ? 'email' : 'phone') as Field;
   const staffId = params.staffId ?? '';
   const config = FIELD_CONFIG[field];
 
+  const original = (params.value ?? '').trim();
   const [value, setValue] = useState(params.value ?? '');
   const [isFocused, setIsFocused] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [isSaving, setIsSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
-  const handleSave = async () => {
-    if (!value.trim() || !staffId) return;
+  const trimmed = value.trim();
+  // Nothing to send when the value is unchanged, and pressing save on it should
+  // not report a success the server was never asked for.
+  const canSave = trimmed.length > 0 && trimmed !== original && Boolean(staffId) && !isSaving;
+
+  const handleSubmit = () => {
+    if (canSave) setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!canSave) return;
     setIsSaving(true);
     try {
-      await updatePersonInfo(staffId, field, value.trim());
-      setToastType('success');
-      setToastMessage(TEXT.EDIT_PROFILE_UPDATE_SUCCESS);
+      await updateMyProfileInfo(staffId, field, trimmed);
+      setConfirmOpen(false);
+      // The toast is mounted at the root, so it survives this screen closing —
+      // and the profile behind it reloads on focus and shows the stored value.
+      showToast(TEXT.EDIT_PROFILE_UPDATE_SUCCESS, 'success');
+      router.back();
     } catch (error) {
-      setToastType('error');
-      setToastMessage(error instanceof Error ? error.message : TEXT.EDIT_PROFILE_UPDATE_FAILED);
+      setConfirmOpen(false);
+      showToast(
+        error instanceof Error ? error.message : TEXT.EDIT_PROFILE_UPDATE_FAILED,
+        'error',
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
-  const canSave = value.trim().length > 0 && Boolean(staffId) && !isSaving;
-
   return (
-    <ThemedView style={styles.container} lightColor="#F5F6FA">
+    <ThemedView style={styles.container} lightColor={c.background} darkColor={c.background}>
       <StatusBar style="light" />
       <NavTopBar title={config.title} tone="primary" />
 
@@ -112,7 +127,8 @@ export default function EditProfileFieldScreen() {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               returnKeyType="done"
-              onSubmitEditing={canSave ? handleSave : undefined}
+              onSubmitEditing={handleSubmit}
+              editable={!isSaving}
             />
             {/* Helper text below the field it explains, not above it — the user
                 reads the label, types, then finds out what the value is for. */}
@@ -128,7 +144,7 @@ export default function EditProfileFieldScreen() {
               !canSave && styles.saveButtonDisabled,
               pressed && canSave && styles.saveButtonPressed,
             ]}
-            onPress={handleSave}
+            onPress={handleSubmit}
             disabled={!canSave}
             accessibilityRole="button"
           >
@@ -136,7 +152,7 @@ export default function EditProfileFieldScreen() {
               <ThemedText style={styles.saveButtonText}>{TEXT.EDIT_PROFILE_SAVING}</ThemedText>
             ) : (
               <>
-                <Check size={18} color="#FFFFFF" />
+                <Check size={18} color={c.textOnPrimary} />
                 <ThemedText style={styles.saveButtonText}>{TEXT.EDIT_PROFILE_SAVE}</ThemedText>
               </>
             )}
@@ -144,7 +160,19 @@ export default function EditProfileFieldScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      <AppToast message={toastMessage} type={toastType} />
+      {/* Every write in this app asks first. The new value is in the message so
+          the decision is made on what will actually be stored, not on what the
+          field looked like a moment ago. */}
+      <ConfirmDialog
+        visible={confirmOpen}
+        title={TEXT.EDIT_PROFILE_CONFIRM_TITLE}
+        message={`${field === 'email' ? TEXT.EDIT_PROFILE_CONFIRM_EMAIL : TEXT.EDIT_PROFILE_CONFIRM_PHONE}\n\n${trimmed}`}
+        confirmLabel={TEXT.SHARED_CONFIRM}
+        cancelLabel={TEXT.CANCEL}
+        loading={isSaving}
+        onConfirm={handleConfirm}
+        onCancel={() => { if (!isSaving) setConfirmOpen(false); }}
+      />
     </ThemedView>
   );
 }

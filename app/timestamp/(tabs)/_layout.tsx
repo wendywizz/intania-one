@@ -1,16 +1,17 @@
 import { Tabs } from "expo-router";
 import React, { useEffect, useState } from "react";
 
-import { HapticTab } from "@/components/haptic-tab";
-import { LoadingAnimate } from "@/components/loading-animate";
-import { ThemedView } from "@/components/themed-view";
+import { tabBarButton } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { AppFonts } from "@/constants/fonts";
 import { useColors } from "@/constants/theme";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
-import { getForgetApprovalWaiting } from "@/services/timestampService";
+import {
+  getForgetApprovalWaiting,
+  peekForgetApprovalWaiting,
+} from "@/services/timestampService";
 import { scaleFont } from "@/utils/font-scale";
 
 export default function TimestampTabLayout() {
@@ -20,45 +21,36 @@ export default function TimestampTabLayout() {
 
   // Whether the user may approve others' miss-timestamp requests (holds an active
   // executive position or has pending rows). Only then is the approval tab shown.
-  const [isApprover, setIsApprover] = useState(false);
-  // Wait for the boss check to finish before rendering the tab bar, so the
-  // approval tab doesn't flash in after the view has already appeared.
-  const [isChecking, setIsChecking] = useState(true);
+  //
+  // Seeded from the answer the home screen already got, so in the normal flow
+  // (home -> this) the tab bar is right on its first frame. This used to hold
+  // the whole navigator back behind a full-screen loader until the check
+  // returned, to stop the approval tab appearing a beat late — but that traded
+  // a tab sliding in for the entire screen going blank on every entry, which
+  // reads as the app reloading. A tab arriving late is the smaller cost.
+  const [isApprover, setIsApprover] = useState(
+    () => peekForgetApprovalWaiting(staffId)?.show ?? false,
+  );
 
   useEffect(() => {
     let active = true;
-    setIsChecking(true);
     getForgetApprovalWaiting(staffId)
       .then((result) => {
         if (active) setIsApprover(result.show);
       })
       .catch(() => {
         if (active) setIsApprover(false);
-      })
-      .finally(() => {
-        if (active) setIsChecking(false);
       });
     return () => {
       active = false;
     };
   }, [staffId]);
 
-  if (isChecking) {
-    return (
-      <ThemedView style={{ flex: 1, backgroundColor: c.background }}>
-        <LoadingAnimate
-          title={TEXT.SHARED_LOADING_DATA_TITLE}
-          desc={TEXT.SHARED_LOADING_DESCRIPTION}
-        />
-      </ThemedView>
-    );
-  }
-
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarButton: HapticTab,
+        tabBarButton,
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
         tabBarStyle: {

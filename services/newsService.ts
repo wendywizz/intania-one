@@ -1,6 +1,6 @@
 import { ENDPOINTS } from '../constants/endpoints';
 import type { News } from '../models/types';
-import { fetchWithApiDelay } from './api';
+import { fetchApi } from './api';
 
 function getFeedText(value: unknown) {
   if (typeof value === 'string') {
@@ -32,7 +32,7 @@ function normalizeNewsItem(item: Record<string, unknown>): News {
 
 export async function staffNewsFeed(): Promise<News[]> {
   try {
-    const response = await fetchWithApiDelay(ENDPOINTS.staffNewsFeed);
+    const response = await fetchApi(ENDPOINTS.staffNewsFeed);
 
     if (!response.ok) {
       throw new Error(`Unable to load news feed (${response.status})`);

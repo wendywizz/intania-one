@@ -6,7 +6,7 @@ import {Platform} from 'react-native';
 import {AUTH} from '../constants/auth';
 import {METRO_PROXY_ENDPOINTS} from '../constants/endpoints';
 import type {AuthUser} from '../models/types';
-import {fetchWithApiDelay} from './api';
+import {fetchApi} from './api';
 
 type TokenResponse = {
   access_token?: string;
@@ -179,7 +179,7 @@ async function getDiscovery() {
   }
 
   if (!discoveryPromise) {
-    discoveryPromise = fetchWithApiDelay(AUTH.discoveryUrl)
+    discoveryPromise = fetchApi(AUTH.discoveryUrl)
       .then(async (response) => {
         if (!response.ok) {
           throw new Error('Unable to load OpenID configuration');
@@ -195,7 +195,7 @@ async function getDiscovery() {
 
 async function fetchOpenId(input: RequestInfo | URL, init?: RequestInit, action = 'connect to OpenID') {
   try {
-    return await fetchWithApiDelay(input, init);
+    return await fetchApi(input, init);
   } catch (error) {
     if (Platform.OS === 'web') {
       throw new Error(getOpenIdCorsMessage(action));

@@ -123,7 +123,8 @@ export default function MeetingHistoryScreen() {
     </View>
   ) : null;
 
-  if (isLoading) {
+  // Only while there is nothing to show; see components/timestamp/timestamp-forgot-list.
+  if (isLoading && meetings.length === 0) {
     return (
       <ThemedView style={styles.container}>
         <ScreenHeader title={TEXT.MEETING_HEADER_TITLE} backHref="/" titleInNavBar showHomeButton={false} />

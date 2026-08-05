@@ -1,6 +1,6 @@
 import { ENDPOINTS } from '../constants/endpoints';
 import { ENV } from '../constants/config';
-import { buildHttpsUrl, fetchWithApiDelay } from './api';
+import { buildHttpsUrl, fetchApi } from './api';
 
 const SCHEDULE_TYPE_EXECUTIVE = 'exc';
 const GOOGLE_CALENDAR_API_BASE_URL = 'https://www.googleapis.com';
@@ -137,7 +137,7 @@ export async function getExecutiveCalendarSources(): Promise<CalendarSource[]> {
     throw new Error('Missing EXPO_PUBLIC_SCOOBA_API_KEY');
   }
 
-  const response = await fetchWithApiDelay(
+  const response = await fetchApi(
     buildHttpsUrl(ENDPOINTS.scooba_dev, ENDPOINTS.execCalendar, {
       'filters[type][$eq]': SCHEDULE_TYPE_EXECUTIVE,
     }),
@@ -185,7 +185,7 @@ export async function getCalendarEventsOfMonth(
     params.set('key', apiKey);
   }
 
-  const response = await fetchWithApiDelay(
+  const response = await fetchApi(
     buildHttpsUrl(
       GOOGLE_CALENDAR_API_BASE_URL,
       `/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}/events`,

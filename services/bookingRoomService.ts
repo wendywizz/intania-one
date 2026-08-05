@@ -1,6 +1,6 @@
 import { ENDPOINTS } from '../constants/endpoints';
 import { TEXT } from '../constants/text';
-import { ensureSuccess, requestJson } from './api';
+import { ensureSuccess, requestJson, withApiToken } from './api';
 
 export type BookingRoom = {
   id: string;
@@ -377,11 +377,18 @@ export async function createBooking(input: CreateBookingInput): Promise<CreatedB
  * to change, and a generic error names nothing.
  */
 async function postBooking<T>(url: string, input: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
+  // Not going through `mutationRequest` means not going through the fetch
+  // wrapper that attaches the API token either, so it is attached here. Without
+  // it every submit and cancel answers 401 before the server ever reads the
+  // form.
+  const response = await fetch(
+    url,
+    withApiToken(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    }),
+  );
 
   const text = await response.text();
   let json: { data?: unknown; error?: { message?: string } } | null = null;

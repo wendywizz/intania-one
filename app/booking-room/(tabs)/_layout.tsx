@@ -8,7 +8,7 @@
  */
 import { Tabs } from 'expo-router';
 
-import { HapticTab } from '@/components/haptic-tab';
+import { tabBarButton } from '@/components/haptic-tab';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { useColors } from '@/constants/theme';
@@ -22,7 +22,7 @@ export default function BookingRoomTabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarButton: HapticTab,
+        tabBarButton,
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
         tabBarStyle: {

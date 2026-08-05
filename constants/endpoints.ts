@@ -54,8 +54,6 @@ export const ENDPOINTS = {
   health: `${API_BASE_URL}/api/health`,
   staffNewsFeed: `${API_BASE_URL}/api/news`,
   staffInfo: `${API_BASE_URL}/api/staff-info`,
-  personUpdateInfo: `${API_BASE_URL}/api/person/update-info`,
-  personUploadPhoto: `${API_BASE_URL}/api/person/upload-photo`,
   pushRegisterDevice: `${API_BASE_URL}/api/push/register-device`,
   photoBase: PHOTO_BASE_URL,
 
@@ -75,6 +73,12 @@ export const ENDPOINTS = {
 
   // --- person-search -------------------------------------------------------
   person: `${API_BASE_URL}/api/person`,
+
+  // --- my-profile ----------------------------------------------------------
+  // The signed-in person's own record. Separate from `person` above, which
+  // reads anybody's — these two write, and the gateway gates them separately.
+  myProfileUpdateInfo: `${API_BASE_URL}/api/my-profile/update-info`,
+  myProfileUploadPhoto: `${API_BASE_URL}/api/my-profile/upload-photo`,
 
   // --- examinar ------------------------------------------------------------
   examinar: `${API_BASE_URL}/api/examinar`,

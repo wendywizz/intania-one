@@ -298,7 +298,8 @@ export default function StatsScreen() {
   useFocusEffect(useCallback(() => { loadStats(); }, [loadStats]));
 
   const renderContent = () => {
-    if (isLoading) {
+    // Only while there is nothing to show; see components/timestamp/timestamp-forgot-list.
+    if (isLoading && !stats) {
       return <LoadingAnimate title={TEXT.ABSENCE_STATS_LOADING_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
     }
     if (error) {

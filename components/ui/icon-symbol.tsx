@@ -34,6 +34,7 @@ import ChevronRight from 'lucide-react-native/dist/cjs/icons/chevron-right';
 import MapPin from 'lucide-react-native/dist/cjs/icons/map-pin';
 import Phone from 'lucide-react-native/dist/cjs/icons/phone';
 import CircleCheck from 'lucide-react-native/dist/cjs/icons/circle-check';
+import ClipboardList from 'lucide-react-native/dist/cjs/icons/clipboard-list';
 import CircleUser from 'lucide-react-native/dist/cjs/icons/circle-user';
 import Clock from 'lucide-react-native/dist/cjs/icons/clock';
 import Code from 'lucide-react-native/dist/cjs/icons/code';
@@ -103,6 +104,7 @@ const MAPPING = {
   // Work
   'briefcase.fill': Briefcase,
   'doc.text.fill': FileText,
+  'clipboard-list': ClipboardList,
   'list.bullet': List,
   'text.bubble': MessageSquareText,
   'tag.fill': Tag,

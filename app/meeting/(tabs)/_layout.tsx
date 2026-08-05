@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { TEXT } from '@/constants/text';
 
-import { HapticTab } from '@/components/haptic-tab';
+import { tabBarButton } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { useColors } from '@/constants/theme';
@@ -17,7 +17,7 @@ export default function MeetingTabLayout() {
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
         headerShown: false,
-        tabBarButton: HapticTab,
+        tabBarButton,
         tabBarStyle: {
           height: 68,
           paddingBottom: 10,

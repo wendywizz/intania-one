@@ -261,9 +261,15 @@ export default function ExaminarListScreen() {
 
   useFocusEffect(useCallback(() => { loadTasks(); }, [loadTasks]));
 
-  // Reload when filters change (after initial load)
+  // Reload when filters change (after initial load). The old filter's rows are
+  // dropped first: the loader now only stands in for an empty list, and leaving
+  // last term's tasks on screen under the new term's filter bar would be worse
+  // than a loader. Same reasoning as the month arrows in timestamp/calendar.
   useEffect(() => {
-    if (!isLoading) loadTasks();
+    if (!isLoading) {
+      setTasks([]);
+      loadTasks();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year, term, period]);
 
@@ -283,7 +289,8 @@ export default function ExaminarListScreen() {
           onTermChange={setTerm}
           onPeriodChange={setPeriod}
         />
-        {isLoading ? (
+        {/* Only while there is nothing to show; see components/timestamp/timestamp-forgot-list. */}
+        {isLoading && tasks.length === 0 ? (
           <LoadingAnimate title={TEXT.EXAMINAR_LOADING} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
         ) : error ? (
           <ErrorState

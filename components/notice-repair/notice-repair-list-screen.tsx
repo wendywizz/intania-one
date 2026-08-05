@@ -218,7 +218,10 @@ export function NoticeRepairListScreen({ title, listType, staffId, segments, onA
       ) : null}
 
 
-      {isLoading ? (
+      {/* Only while there is nothing to show. The refetch this screen does on
+          every focus must not swap an already-drawn list for a loader; see the
+          same guard in components/timestamp/timestamp-forgot-list. */}
+      {isLoading && jobs.length === 0 ? (
         <LoadingAnimate title={title} desc={TEXT.NOTICE_REPAIR_LOADING} />
       ) : error ? (
         <View style={styles.center}>

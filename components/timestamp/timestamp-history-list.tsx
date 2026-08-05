@@ -222,7 +222,9 @@ export function TimestampHistoryList() {
     }, [loadItems]),
   );
 
-  if (isLoading) {
+  // Only while there is nothing to show — see the same guard in
+  // timestamp-forgot-list: the focus refetch must not blank a drawn list.
+  if (isLoading && items.length === 0) {
     return (
       <View style={styles.stateContainer}>
         <LoadingAnimate

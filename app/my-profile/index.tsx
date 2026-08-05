@@ -2,14 +2,13 @@ import type React from 'react';
 import { Bell, Camera, ChevronRight, Images, Mail, MapPin, Phone, Trash2 } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
-import { ActivityIndicator, Alert, Animated, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
-import { AppToast } from '@/components/app-toast';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
+import { useToast } from '@/components/toast-provider';
 import { USER_PLACEHOLDER } from '@/constants/images';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -19,7 +18,7 @@ import { ENDPOINTS } from '@/constants/endpoints';
 import { TEXT } from '@/constants/text';
 import { useAuth } from '@/context/AuthContext';
 import type { Person } from '@/models/types';
-import { getPersonnelSuggestions, uploadPersonPhoto } from '@/services/personService';
+import { getMyProfile, uploadMyProfilePhoto } from '@/services/myProfileService';
 import { getUnreadNotificationCount } from '@/services/notificationService';
 import { usePopAnimation } from '@/hooks/use-pop-animation';
 import { boxShadow } from '@/constants/shadows';
@@ -27,12 +26,6 @@ import { boxShadow } from '@/constants/shadows';
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const D = {
-  bg: '#F5F6FA',
-  surface: '#FFFFFF',
-  text: '#191C1F',
-  mutedText: '#6B7280',
-  border: '#E5E7EB',
-  primary: '#B33939',
   avatarRing: '#FECDD3',
   positionColor: '#D97706',
 } as const;
@@ -100,7 +93,10 @@ function RowIcon({ name }: { name: string }) {
 export default function MyProfileScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const { showToast } = useToast();
   const { user: authUser } = useAuth();
+  // UNI_STAFF_ID: what OpenID gives us, and the only id the personnel upstreams
+  // key on. See services/myProfileService.ts.
   const staffId = String(authUser?.staffId || '').trim();
 
   const [person, setPerson] = useState<Person | null>(null);
@@ -112,47 +108,55 @@ export default function MyProfileScreen() {
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [photoToastMessage, setPhotoToastMessage] = useState('');
-  const [photoToastType, setPhotoToastType] = useState<'success' | 'error'>('success');
   const photoMenuAnim = usePopAnimation(showPhotoMenu);
 
   const photoUrl = staffId
     ? `${ENDPOINTS.photoBase}${encodeURIComponent(staffId)}.jpg`
     : null;
 
-  const loadPerson = useCallback(async (isRefresh = false) => {
+  const loadPerson = useCallback(async (mode: 'initial' | 'refresh' | 'quiet' = 'initial') => {
     if (!staffId) { setIsLoading(false); return; }
-    if (isRefresh) setIsRefreshing(true);
-    else setIsLoading(true);
+    if (mode === 'refresh') setIsRefreshing(true);
+    else if (mode === 'initial') setIsLoading(true);
     try {
-      const results = await getPersonnelSuggestions(staffId);
-      const match = results.find((p) => String(p.staffId) === staffId) || results[0] || null;
-      setPerson(match);
+      setPerson(await getMyProfile(staffId));
     } catch {
-      setPerson(null);
+      // A quiet reload backing the edit screen must not wipe what is on screen:
+      // the values shown are still the last ones the directory gave us.
+      if (mode !== 'quiet') setPerson(null);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
   }, [staffId]);
 
-  useEffect(() => { void loadPerson(); }, [loadPerson]);
+  // Loading on focus rather than on mount is what makes an edit show up: coming
+  // back from the edit screen has to display the stored value, and that screen
+  // cannot hand it over — the directory is the authority on what was saved. The
+  // first focus is the initial load; every later one refreshes in place, so
+  // returning to a screen that is already drawn does not blank it.
+  const hasFocusedOnce = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
+
       void getUnreadNotificationCount().then((count) => {
         if (active) setUnreadCount(count);
       });
+
+      void loadPerson(hasFocusedOnce.current ? 'quiet' : 'initial');
+      hasFocusedOnce.current = true;
+
       return () => { active = false; };
-    }, []),
+    }, [loadPerson]),
   );
 
   async function handleTakePhoto() {
     setShowPhotoMenu(false);
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(TEXT.PROFILE_PHOTO_PERMISSION_TITLE, TEXT.PROFILE_PHOTO_CAMERA_PERMISSION);
+      showToast(TEXT.PROFILE_PHOTO_CAMERA_PERMISSION, 'error');
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -170,7 +174,7 @@ export default function MyProfileScreen() {
     setShowPhotoMenu(false);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(TEXT.PROFILE_PHOTO_PERMISSION_TITLE, TEXT.PROFILE_PHOTO_LIBRARY_PERMISSION);
+      showToast(TEXT.PROFILE_PHOTO_LIBRARY_PERMISSION, 'error');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -188,16 +192,21 @@ export default function MyProfileScreen() {
     if (!pendingPhotoUri || !staffId) return;
     const uri = pendingPhotoUri;
     setPendingPhotoUri(null);
+    // Show the new photo straight away. If the upload then fails the toast says
+    // so and the next reload puts the stored one back, which is better than
+    // staring at the old photo while a spinner runs.
     setLocalPhotoUri(uri);
     setPhotoFailed(false);
     setIsUploadingPhoto(true);
     try {
-      await uploadPersonPhoto(staffId, uri);
-      setPhotoToastType('success');
-      setPhotoToastMessage(TEXT.PROFILE_PHOTO_UPLOAD_SUCCESS);
+      await uploadMyProfilePhoto(staffId, uri);
+      showToast(TEXT.PROFILE_PHOTO_UPLOAD_SUCCESS, 'success');
     } catch (error) {
-      setPhotoToastType('error');
-      setPhotoToastMessage(error instanceof Error ? error.message : TEXT.PROFILE_PHOTO_UPLOAD_FAILED);
+      setLocalPhotoUri(null);
+      showToast(
+        error instanceof Error ? error.message : TEXT.PROFILE_PHOTO_UPLOAD_FAILED,
+        'error',
+      );
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -216,6 +225,9 @@ export default function MyProfileScreen() {
   const department = person ? getDepartment(person) : '';
   const phone = person ? getPhone(person) : '';
   const email = person ? getEmail(person) : (authUser?.email ? String(authUser.email) : '');
+
+  const editField = (field: 'phone' | 'email', value: string) =>
+    router.push({ pathname: '/my-profile/edit-field', params: { field, value, staffId } });
 
   return (
     <ThemedView style={styles.container} lightColor={c.background} darkColor={c.background}>
@@ -240,13 +252,14 @@ export default function MyProfileScreen() {
         }
       />
 
-      {isLoading ? (
+      {/* Only while there is nothing to show; see components/timestamp/timestamp-forgot-list. */}
+      {isLoading && !person ? (
         <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
       ) : (
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadPerson(true)} tintColor={c.primary} />}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadPerson('refresh')} tintColor={c.primary} />}
         >
 
           {/* ── Avatar ─────────────────────────────────────────────────────── */}
@@ -327,7 +340,7 @@ export default function MyProfileScreen() {
                         accessibilityRole="button"
                       >
                         <View style={styles.menuItemIcon}>
-                          <Trash2 size={20} color="#DC2626" />
+                          <Trash2 size={20} color={c.danger} />
                         </View>
                         <ThemedText style={[styles.menuItemText, styles.menuItemDestructive]}>{TEXT.PROFILE_PHOTO_REMOVE}</ThemedText>
                       </Pressable>
@@ -412,7 +425,7 @@ export default function MyProfileScreen() {
                   <Pressable
                     accessibilityRole="button"
                     style={({ pressed }) => [styles.infoRow, pressed && styles.infoRowPressed]}
-                    onPress={() => router.push({ pathname: '/edit-profile-field', params: { field: 'phone', value: phone, staffId } })}
+                    onPress={() => editField('phone', phone)}
                   >
                     <RowIcon name="phone" />
                     <View style={styles.infoBody}>
@@ -430,7 +443,7 @@ export default function MyProfileScreen() {
                   <Pressable
                     accessibilityRole="button"
                     style={({ pressed }) => [styles.infoRow, pressed && styles.infoRowPressed]}
-                    onPress={() => router.push({ pathname: '/edit-profile-field', params: { field: 'email', value: email, staffId } })}
+                    onPress={() => editField('email', email)}
                   >
                     <RowIcon name="email" />
                     <View style={styles.infoBody}>
@@ -452,7 +465,6 @@ export default function MyProfileScreen() {
 
         </ScrollView>
       )}
-      <AppToast message={photoToastMessage} type={photoToastType} />
     </ThemedView>
   );
 }
@@ -664,7 +676,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontFamily: AppFonts.psuRegular,
     color: c.text,
   },
-emptyRow: {
+  emptyRow: {
     paddingHorizontal: 16,
     paddingVertical: 20,
     alignItems: 'center',

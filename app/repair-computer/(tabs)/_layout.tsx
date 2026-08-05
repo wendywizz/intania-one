@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { TEXT } from '@/constants/text';
 
-import { HapticTab } from '@/components/haptic-tab';
+import { tabBarButton } from '@/components/haptic-tab';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -194,7 +194,7 @@ export default function RepairComputerTabLayout() {
         <Tabs
           screenOptions={{
             headerShown: false,
-            tabBarButton: HapticTab,
+            tabBarButton,
             tabBarActiveTintColor: '#FFFFFF',
             tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
             tabBarStyle: {

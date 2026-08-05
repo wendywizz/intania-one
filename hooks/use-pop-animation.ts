@@ -10,7 +10,7 @@
  * off screen the instant `visible` flips to false.
  *
  * Used by components/ui/sheet.tsx (animation="pop") and the photo menu in
- * app/my-profile.tsx.
+ * app/my-profile/index.tsx.
  */
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Platform } from 'react-native';

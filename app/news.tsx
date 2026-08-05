@@ -145,7 +145,8 @@ export default function NewsScreen() {
   }, []);
 
   const renderContent = () => {
-    if (isLoading) {
+    // Only while there is nothing to show; see components/timestamp/timestamp-forgot-list.
+    if (isLoading && newsItems.length === 0) {
       return (
         <View style={styles.stateContainer}>
           <LoadingAnimate title="" desc="" />

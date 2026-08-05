@@ -253,7 +253,8 @@ export default function RepairComputerQueueScreen() {
   };
 
   const renderContent = () => {
-    if (isLoading) {
+    // Only while there is nothing to show; see components/timestamp/timestamp-forgot-list.
+    if (isLoading && workers.length === 0) {
       return (
         <LoadingAnimate
           title={TEXT.REPAIR_COMPUTER_LOADING_QUEUE}

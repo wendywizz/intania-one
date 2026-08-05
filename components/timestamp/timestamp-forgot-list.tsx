@@ -244,7 +244,11 @@ export function TimestampForgotList() {
     }, [loadItems]),
   );
 
-  if (isLoading) {
+  // Only while there is nothing to show. `useFocusEffect` re-runs this load
+  // every time the tab is returned to, and swapping an already-drawn list for a
+  // loader on each visit is what made moving between tabs feel like the app was
+  // reloading. With rows on screen the refetch happens under them instead.
+  if (isLoading && items.length === 0) {
     return (
       <View style={styles.stateContainer}>
         <LoadingAnimate

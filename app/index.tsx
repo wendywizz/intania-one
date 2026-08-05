@@ -144,16 +144,20 @@ type IconName = Parameters<typeof IconSymbol>[0]['name'];
 // business first, then the things asked for when something is needed, with
 // reference lookups last.
 const MENU_ITEMS: readonly { title: string; href: string; icon: IconName }[] = [
-  { title: TEXT.TIMESTAMP_TITLE, href: '/timestamp/calendar', icon: 'clock.fill' },
+  { title: TEXT.TIMESTAMP_TITLE, href: '/timestamp/calendar', icon: 'calendar-clock' },
   // Straight to the pending list, not to /absence: the leave-form chooser there
   // is no longer a tab, so landing on it would show a tab bar with nothing
   // selected. Starting a new request is a button on this list.
-  { title: TEXT.ABSENCE_TITLE, href: '/absence/pending', icon: 'calendar-clock' },
+  // A document, not another calendar: leave is filed as ใบลา, and the grid can
+  // only carry so many calendar glyphs before they stop telling each other apart.
+  { title: TEXT.ABSENCE_TITLE, href: '/absence/pending', icon: 'doc.text.fill' },
   { title: TEXT.MEETING_MENU_TITLE, href: '/meeting', icon: 'person.2.fill' },
   { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: '/repair-computer', icon: 'laptop' },
   { title: TEXT.NOTICE_REPAIR__MENU_TITLE, href: '/notice-repair', icon: 'wrench.fill' },
   { title: TEXT.BOOKING_ROOM_MENU_TITLE, href: '/booking-room', icon: 'door.open' },
-  { title: TEXT.EXAMINER_MENU_TITLE, href: '/examiner', icon: 'checkmark.circle.fill' },
+  // A clipboard, not a checkmark: a tick reads as "approved/done", and this is a
+  // roster of duty to turn up for.
+  { title: TEXT.EXAMINER_MENU_TITLE, href: '/examiner', icon: 'clipboard-list' },
   { title: TEXT.CALENDAR_TITLE, href: '/calendar', icon: 'calendar-range' },
   { title: TEXT.PERSON_SEARCH_TITLE, href: '/person-search', icon: 'user-round-search' },
 ];
@@ -211,12 +215,14 @@ type ShiftItem = {
 };
 
 // Icon per module, so the tile is identifiable before any of its text is read.
+// Same glyph the module carries in MENU_ITEMS — a module that looked like one
+// thing in the grid and another in this list would be two modules to the reader.
 const SHIFT_ICONS = {
   repair: 'laptop',
-  absence: 'calendar-clock',
+  absence: 'doc.text.fill',
   meeting: 'person.2.fill',
-  timestamp: 'clock.fill',
-  exam: 'checkmark.circle.fill',
+  timestamp: 'calendar-clock',
+  exam: 'clipboard-list',
 } as const satisfies Record<string, IconName>;
 
 type UpcomingShiftSectionProps = {

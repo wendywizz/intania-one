@@ -9,7 +9,6 @@ import { API_BASE_URL, LOCAL_URL_BASE } from "../constants/endpoints";
 const TIMEOUT_MS = 10000;
 
 export { API_BASE_URL };
-export const API_DELAY_MS = 500;
 export const MESSAGE_CANNOT_CONNECT_TO_SERVER =
   "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้";
 export const MESSAGE_PROCESS_FAILED = "ดำเนินการไม่สำเร็จ";
@@ -46,15 +45,13 @@ export type UploadableFile =
       type?: string;
     };
 
-export function waitApiDelay() {
-  return new Promise((resolve) => setTimeout(resolve, API_DELAY_MS));
-}
-
-export async function fetchWithApiDelay(
-  input: RequestInfo | URL,
-  init?: RequestInit,
-) {
-  await waitApiDelay();
+/**
+ * A plain fetch on our own API, with the token attached and no timeout.
+ *
+ * For callers that need the Response itself — an upload, a stream, a body whose
+ * 4xx text matters. Everything that just wants JSON should use requestJson.
+ */
+export async function fetchApi(input: RequestInfo | URL, init?: RequestInit) {
   return fetch(input, withApiToken(input, init));
 }
 
@@ -113,13 +110,18 @@ function requestUrl(input: RequestInfo | URL) {
 /**
  * Attach the Strapi API token to calls on our own API.
  *
- * Every service reaches the network through fetchWithTimeout, so adding the
- * header here covers the whole app. Two rules keep it from doing harm:
- * the token is only ever sent to API_BASE_URL — never to PSU SSO, the news
- * feed, or any other host — and a caller that set its own Authorization
- * header keeps it, which is what lets the SSO calls carry a user token instead.
+ * Almost every service reaches the network through fetchWithTimeout, so adding
+ * the header here covers the whole app. It is exported for the few calls that
+ * cannot go through fetchWithTimeout — booking-room's form submits, which need
+ * their own timeout and the server's own 4xx wording — so that those still get
+ * the token from one place rather than assembling the header themselves.
+ *
+ * Two rules keep it from doing harm: the token is only ever sent to
+ * API_BASE_URL — never to PSU SSO, the news feed, or any other host — and a
+ * caller that set its own Authorization header keeps it, which is what lets the
+ * SSO calls carry a user token instead.
  */
-function withApiToken(input: RequestInfo | URL, init?: RequestInit): RequestInit | undefined {
+export function withApiToken(input: RequestInfo | URL, init?: RequestInit): RequestInit | undefined {
   const token = ENV.scoobaApiKey.trim();
   if (!token || !requestUrl(input).startsWith(API_BASE_URL)) {
     return init;
@@ -141,8 +143,6 @@ export async function fetchWithTimeout(
   input: RequestInfo | URL,
   init?: RequestInit,
 ) {
-  await waitApiDelay();
-
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 

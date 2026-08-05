@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 
-import { HapticTab } from '@/components/haptic-tab';
+import { tabBarButton } from '@/components/haptic-tab';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -10,7 +10,7 @@ import { TEXT } from '@/constants/text';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { useColors } from '@/constants/theme';
-import { approvingWaitingData } from '@/services/absenceService';
+import { approvingWaitingData, peekApprovingWaiting } from '@/services/absenceService';
 import { scaleFont } from '@/utils/font-scale';
 
 export default function absenceTabLayout() {
@@ -19,13 +19,20 @@ export default function absenceTabLayout() {
   const staffId = authUser?.staffId || USER_ID;
 
   // Boss/approver → gets the "การลาของฉัน" + "อนุมัติลา" tabs; a general user keeps
-  // the "รออนุมัติ" + "ประวัติ" tabs. Wait for the check so the bar doesn't flicker.
-  const [isApprover, setIsApprover] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
+  // the "รออนุมัติ" + "ประวัติ" tabs.
+  //
+  // The two sets are mutually exclusive, so unlike the timestamp bar — where a
+  // wrong guess only delays one extra tab — guessing here would show a whole
+  // wrong bar. Hence it still waits, but only when there is nothing to go on:
+  // the home screen asks this same question on the way in, so arriving from
+  // there the answer is already known and no gate is drawn at all. A cold deep
+  // link is the only case left that waits.
+  const cached = peekApprovingWaiting(staffId);
+  const [isApprover, setIsApprover] = useState(() => cached?.show ?? false);
+  const [isChecking, setIsChecking] = useState(() => !cached);
 
   useEffect(() => {
     let active = true;
-    setIsChecking(true);
     approvingWaitingData(staffId)
       .then((result) => {
         if (active) setIsApprover(result.show);
@@ -60,7 +67,7 @@ export default function absenceTabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarButton: HapticTab,
+        tabBarButton,
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
         tabBarStyle: {

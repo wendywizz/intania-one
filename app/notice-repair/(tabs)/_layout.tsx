@@ -1,4 +1,4 @@
-import { HapticTab } from '@/components/haptic-tab';
+import { tabBarButton } from '@/components/haptic-tab';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -117,7 +117,7 @@ export default function NoticeRepairTabLayout() {
       <View style={styles.container}>
         <Tabs screenOptions={{
           headerShown: false,
-          tabBarButton: HapticTab,
+          tabBarButton,
           tabBarActiveTintColor: '#FFFFFF',
           tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
           tabBarStyle: { backgroundColor: c.primary, borderTopColor: c.primary, height: 68, paddingBottom: 10, paddingTop: 6 },

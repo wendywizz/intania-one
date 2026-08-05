@@ -10,7 +10,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BiometricGate } from '@/components/biometric-gate';
 import { ConnectionGate } from '@/components/connection-gate';
 import { ToastProvider } from '@/components/toast-provider';
-import { AuthProvider } from '@/context/AuthContext';
+import { STACK_SCREEN_OPTIONS } from '@/constants/navigation';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { registerForegroundNotificationHandler } from '@/services/notificationService';
 
@@ -22,13 +23,37 @@ export const unstable_settings = {
 
 function AppStack() {
   const { isDarkMode } = useTheme();
+  const { initializing: isRestoringSession } = useAuth();
+
+  /**
+   * Nothing mounts until the session is restored.
+   *
+   * Almost every screen derives its staff id as `user?.staffId || USER_ID`, and
+   * USER_ID is empty unless a build sets one — so a screen that mounts during
+   * this window fires its whole load with `staff_id=`, which the gateway answers
+   * 400. Then the session lands, the id changes, the callbacks change identity,
+   * and every one of those screens loads a second time. What that looks like is
+   * a spinner, an error, and a spinner again before the data arrives.
+   *
+   * Waiting costs nothing visible: `restoreSession()` is a local storage read
+   * that always settles (it resolves through `.finally`), and BiometricGate is
+   * holding its plain cover over the app for exactly this window anyway.
+   *
+   * `initializing`, not `loading` — `loading` also goes true while a sign-in
+   * runs, and unmounting the navigator there blanks the app in the middle of
+   * signing in.
+   */
+  if (isRestoringSession) {
+    return null;
+  }
+
   return (
     <>
       {/* Screens draw their own <NavTopBar/>, so the navigator header is off by
           default. Listing routes one by one meant a new route that forgot its
           entry got the native header *as well as* its NavTopBar — two stacked
           bars. Opting out here makes that impossible. */}
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack screenOptions={STACK_SCREEN_OPTIONS} />
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
     </>
   );

@@ -1,11 +1,11 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
-import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { StyleSheet, View } from "react-native";
+import { type AppColors, useThemedStyles } from '@/constants/theme';
 
 import { ScreenHeader } from "@/components/screen-header";
-import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { TopTabs } from "@/components/ui";
 import { TimestampApprovalList } from "@/components/timestamp/timestamp-approval-list";
 import { TimestampApprovedList } from "@/components/timestamp/timestamp-approved-list";
 import { TEXT } from "@/constants/text";
@@ -18,7 +18,6 @@ const TABS: { key: ApproveTab; label: string }[] = [
 ];
 
 export default function TimestampApproveScreen() {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<ApproveTab>(
@@ -34,25 +33,7 @@ export default function TimestampApproveScreen() {
     <ThemedView style={styles.container}>
       <ScreenHeader title={TEXT.TIMESTAMP_APPROVE_TAB} backHref="/" titleInNavBar showHomeButton={false} />
 
-      <View style={styles.topTabBar}>
-        {TABS.map((tab) => {
-          const active = tab.key === activeTab;
-          return (
-            <Pressable
-              key={tab.key}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              style={styles.topTab}
-              onPress={() => setActiveTab(tab.key)}
-            >
-              <ThemedText style={[styles.topTabText, active && styles.topTabTextActive]}>
-                {tab.label}
-              </ThemedText>
-              <View style={[styles.topTabIndicator, active && styles.topTabIndicatorActive]} />
-            </Pressable>
-          );
-        })}
-      </View>
+      <TopTabs tabs={TABS} activeKey={activeTab} onChange={setActiveTab} />
 
       <View style={styles.content}>
         {activeTab === "pending" ? (
@@ -73,24 +54,4 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   content: {
     flex: 1,
   },
-  topTabBar: {
-    flexDirection: "row",
-    backgroundColor: c.surface,
-    // Hairline on top so the tab bar reads as its own strip, split from the nav bar above.
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: c.border,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
-  },
-  topTab: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "flex-end",
-    paddingTop: 12,
-    gap: 8,
-  },
-  topTabText: { fontSize: 14, fontWeight: "600", color: c.textFaint },
-  topTabTextActive: { color: c.primary },
-  topTabIndicator: { height: 3, width: 28, borderRadius: 2, backgroundColor: "transparent" },
-  topTabIndicatorActive: { backgroundColor: c.primary },
 });

@@ -12,6 +12,7 @@ import {
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
+import { TopTabs } from '@/components/ui';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -181,7 +182,8 @@ export default function PendingScreen() {
   );
 
   const renderContent = () => {
-    if (isLoading) {
+    // Only while there is nothing to show; see components/timestamp/timestamp-forgot-list.
+    if (isLoading && !items.remain && !items.cancel && approving.length === 0) {
       return <LoadingAnimate title={TEXT.SHARED_LOADING_HISTORY} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
     }
 
@@ -250,25 +252,7 @@ export default function PendingScreen() {
     // Boss → two top tabs to switch between the approval queue and own requests.
     return (
       <>
-        <View style={styles.topTabBar}>
-          {tabs.map((tab) => {
-            const active = tab.key === activeTab;
-            return (
-              <Pressable
-                key={tab.key}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
-                style={styles.topTab}
-                onPress={() => setActiveTab(tab.key)}
-              >
-                <ThemedText style={[styles.topTabText, active && styles.topTabTextActive]}>
-                  {tab.label}
-                </ThemedText>
-                <View style={[styles.topTabIndicator, active && styles.topTabIndicatorActive]} />
-              </Pressable>
-            );
-          })}
-        </View>
+        <TopTabs tabs={tabs} activeKey={activeTab} onChange={setActiveTab} />
         <View style={styles.tabContent}>
           {activeTab === 'approve' ? approveList : mineList}
         </View>
@@ -361,39 +345,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
     fontFamily: AppFonts.psuBold,
-  },
-  topTabBar: {
-    flexDirection: 'row',
-    backgroundColor: c.surface,
-    // Hairline on top so the tab bar reads as its own strip, split from what sits above it.
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: c.border,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
-  },
-  topTab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingTop: 14,
-    gap: 8,
-  },
-  topTabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: c.textFaint,
-  },
-  topTabTextActive: {
-    color: c.primary,
-  },
-  topTabIndicator: {
-    height: 3,
-    width: 40,
-    borderRadius: 2,
-    backgroundColor: 'transparent',
-  },
-  topTabIndicatorActive: {
-    backgroundColor: c.primary,
   },
   tabContent: {
     flex: 1,

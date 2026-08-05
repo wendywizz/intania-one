@@ -18,7 +18,7 @@ But the client does not link with the API Service directly. There is one project
 
 - The app can show news that feeds from University website
 - The app must have an authentication system to identify user to access systems because this is a private application but some feature such as news feed is public
-- The app have staff management system that show as modules such as absence, Forget Timestamp, Meeting, Repair Computer, Executive Calendar and Person Search systems
+- The app have staff management system that show as modules — currently Timestamp (Forget Timestamp), Absence, Meeting, Repair Computer, Notice Repair, Booking Room, Examinar, Executive Calendar, Person Search and My Profile. See "Module Description" below for what each one does.
 - The app can connect to exist API Services by modules for CRUD data
 - The app build like as Mobile Application for iOS and Android
 - The app can send push notification
@@ -26,9 +26,9 @@ But the client does not link with the API Service directly. There is one project
 
 # Project Functionals
 
-- News: The app feeds news from the website “http://www.eng.psu.ac.th”. This function is public everyone can see the news  No authenticate require
-- Authenticate System: Before the user can access all the menus in this app. Users should sign in to use the services. This project uses the OpenID system for Auth. The OpenID system is the service that University provided 
-- Menus or Modules: This app contains systems shown as a menu on the home screen. The menu will show after the user signs in success. The menus contains absence Menu, Forget Timestamp Menu, Meeting Menu, Repair Computer Menu, Person Search Menu and other system in the future
+- News: The app feeds news from the website “http://www.eng.psu.ac.th”. This function is public everyone can see the news  No authenticate require. The RSS is parsed by scooba-service and read as `GET /api/news`, not fetched from the feed host by the app.
+- Authenticate System: Before the user can access all the menus in this app. Users should sign in to use the services. This project uses the OpenID system for Auth. The OpenID system is the service that University provided. After sign-in the app also asks the gateway whether this person is Faculty of Engineering staff (`GET /api/staff-info`), which decides whether the module grid appears at all.
+- Menus or Modules: This app contains systems shown as a menu on the home screen. The menu will show after the user signs in success. The menus are Timestamp, Absence, Meeting, Repair Computer, Notice Repair, Booking Room, Examinar, Executive Calendar and Person Search, plus My Profile from the account area — and other systems in the future
 - Notification: The users in the organization will contact each other in this app such as sending information to do something. Some requests will tick the notification on the phone to related user. The notification system is based on Firebase Cloud Messaging.
 
 # Project Struction
@@ -36,73 +36,237 @@ But the client does not link with the API Service directly. There is one project
 This project use React Native and Expo for development
 
 
+# App-level features (not modules)
+
+These are not menu items — they wrap or feed every module.
+
+- **Sign-in (OpenID)** — `services/authService.ts` + `context/AuthContext.tsx`. PKCE
+  against `psusso.psu.ac.th`, the only upstream the app calls **without** going through
+  the gateway. Native uses `com.ecs.intaniaSB://oauth/callback` and an external browser
+  (falling back to `app/openid-webview.tsx` when no custom-tab browser is installed);
+  web uses `http://localhost:8081/oauth/callback` and proxies token/userinfo through
+  Metro to dodge CORS (`METRO_PROXY_ENDPOINTS`). The id it returns is `UNI_STAFF_ID`.
+- **Eligibility check** — after sign-in, `services/staffInfoService.ts` asks
+  `GET /api/staff-info` whether this person is Faculty of Engineering staff, which
+  decides whether they get the module grid or the news-only home. The verdict is cached
+  per staff id; a network failure keeps the cached answer and otherwise fails **open**,
+  so a gateway outage never reads as "you have no permission".
+- **Connection gate** — `components/connection-gate.tsx`, outermost in `app/_layout.tsx`.
+  See *Sending and receiving requests* below.
+- **App lock** — `components/biometric-gate.tsx` + `app/create-password.tsx` +
+  `services/biometricService.ts` / `appPasswordService.ts`. Face/fingerprint on open,
+  a 6-digit app passcode as the fallback, re-locks after 60s in the background.
+- **Notifications** — `app/notification.tsx` + `services/notificationService.ts`
+  (history, unread badge, read/clear, foreground handler) and
+  `services/deviceService.ts`, which registers this device's Expo push token against
+  the signed-in `UNI_STAFF_ID` via `POST /api/push/register-device`.
+- **Home summary** — `app/index.tsx` shows the news band, the module grid, and a row of
+  "what needs me today" counters fed by `GET /api/active-summary`
+  (`services/activeSummaryService.ts`): one call covering repair-computer, absence,
+  meeting and timestamp, each section carrying its own `success` flag so one failing
+  module does not blank the row. The upcoming exam duty is a separate
+  `listExamTasks()` call.
+- **Settings** — `app/settings.tsx`: theme (light/dark/system), notification toggle,
+  app-lock options, sign-out.
+- **News** — `app/news.tsx` + `app/news-detail.tsx`, `services/newsService.ts`. Public,
+  shown before sign-in. It reads `GET /api/news` on the gateway (the gateway parses the
+  eng.psu.ac.th RSS); the app no longer fetches the feed host directly.
+
 # Module Description
 
-The module meaning the application that work with user to send/recieve request and response. Now there are six module follow by:
+A module is one menu tile on the home screen: a screen group under `app/<module>/`, a
+service under `services/<module>Service.ts`, and one module namespace on the gateway.
+There are eleven, listed in the order they appear on the home grid.
 
-- Abent Module: 
+- Timestamp (Forget Timestamp) — `app/timestamp/`, `services/timestampService.ts`, gateway `/api/timestamp`:
     # Module Context
-    Send request for absence to Approver that can allow or deny request
+    The work-attendance record: what was scanned, what was missed, and requests to have
+    a missed scan counted. Sent to the Approver, who allows or denies.
     # User Group
-    - General User: The user that inform for request
-    - Approver: The leader of general user that can approve request    
+    - General User: the person whose scans these are, and who files the request
+    - Approver: their leader, who decides it
     # Functional
-    - User can send new absence inform
-    - User can follow inform status
-    - User can see the history of absence
-    - Approver can allow or deny request
-    
-- Forget Timestamp:
+    - User can see a month calendar of their own scan-in/scan-out days, colour-coded
+      present / incomplete / absent / leave / holiday (`(tabs)/calendar.tsx`)
+    - User can see which days they forgot to stamp in or out and file a request for one
+      (`(tabs)/forgot-timestamp.tsx`, `record-detail.tsx`)
+    - User can withdraw a request that has not been decided yet
+    - User can see the history of their own requests and each decision
+      (`(tabs)/history.tsx`, `history-detail.tsx`, `detail.tsx`)
+    - Approver can see requests waiting on them (`(tabs)/approve.tsx`), open the full
+      detail (`approve-detail.tsx`) and allow or deny with a reason (`approve-reason.tsx`)
+
+- Absence — `app/absence/`, `services/absenceService.ts`, gateway `/api/absence`:
     # Module Context
-    Send request for forget timestamp to Approver to ensure that user are comming to work or forget stamp out when finish work
+    Send a leave request to the Approver, who allows or denies it.
     # User Group
-    - General User: The user that inform for request
-    - Approver: The leader of general user that can approve reuqets
+    - General User: the person requesting leave
+    - Approver: their leader, who decides it
     # Functional
-    - User can see what the date and time that user forgot to stamp in/out in work day
-    - User can see history of forgot timestamp
-    - Approver can allow or deny request
+    - User can file a request in each leave type the personnel system supports — sick
+      (`sick.tsx`), personal/business (`business.tsx`), maternity (`birth.tsx`),
+      vacation (`relax.tsx`); the gateway also carries hajj / ordination / military
+    - User can follow the status of a request in flight (`(tabs)/pending.tsx`)
+    - User can see their own filed requests (`(tabs)/my-leave.tsx`) and the full history
+      (`(tabs)/history.tsx`, `detail.tsx`)
+    - User can see their remaining and used entitlement per type (`(tabs)/stats.tsx`)
+    - Approver can see requests waiting on them (`(tabs)/approve-leave.tsx`), open the
+      detail (`approve-detail.tsx`) and allow or deny with a reason (`approve-reason.tsx`)
+    # Notes
+    - Forms load holidays from the timestamp calendar endpoint (`hooks/use-holidays.ts`);
+      the day count skips weekends and holidays.
 
-- Repair Computer:
+- Meeting — `app/meeting/`, `services/meetingService.ts`, gateway `/api/meeting`:
     # Module Context
-    This module is one of service of company when Computer or something else broke. User can send request to a worker (ช่าง) to repair the item
+    Read-only list of the meetings the signed-in person is a member of.
+    # Functional
+    - User can see today's meetings (`(tabs)/index.tsx`)
+    - User can see upcoming meetings (`(tabs)/incoming.tsx`)
+    - User can see past meetings (`(tabs)/history.tsx`)
+    - User can open one meeting: time, place, members and its agenda topics (`detail.tsx`)
+    - User can open the meeting document as a PDF (`components/pdf-viewer-modal.tsx` →
+      `/api/meeting/pdf`)
+    - The gateway's cron pushes a reminder an hour before a meeting starts; the app only
+      receives it
+
+- Repair Computer — `app/repair-computer/`, `services/repairComputerService.ts`, gateway `/api/repair-computer`:
+    # Module Context
+    Report a broken computer or device and have a worker (ช่าง) repair it. Has its own
+    `CONTEXT.md` — read it before editing this module.
     # User Group
-    - General User: The informer that send request
-    - Foreman: Categorize job type and assign to the worker
-    - Worker: The staff who repairs the item
+    Role comes from `GET /api/repair-computer/privilege` → `tech | foreman | user`
+    (`RepairComputerRoleContext`). The tab layout shows **one** role's tab set — the
+    person's highest privilege — and redirects to that role's default route; there is no
+    role switcher here (unlike notice-repair). Note the role *value* is `tech` while
+    every file, route and service name says `worker`; do not translate one into the
+    other.
+    - General User: the informer who reports the fault
+    - Foreman: categorises the job and assigns it to a worker
+    - Worker (ช่าง): the staff member who does the repair
     # Functional
-    - General User can send inform to ask for help
-    - General User can follow status of job
-    - General User can see inform history
-    - Foreman can accept or reject job    
-    - Foreman can assign job to the worker
-    - Foreman can see all job history
-    - Foreman can approve supply request that the worker asks
-    - Worker can accept or reject job that foreman assigned
-    - Worker can record and report of repair detail
-    - Worker can see work history
-    - Worker can ask supply request from the foreman
+    - General User can file a report (`(tabs)/(user)/inform.tsx`), follow the job
+      (`current-job.tsx`, `queue.tsx`), see history (`history.tsx`), open the detail
+      (`user-job-detail.tsx`), and edit or cancel the request **only while the foreman
+      has not picked it up** (`edit-job.tsx`)
+    - Foreman can accept or reject a new job (`(foreman)/foreman-new-job.tsx`,
+      `reject-job.tsx`), set its repair type and assign a worker (`manage-job.tsx`,
+      `assign-job.tsx`, `select-foreman.tsx`), see all history
+      (`foreman-history.tsx`, `job-history-detail.tsx`) and decide a worker's supply
+      request from the job detail (`foreman-job-detail.tsx` → `supply-approval.tsx`)
+    - Worker can accept or reject an assigned job (`(worker)/worker-new-job.tsx`,
+      `worker-reject-job.tsx`), record problem + solution and close it
+      (`operate-job.tsx`, `worker-job-detail.tsx`), see their own history
+      (`worker-history.tsx`), ask the foreman for supplies (`request-supply.tsx`) and
+      read the verdict (`supply-result.tsx`)
+    - Any role can export a job sheet as PDF (`/api/repair-computer/export/pdf`)
+    # Notes
+    - The job lifecycle and its status ids are the module's own `CONTEXT.md` — read that
+      before touching any screen or endpoint here.
 
-- Meeting:
+- Notice Repair (สาธารณูปการ) — `app/notice-repair/`, `services/noticeRepairService.ts`, gateway `/api/notice-repair` + `/api/repair/*`:
     # Module Context
-    This module is show the list of meeting of logged in user. The data receive from the application through from API Service
+    Building and facilities repair — the same shape as Repair Computer but for a
+    different upstream system, a longer approval chain and five roles.
+    # User Group
+    Roles come from `GET /api/role/check` and are switched in `NoticeRepairRoleContext`
+    (`constants/types.ts`: informer / approve / administration / header / technician).
+    - Informer: reports the fault
+    - Approver (หัวหน้าสาธารณูปการ): allows or denies the request
+    - Administration: receives the accepted job, edits and routes it
+    - Header (หัวหน้าหมวด): estimates the work, notes it, assigns and reviews it
+    - Technician (ช่าง): carries out the repair
     # Functional
-    - User can see today meeting
-    - User can see upcoming meeting
-    - User can see meeting history
+    - Informer can file a request (`(informer)/inform.tsx`), follow the current ones
+      (`informer-current.tsx`), see finished ones (`informer-history.tsx`), and
+      acknowledge a "cannot repair" verdict (`not-agree.tsx`)
+    - Approver can see requests waiting on them (`(approver)/approve-pending.tsx`) and
+      everything they have decided (`approve-all.tsx`), and approve or cancel
+    - Administration can see pending receipts (`(admin)/admin-pending-receipt.tsx`),
+      jobs in progress (`admin-in-progress.tsx`), finished ones (`admin-done.tsx`),
+      accept/reject (`(admin)/admin-reject.tsx`), edit a job (`(admin)/edit.tsx`) and
+      handle the department supply response (`admin-supply.tsx`)
+    - Header can see new jobs (`(header)/header-pending.tsx`), estimate the work
+      (`header-assessment.tsx`, `header-estimate-detail.tsx`), track what is being
+      repaired (`header-repair-list.tsx`), review finished work (`header-review.tsx`)
+      and record a note or a "cannot repair"
+    - Technician can see assigned jobs (`(technician)/tech-assigned.tsx`), the ones in
+      progress (`tech-in-progress.tsx`) and the ones done (`tech-done.tsx`)
+    - Supplies: raise a requisition for a job and add its material lines
+      (`requisition.tsx`, `add-material.tsx`), and read the materials already recorded
+      on a job (`supply-list.tsx`)
+    # Notes
+    - Notifications for this module are raised by the notice-repair **website**, not by
+      the gateway. Do not add gateway-side notifications without removing the website's.
 
-- Executive Calendar:
+- Booking Room — `app/booking-room/`, `services/bookingRoomService.ts`, gateway `/api/booking-room`:
     # Module Context
-    Show the events of executive that fetch from Google Calendar
+    Reserve a meeting or teaching room. Three booking shapes, because a term booking
+    asks a different question from a single-date one.
     # Functional
-    - User can see events by date
-    - User can select calendar that want to see the detail
+    - User can see the week timetable of any room (`(tabs)/schedule.tsx`), drawn on the
+      grid geometry the server sends so it matches the website
+    - User can see their own live bookings (`(tabs)/index.tsx`) and past ones
+      (`(tabs)/history.tsx`), open one with all its slots (`booking-detail.tsx`,
+      `booking-slots.tsx`)
+    - User can cancel a whole booking, or one date out of it (a past date is refused
+      upstream)
+    - User can book: one-off (`general-booking.tsx`), every week of a term
+      (`term-booking.tsx`) or every chosen weekday across a date range
+      (`period-booking.tsx`); `select-booking.tsx` picks which
+    - Each form loads its own options, checks the date, then lists only rooms actually
+      free for that pattern before submitting
+    # Notes
+    - This module authenticates upstream with an API key on the gateway, not HMAC.
 
-- Person Search:
+- Examinar (ผู้คุมสอบ) — `app/examinar/` (menu entry `app/examiner.tsx`), `services/examinarService.ts`, gateway `/api/examinar`:
     # Module Context
-    Show the staff in the company by search with keyword
+    The exam-invigilation duties assigned to the signed-in person.
     # Functional
-    User can put keyword to search and show data on the screen
+    - User can list their invigilation duties for a year / term / exam period
+      (`index.tsx`)
+    - User can open one duty: subject, date, time, room and co-invigilators
+      (`detail.tsx`)
+    - The home summary surfaces the next upcoming duty
+
+- Executive Calendar — `app/calendar.tsx`, `services/executiveCalendarService.ts`, gateway `/api/exec-calendars` + the calendar proxy:
+    # Module Context
+    The executives' schedule, read from Google Calendar.
+    # Functional
+    - User can pick which executive's calendar to look at, from a `SelectSheet` fed by
+      `GET /api/exec-calendars` (a Strapi content type on the gateway, so which
+      calendars exist is edited in the admin panel, not in the app)
+    - User can see a month calendar with event days marked, tap a day and read that
+      day's events as `EventTimelineItem` rows — the same row the meeting lists use, so
+      an event looks identical wherever it appears
+    # Notes
+    - This module has **no** development/production mode: Google Calendar has no dev
+      copy. Which calendars are visible is decided by the gateway's own database.
+
+- Person Search — `app/person-search.tsx`, `services/personService.ts`, gateway `/api/person`:
+    # Module Context
+    Find a member of staff by keyword. Read-only, and reads *other* people.
+    # Functional
+    - User can type a keyword and see matching staff with their photo, position,
+      department, phone and email
+    - Photos come through `/api/person/photo/:staffId` on the gateway
+
+- My Profile — `app/my-profile/` (`index.tsx` + `edit-field.tsx`), `services/myProfileService.ts`, gateway `/api/my-profile`:
+    # Module Context
+    The signed-in person's own record. Distinct from Person Search, which only reads
+    other people: this one writes.
+    # Functional
+    - User can see their own name, position, department, phone and email
+    - User can edit their work phone and email, one field at a time
+    - User can replace their profile photo from the camera or the photo library
+    # Notes
+    - Reads borrow Person Search (it already returns the full record and the photo),
+      so there is no separate read endpoint for the same row.
+    - Writes go to scooba-service (`PUT /api/my-profile/update-info`,
+      `POST /api/my-profile/upload-photo`), never straight to PSU — the HMAC signature
+      and the photo host's API key live on the gateway and must not ship in the bundle.
+    - `staff_id` on both writes is `UNI_STAFF_ID` (`useAuth().user.staffId`).
+    - The photo is re-encoded to JPEG and sent as base64; the gateway rebuilds the
+      multipart request the photo host wants.
 
 
 # Build Environment
@@ -145,13 +309,106 @@ timestamp approvals do, because Phoenix's encoded ids contain no staff id), it f
 See `scooba-service/CONTEXT.md` for the server-side rules and the per-site conversion
 helpers.
 
-# Sending requests
-- The app does not send requests and receive responses directly from the real application but there is a gateway service called “scooba-service” as a medium. But the auth system and news rss feed call to service directly
-- **Startup connection check.** `components/connection-gate.tsx` (`ConnectionGate`, outermost in `app/_layout.tsx`) pings `GET /api/health` on scooba-service and renders **nothing below itself** — not the app lock, not the navigator — until it answers. So no screen fires requests at a gateway we haven't reached, and nobody is asked for a face or passcode to arrive at a "cannot connect" notice. The probe requires the gateway's own JSON body, not just a 200 — the production host answers 200 with a placeholder for unknown paths.
-- Both outcomes are the **same screen with different content** (loader ↔ `ErrorState` + retry). Do not turn the failure into its own route: mounting the navigator in order to redirect flashes the home screen for a frame on the way there.
-- Every submit action that sends a POST, PUT, or DELETE request must show a YES/NO confirmation modal before sending the request.
-- After the user confirms, show the loading/prefix animation and wait 1000ms before sending the request.
-- After receiving the response data, wait 1500ms before continuing to the next operation.
+# Sending and receiving requests
+
+## Who the app is allowed to talk to
+
+- Every module request goes to **scooba-service**, never to a PSU web application. The
+  app knows one host: `API_BASE_URL` in `constants/endpoints.ts`
+  (`EXPO_PUBLIC_MODE` → dev gateway or `https://saas.eng.psu.ac.th`). Which upstream
+  system and database a module reaches behind it is the **gateway's** decision — the app
+  deliberately has no per-module dev/prod table, because a table baked into a shipped
+  build could not be changed without a rebuild.
+- The only direct calls are **OpenID** (`psusso.psu.ac.th` — discovery, token, userinfo;
+  proxied through Metro on web to dodge CORS) and the **photo host**
+  (`PHOTO_BASE_URL`, read-only `<Image src>`). News is **not** direct any more: it comes
+  from `GET /api/news` on the gateway.
+- Never hardcode a URL in a screen. Add it to `ENDPOINTS` in `constants/endpoints.ts`
+  and reach it from a `services/*Service.ts`.
+
+## The layers
+
+`screen → services/<module>Service.ts → services/api.ts → fetch`
+
+A screen never calls `fetch` and never parses an envelope. It calls a typed service
+function, gets back plain data or a thrown `Error` whose `message` is already the Thai
+text to show.
+
+## What `services/api.ts` does for every call
+
+- `fetchWithTimeout(url, init)` — the single network entry point. It waits
+  `API_DELAY_MS` (500ms) first, aborts after **10s**, and turns the abort into
+  `MESSAGE_CANNOT_CONNECT_TO_SERVER`.
+- `withApiToken()` attaches `Authorization: Bearer <EXPO_PUBLIC_SCOOBA_API_KEY>`, but
+  **only** when the URL starts with `API_BASE_URL`, and only when the caller has not set
+  its own `Authorization` (that exemption is what lets the OpenID calls carry a user
+  token instead). So the gateway token can never leak to SSO, the feed host or anywhere
+  else.
+- `requestJson<T>()` — sets `Content-Type: application/json`, reads the body as text,
+  and throws `MESSAGE_SERVER_ERROR` on a non-OK or empty response. One exception: a
+  **503 with `error.name === "ModuleDisabled"`** is re-thrown carrying the
+  `MODULE_DISABLED` marker so the UI can show "this module is switched off" instead of
+  a fault — check it with `isModuleDisabled(error)` / `moduleDisabledMessage(error)`.
+
+## The response envelope
+
+Everything from the gateway is `{ data, message, success | process_type, total_count }`.
+Use the helper that matches the shape rather than digging into the JSON:
+
+| helper | returns | for |
+|---|---|---|
+| `listRequest<T>(url)` | `{ data: T[], totalCount, message }` | list endpoints |
+| `rowRequest<T>(url)` | `T` | one record |
+| `mutationRequest<T>(url, 'POST'\|'PUT'\|'DELETE', body)` | `{ data?, message }` | writes |
+
+All three run `ensureSuccess()`, which treats `success: true` or
+`process_type: success/successed/ok` as success and otherwise throws the server's own
+`message` (falling back to `MESSAGE_PROCESS_FAILED`). Query strings are built with
+`createApiUrl(path, query)` — empty, `null` and `undefined` values are dropped, so a
+missing filter is never sent as `?x=undefined`.
+
+## Identity on the wire
+
+Anything the app sends as `staff_id` (or `request_staff_id`) is the **`UNI_STAFF_ID`**
+from `useAuth().user.staffId`. See *Staff identity* above — the wrong id fails silently.
+
+## Two things that bypass the fetch wrapper on purpose
+
+PDFs (`/api/meeting/pdf`, `/api/repair-computer/export/pdf`) are opened by a WebView /
+`downloadAsync()` / `window.open()`, which navigate to the URL and cannot carry the
+`Authorization` header. Those two paths are exempted from the token check on the
+gateway; do not "fix" this by adding a header the viewer will not send.
+
+## Startup connection check
+
+`components/connection-gate.tsx` (`ConnectionGate`, outermost in `app/_layout.tsx`)
+pings `GET /api/health` and renders **nothing below itself** — not the app lock, not the
+navigator — until it answers. So no screen fires requests at a gateway we haven't
+reached, and nobody is asked for a face or passcode to arrive at a "cannot connect"
+notice. The probe requires the gateway's own JSON body
+(`data.status === 'ok' && data.service === 'scooba-service'`), not just a 200 — the
+production host answers 200 with a placeholder for unknown paths — and it uses a shorter
+6s timeout than the 10s data calls, because it runs before anything is on screen.
+
+Both outcomes are the **same screen with different content** (loader ↔ `ErrorState` +
+retry). Do not turn the failure into its own route: mounting the navigator in order to
+redirect flashes the home screen for a frame on the way there.
+
+## Receiving pushes
+
+The app does not poll for notifications. `services/deviceService.ts` registers this
+device's Expo push token against the signed-in `UNI_STAFF_ID`
+(`POST /api/push/register-device`, keyed by `EXPO_PUBLIC_DEVICE_REGISTER_API_KEY`), and
+re-registers when the token rotates. Delivery is Firebase Cloud Messaging via Expo. The
+app switches on `data.type` to deep-link; the wording is decided entirely on the gateway
+(`src/api/push/utils/events.js`) — clients send **event keys**, never text.
+
+## Write flow (UX contract for every POST/PUT/DELETE)
+
+1. Show a YES/NO confirmation modal (`components/ui/confirm-dialog.tsx`) before sending.
+2. After the user confirms, show the loading overlay and wait **1000ms** before sending.
+3. After the response arrives, wait **1500ms** before continuing to the next operation.
+4. Report the outcome with the global toast (`useToast()`), not `Alert`.
 
 # Theming & Colors
 - All colors — font/text color, background color, border color, icon color, everything — must come from the color variables in `constants/theme.ts`. Never hardcode hex values (e.g. `#ffffff`, `#000`) in components or screens.

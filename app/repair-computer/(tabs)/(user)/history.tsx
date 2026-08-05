@@ -185,7 +185,8 @@ export default function RepairComputerHistoryScreen() {
   };
 
   const renderContent = () => {
-    if (isLoading) {
+    // Only while there is nothing to show; see components/timestamp/timestamp-forgot-list.
+    if (isLoading && jobs.length === 0) {
       return (
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_HISTORY}

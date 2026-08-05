@@ -130,7 +130,8 @@ export function TimestampApprovedList() {
     }, [load]),
   );
 
-  if (isLoading) {
+  // Only while there is nothing to show; see timestamp-forgot-list.
+  if (isLoading && items.length === 0) {
     return (
       <View style={styles.stateContainer}>
         <LoadingAnimate

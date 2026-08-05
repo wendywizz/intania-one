@@ -335,6 +335,33 @@ export type SubmitTimestampApproveData = {
   request_staff_id?: string;
 };
 
+/**
+ * The last answer /waiting gave, kept for whoever asks next.
+ *
+ * Two places need it within a second of each other — the home screen's approval
+ * card and the timestamp tab bar, which uses `show` to decide whether the
+ * approval tab exists. Holding the previous answer lets the tab bar draw the
+ * right tabs on its first frame instead of blocking on the network to find out.
+ *
+ * Not time-based on purpose: every caller still fetches and overwrites this, so
+ * what it holds is at worst one navigation stale, and nothing renders from it
+ * that a wrong guess would make unsafe — the worst case is one tab appearing a
+ * moment later than it could have.
+ */
+let lastForgetApprovalWaiting: {
+  staffId: string;
+  value: TimestampApprovalWaiting;
+} | null = null;
+
+/** The cached answer for `staffId`, or null if nobody has asked yet. */
+export function peekForgetApprovalWaiting(
+  staffId: string,
+): TimestampApprovalWaiting | null {
+  return lastForgetApprovalWaiting?.staffId === staffId
+    ? lastForgetApprovalWaiting.value
+    : null;
+}
+
 // Miss-timestamp requests awaiting THIS user's approval. `show` = true means the
 // user is a boss/approver and the client should reveal the approval bottom tab.
 export async function getForgetApprovalWaiting(
@@ -344,13 +371,17 @@ export async function getForgetApprovalWaiting(
   const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
   ensureSuccess(jsonData);
 
-  return {
+  const value: TimestampApprovalWaiting = {
     show: jsonData.show === true,
     data: Array.isArray(jsonData.data)
       ? (jsonData.data as TimestampApproval[])
       : [],
     message: String(jsonData.message ?? ""),
   };
+
+  lastForgetApprovalWaiting = { staffId, value };
+
+  return value;
 }
 
 // A miss-timestamp request the boss has already decided (approved/rejected).

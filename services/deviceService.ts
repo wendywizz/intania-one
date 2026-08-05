@@ -7,7 +7,7 @@ import { Platform } from "react-native";
 import { ENDPOINTS } from "@/constants/endpoints";
 import { ENV } from "@/constants/config";
 import type { AuthUser } from "@/models/types";
-import { fetchWithApiDelay } from "./api";
+import { fetchApi } from "./api";
 
 const DEVICE_ID_STORAGE_KEY = "PUSH_DEVICE_ID";
 const REGISTERED_DEVICE_OWNERS_STORAGE_KEY = "REGISTERED_DEVICE_OWNERS";
@@ -268,7 +268,7 @@ async function registerDevice(user: AuthUser, staffId: string, deviceId: string,
     auth_display_name: textValue(user.displayName) || textValue(user.name) || textValue(user.fullName),
   };
 
-  const response = await fetchWithApiDelay(ENDPOINTS.pushRegisterDevice, {
+  const response = await fetchApi(ENDPOINTS.pushRegisterDevice, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${DEVICE_REGISTER_API_KEY}`,

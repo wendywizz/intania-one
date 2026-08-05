@@ -224,7 +224,9 @@ export function RepairComputerJobListScreen({
   };
 
   const renderContent = () => {
-    if (isLoading) {
+    // Only while there is nothing to show; see the same guard in
+    // components/timestamp/timestamp-forgot-list.
+    if (isLoading && jobs.length === 0) {
       return (
         <LoadingAnimate
           title={loadingTitle}

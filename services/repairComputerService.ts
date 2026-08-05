@@ -11,7 +11,7 @@ import type {
 } from "../models/types";
 import {
     ensureSuccess,
-    fetchWithApiDelay,
+    fetchApi,
     type ListResponse,
     type MutationResponse,
     listRequest,
@@ -102,7 +102,7 @@ export function closeJob(id: string) {
 export async function removeJob(id: string): Promise<MutationResponse> {
   // Send id as a query param — Strapi/Koa does not parse DELETE request bodies
   const url = createRepairComputerUrl("/inform", { id });
-  const response = await fetchWithApiDelay(url, {
+  const response = await fetchApi(url, {
     method: "DELETE",
   });
   const text = await response.text();
@@ -383,7 +383,7 @@ export async function checkPrivilege(
       app_id: RP_APP_ID,
       staff_id: staffId,
     });
-    const response = await fetchWithApiDelay(url, {
+    const response = await fetchApi(url, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${SCOOBA_API_KEY}`,

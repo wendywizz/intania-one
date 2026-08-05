@@ -126,6 +126,9 @@ export const TEXT = {
   EDIT_PROFILE_UPDATE_FAILED: 'ไม่สามารถบันทึกข้อมูลได้',
   EDIT_PROFILE_SAVING: 'กำลังบันทึก…',
   EDIT_PROFILE_SAVE: 'บันทึกการเปลี่ยนแปลง',
+  EDIT_PROFILE_CONFIRM_TITLE: 'ยืนยันการบันทึก',
+  EDIT_PROFILE_CONFIRM_PHONE: 'ต้องการเปลี่ยนเบอร์โทรศัพท์ของท่านเป็นหมายเลขนี้หรือไม่',
+  EDIT_PROFILE_CONFIRM_EMAIL: 'ต้องการเปลี่ยนอีเมลของท่านเป็นที่อยู่นี้หรือไม่',
 
   // Service reachability (startup probe against scooba-service)
   SERVICE_CHECK_CONNECTING: 'กำลังเชื่อมต่อระบบ',

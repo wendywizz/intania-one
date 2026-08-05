@@ -24,6 +24,15 @@ export type StaffEligibilityStatus = 'unknown' | 'checking' | 'allowed' | 'denie
 type AuthContextValue = {
   user: AuthUser | null;
   loading: boolean;
+  /**
+   * True only until the stored session has been restored, once per launch.
+   *
+   * Distinct from `loading`, which also goes true while a sign-in or sign-out
+   * runs. Anything that holds the navigator back must use this one: gating on
+   * `loading` unmounts the whole app mid-sign-in, which shows as a white screen
+   * rather than as progress.
+   */
+  initializing: boolean;
   signedIn: boolean;
   /** Faculty check for `user`; see StaffEligibilityStatus. */
   eligibility: StaffEligibilityStatus;
@@ -62,6 +71,7 @@ function registerDeviceInBackground(user: AuthUser | null) {
 export function AuthProvider({children}: {children: React.ReactNode}) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
   const [eligibility, setEligibility] = useState<StaffEligibilityStatus>('unknown');
   const signInPromiseRef = useRef<Promise<void> | null>(null);
   const userRef = useRef<AuthUser | null>(null);
@@ -118,7 +128,10 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         // verdict settles the screen immediately and the re-check corrects it.
         void verifyEligibility(resolveStaffId(restoredUser));
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setInitializing(false);
+      });
   }, [verifyEligibility]);
 
   useEffect(() => {
@@ -145,6 +158,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     () => ({
       user: effectiveUser,
       loading,
+      initializing,
       signedIn: Boolean(effectiveUser),
       eligibility,
       completeWebSignIn: async (params) => {
@@ -190,7 +204,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         setEligibility('unknown');
       },
     }),
-    [loading, effectiveUser, eligibility, verifyEligibility],
+    [loading, initializing, effectiveUser, eligibility, verifyEligibility],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -269,18 +269,47 @@ export async function waitingData(staffId: string) {
   };
 }
 
+export type AbsenceApprovingWaiting = { data: absence[]; show: boolean };
+
+/**
+ * The last answer /approving gave, kept for whoever asks next.
+ *
+ * The home screen asks, and a moment later so does the absence tab bar, which
+ * uses `show` to pick which set of tabs exists at all. Holding the previous
+ * answer lets the tab bar draw the right set on its first frame rather than
+ * blanking the screen while it finds out. See the same pattern in
+ * timestampService.
+ */
+let lastApprovingWaiting: {
+  staffId: string;
+  value: AbsenceApprovingWaiting;
+} | null = null;
+
+/** The cached answer for `staffId`, or null if nobody has asked yet. */
+export function peekApprovingWaiting(
+  staffId: string,
+): AbsenceApprovingWaiting | null {
+  return lastApprovingWaiting?.staffId === staffId ? lastApprovingWaiting.value : null;
+}
+
 /** Leave-approval waiting list — requests this user (as a boss/approver) must
  * approve. `show` is true when the user is an approver at all. */
-export async function approvingWaitingData(staffId: string) {
+export async function approvingWaitingData(
+  staffId: string,
+): Promise<AbsenceApprovingWaiting> {
   const url = createabsenceUrl("/approving", { staff_id: staffId });
   const jsonData = await requestJson(url, { method: "GET" });
   ensureSuccess(jsonData);
   const data = Array.isArray(jsonData.data) ? (jsonData.data as absence[]) : [];
 
-  return {
+  const value: AbsenceApprovingWaiting = {
     data,
     show: Boolean(jsonData.show) || data.length > 0,
   };
+
+  lastApprovingWaiting = { staffId, value };
+
+  return value;
 }
 
 /** History of leave-approval decisions this boss/approver has made

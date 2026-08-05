@@ -1,7 +1,7 @@
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Inbox } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
 import {
@@ -14,8 +14,8 @@ import {
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
+import { TopTabs } from '@/components/ui';
 import { ScreenHeader } from '@/components/screen-header';
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TEXT } from '@/constants/text';
 import { USER_ID } from '@/constants/user';
@@ -136,7 +136,8 @@ export default function ApproveLeaveScreen() {
   );
 
   const renderContent = () => {
-    if (isLoading) {
+    // Only while there is nothing to show; see components/timestamp/timestamp-forgot-list.
+    if (isLoading && queue.length === 0 && history.length === 0) {
       return <LoadingAnimate title={TEXT.SHARED_LOADING_HISTORY} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />;
     }
     if (error) {
@@ -183,25 +184,7 @@ export default function ApproveLeaveScreen() {
     <ThemedView style={styles.container}>
       <ScreenHeader title={TEXT.ABSENCE_APPROVE_LEAVE_TAB} backHref="/" titleInNavBar showHomeButton={false} />
 
-      <View style={styles.topTabBar}>
-        {tabs.map((tab) => {
-          const active = tab.key === activeTab;
-          return (
-            <Pressable
-              key={tab.key}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              style={styles.topTab}
-              onPress={() => setActiveTab(tab.key)}
-            >
-              <ThemedText style={[styles.topTabText, active && styles.topTabTextActive]}>
-                {tab.label}
-              </ThemedText>
-              <View style={[styles.topTabIndicator, active && styles.topTabIndicatorActive]} />
-            </Pressable>
-          );
-        })}
-      </View>
+      <TopTabs tabs={tabs} activeKey={activeTab} onChange={setActiveTab} />
 
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
@@ -211,26 +194,6 @@ export default function ApproveLeaveScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
   content: { flex: 1 },
-  topTabBar: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    // Hairline on top so the tab bar reads as its own strip, split from the nav bar above.
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: c.border,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
-  },
-  topTab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingTop: 14,
-    gap: 8,
-  },
-  topTabText: { fontSize: 14, fontWeight: '600', color: c.textFaint },
-  topTabTextActive: { color: c.primary },
-  topTabIndicator: { height: 3, width: 40, borderRadius: 2, backgroundColor: 'transparent' },
-  topTabIndicatorActive: { backgroundColor: c.primary },
   list: { flex: 1 },
   listContent: { paddingTop: 24, paddingBottom: 20 },
   listEmptyContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },

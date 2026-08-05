@@ -6,7 +6,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
-import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
@@ -242,8 +241,12 @@ export default function TimestampCalendarScreen() {
     [month, year],
   );
 
+  // Changing month asks a different question, so the answer to the old one has
+  // to go. The loader only stands in for an empty grid now, and leaving last
+  // month's marks under the new month's header would be worse than a loader.
   const goToPreviousMonth = useCallback(() => {
     setSelectedDay(null);
+    setDays([]);
     if (month === 1) {
       setMonth(12);
       setYear((value) => value - 1);
@@ -254,6 +257,7 @@ export default function TimestampCalendarScreen() {
 
   const goToNextMonth = useCallback(() => {
     setSelectedDay(null);
+    setDays([]);
     if (month === 12) {
       setMonth(1);
       setYear((value) => value + 1);
@@ -403,22 +407,16 @@ export default function TimestampCalendarScreen() {
           </>
         ) : (
           // A day with no in/out times at all: a holiday, a leave day, or one
-          // the system simply has nothing for. The card is otherwise a date and
-          // one grey line, which reads as a row that failed to render — the
-          // drawing makes it an answer.
-          <EmptyState
-            preset="timestamp"
-            artWidth={96}
-            backgroundColor={c.surface}
-            style={styles.detailEmptyState}
-            message={
-              status === 'holiday' && selectedData?.holidayName
-                ? selectedData.holidayName
-                : status === 'leave'
-                  ? getLeaveLabel(selectedData)
-                  : getDayMessage(status, selectedData?.note ?? '')
-            }
-          />
+          // the system simply has nothing for. Just the sentence, set flush left
+          // under the date it belongs to — a centred drawing here made a
+          // one-line answer look like its own empty screen inside the card.
+          <ThemedText style={styles.detailMessage}>
+            {status === 'holiday' && selectedData?.holidayName
+              ? selectedData.holidayName
+              : status === 'leave'
+                ? getLeaveLabel(selectedData)
+                : getDayMessage(status, selectedData?.note ?? '')}
+          </ThemedText>
         )}
 
         {isForgetDay && selectedData && canRequest ? (
@@ -461,7 +459,10 @@ export default function TimestampCalendarScreen() {
   );
 
   const renderBody = () => {
-    if (isLoading) {
+    // Only while the grid is empty. The focus refetch — and the one on every
+    // month change — must not tear the calendar down and rebuild it; see the
+    // same guard in timestamp-forgot-list.
+    if (isLoading && days.length === 0) {
       return (
         <LoadingAnimate
           title={TEXT.SHARED_LOADING_DATA_TITLE}
@@ -766,11 +767,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: LATE_COLOR,
     fontFamily: AppFonts.psuBold,
   },
-  // Inside a card, so it does not stretch to fill a screen it does not own.
-  detailEmptyState: {
-    flex: 0,
-    paddingVertical: 8,
-    paddingHorizontal: 0,
+  // The whole answer for a day with no stamps. Left-aligned like the date above
+  // it, so the card reads as one column rather than a heading over a centred
+  // block.
+  detailMessage: {
+    alignSelf: 'stretch',
+    textAlign: 'left',
+    fontSize: 14,
+    lineHeight: 20,
+    color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
   },
   detailCaption: {
     fontSize: 12,

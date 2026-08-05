@@ -39,20 +39,23 @@ const extra = publicKeys.reduce((acc, key) => {
   return acc;
 }, {});
 
-const appJson = require('./app.json');
 const pkg = require('./package.json');
 
-// EAS project link. `eas init` can't write this into a dynamic config, and the
-// computed `extra` above replaces app.json's `extra`, so the projectId must be
-// added here or the push-token code (getExpoPushTokenAsync) sees no projectId.
-extra.eas = {
-  ...(appJson.expo?.extra?.eas || {}),
-  projectId: 'e80523a6-8198-45eb-945a-62a7bb15943f',
-};
+// `config` is app.json's expo object, already filled in with Expo's defaults.
+// Take it as the base rather than require()-ing app.json ourselves — that is how
+// Expo detects the static config is actually in use (expo-doctor flags the
+// require() form as an unused app.json).
+module.exports = ({ config }) => {
+  // EAS project link. `eas init` can't write this into a dynamic config, and the
+  // computed `extra` above replaces app.json's `extra`, so the projectId must be
+  // added here or the push-token code (getExpoPushTokenAsync) sees no projectId.
+  extra.eas = {
+    ...(config.extra?.eas || {}),
+    projectId: 'e80523a6-8198-45eb-945a-62a7bb15943f',
+  };
 
-module.exports = {
-  expo: {
-    ...appJson.expo,
+  return {
+    ...config,
     // package.json is the single source of truth for the app version: it drives
     // the store version and the number Settings shows via Constants.expoConfig.
     // Bump it there and both follow. (Build numbers stay with EAS — eas.json
@@ -60,5 +63,5 @@ module.exports = {
     version: pkg.version,
     owner: 'faculty-of-engineer',
     extra,
-  },
+  };
 };

@@ -1,8 +1,6 @@
-import * as FileSystem from 'expo-file-system';
-import * as ImageManipulator from 'expo-image-manipulator';
 import { ENDPOINTS } from "../constants/endpoints";
 import type { Person } from "../models/types";
-import { fetchWithApiDelay } from "./api";
+import { fetchApi } from "./api";
 
 function createPersonUrl(
   path = "",
@@ -81,7 +79,7 @@ export async function getPersonnelSuggestions(
 
   const url = createPersonUrl("/search", { searchword: trimmed });
 
-  const response = await fetchWithApiDelay(url, { method: "GET" });
+  const response = await fetchApi(url, { method: "GET" });
   const text = await response.text();
 
   if (!response.ok) {
@@ -106,61 +104,6 @@ export function getPersonPhoto(person: Person) {
   return `${ENDPOINTS.photoBase}${encodeURIComponent(String(person.staffId))}.jpg`;
 }
 
-export async function uploadPersonPhoto(
-  staffId: string,
-  imageUri: string,
-): Promise<void> {
-  const ext = imageUri.split('?')[0].split('.').pop()?.toLowerCase() ?? '';
-  const supported = ['jpg', 'jpeg', 'png'].includes(ext) || imageUri.startsWith('data:image/');
-  if (!supported) {
-    throw new Error('รองรับไฟล์รูปภาพ .jpg และ .png เท่านั้น');
-  }
-
-  // Always compress and convert to JPEG before uploading
-  const manipulated = await ImageManipulator.manipulateAsync(
-    imageUri,
-    [],
-    { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG, base64: true },
-  );
-  const base64 = manipulated.base64 ?? '';
-
-  const response = await fetchWithApiDelay(ENDPOINTS.personUploadPhoto, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ staff_id: staffId, photo_base64: base64 }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    let message = `Upload failed (${response.status})`;
-    try {
-      const json = JSON.parse(text) as Record<string, unknown>;
-      const detail = (json.error as Record<string, unknown> | undefined)?.message;
-      if (typeof detail === 'string') message = detail;
-    } catch { /* ignore */ }
-    throw new Error(message);
-  }
-}
-
-export async function updatePersonInfo(
-  staffId: string,
-  field: 'email' | 'phone',
-  value: string,
-): Promise<void> {
-  const response = await fetchWithApiDelay(ENDPOINTS.personUpdateInfo, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ staff_id: staffId, [field]: value }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    let message = `Update failed (${response.status})`;
-    try {
-      const json = JSON.parse(text) as Record<string, unknown>;
-      const detail = (json.error as Record<string, unknown> | undefined)?.message;
-      if (typeof detail === 'string') message = detail;
-    } catch { /* ignore */ }
-    throw new Error(message);
-  }
-}
+// Editing your own record lives in services/myProfileService.ts — a separate
+// module with its own gateway routes, because writing to one person's record
+// and searching the directory are different privileges.

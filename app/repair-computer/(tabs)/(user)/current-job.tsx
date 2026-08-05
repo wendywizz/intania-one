@@ -251,7 +251,8 @@ export default function RepairComputerCurrentJobScreen() {
   );
 
   const renderContent = () => {
-    if (isLoading) {
+    // Only while there is nothing to show; see components/timestamp/timestamp-forgot-list.
+    if (isLoading && jobs.length === 0) {
       return (
         <LoadingAnimate
           title={TEXT.REPAIR_COMPUTER_LOADING_CURRENT_JOBS}
