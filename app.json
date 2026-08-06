@@ -8,11 +8,11 @@
     "scheme": "com.ecs.intaniaSB",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.ecs.intaniasb",
+      "bundleIdentifier": "com.ecs.intaniaSB",
       "supportsTablet": true
     },
     "android": {
-      "package": "com.ecs.intaniasb",
+      "package": "com.ecs.intaniaSB",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "POST_NOTIFICATIONS"

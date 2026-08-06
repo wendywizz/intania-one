@@ -38,9 +38,15 @@ export type MonthCalendarProps = {
   bodyStyle?: StyleProp<ViewStyle>;
 };
 
-// Sunday-first month matrix: leading blanks to align the 1st on its weekday,
-// then one Date per day. Callers key off the Date in `renderDay`.
-function getMonthMatrix(visibleMonth: Date): (Date | null)[] {
+// Sunday-first month matrix, one array per week: leading blanks to align the 1st
+// on its weekday, one Date per day, then trailing blanks so every week is
+// exactly 7 cells. Callers key off the Date in `renderDay`.
+//
+// Weeks are laid out as explicit non-wrapping rows of seven `flex: 1` cells
+// rather than one wrapping row of 1/7-width cells: Android rounds every child's
+// width up to the pixel grid, so seven 14.2857% cells overflow the row and the
+// seventh wraps — which silently shifted every date one column per week.
+function getMonthMatrix(visibleMonth: Date): (Date | null)[][] {
   const year = visibleMonth.getFullYear();
   const month = visibleMonth.getMonth();
   const leading = new Date(year, month, 1).getDay();
@@ -48,7 +54,11 @@ function getMonthMatrix(visibleMonth: Date): (Date | null)[] {
   const cells: (Date | null)[] = [];
   for (let i = 0; i < leading; i += 1) cells.push(null);
   for (let day = 1; day <= daysInMonth; day += 1) cells.push(new Date(year, month, day));
-  return cells;
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const weeks: (Date | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  return weeks;
 }
 
 /**
@@ -76,7 +86,7 @@ export function MonthCalendar({
 }: MonthCalendarProps) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const cells = useMemo(() => getMonthMatrix(visibleMonth), [visibleMonth]);
+  const weeks = useMemo(() => getMonthMatrix(visibleMonth), [visibleMonth]);
 
   return (
     <View style={[styles.card, style]}>
@@ -116,15 +126,19 @@ export function MonthCalendar({
         </View>
 
         <View style={styles.grid}>
-          {cells.map((date, index) =>
-            date ? (
-              <View key={date.toISOString()} style={styles.dayCell}>
-                {renderDay(date)}
-              </View>
-            ) : (
-              <View key={`blank-${index}`} style={styles.dayCell} />
-            ),
-          )}
+          {weeks.map((week, weekIndex) => (
+            <View key={`week-${weekIndex}`} style={styles.weekLine}>
+              {week.map((date, dayIndex) =>
+                date ? (
+                  <View key={date.toISOString()} style={styles.dayCell}>
+                    {renderDay(date)}
+                  </View>
+                ) : (
+                  <View key={`blank-${weekIndex}-${dayIndex}`} style={styles.dayCell} />
+                ),
+              )}
+            </View>
+          ))}
         </View>
 
         {footer}
@@ -172,8 +186,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 6,
   },
+  // Same `flex: 1` sizing as a day cell, so a weekday name always sits over its
+  // own column.
   weekCell: {
-    width: `${100 / 7}%`,
+    flex: 1,
     alignItems: 'center',
   },
   weekLabel: {
@@ -186,13 +202,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.primary,
   },
   grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
   },
-  // Outer column only reserves the 1/7 width + gutter; the caller's day pill
-  // stretches to fill it.
+  weekLine: {
+    flexDirection: 'row',
+  },
+  // Outer column only reserves its share of the week + the gutter; the caller's
+  // day pill stretches to fill it. `flex: 1` (not a 1/7 width) so the seven
+  // cells always divide the row exactly, whatever the pixel rounding.
   dayCell: {
-    width: `${100 / 7}%`,
+    flex: 1,
     padding: 2,
   },
 });

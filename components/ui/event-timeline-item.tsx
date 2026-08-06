@@ -119,6 +119,11 @@ export function EventTimelineItem({
 const TIME_TOP = 20;
 const TIME_LINE = 16;
 const DOT_SIZE = 14;
+// Wide enough for "09:00" in the bold PSU face with room to spare, so the gutter
+// still holds a whole time once Android's font-size setting scales the text up.
+// At 38 it clipped there — a start/end range lost its second line entirely,
+// since the two lines share a `numberOfLines={2}` budget.
+const TIME_COL_WIDTH = 50;
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   row: {
@@ -126,7 +131,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: 'stretch',
   },
   timeCol: {
-    width: 38,
+    width: TIME_COL_WIDTH,
     alignItems: 'flex-end',
     paddingTop: TIME_TOP,
   },

@@ -854,7 +854,7 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={m.onCanvasMuted} />}>
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
-        <View style={[styles.header, { paddingTop: insets.top + 28 }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
           <View style={styles.headerRow}>
             {isGuest ? (
               <Image
@@ -1182,10 +1182,12 @@ const makeStyles = (m: M) => StyleSheet.create({
 
   scrollContent: { flexGrow: 1 },
 
-  // Header — clean, on the page canvas (no colored bar)
+  // Header — clean, on the page canvas (no colored bar). Kept tight top and
+  // bottom: the 42px action buttons already give the row its breathing space,
+  // so the padding only has to clear the status bar.
   header: {
     paddingHorizontal: D.pad,
-    paddingBottom: 8,
+    paddingBottom: 4,
     backgroundColor: m.bg,
   },
   headerRow: {
