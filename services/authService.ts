@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import * as Crypto from 'expo-crypto';
 import {router} from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import {Platform} from 'react-native';
@@ -228,12 +229,31 @@ async function getUserInfoEndpoint() {
   return discovery.userinfo_endpoint ?? AUTH.endpoints.userInfo;
 }
 
+function toHex(bytes: Uint8Array) {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * The OAuth `state`, and the only thing standing between this login and a forged
+ * callback — so it has to be unguessable.
+ *
+ * expo-crypto first, because Hermes has no global `crypto`: on native the branch
+ * below never ran and every state was `Date.now()`-derived, which anyone who
+ * knows roughly when the login started can reproduce. The two fallbacks are kept
+ * for the case where the native module is missing — a weak state still logs
+ * someone in, whereas throwing here means nobody can log in at all.
+ */
 function createRandomState() {
-  const bytes = new Uint8Array(16);
+  try {
+    return toHex(Crypto.getRandomBytes(16));
+  } catch {
+    // Native module unavailable — fall through.
+  }
 
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const bytes = new Uint8Array(16);
     crypto.getRandomValues(bytes);
-    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    return toHex(bytes);
   }
 
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;

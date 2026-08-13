@@ -223,6 +223,7 @@ const SHIFT_ICONS = {
   meeting: 'person.2.fill',
   timestamp: 'calendar-clock',
   exam: 'clipboard-list',
+  booking: 'door.open',
 } as const satisfies Record<string, IconName>;
 
 type UpcomingShiftSectionProps = {
@@ -348,6 +349,23 @@ function UpcomingShiftSection({ data, loading, error, onReload, upcomingExams, a
       count: data.meeting.items.length,
       icon: SHIFT_ICONS.meeting,
       onPress: to('/meeting'),
+    });
+  }
+
+  // ── Booking room: rooms this person is due in today ────────────────────────
+  //
+  // Optional-chained on the field itself, unlike the sections above: this one
+  // was added after the app shipped, so a build talking to a gateway that has
+  // not been updated gets `undefined` here rather than a section, and reading
+  // `.success` off it would take the whole home screen down.
+  if (data?.bookingRoom?.success) {
+    add({
+      key: 'booking-today',
+      label: TEXT.HOME_SHIFT_BOOKING_TODAY,
+      caption: TEXT.BOOKING_ROOM_MENU_TITLE,
+      count: data.bookingRoom.items.length,
+      icon: SHIFT_ICONS.booking,
+      onPress: to('/booking-room'),
     });
   }
 
@@ -864,24 +882,28 @@ export default function HomeScreen() {
                 contentPosition="left"
               />
             ) : (
-              <View style={styles.greetRow}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={TEXT.HOME_VIEW_PROFILE_A11Y}
-                  onPress={() => navPush('/my-profile' as Parameters<typeof navPush>[0])}
-                  style={({ pressed }) => [styles.avatarBtn, pressed && styles.pressed]}>
+              // The whole greeting cluster opens the profile, not just the
+              // avatar: the name and the date sit inside the same object and
+              // are the larger half of it, so a tap that lands on them has to
+              // go where a tap on the face goes.
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={TEXT.HOME_VIEW_PROFILE_A11Y}
+                onPress={() => navPush('/my-profile' as Parameters<typeof navPush>[0])}
+                style={({ pressed }) => [styles.greetRow, pressed && styles.pressed]}>
+                <View style={styles.avatarFrame}>
                   <Image
                     source={avatarSource && !avatarFailed ? { uri: avatarSource } : USER_PLACEHOLDER}
                     style={styles.avatar}
                     contentFit="cover"
                     onError={() => setAvatarFailed(true)}
                   />
-                </Pressable>
+                </View>
                 <View style={styles.greetingWrap}>
                   <Text numberOfLines={1} style={styles.greeting}>{getFirstName(authUser)}</Text>
                   <Text numberOfLines={1} style={styles.date}>{getDateString()}</Text>
                 </View>
-              </View>
+              </Pressable>
             )}
 
             {/* Settings and notifications are both personal — signed out the
@@ -1077,19 +1099,23 @@ export default function HomeScreen() {
           },
         ]}>
         <View style={styles.miniHeaderRow}>
+          {/* Avatar and name together, same as the big header — this is the
+              same control in its pinned form, so it takes the same tap. */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={TEXT.HOME_VIEW_PROFILE_A11Y}
             onPress={() => navPush('/my-profile' as Parameters<typeof navPush>[0])}
-            style={({ pressed }) => [styles.miniAvatarBtn, pressed && styles.pressed]}>
-            <Image
-              source={avatarSource && !avatarFailed ? { uri: avatarSource } : USER_PLACEHOLDER}
-              style={styles.avatar}
-              contentFit="cover"
-              onError={() => setAvatarFailed(true)}
-            />
+            style={({ pressed }) => [styles.miniGreetRow, pressed && styles.pressed]}>
+            <View style={styles.miniAvatarFrame}>
+              <Image
+                source={avatarSource && !avatarFailed ? { uri: avatarSource } : USER_PLACEHOLDER}
+                style={styles.avatar}
+                contentFit="cover"
+                onError={() => setAvatarFailed(true)}
+              />
+            </View>
+            <Text numberOfLines={1} style={styles.miniGreeting}>{getFirstName(authUser)}</Text>
           </Pressable>
-          <Text numberOfLines={1} style={styles.miniGreeting}>{getFirstName(authUser)}</Text>
 
           <View style={styles.headerRight}>
             <Pressable
@@ -1318,7 +1344,9 @@ const makeStyles = (m: M) => StyleSheet.create({
     lineHeight: 18,
     color: m.onCanvasMuted,
   },
-  avatarBtn: {
+  // The avatar's ring. Not a button any more — the whole greeting row is the
+  // target — so it only draws the circle.
+  avatarFrame: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -1356,7 +1384,15 @@ const makeStyles = (m: M) => StyleSheet.create({
     gap: 10,
     minHeight: 40,
   },
-  miniAvatarBtn: {
+  // Avatar + name, the pinned header's half of the row; the actions keep the
+  // other half, so this grows into whatever is left rather than the whole row.
+  miniGreetRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  miniAvatarFrame: {
     width: 32,
     height: 32,
     borderRadius: 16,

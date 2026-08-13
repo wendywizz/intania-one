@@ -23,6 +23,7 @@ import { ThemedText } from '@/components/themed-text';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Sheet } from '@/components/ui/sheet';
 import { TextField } from '@/components/ui/text-field';
+import { Toggle } from '@/components/ui/toggle';
 import { TEXT } from '@/constants/text';
 import { useColors, useThemedStyles } from '@/constants/theme';
 
@@ -62,6 +63,20 @@ export type SelectSheetOption = {
   searchText?: string;
 };
 
+/**
+ * A single on/off narrowing of the list, shown as a switch above it.
+ *
+ * The filtering itself is the caller's — it already knows what each option
+ * means, and this component only knows labels and ids. What it owns is the
+ * shape: one switch, in the same place, above the search box, so "เฉพาะห้องที่
+ * ว่าง" here and whatever the next list narrows by look like the same control.
+ */
+export type SelectSheetFilter = {
+  label: string;
+  value: boolean;
+  onValueChange: (next: boolean) => void;
+};
+
 export type SelectSheetProps = {
   visible: boolean;
   onClose: () => void;
@@ -71,6 +86,8 @@ export type SelectSheetProps = {
   onSelect: (option: SelectSheetOption) => void;
   /** Force search on or off; by default it appears for long lists only. */
   searchable?: boolean;
+  /** Optional switch above the list — see `SelectSheetFilter`. */
+  filter?: SelectSheetFilter;
   searchPlaceholder?: string;
   emptyMessage?: string;
   /**
@@ -98,6 +115,7 @@ export function SelectSheet({
   selectedId,
   onSelect,
   searchable,
+  filter,
   searchPlaceholder,
   emptyMessage,
   pageSize,
@@ -121,7 +139,10 @@ export function SelectSheet({
   const showSearch = searchable ?? options.length > SEARCH_THRESHOLD;
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    // Ignore a query the box for it is no longer showing: a `filter` that
+    // shortens the list past the threshold would otherwise leave a typed query
+    // still hiding options with nothing on screen to explain why.
+    const q = showSearch ? query.trim().toLowerCase() : '';
     if (!q) return options;
     return options.filter(
       (o) =>
@@ -129,7 +150,7 @@ export function SelectSheet({
           .filter(Boolean)
           .some((v) => String(v).toLowerCase().includes(q)),
     );
-  }, [options, query]);
+  }, [options, query, showSearch]);
 
   const visibleOptions = useMemo(
     () => (shown === Infinity ? filtered : filtered.slice(0, shown)),
@@ -153,6 +174,26 @@ export function SelectSheet({
     // in place, which reads as belonging to the control that opened it — the
     // same treatment the sick-leave and profile menus use.
     <Sheet visible={visible} onClose={onClose} title={title} animation="pop">
+      {/* Above the search box, not below it: this decides which list is being
+          searched, so it is read first. The whole row is the tap target — a
+          switch alone is a small one, and the label beside it is the part that
+          is easy to hit. */}
+      {filter ? (
+        <Pressable
+          accessibilityRole="switch"
+          accessibilityState={{ checked: filter.value }}
+          accessibilityLabel={filter.label}
+          onPress={() => filter.onValueChange(!filter.value)}
+          style={styles.filter}>
+          <ThemedText style={styles.filterLabel}>{filter.label}</ThemedText>
+          {/* The switch answers the row's press rather than its own, so a tap
+              landing on it does not toggle twice. */}
+          <View pointerEvents="none">
+            <Toggle value={filter.value} onValueChange={filter.onValueChange} />
+          </View>
+        </Pressable>
+      ) : null}
+
       {showSearch ? (
         <TextField
           value={query}
@@ -248,6 +289,17 @@ export function SelectSheet({
 
 const createStyles = (c: ReturnType<typeof useColors>) =>
   StyleSheet.create({
+    filter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      paddingVertical: 4,
+      marginBottom: 8,
+    },
+    // flex so a long Thai label wraps instead of pushing the switch off the
+    // right edge of the sheet.
+    filterLabel: { flex: 1, fontSize: 14, color: c.text },
     search: { marginBottom: 8 },
     // Capped so a long list scrolls inside the sheet instead of pushing it off
     // the screen; short lists still size to their content.

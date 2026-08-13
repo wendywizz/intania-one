@@ -1,33 +1,51 @@
 import * as ImageManipulator from 'expo-image-manipulator';
 
 import { ENDPOINTS } from '../constants/endpoints';
+import { MODULE_DISABLED } from '../constants/module-status';
 import type { Person } from '../models/types';
 import { fetchApi } from './api';
-import { getPersonnelSuggestions } from './personService';
 
 /**
  * my-profile — the signed-in person's own record.
  *
- * Reads borrow person-search, which already returns the full record including
- * the photo; there is deliberately no second read endpoint for the same row.
- * The two writes are this module's own, and both go through the gateway rather
- * than straight to PSU: that is where the HMAC signature for the personnel
- * application and the photo host's API key live, neither of which belongs in a
- * bundle anyone can unzip.
+ * All three calls go to the gateway's own `/api/my-profile` paths, including the
+ * read, which the gateway resolves through person-search on the other side. That
+ * indirection is deliberate: the gateway gates a module by its path prefix, so a
+ * screen reading through `/api/person` would keep working after somebody
+ * switched this module off and would only fail on save. Owning the path is what
+ * makes the module switchable as one thing.
+ *
+ * The writes go through the gateway for a different reason: the HMAC signature
+ * for the personnel application and the photo host's API key live there, and
+ * neither belongs in a bundle anyone can unzip.
  *
  * Every call is keyed by UNI_STAFF_ID — `useAuth().user.staffId`, which OpenID
  * supplies. The internal STAFF_ID matches nobody upstream and fails silently.
  */
 
-/** Whatever the gateway said went wrong, falling back to `fallback`. */
+/**
+ * Whatever the gateway said went wrong, falling back to `fallback`.
+ *
+ * A switched-off module comes back marked, not as plain text: `ErrorState` reads
+ * that marker to show "somebody turned this off" instead of dressing a
+ * deliberate decision as a fault. Same envelope `requestJson` handles for the
+ * screens that go through it — these calls need the Response itself, so the
+ * check is repeated here rather than shared.
+ */
 async function readError(response: Response, fallback: string): Promise<string> {
   const text = await response.text().catch(() => '');
 
   try {
-    const json = JSON.parse(text) as { error?: { message?: string } | string };
-    const detail = typeof json.error === 'string' ? json.error : json.error?.message;
-    if (typeof detail === 'string' && detail.trim()) {
-      return detail.trim();
+    const json = JSON.parse(text) as { error?: { name?: string; message?: string } | string };
+    const error = typeof json.error === 'string' ? { message: json.error } : json.error;
+    const detail = typeof error?.message === 'string' ? error.message.trim() : '';
+
+    if (response.status === 503 && error?.name === 'ModuleDisabled') {
+      return `${MODULE_DISABLED} ${detail}`.trim();
+    }
+
+    if (detail) {
+      return detail;
     }
   } catch {
     // Not our envelope — the status is all we have to go on.
@@ -36,21 +54,31 @@ async function readError(response: Response, fallback: string): Promise<string> 
   return `${fallback} (${response.status})`;
 }
 
-/**
- * The person's own record, or null when the directory does not know them.
- *
- * Searching by staff id can match more than one row (the id appears in other
- * columns too), so the exact match wins and the first row is only a fallback.
- */
+/** The person's own record, or null when the directory does not know them. */
 export async function getMyProfile(staffId: string): Promise<Person | null> {
   const trimmed = staffId.trim();
   if (!trimmed) {
     return null;
   }
 
-  const results = await getPersonnelSuggestions(trimmed);
+  const url = new URL(ENDPOINTS.myProfile);
+  url.searchParams.set('staff_id', trimmed);
 
-  return results.find((person) => String(person.staffId) === trimmed) ?? results[0] ?? null;
+  const response = await fetchApi(url.toString());
+
+  // The directory not knowing this person is an empty profile, not a failure —
+  // the screen still has a name and an email from the OpenID claims to show.
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(await readError(response, 'ไม่สามารถโหลดข้อมูลโปรไฟล์ได้'));
+  }
+
+  const json = (await response.json()) as { data?: Person | null };
+
+  return json.data ?? null;
 }
 
 /**

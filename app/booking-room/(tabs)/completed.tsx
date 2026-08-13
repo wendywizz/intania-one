@@ -1,11 +1,22 @@
 /**
- * Booking Room → ประวัติจอง (tab key: booking_history).
+ * Booking Room → เสร็จสิ้น (tab key: booking_history).
  *
  * The signed-in person's finished bookings — everything whose last slot is
  * behind us — most recent first. The same rows the website's
  * "รายงานจองห้องของคุณ" page lists (index.php?main=report), minus the ones that
  * have not happened yet: those live on the รายการจอง tab instead, and showing
  * them in both places would only make the two tabs argue.
+ *
+ * The tab was called ประวัติจอง and the file history.tsx until people — the
+ * author of the feature included — read an empty list here as a booking that
+ * had failed to save. A booking made today for next month is not history and
+ * not absent; it simply has not finished yet, and only the word "เสร็จสิ้น"
+ * says which of the two lists it belongs in.
+ *
+ * The API scope is still `history` on purpose: that is the upstream's own
+ * wording, in a PHP route and a gateway endpoint that the app does not get to
+ * rename. The boundary is this file — everything the reader sees says
+ * "เสร็จสิ้น", everything on the wire says "history".
  *
  * Paged: the busiest accounts here have several hundred finished bookings, so
  * the list loads thirty at a time. Scrolling near the bottom fetches the next
@@ -91,7 +102,7 @@ export default function BookingRoomHistoryScreen() {
         // boundary — then one empty fetch settles it.
         setHasMore(page.length === PAGE_SIZE);
       } catch (err) {
-        setError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_HISTORY_ERROR);
+        setError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_COMPLETED_ERROR);
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -123,7 +134,7 @@ export default function BookingRoomHistoryScreen() {
       setHasMore(page.length === PAGE_SIZE);
     } catch (err) {
       // The rows already on screen stay; only the attempt to extend them failed.
-      setError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_HISTORY_ERROR);
+      setError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_COMPLETED_ERROR);
     } finally {
       fetching.current = false;
       setLoadingMore(false);
@@ -147,14 +158,14 @@ export default function BookingRoomHistoryScreen() {
           navPush({
             pathname: '/booking-room/booking-detail',
             // `from` tells the detail screen which list to send back to.
-            params: { book_id: String(item.book_id), from: 'history' },
+            params: { book_id: String(item.book_id), from: 'completed' },
           } as Parameters<typeof navPush>[0])
         }
         icon={<IconSymbol name={bookingIcon(item.booktype.id)} size={20} color={c.textMuted} />}
         // Muted rather than the brand tint the current list uses: these are
         // done, and should not compete with what is still coming up.
         iconBackground={c.surfaceAlt}
-        title={item.subject_id || item.objective || TEXT.BOOKING_ROOM_TAB_HISTORY}
+        title={item.subject_id || item.objective || TEXT.BOOKING_ROOM_TAB_COMPLETED}
         // Both facts as meta lines rather than the type sitting on the plain
         // `date` line: a line with a glyph in front of it and a line without
         // read as two different kinds of fact, and these are the same kind.
@@ -221,7 +232,7 @@ export default function BookingRoomHistoryScreen() {
     return (
       <ThemedView style={styles.container}>
         <ScreenHeader
-          title={TEXT.BOOKING_ROOM_TAB_HISTORY}
+          title={TEXT.BOOKING_ROOM_TAB_COMPLETED}
           backHref="/"
           titleInNavBar
           showHomeButton={false}
@@ -237,14 +248,14 @@ export default function BookingRoomHistoryScreen() {
     return (
       <ThemedView style={styles.container}>
         <ScreenHeader
-          title={TEXT.BOOKING_ROOM_TAB_HISTORY}
+          title={TEXT.BOOKING_ROOM_TAB_COMPLETED}
           backHref="/"
           titleInNavBar
           showHomeButton={false}
         />
         {staffId ? (
           <ErrorState
-            title={TEXT.BOOKING_ROOM_HISTORY_ERROR}
+            title={TEXT.BOOKING_ROOM_COMPLETED_ERROR}
             message={error ?? ''}
             onRetry={() => void loadFirstPage()}
           />
@@ -258,7 +269,7 @@ export default function BookingRoomHistoryScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScreenHeader
-        title={TEXT.BOOKING_ROOM_TAB_HISTORY}
+        title={TEXT.BOOKING_ROOM_TAB_COMPLETED}
         backHref="/"
         titleInNavBar
         showHomeButton={false}
@@ -284,7 +295,7 @@ export default function BookingRoomHistoryScreen() {
         onEndReached={() => void loadMore()}
         onEndReachedThreshold={0.3}
         ListEmptyComponent={
-          <EmptyState preset="history" message={TEXT.BOOKING_ROOM_HISTORY_EMPTY} />
+          <EmptyState preset="history" message={TEXT.BOOKING_ROOM_COMPLETED_EMPTY} />
         }
         ListFooterComponent={listFooter()}
       />

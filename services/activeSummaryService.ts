@@ -36,11 +36,23 @@ export type ActiveSummaryTimestamp = {
   error?: string;
 };
 
+/**
+ * Today's room-and-time slots — one entry per slot, not per booking, so a term
+ * booking counts once for each of today's periods rather than once for the term.
+ */
+export type ActiveSummaryBookingRoom = {
+  success: boolean;
+  items: Record<string, unknown>[];
+  date: string;
+  error?: string;
+};
+
 export type ActiveSummaryData = {
   repairComputer: ActiveSummaryRepairComputer;
   absence: ActiveSummaryAbsence;
   meeting: ActiveSummaryMeeting;
   timestamp: ActiveSummaryTimestamp;
+  bookingRoom: ActiveSummaryBookingRoom;
 };
 
 type ApiResponse = {

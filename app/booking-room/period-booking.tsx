@@ -38,7 +38,6 @@ import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button, Toggle } from '@/components/ui';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { SelectSheet, type SelectSheetOption } from '@/components/ui/select-sheet';
 import { AppFonts } from '@/constants/fonts';
@@ -52,8 +51,8 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/toast-provider';
 import { formatFullDate } from '@/utils/date-format';
+import { addToCart } from '@/services/bookingCartService';
 import {
-  createPeriodBooking,
   getPeriodDays,
   getPeriodFormOptions,
   listPeriodRooms,
@@ -133,13 +132,19 @@ export default function PeriodBookingScreen() {
   const [drafts, setDrafts] = useState<Record<string, DayDraft>>({});
 
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [picker, setPicker] = useState<Picker>(null);
   const [rooms, setRooms] = useState<TermRoom[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
+  /**
+   * Whether the room sheet is narrowed to rooms free on every date in range.
+   *
+   * Screen state, not sheet state, so it survives closing the sheet: someone
+   * filling in three weekdays is choosing rooms under the same rule each time.
+   */
+  const [freeRoomsOnly, setFreeRoomsOnly] = useState(false);
 
   const fromISO = fromDate ? toISODate(fromDate) : '';
   const toISO = toDate ? toISODate(toDate) : '';
@@ -302,9 +307,22 @@ export default function PeriodBookingScreen() {
     [options],
   );
 
+  /**
+   * The rooms the sheet lists.
+   *
+   * `available` here means free on every occurrence inside the chosen range, so
+   * the switch drops the rooms that are taken outright *and* the shareable ones
+   * — a room you would be sitting in alongside somebody else is not free, and
+   * asking for only free rooms is asking not to be offered it.
+   */
+  const visibleRooms = useMemo(
+    () => (freeRoomsOnly ? rooms.filter((r) => r.available) : rooms),
+    [rooms, freeRoomsOnly],
+  );
+
   const roomOptions: SelectSheetOption[] = useMemo(
     () =>
-      rooms.map((r) => ({
+      visibleRooms.map((r) => ({
         id: r.id,
         label: r.name,
         description: r.available
@@ -315,34 +333,34 @@ export default function PeriodBookingScreen() {
         disabled: !r.available && !r.shareable,
         trailing: <RoomOptionFacts room={r} color={c} styles={styles} />,
       })),
-    [rooms, c, styles],
+    [visibleRooms, c, styles],
   );
 
   const subjectLabel = subject
     ? `${subject.subject_id} (${subject.section}) ${subject.subject_name}`
     : '';
 
-  const confirmSummary = useMemo(() => {
-    const lines = [
-      extra ? extraSubject.trim() : subjectLabel,
-      fromISO && toISO
-        ? `${formatFullDate(fromISO)} – ${formatFullDate(toISO)}`
-        : '',
-    ];
-
-    activeDays.forEach((d) => {
-      const draft = drafts[d.day];
-      if (!draft) return;
-      lines.push(
-        `${d.label} ${draft.startTime}-${draft.endTime} · ${draft.room?.name ?? ''} · ` +
-          fill(TEXT.BOOKING_ROOM_TERM_DAY_COUNT, { count: d.date_count }),
-      );
-    });
-
-    lines.push(fill(TEXT.BOOKING_ROOM_TERM_TOTAL, { count: totalSlots }));
-
-    return lines.filter(Boolean).join('\n');
-  }, [extra, extraSubject, subjectLabel, fromISO, toISO, activeDays, drafts, totalSlots]);
+  /**
+   * The date range, then one line per ticked weekday, for the cart row.
+   *
+   * Was the confirmation dialog's summary until the cart took that job over.
+   * The range leads, because it is the only thing that separates จองช่วงเวลา
+   * from จองรายเทอม on the face of it.
+   */
+  const cartWhen = useMemo(
+    () => [
+      fromISO && toISO ? `${formatFullDate(fromISO)} – ${formatFullDate(toISO)}` : '',
+      ...activeDays.map((d) => {
+        const draft = drafts[d.day];
+        if (!draft) return '';
+        return (
+          `${d.label} ${draft.startTime}-${draft.endTime} · ` +
+          fill(TEXT.BOOKING_ROOM_TERM_DAY_COUNT, { count: d.date_count })
+        );
+      }),
+    ].filter(Boolean),
+    [fromISO, toISO, activeDays, drafts],
+  );
 
   const validate = (): FieldErrors => {
     const found: FieldErrors = {};
@@ -397,7 +415,7 @@ export default function PeriodBookingScreen() {
     }
 
     setError(null);
-    setConfirming(true);
+    void submit();
   };
 
   const submit = async () => {
@@ -405,39 +423,54 @@ export default function PeriodBookingScreen() {
     setError(null);
 
     try {
-      await createPeriodBooking({
-        staff_id: staffId,
-        teacher: teacher.trim(),
-        bgcolor: color,
-        extra,
-        start_date: fromISO,
-        end_date: toISO,
-        days: activeDays.map((d) => ({
-          day: d.day,
-          start_time: drafts[d.day].startTime,
-          end_time: drafts[d.day].endTime,
-          room_id: drafts[d.day].room!.id,
-        })),
-        ...(extra
-          ? {
-              subject_id: extraSubject.trim(),
-              section: extraSection.trim() || '-',
-              objective: extraObjective.trim(),
-            }
-          : {
-              subject_id: subject!.subject_id,
-              section: subject!.section,
-              subj_key: subject!.subj_key,
-              term: subject!.term,
-              year: subject!.year,
-              objective: subject!.subject_name,
-            }),
+      await addToCart(staffId, {
+        kind: 'period',
+        payload: {
+          staff_id: staffId,
+          teacher: teacher.trim(),
+          bgcolor: color,
+          extra,
+          start_date: fromISO,
+          end_date: toISO,
+          days: activeDays.map((d) => ({
+            day: d.day,
+            start_time: drafts[d.day].startTime,
+            end_time: drafts[d.day].endTime,
+            room_id: drafts[d.day].room!.id,
+          })),
+          ...(extra
+            ? {
+                subject_id: extraSubject.trim(),
+                section: extraSection.trim() || '-',
+                objective: extraObjective.trim(),
+              }
+            : {
+                subject_id: subject!.subject_id,
+                section: subject!.section,
+                subj_key: subject!.subj_key,
+                term: subject!.term,
+                year: subject!.year,
+                objective: subject!.subject_name,
+              }),
+        },
+        summary: {
+          title: extra ? extraSubject.trim() : subject!.subject_id,
+          subtitle: extra ? extraObjective.trim() : subject!.subject_name,
+          teacher: teacher.trim(),
+          rooms: Array.from(
+            new Set(activeDays.map((d) => drafts[d.day].room?.name ?? '').filter(Boolean)),
+          ),
+          when: cartWhen,
+          slotCount: totalSlots,
+          // The range's own end, which the person chose here — unlike a term
+          // booking, nothing else knows when this one stops.
+          lastDate: toISO,
+        },
       });
 
-      showToast(TEXT.BOOKING_ROOM_PERIOD_SUBMIT_SUCCESS, 'success');
-      router.replace('/booking-room');
+      showToast(TEXT.BOOKING_ROOM_CART_ADDED, 'success');
+      router.replace('/booking-room/cart');
     } catch (err) {
-      setConfirming(false);
       setError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_SUBMIT_ERROR);
     } finally {
       setSubmitting(false);
@@ -769,7 +802,7 @@ export default function PeriodBookingScreen() {
         ) : null}
 
         <Button
-          title={TEXT.BOOKING_ROOM_SUBMIT}
+          title={TEXT.BOOKING_ROOM_CART_ADD_ACTION}
           onPress={requestSubmit}
           loading={submitting}
           disabled={!canSubmit}
@@ -777,18 +810,6 @@ export default function PeriodBookingScreen() {
           fullWidth
         />
       </View>
-
-      <ConfirmDialog
-        visible={confirming}
-        icon="calendar-clock"
-        title={TEXT.BOOKING_ROOM_PERIOD_CONFIRM_TITLE}
-        message={confirmSummary}
-        confirmLabel={TEXT.BOOKING_ROOM_CONFIRM_ACTION}
-        cancelLabel={TEXT.BOOKING_ROOM_CONFIRM_CANCEL}
-        onConfirm={() => void submit()}
-        onCancel={() => setConfirming(false)}
-        loading={submitting}
-      />
 
       <SelectSheet
         visible={picker?.kind === 'subject'}
@@ -842,8 +863,23 @@ export default function PeriodBookingScreen() {
         searchPlaceholder={TEXT.BOOKING_ROOM_SCHEDULE_SEARCH_ROOM}
         options={roomOptions}
         selectedId={picker?.kind === 'room' ? drafts[picker.day]?.room?.id : undefined}
+        // Hidden while the list is still arriving: an empty list with a switch
+        // over it invites turning the switch off to find what is missing.
+        filter={
+          roomsLoading
+            ? undefined
+            : {
+                label: TEXT.BOOKING_ROOM_ROOM_FREE_ONLY,
+                value: freeRoomsOnly,
+                onValueChange: setFreeRoomsOnly,
+              }
+        }
         emptyMessage={
-          roomsLoading ? TEXT.SHARED_LOADING_DATA_TITLE : TEXT.BOOKING_ROOM_ROOM_NONE_FREE
+          roomsLoading
+            ? TEXT.SHARED_LOADING_DATA_TITLE
+            : freeRoomsOnly && rooms.length > 0
+              ? TEXT.BOOKING_ROOM_ROOM_NONE_FREE_FILTERED_SHARED
+              : TEXT.BOOKING_ROOM_ROOM_NONE_FREE
         }
         onSelect={(option) => {
           if (picker?.kind !== 'room') return;

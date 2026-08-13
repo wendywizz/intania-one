@@ -83,6 +83,10 @@ export const TEXT = {
   HOME_SHIFT_APPROVE_LEAVE: 'อนุมัติการลา',
   HOME_SHIFT_APPROVE_TIMESTAMP: 'อนุมัติการลงเวลา',
   HOME_SHIFT_UPCOMING_EXAM: 'คุมสอบที่จะถึง',
+  // Counts slots, not bookings: a term booking is one row in the module's own
+  // list from June to October, and what this tile is for is the two afternoons
+  // of it that fall today.
+  HOME_SHIFT_BOOKING_TODAY: 'ใช้ห้องวันนี้',
   HOME_GREETINGS: ['สวัสดี', 'หวัดดี', 'ว่าไง', 'ดีจ้า', 'ยินดีต้อนรับ', 'เฮลโหล'],
   HOME_DAY_NAMES: ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'],
   HOME_MONTH_NAMES: [
@@ -92,7 +96,7 @@ export const TEXT = {
   PROFILE_TITLE: 'โปรไฟล์',
   PROFILE_SUBTITLE: 'ข้อมูลส่วนตัว',
   PROFILE_NOTIFICATIONS_A11Y: 'การแจ้งเตือน',
-  PROFILE_STAFF_ID_PREFIX: 'รหัสบุคลากร ',
+  PROFILE_STAFF_ID_PREFIX: 'ID ',
   PROFILE_SECTION_INFO: 'ข้อมูลส่วนตัว',
   PROFILE_FIELD_DEPARTMENT: 'หน่วยงาน',
   PROFILE_FIELD_PHONE: 'เบอร์โทรศัพท์',
@@ -207,6 +211,7 @@ export const TEXT = {
   AUTH_LOGIN: 'เข้าสู่ระบบ',
   AUTH_LOGIN_FAILED: 'เข้าสู่ระบบไม่สำเร็จ',
   AUTH_SIGNING_IN_TITLE: 'กำลังเข้าสู่ระบบ',
+  AUTH_LOGIN_PAGE_TIMEOUT: 'โหลดหน้าเข้าสู่ระบบ PSU Passport ไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่อีกครั้ง',
 
   // absence
   ABSENCE_APPROVER_LABEL: 'ผู้อนุมัติ',
@@ -775,7 +780,12 @@ export const TEXT = {
   BOOKING_ROOM_MENU_TITLE: 'จองห้อง',
   BOOKING_ROOM_TAB_CURRENT: 'รายการจอง',
   BOOKING_ROOM_TAB_SCHEDULE: 'ตารางจอง',
-  BOOKING_ROOM_TAB_HISTORY: 'ประวัติจอง',
+  // "เสร็จสิ้น", not "ประวัติจอง". The two tabs are split by time and nothing
+  // else, and "ประวัติ" does not say that — it reads as "my record of
+  // bookings", which anyone would expect to include the one they just made.
+  // A booking sits in รายการจอง until its last slot has passed, then moves
+  // here, and this word is the only one that says so on its own.
+  BOOKING_ROOM_TAB_COMPLETED: 'เสร็จสิ้น',
   BOOKING_ROOM_CURRENT_EMPTY: 'ยังไม่มีรายการจองห้องเรียน',
   BOOKING_ROOM_CURRENT_ERROR: 'โหลดรายการจองไม่สำเร็จ',
   BOOKING_ROOM_NEED_SIGNIN: 'กรุณาเข้าสู่ระบบเพื่อดูรายการจองของคุณ',
@@ -815,8 +825,8 @@ export const TEXT = {
   BOOKING_ROOM_SCHEDULE_CAPACITY: 'ความจุ',
   BOOKING_ROOM_SCHEDULE_SEAT_UNIT: 'ที่นั่ง',
   BOOKING_ROOM_SCHEDULE_LOAD_ERROR: 'โหลดตารางจองไม่สำเร็จ',
-  BOOKING_ROOM_HISTORY_EMPTY: 'ยังไม่มีประวัติการจองห้องเรียน',
-  BOOKING_ROOM_HISTORY_ERROR: 'โหลดประวัติการจองไม่สำเร็จ',
+  BOOKING_ROOM_COMPLETED_EMPTY: 'ยังไม่มีการจองที่เสร็จสิ้น',
+  BOOKING_ROOM_COMPLETED_ERROR: 'โหลดการจองที่เสร็จสิ้นไม่สำเร็จ',
   BOOKING_ROOM_BOOKED_AT_LABEL: 'จองเมื่อ',
   BOOKING_ROOM_DETAIL_TITLE: 'รายละเอียดการจอง',
   BOOKING_ROOM_DETAIL_ERROR: 'โหลดรายละเอียดการจองไม่สำเร็จ',
@@ -886,6 +896,18 @@ export const TEXT = {
   BOOKING_ROOM_EQUIPMENT_MIC: 'ไมโครโฟน',
   BOOKING_ROOM_EQUIPMENT_NONE: 'ไม่มีอุปกรณ์ในห้อง',
   BOOKING_ROOM_ROOM_NONE_FREE: 'ไม่มีห้องว่างในช่วงเวลานี้',
+  // The switch above the room list, and what the list says when that switch is
+  // the reason it is empty — otherwise turning it on looks like the times are
+  // hopeless when there are still rooms to share.
+  BOOKING_ROOM_ROOM_FREE_ONLY: 'แสดงเฉพาะห้องที่ว่าง',
+  BOOKING_ROOM_ROOM_NONE_FREE_FILTERED:
+    'ไม่มีห้องว่างในช่วงเวลานี้ ปิด "แสดงเฉพาะห้องที่ว่าง" เพื่อดูห้องทั้งหมด',
+  // The repeating forms have a third state the one-off form does not: a room
+  // that is taken but shareable with a subject you also teach. Turning the
+  // switch off there reveals something choosable, not just something greyed,
+  // which is worth saying differently.
+  BOOKING_ROOM_ROOM_NONE_FREE_FILTERED_SHARED:
+    'ไม่มีห้องที่ว่างทุกครั้ง ปิด "แสดงเฉพาะห้องที่ว่าง" เพื่อดูห้องที่ใช้ร่วมกันได้',
   BOOKING_ROOM_TIME_ORDER_ERROR: 'เวลาสิ้นสุดต้องหลังเวลาเริ่ม',
   BOOKING_ROOM_REQUIRED_ERROR: 'กรุณากรอกข้อมูลให้ครบถ้วน',
   BOOKING_ROOM_FIELD_REQUIRED: 'กรุณากรอกข้อมูลนี้',
@@ -898,6 +920,35 @@ export const TEXT = {
   // no explanation is a dead end, so this says what to do about it.
   BOOKING_ROOM_BLOCKED_PICK_SUBJECT: 'เลือกรายวิชา หรือเปิด "จองรายวิชาอื่นๆ" ก่อนจึงจะจองได้',
   BOOKING_ROOM_BLOCKED_NO_SUBJECT: 'เปิด "จองรายวิชาอื่นๆ" ก่อนจึงจะจองได้',
+
+  // --- ตะกร้าจอง ---
+  // A cart holds nothing. Every string here that touches the difference between
+  // a draft and a booking says so out loud, because the one dangerous
+  // misunderstanding available is "I put it in the cart, so the room is mine".
+  BOOKING_ROOM_CART_TITLE: 'ตะกร้าจอง',
+  BOOKING_ROOM_CART_ADD_ACTION: 'ใส่ตะกร้า',
+  BOOKING_ROOM_CART_ADDED: 'เพิ่มลงตะกร้าแล้ว ยังไม่ได้จองห้อง',
+  BOOKING_ROOM_CART_EMPTY: 'ยังไม่มีรายการในตะกร้า',
+  BOOKING_ROOM_CART_EMPTY_HINT:
+    'เลือกห้องจากหน้าจองห้อง รายการจะมาพักไว้ที่นี่จนกว่าจะกดยืนยัน กลับมาทำต่อวันหลังได้',
+  BOOKING_ROOM_CART_NOTICE:
+    'รายการในตะกร้ายังไม่ได้จองห้อง ห้องจะเป็นของคุณเมื่อกดยืนยันแล้วระบบตรวจสอบว่ายังว่างอยู่',
+  BOOKING_ROOM_CART_STALE: 'วันที่ผ่านไปแล้ว จองไม่ได้ ต้องลบแล้วเลือกใหม่',
+  BOOKING_ROOM_CART_REMOVE: 'ลบออกจากตะกร้า',
+  BOOKING_ROOM_CART_REMOVE_TITLE: 'ลบรายการนี้',
+  BOOKING_ROOM_CART_REMOVE_MESSAGE: 'ลบรายการนี้ออกจากตะกร้าใช่หรือไม่ ข้อมูลที่กรอกไว้จะหายไป',
+  BOOKING_ROOM_CART_REMOVED: 'ลบออกจากตะกร้าแล้ว',
+  BOOKING_ROOM_CART_CONFIRM_ONE: 'ยืนยันจองรายการนี้',
+  BOOKING_ROOM_CART_CONFIRM_ALL: 'ยืนยันทั้งหมด ({count} รายการ)',
+  BOOKING_ROOM_CART_CONFIRM_TITLE: 'ยืนยันการจองห้อง',
+  BOOKING_ROOM_CART_CONFIRM_MESSAGE: 'เมื่อยืนยันแล้วห้องจะถูกจองทันที และยกเลิกได้จากรายการจอง',
+  BOOKING_ROOM_CART_CONFIRM_SUCCESS: 'จองห้องเรียบร้อยแล้ว',
+  // The all-at-once case reports per item: one room taken must not read as
+  // "nothing was booked" when three others went through.
+  BOOKING_ROOM_CART_CONFIRM_PARTIAL: 'จองสำเร็จ {ok} จาก {total} รายการ ที่เหลือยังอยู่ในตะกร้า',
+  BOOKING_ROOM_CART_CONFIRM_ERROR: 'จองไม่สำเร็จ รายการยังอยู่ในตะกร้า',
+  BOOKING_ROOM_CART_SLOT_COUNT: '{count} คาบ',
+  BOOKING_ROOM_CART_GO_BOOK: 'ไปเลือกห้อง',
 
   // --- จองรายเทอม ---
   // Ticking a weekday books it every week of the term, so the wording is about

@@ -70,6 +70,7 @@ import Check from 'lucide-react-native/dist/cjs/icons/check';
 import X from 'lucide-react-native/dist/cjs/icons/x';
 import LogOut from 'lucide-react-native/dist/cjs/icons/log-out';
 import LockOpen from 'lucide-react-native/dist/cjs/icons/lock-open';
+import ShoppingCart from 'lucide-react-native/dist/cjs/icons/shopping-cart';
 import type { LucideIcon } from 'lucide-react-native';
 import { OpaqueColorValue, StyleProp, ViewStyle } from 'react-native';
 
@@ -87,6 +88,10 @@ const MAPPING = {
   'plus': Plus,
   'logout': LogOut,
   'lock.open': LockOpen,
+  // The booking cart. A shopping cart on purpose, however little is being
+  // bought: it is the one glyph everyone reads as "things I have picked but not
+  // committed to", which is exactly what a room draft is.
+  'cart': ShoppingCart,
   // Communication
   'bell.fill': Bell,
   'gearshape.fill': Settings,

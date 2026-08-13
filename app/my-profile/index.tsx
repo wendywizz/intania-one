@@ -6,6 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
+import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
 import { useToast } from '@/components/toast-provider';
@@ -18,6 +19,7 @@ import { ENDPOINTS } from '@/constants/endpoints';
 import { TEXT } from '@/constants/text';
 import { useAuth } from '@/context/AuthContext';
 import type { Person } from '@/models/types';
+import { isModuleDisabled } from '@/services/api';
 import { getMyProfile, uploadMyProfilePhoto } from '@/services/myProfileService';
 import { getUnreadNotificationCount } from '@/services/notificationService';
 import { usePopAnimation } from '@/hooks/use-pop-animation';
@@ -100,6 +102,7 @@ export default function MyProfileScreen() {
   const staffId = String(authUser?.staffId || '').trim();
 
   const [person, setPerson] = useState<Person | null>(null);
+  const [loadError, setLoadError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [photoFailed, setPhotoFailed] = useState(false);
@@ -120,10 +123,18 @@ export default function MyProfileScreen() {
     else if (mode === 'initial') setIsLoading(true);
     try {
       setPerson(await getMyProfile(staffId));
-    } catch {
+      setLoadError('');
+    } catch (error) {
       // A quiet reload backing the edit screen must not wipe what is on screen:
-      // the values shown are still the last ones the directory gave us.
-      if (mode !== 'quiet') setPerson(null);
+      // the values shown are still the last ones the directory gave us. The one
+      // exception is the module being switched off — that has to reach the
+      // person even mid-session, because every action on this screen is now
+      // closed to them.
+      const message = error instanceof Error ? error.message : TEXT.SHARED_ERROR_TITLE_THAI;
+      if (mode !== 'quiet' || isModuleDisabled(error)) {
+        setPerson(null);
+        setLoadError(message);
+      }
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -255,6 +266,16 @@ export default function MyProfileScreen() {
       {/* Only while there is nothing to show; see components/timestamp/timestamp-forgot-list. */}
       {isLoading && !person ? (
         <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
+      ) : loadError ? (
+        // ErrorState reads the module-disabled marker itself and swaps the red
+        // fault medallion for the "switched off" wording, so this one branch
+        // covers both a real failure and somebody closing the module.
+        <ErrorState
+          message={loadError}
+          onRetry={() => loadPerson('initial')}
+          retrying={isLoading || isRefreshing}
+          onBack={() => router.replace('/')}
+        />
       ) : (
         <ScrollView
           contentContainerStyle={styles.content}

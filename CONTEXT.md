@@ -205,8 +205,8 @@ There are eleven, listed in the order they appear on the home grid.
     # Functional
     - User can see the week timetable of any room (`(tabs)/schedule.tsx`), drawn on the
       grid geometry the server sends so it matches the website
-    - User can see their own live bookings (`(tabs)/index.tsx`) and past ones
-      (`(tabs)/history.tsx`), open one with all its slots (`booking-detail.tsx`,
+    - User can see their own live bookings (`(tabs)/index.tsx`) and finished ones
+      (`(tabs)/completed.tsx`), open one with all its slots (`booking-detail.tsx`,
       `booking-slots.tsx`)
     - User can cancel a whole booking, or one date out of it (a past date is refused
       upstream)
@@ -259,12 +259,18 @@ There are eleven, listed in the order they appear on the home grid.
     - User can edit their work phone and email, one field at a time
     - User can replace their profile photo from the camera or the photo library
     # Notes
-    - Reads borrow Person Search (it already returns the full record and the photo),
-      so there is no separate read endpoint for the same row.
-    - Writes go to scooba-service (`PUT /api/my-profile/update-info`,
-      `POST /api/my-profile/upload-photo`), never straight to PSU — the HMAC signature
-      and the photo host's API key live on the gateway and must not ship in the bundle.
-    - `staff_id` on both writes is `UNI_STAFF_ID` (`useAuth().user.staffId`).
+    - **All three calls use `/api/my-profile/*`, including the read** — `GET /api/my-profile`,
+      `PUT /api/my-profile/update-info`, `POST /api/my-profile/upload-photo`. The gateway
+      resolves the read through Person Search on its side, so it is the same lookup; the
+      point of owning the path is that the gateway gates a module by its path prefix.
+      Reading through `/api/person/search` would leave this screen loading normally after
+      somebody switched the module off, and fail only on save.
+    - Switched off ⇒ the read comes back 503 `ModuleDisabled`, `myProfileService` marks it,
+      and the screen renders `ErrorState`, which shows the "closed on purpose" wording
+      rather than a fault. Same path every other module takes.
+    - Writes never go straight to PSU — the HMAC signature and the photo host's API key
+      live on the gateway and must not ship in the bundle.
+    - `staff_id` on all three is `UNI_STAFF_ID` (`useAuth().user.staffId`).
     - The photo is re-encoded to JPEG and sent as base64; the gateway rebuilds the
       multipart request the photo host wants.
 

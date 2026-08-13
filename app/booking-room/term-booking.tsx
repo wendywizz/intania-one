@@ -41,7 +41,6 @@ import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button, Toggle } from '@/components/ui';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { SelectSheet, type SelectSheetOption } from '@/components/ui/select-sheet';
 import { AppFonts } from '@/constants/fonts';
@@ -55,8 +54,8 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/toast-provider';
 import { formatFullDate } from '@/utils/date-format';
+import { addToCart } from '@/services/bookingCartService';
 import {
-  createTermBooking,
   getTermFormOptions,
   listTermRooms,
   type TeachingSubject,
@@ -120,13 +119,21 @@ export default function TermBookingScreen() {
   const [drafts, setDrafts] = useState<Record<string, DayDraft>>({});
 
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [picker, setPicker] = useState<Picker>(null);
   const [rooms, setRooms] = useState<TermRoom[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
+  /**
+   * Whether the room sheet is narrowed to rooms free every week of the term.
+   *
+   * Screen state, not sheet state, so it survives closing the sheet: someone
+   * filling in three weekdays is choosing rooms under the same rule each time,
+   * and having to switch it back on for every day would be the annoyance the
+   * switch was added to remove.
+   */
+  const [freeRoomsOnly, setFreeRoomsOnly] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -249,9 +256,22 @@ export default function TermBookingScreen() {
     [options],
   );
 
+  /**
+   * The rooms the sheet lists.
+   *
+   * `available` here means free on *every* occurrence of that weekday, so this
+   * switch drops both the rooms that are taken outright and the shareable ones
+   * — a room you would be sitting in alongside somebody else is not a free
+   * room, and the point of asking for only free ones is not to be offered it.
+   */
+  const visibleRooms = useMemo(
+    () => (freeRoomsOnly ? rooms.filter((r) => r.available) : rooms),
+    [rooms, freeRoomsOnly],
+  );
+
   const roomOptions: SelectSheetOption[] = useMemo(
     () =>
-      rooms.map((r) => ({
+      visibleRooms.map((r) => ({
         id: r.id,
         label: r.name,
         // A shareable room says who it is shared with — agreeing to sit
@@ -265,29 +285,35 @@ export default function TermBookingScreen() {
         disabled: !r.available && !r.shareable,
         trailing: <RoomOptionFacts room={r} color={c} styles={styles} />,
       })),
-    [rooms, c, styles],
+    [visibleRooms, c, styles],
   );
 
   const subjectLabel = subject
     ? `${subject.subject_id} (${subject.section}) ${subject.subject_name}`
     : '';
 
-  const confirmSummary = useMemo(() => {
-    const lines = [extra ? extraSubject.trim() : subjectLabel];
-
-    activeDays.forEach((d) => {
-      const draft = drafts[d.day];
-      if (!draft) return;
-      lines.push(
-        `${d.label} ${draft.startTime}-${draft.endTime} · ${draft.room?.name ?? ''} · ` +
-          fill(TEXT.BOOKING_ROOM_TERM_DAY_COUNT, { count: d.date_count }),
-      );
-    });
-
-    lines.push(fill(TEXT.BOOKING_ROOM_TERM_TOTAL, { count: totalSlots }));
-
-    return lines.filter(Boolean).join('\n');
-  }, [extra, extraSubject, subjectLabel, activeDays, drafts, totalSlots]);
+  /**
+   * One line per ticked weekday, for the cart row.
+   *
+   * These lines were the confirmation dialog's summary before the cart existed.
+   * The dialog is gone — adding a draft is reversible and does not deserve a
+   * pause — but the sentences are still the clearest way to state what a term
+   * booking is, so they moved to where the reader now decides: the cart.
+   */
+  const cartWhen = useMemo(
+    () =>
+      activeDays
+        .map((d) => {
+          const draft = drafts[d.day];
+          if (!draft) return '';
+          return (
+            `${d.label} ${draft.startTime}-${draft.endTime} · ` +
+            fill(TEXT.BOOKING_ROOM_TERM_DAY_COUNT, { count: d.date_count })
+          );
+        })
+        .filter(Boolean),
+    [activeDays, drafts],
+  );
 
   const validate = (): FieldErrors => {
     const found: FieldErrors = {};
@@ -348,7 +374,7 @@ export default function TermBookingScreen() {
     }
 
     setError(null);
-    setConfirming(true);
+    void submit();
   };
 
   const submit = async () => {
@@ -356,37 +382,56 @@ export default function TermBookingScreen() {
     setError(null);
 
     try {
-      await createTermBooking({
-        staff_id: staffId,
-        teacher: teacher.trim(),
-        bgcolor: color,
-        extra,
-        days: activeDays.map((d) => ({
-          day: d.day,
-          start_time: drafts[d.day].startTime,
-          end_time: drafts[d.day].endTime,
-          room_id: drafts[d.day].room!.id,
-        })),
-        ...(extra
-          ? {
-              subject_id: extraSubject.trim(),
-              section: extraSection.trim() || '-',
-              objective: extraObjective.trim(),
-            }
-          : {
-              subject_id: subject!.subject_id,
-              section: subject!.section,
-              subj_key: subject!.subj_key,
-              term: subject!.term,
-              year: subject!.year,
-              objective: subject!.subject_name,
-            }),
+      // A draft, not a booking. Confirming on the cart screen is what writes
+      // the term's worth of rows — see services/bookingCartService.ts.
+      await addToCart(staffId, {
+        kind: 'term',
+        payload: {
+          staff_id: staffId,
+          teacher: teacher.trim(),
+          bgcolor: color,
+          extra,
+          days: activeDays.map((d) => ({
+            day: d.day,
+            start_time: drafts[d.day].startTime,
+            end_time: drafts[d.day].endTime,
+            room_id: drafts[d.day].room!.id,
+          })),
+          ...(extra
+            ? {
+                subject_id: extraSubject.trim(),
+                section: extraSection.trim() || '-',
+                objective: extraObjective.trim(),
+              }
+            : {
+                subject_id: subject!.subject_id,
+                section: subject!.section,
+                subj_key: subject!.subj_key,
+                term: subject!.term,
+                year: subject!.year,
+                objective: subject!.subject_name,
+              }),
+        },
+        summary: {
+          title: extra ? extraSubject.trim() : subject!.subject_id,
+          subtitle: extra ? extraObjective.trim() : subject!.subject_name,
+          teacher: teacher.trim(),
+          // Deduplicated: three weekdays in the same room is one room.
+          rooms: Array.from(
+            new Set(activeDays.map((d) => drafts[d.day].room?.name ?? '').filter(Boolean)),
+          ),
+          when: cartWhen,
+          slotCount: totalSlots,
+          // The term's own end date. A draft left until after the term has
+          // finished has no dates left to book, and the cart says so rather
+          // than letting the server say it.
+          lastDate: options?.term.enddate ?? '',
+        },
       });
 
-      showToast(TEXT.BOOKING_ROOM_TERM_SUBMIT_SUCCESS, 'success');
-      router.replace('/booking-room');
+      showToast(TEXT.BOOKING_ROOM_CART_ADDED, 'success');
+      router.replace('/booking-room/cart');
     } catch (err) {
-      setConfirming(false);
       setError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_SUBMIT_ERROR);
     } finally {
       setSubmitting(false);
@@ -710,7 +755,7 @@ export default function TermBookingScreen() {
         ) : null}
 
         <Button
-          title={TEXT.BOOKING_ROOM_SUBMIT}
+          title={TEXT.BOOKING_ROOM_CART_ADD_ACTION}
           onPress={requestSubmit}
           loading={submitting}
           disabled={!canSubmit}
@@ -718,20 +763,6 @@ export default function TermBookingScreen() {
           fullWidth
         />
       </View>
-
-      {/* The pause matters more here than on จองทั่วไป: confirming writes
-          dozens of rows at once, and the app has no way to cancel a booking. */}
-      <ConfirmDialog
-        visible={confirming}
-        icon="calendar-range"
-        title={TEXT.BOOKING_ROOM_TERM_CONFIRM_TITLE}
-        message={confirmSummary}
-        confirmLabel={TEXT.BOOKING_ROOM_CONFIRM_ACTION}
-        cancelLabel={TEXT.BOOKING_ROOM_CONFIRM_CANCEL}
-        onConfirm={() => void submit()}
-        onCancel={() => setConfirming(false)}
-        loading={submitting}
-      />
 
       <SelectSheet
         visible={picker?.kind === 'subject'}
@@ -786,9 +817,27 @@ export default function TermBookingScreen() {
         title={TEXT.BOOKING_ROOM_ROOM_PICK}
         searchPlaceholder={TEXT.BOOKING_ROOM_SCHEDULE_SEARCH_ROOM}
         options={roomOptions}
+        // Hidden while the list is still arriving: an empty list with a switch
+        // over it invites turning the switch off to find what is missing.
+        filter={
+          roomsLoading
+            ? undefined
+            : {
+                label: TEXT.BOOKING_ROOM_ROOM_FREE_ONLY,
+                value: freeRoomsOnly,
+                onValueChange: setFreeRoomsOnly,
+              }
+        }
         selectedId={picker?.kind === 'room' ? drafts[picker.day]?.room?.id : undefined}
         emptyMessage={
-          roomsLoading ? TEXT.SHARED_LOADING_DATA_TITLE : TEXT.BOOKING_ROOM_ROOM_NONE_FREE
+          roomsLoading
+            ? TEXT.SHARED_LOADING_DATA_TITLE
+            : // The switch is why the list is empty, so say so — otherwise it
+              // reads as "no room at this hour" when rooms to share are one tap
+              // away.
+              freeRoomsOnly && rooms.length > 0
+              ? TEXT.BOOKING_ROOM_ROOM_NONE_FREE_FILTERED_SHARED
+              : TEXT.BOOKING_ROOM_ROOM_NONE_FREE
         }
         onSelect={(option) => {
           if (picker?.kind !== 'room') return;

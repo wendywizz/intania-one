@@ -4,7 +4,10 @@
  * Tab keys map to route files as:
  *   current_booking  → index    (so /booking-room lands on it)
  *   booking_schedule → schedule
- *   booking_history  → history
+ *   booking_history  → completed
+ *
+ * The key stays `booking_history` — it is the server's, and the tab permission
+ * it gates is the same one whatever the tab is called here.
  */
 import { Tabs } from 'expo-router';
 
@@ -52,9 +55,9 @@ export default function BookingRoomTabLayout() {
         }}
       />
       <Tabs.Screen
-        name="history"
+        name="completed"
         options={{
-          title: TEXT.BOOKING_ROOM_TAB_HISTORY,
+          title: TEXT.BOOKING_ROOM_TAB_COMPLETED,
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="history" color={color} />,
         }}
       />

@@ -38,7 +38,6 @@ import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button, Toggle } from '@/components/ui';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { SelectSheet, type SelectSheetOption } from '@/components/ui/select-sheet';
 import { AppFonts } from '@/constants/fonts';
@@ -52,9 +51,9 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/toast-provider';
 import { formatFullDate } from '@/utils/date-format';
+import { addToCart } from '@/services/bookingCartService';
 import {
   checkBookDate,
-  createBooking,
   getBookFormOptions,
   listBookableRooms,
   type BookableRoom,
@@ -119,11 +118,12 @@ export default function GeneralBookingScreen() {
   const [room, setRoom] = useState<BookableRoom | null>(null);
 
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [confirming, setConfirming] = useState(false);
 
   const [verdict, setVerdict] = useState<DateVerdict | null>(null);
   const [rooms, setRooms] = useState<BookableRoom[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
+  /** Whether the room sheet is narrowed to the rooms that are actually free. */
+  const [freeRoomsOnly, setFreeRoomsOnly] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -284,37 +284,38 @@ export default function GeneralBookingScreen() {
     [options],
   );
 
+  /**
+   * The rooms the sheet lists.
+   *
+   * Taken rooms are in the list by default — greyed and unchoosable — so it
+   * matches the room list on the schedule tab, and a room that vanished would
+   * read as a room that does not exist. The switch is for the other need: when
+   * the answer is "anywhere that is free", scrolling past forty greyed rows to
+   * find the four that are not is the whole task.
+   */
+  const visibleRooms = useMemo(
+    () => (freeRoomsOnly ? rooms.filter((r) => r.available) : rooms),
+    [rooms, freeRoomsOnly],
+  );
+
   const roomOptions: SelectSheetOption[] = useMemo(
     () =>
-      rooms.map((r) => ({
+      visibleRooms.map((r) => ({
         id: r.id,
         label: r.name,
         description: r.available ? undefined : TEXT.BOOKING_ROOM_ROOM_UNAVAILABLE,
-        // Taken rooms stay in the list — greyed and unchoosable — so it still
-        // matches the room list on the schedule tab. A room that vanished
-        // would read as a room that does not exist.
         disabled: !r.available,
         // Capacity rides along with the equipment rather than in `meta`, so the
         // seat count and the fittings are one group of icons instead of a
         // string and a group of icons that happen to sit next to each other.
         trailing: <RoomOptionFacts room={r} color={c} styles={styles} />,
       })),
-    [rooms, c, styles],
+    [visibleRooms, c, styles],
   );
 
   const subjectLabel = subject
     ? `${subject.subject_id} (${subject.section}) ${subject.subject_name}`
     : '';
-
-  /** What is about to be written, in one line, for the confirmation. */
-  const confirmSummary = [
-    extra ? extraSubject.trim() : subjectLabel,
-    date ? formatFullDate(toISODate(date)) : '',
-    startTime && endTime ? `${startTime} - ${endTime}` : '',
-    room?.name ?? '',
-  ]
-    .filter(Boolean)
-    .join('\n');
 
   /** Clears one field's complaint the moment it is answered. */
   const clearError = useCallback((field: FieldKey) => {
@@ -378,7 +379,14 @@ export default function GeneralBookingScreen() {
    */
   const canSubmit = extra || subject !== null;
 
-  /** The submit button: check first, then ask. */
+  /**
+   * The submit button: check, then put it in the cart.
+   *
+   * No "are you sure" in between any more. There used to be one because the tap
+   * wrote a booking that the app could not undo; now it adds a draft that the
+   * cart screen lists, reviews and can delete, and asking twice to do something
+   * reversible is friction with nothing behind it.
+   */
   const requestSubmit = () => {
     const found = validate();
     setErrors(found);
@@ -391,54 +399,67 @@ export default function GeneralBookingScreen() {
     }
 
     setError(null);
-    setConfirming(true);
+    void submit();
   };
 
   const submit = async () => {
-    // The dialog stays up, spinning, for the length of the request: closing it
-    // first would leave the screen looking untouched while a booking is being
-    // written, and nothing would stop a second tap.
     setSubmitting(true);
     setError(null);
 
+    const title = extra ? extraSubject.trim() : subject!.subject_id;
+    const purpose = extra ? extraObjective.trim() : subject!.subject_name;
+
     try {
-      await createBooking({
-        staff_id: staffId,
-        date: isoDate,
-        start_time: startTime,
-        end_time: endTime,
-        room_id: room!.id,
-        teacher: teacher.trim(),
-        bgcolor: color,
-        extra,
-        ...(extra
-          ? {
-              subject_id: extraSubject.trim(),
-              // Section stays optional — the website's own form lets it be a
-              // dash, and a one-off activity has no section to give.
-              section: extraSection.trim() || '-',
-              objective: extraObjective.trim(),
-            }
-          : {
-              subject_id: subject!.subject_id,
-              section: subject!.section,
-              subj_key: subject!.subj_key,
-              term: subject!.term,
-              year: subject!.year,
-              objective: subject!.subject_name,
-            }),
+      // Into the cart, not into tb_book. The room is not held by this and the
+      // confirmation on the cart screen is what books it — see
+      // services/bookingCartService.ts for why the flow works this way.
+      await addToCart(staffId, {
+        kind: 'general',
+        payload: {
+          staff_id: staffId,
+          date: isoDate,
+          start_time: startTime,
+          end_time: endTime,
+          room_id: room!.id,
+          teacher: teacher.trim(),
+          bgcolor: color,
+          extra,
+          ...(extra
+            ? {
+                subject_id: extraSubject.trim(),
+                // Section stays optional — the website's own form lets it be a
+                // dash, and a one-off activity has no section to give.
+                section: extraSection.trim() || '-',
+                objective: extraObjective.trim(),
+              }
+            : {
+                subject_id: subject!.subject_id,
+                section: subject!.section,
+                subj_key: subject!.subj_key,
+                term: subject!.term,
+                year: subject!.year,
+                objective: subject!.subject_name,
+              }),
+        },
+        // The words the cart row will show. Captured now because the room name
+        // and the subject title are on screen here and would cost a fetch
+        // there.
+        summary: {
+          title,
+          subtitle: purpose,
+          teacher: teacher.trim(),
+          rooms: room ? [room.name] : [],
+          when: [`${formatFullDate(isoDate)} ${startTime}-${endTime}`],
+          slotCount: 1,
+          lastDate: isoDate,
+        },
       });
 
-      showToast(TEXT.BOOKING_ROOM_SUBMIT_SUCCESS, 'success');
-      // Back to the bookings tab, which refetches on focus and so shows the
-      // booking that was just made.
-      router.replace('/booking-room');
+      showToast(TEXT.BOOKING_ROOM_CART_ADDED, 'success');
+      router.replace('/booking-room/cart');
     } catch (err) {
-      // Out of the way, so the reason is readable and the form is editable —
-      // "ห้องนี้ถูกจองในช่วงเวลาดังกล่าวแล้ว" is an instruction to pick another
-      // room, which cannot be followed from behind a dialog.
-      setConfirming(false);
-      // The server's own words — a generic failure would say none of that.
+      // Storage failing is the only way this can go wrong now, and the form
+      // stays exactly as it was so the tap can simply be repeated.
       setError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_SUBMIT_ERROR);
     } finally {
       setSubmitting(false);
@@ -734,9 +755,10 @@ export default function GeneralBookingScreen() {
         ) : null}
 
         <Button
-          // `loading` swaps the label for a spinner, so the "กำลังบันทึก…"
-          // wording the label used to carry is redundant here.
-          title={TEXT.BOOKING_ROOM_SUBMIT}
+          // "ใส่ตะกร้า", not "บันทึกการจอง": the tap does not book the room,
+          // and a button that overstates what it does is the one way this flow
+          // can mislead somebody into losing a room they thought they had.
+          title={TEXT.BOOKING_ROOM_CART_ADD_ACTION}
           onPress={requestSubmit}
           loading={submitting}
           disabled={!canSubmit}
@@ -744,22 +766,6 @@ export default function GeneralBookingScreen() {
           fullWidth
         />
       </View>
-
-      {/* Asked before the write, because this one cannot be undone from the
-          phone: the app has no "cancel booking" and the room is held the
-          moment the row lands. The summary is the point of the pause — it is
-          the only place the four answers appear together. */}
-      <ConfirmDialog
-        visible={confirming}
-        icon="door.open"
-        title={TEXT.BOOKING_ROOM_CONFIRM_TITLE}
-        message={confirmSummary}
-        confirmLabel={TEXT.BOOKING_ROOM_CONFIRM_ACTION}
-        cancelLabel={TEXT.BOOKING_ROOM_CONFIRM_CANCEL}
-        onConfirm={() => void submit()}
-        onCancel={() => setConfirming(false)}
-        loading={submitting}
-      />
 
       <SelectSheet
         visible={picker === 'subject'}
@@ -812,8 +818,25 @@ export default function GeneralBookingScreen() {
         searchPlaceholder={TEXT.BOOKING_ROOM_SCHEDULE_SEARCH_ROOM}
         options={roomOptions}
         selectedId={room?.id}
+        // Hidden while the list is still arriving: an empty list with a switch
+        // over it invites turning the switch off to find what is missing.
+        filter={
+          roomsLoading
+            ? undefined
+            : {
+                label: TEXT.BOOKING_ROOM_ROOM_FREE_ONLY,
+                value: freeRoomsOnly,
+                onValueChange: setFreeRoomsOnly,
+              }
+        }
         emptyMessage={
-          roomsLoading ? TEXT.SHARED_LOADING_DATA_TITLE : TEXT.BOOKING_ROOM_ROOM_NONE_FREE
+          roomsLoading
+            ? TEXT.SHARED_LOADING_DATA_TITLE
+            : // The switch is why the list is empty, so say so rather than let
+              // it read as "no room at this hour".
+              freeRoomsOnly && rooms.length > 0
+              ? TEXT.BOOKING_ROOM_ROOM_NONE_FREE_FILTERED
+              : TEXT.BOOKING_ROOM_ROOM_NONE_FREE
         }
         // A taken room is marked `disabled`, so the sheet never reports it as a
         // selection and there is nothing to re-check here.

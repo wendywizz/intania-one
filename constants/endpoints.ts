@@ -76,7 +76,11 @@ export const ENDPOINTS = {
 
   // --- my-profile ----------------------------------------------------------
   // The signed-in person's own record. Separate from `person` above, which
-  // reads anybody's — these two write, and the gateway gates them separately.
+  // reads anybody's. The read is here too, even though the gateway resolves it
+  // through person-search: the gateway gates a module by its path prefix, so
+  // reading through /api/person would leave this screen working after somebody
+  // switched the module off.
+  myProfile: `${API_BASE_URL}/api/my-profile`,
   myProfileUpdateInfo: `${API_BASE_URL}/api/my-profile/update-info`,
   myProfileUploadPhoto: `${API_BASE_URL}/api/my-profile/upload-photo`,
 

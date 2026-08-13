@@ -62,12 +62,12 @@ export default function BookingDetailScreen() {
   const bookId = Array.isArray(params.book_id) ? params.book_id[0] : params.book_id;
   const staffId = user?.staffId ?? '';
 
-  // Two lists lead here — the upcoming bookings and the history log — and back
-  // has to return to whichever one was left. The caller says which by passing
-  // `from`; anything else falls back to the upcoming list, which is the tab a
-  // deep link or a notification should land on.
+  // Two lists lead here — รายการจอง and เสร็จสิ้น — and back has to return to
+  // whichever one was left. The caller says which by passing `from`; anything
+  // else falls back to รายการจอง, which is the tab a deep link or a
+  // notification should land on.
   const from = Array.isArray(params.from) ? params.from[0] : params.from;
-  const backHref: Href = from === 'history' ? '/booking-room/history' : '/booking-room';
+  const backHref: Href = from === 'completed' ? '/booking-room/completed' : '/booking-room';
 
   const [booking, setBooking] = useState<MyBookingDetail | null>(null);
   const [loading, setLoading] = useState(true);

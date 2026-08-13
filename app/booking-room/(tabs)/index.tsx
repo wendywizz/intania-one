@@ -19,6 +19,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-n
 
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
+import { BookingCartButton } from '@/components/booking-room/cart-button';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -213,6 +214,7 @@ export default function BookingRoomCurrentScreen() {
         backHref="/"
         titleInNavBar
         showHomeButton={false}
+        rightContent={<BookingCartButton />}
       />
 
       <ScrollView

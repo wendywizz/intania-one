@@ -108,7 +108,7 @@ export default function BookingSlotsScreen() {
       showToast(TEXT.BOOKING_ROOM_SLOT_DELETE_SUCCESS, 'success');
 
       if (result.booking_deleted) {
-        router.replace((from === 'history' ? '/booking-room/history' : '/booking-room') as Href);
+        router.replace((from === 'completed' ? '/booking-room/completed' : '/booking-room') as Href);
         return;
       }
 
