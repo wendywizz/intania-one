@@ -9,15 +9,32 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_MODE": "production"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_MODE": "production",
+        "EXPO_PUBLIC_API_BASE_URL": "http://172.31.133.131:1337"
+      }
     },
     "development-ios-simulator": {
       "developmentClient": true,
       "ios": {
         "simulator": true
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6806943476",
+        "appleTeamId": "57VVD6LX29"
       }
     }
   }

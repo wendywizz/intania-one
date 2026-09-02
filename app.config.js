@@ -49,9 +49,14 @@ module.exports = ({ config }) => {
   // EAS project link. `eas init` can't write this into a dynamic config, and the
   // computed `extra` above replaces app.json's `extra`, so the projectId must be
   // added here or the push-token code (getExpoPushTokenAsync) sees no projectId.
+  //
+  // Points at @faculty-of-engineer-psu/intania-one. The previous project
+  // (@faculty-of-engineer/intania-staff-buddy) was deleted on 2026-09-01 — an
+  // EAS project's slug is fixed at creation, so renaming the app meant a new
+  // project rather than an edit.
   extra.eas = {
     ...(config.extra?.eas || {}),
-    projectId: 'e80523a6-8198-45eb-945a-62a7bb15943f',
+    projectId: '31d71936-d7c8-435e-bc91-f7027444706a',
   };
 
   return {
@@ -61,7 +66,7 @@ module.exports = ({ config }) => {
     // Bump it there and both follow. (Build numbers stay with EAS — eas.json
     // sets appVersionSource: "remote".)
     version: pkg.version,
-    owner: 'faculty-of-engineer',
+    owner: 'faculty-of-engineer-psu',
     extra,
   };
 };
