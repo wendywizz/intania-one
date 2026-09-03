@@ -42,7 +42,7 @@ These are not menu items — they wrap or feed every module.
 
 - **Sign-in (OpenID)** — `services/authService.ts` + `context/AuthContext.tsx`. PKCE
   against `psusso.psu.ac.th`, the only upstream the app calls **without** going through
-  the gateway. Native uses `com.ecs.intaniaSB://oauth/callback` and an external browser
+  the gateway. Native uses `th.ac.psu.eng.scooba://oauth/callback` and an external browser
   (falling back to `app/openid-webview.tsx` when no custom-tab browser is installed);
   web uses `http://localhost:8081/oauth/callback` and proxies token/userinfo through
   Metro to dodge CORS (`METRO_PROXY_ENDPOINTS`). The id it returns is `UNI_STAFF_ID`.
@@ -60,12 +60,37 @@ These are not menu items — they wrap or feed every module.
   (history, unread badge, read/clear, foreground handler) and
   `services/deviceService.ts`, which registers this device's Expo push token against
   the signed-in `UNI_STAFF_ID` via `POST /api/push/register-device`.
+  Tapping a notification opens the screen where that work is done, whether the tap
+  was on a row in `app/notification.tsx` or on the OS banner / tray / lock screen
+  (`hooks/use-notification-deep-link.ts`, armed from `AppStack`). Both read one
+  table — `utils/notification-link.ts` maps the gateway's `data.type` (an event key
+  from `scooba-service/src/api/push/utils/events.js`) to a module **list** route; a
+  push carries no id a detail screen would accept. A `data.url`, if a caller sends
+  one, wins over the table. Rows with no route show no chevron and only get marked
+  read. Adding a push event means adding a line to that table; a route belonging to
+  a role the person does not hold is fine, because the role-gated modules redirect
+  an out-of-role path to that person's own default tab.
+
+  Three things make the outside-the-app tap work that are easy to break:
+  `notificationService` **holds** a tap until a handler is set (a cold start
+  delivers it before the navigator exists) and reports it through
+  `setNotificationTapHandler`, staying out of routing itself;
+  `getLastNotificationResponseAsync()` covers the launch tap the listener never
+  sees, de-duplicated in memory *and* in storage, because the platform keeps
+  returning that response after an ordinary relaunch; and `BiometricGate`'s
+  return-lock reset to home asks `consumeNotificationNavigation()` first, or it
+  would throw away the deep link between the tap and the unlock.
 - **Home summary** — `app/index.tsx` shows the news band, the module grid, and a row of
   "what needs me today" counters fed by `GET /api/active-summary`
   (`services/activeSummaryService.ts`): one call covering repair-computer, absence,
   meeting and timestamp, each section carrying its own `success` flag so one failing
   module does not blank the row. The upcoming exam duty is a separate
   `listExamTasks()` call.
+  `buildShiftItems()` turns all of it into one flat `ShiftItem[]`, and **two** things
+  render that list: the tile band, and the red dot on each module tile in the grid
+  below (`item.module`, one of `MODULE_HREF`, says which square). Derive anything
+  else about pending work from that list too — a dot that re-read the summary could
+  disagree with the band above it. See `upcoming-shift.txt` for the per-module detail.
 - **Settings** — `app/settings.tsx`: theme (light/dark/system), notification toggle,
   app-lock options, sign-out.
 - **News** — `app/news.tsx` + `app/news-detail.tsx`, `services/newsService.ts`. Public,
@@ -286,10 +311,10 @@ Each of the environments will use some variable, key, uri callback and setting a
 Web browser and emulator alway use for testing only but real device use for testing too but you should simulate for real 
 
 About OpenID system have two domains for auth callback 
-- com.ecs.intaniaSB://oauth/callback: Use for emulator and Real Device
+- th.ac.psu.eng.scooba://oauth/callback: Use for emulator and Real Device
 - http://localhost:8081/oauth/callback: Use for Expo Web Browser
 
-The key of OpenID use different key I will put the detail in .env file of "intania-staff-buddy" project
+The key of OpenID use different key I will put the detail in .env file of "intania-one" project
 
 About Push Notification the app can receive notification every environment such as Expo Web browser, Emulator and Real Device
 

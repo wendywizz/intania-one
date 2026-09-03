@@ -24,6 +24,7 @@ import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Sheet } from '@/components/ui/sheet';
 import { TextField } from '@/components/ui/text-field';
 import { Toggle } from '@/components/ui/toggle';
+import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { useColors, useThemedStyles } from '@/constants/theme';
 
@@ -34,6 +35,17 @@ export type SelectSheetOption = {
   /** Stable identity — also what `selectedId` is matched against. */
   id: string;
   label: string;
+  /**
+   * A line of context ABOVE the label — a job title over a person's name.
+   *
+   * Where `description` trails the label as detail, this leads it: what is read
+   * first is the role, and the label under it is who fills it. It wraps to two
+   * lines and then ellipsizes, so one long Thai job title cannot push a row to
+   * four lines and turn a list of ten people into a scroll. The label carries
+   * bold weight whenever an overline is present, so the name still reads as the
+   * option being chosen rather than the context above it.
+   */
+  overline?: string;
   /** Second line under the label: a person's name, a building, a code. */
   description?: string;
   /** Optional right-aligned detail: a capacity, a count, a code. */
@@ -241,9 +253,22 @@ export function SelectSheet({
                   ) : null)}
 
                 <View style={styles.labelCol}>
+                  {option.overline ? (
+                    <ThemedText
+                      style={[
+                        styles.overline,
+                        active && styles.labelActive,
+                        disabled && styles.labelDisabled,
+                      ]}
+                      numberOfLines={2}
+                      ellipsizeMode="tail">
+                      {option.overline}
+                    </ThemedText>
+                  ) : null}
                   <ThemedText
                     style={[
                       styles.label,
+                      option.overline && styles.labelStrong,
                       active && styles.labelActive,
                       disabled && styles.labelDisabled,
                     ]}
@@ -320,6 +345,8 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
     optionDisabled: { opacity: 0.55 },
     labelCol: { flex: 1, gap: 2 },
     label: { fontSize: 15, color: c.text },
+    labelStrong: { fontFamily: AppFonts.psuBold },
+    overline: { fontSize: 13, lineHeight: 18, color: c.textMuted },
     description: { fontSize: 12, color: c.textMuted },
     labelActive: { color: c.primary },
     labelDisabled: { color: c.textFaint },

@@ -1,4 +1,4 @@
-import { type Href, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import moment from 'moment';
 import { useCallback, useState } from 'react';
@@ -6,7 +6,7 @@ import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from 're
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { NavTopBar } from '@/components/nav-top-bar';
-import { Bell, BellOff } from 'lucide-react-native';
+import { Bell, BellOff, ChevronRight } from 'lucide-react-native';
 import { EmptyState } from '@/components/empty-state';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -20,6 +20,7 @@ import {
   type PushNotificationHistoryItem,
 } from '@/services/notificationService';
 import { navPush } from '@/utils/navigation';
+import { getNotificationRoute } from '@/utils/notification-link';
 import { boxShadow } from '@/constants/shadows';
 
 function formatRelativeTime(value: string) {
@@ -28,15 +29,13 @@ function formatRelativeTime(value: string) {
   return m.fromNow();
 }
 
-function getTargetUrl(item: PushNotificationHistoryItem) {
-  const url = item.data?.url;
-  return typeof url === 'string' && url.trim() ? url.trim() : '';
-}
-
 function NotificationItem({ item, onPress }: { item: PushNotificationHistoryItem; onPress: () => void }) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const isUnread = item.status === 'unread';
+  // Not every notification leads anywhere — a chevron only where tapping
+  // actually goes somewhere, so the row does not promise a screen it has none of.
+  const isActionable = getNotificationRoute(item) !== null;
 
   return (
     <Pressable
@@ -63,6 +62,11 @@ function NotificationItem({ item, onPress }: { item: PushNotificationHistoryItem
             </ThemedText>
           ) : null}
         </View>
+        {isActionable ? (
+          <View style={styles.itemChevron}>
+            <ChevronRight size={18} color={c.textMuted} />
+          </View>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -100,8 +104,10 @@ export default function NotificationScreen() {
     setItems((current) =>
       current.map((n) => (n.id === item.id ? { ...n, status: 'read' } : n)),
     );
-    const targetUrl = getTargetUrl(item);
-    if (targetUrl) navPush(targetUrl as Href);
+    // A notification with nowhere to go still gets marked read — the tap was
+    // the person acknowledging it, and that is all this one had to offer.
+    const route = getNotificationRoute(item);
+    if (route) navPush(route);
   };
 
   const handleClearAll = () => {
@@ -203,6 +209,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
 
   itemContent: { flex: 1, gap: 4 },
+
+  // Nudged down so the chevron sits against the title line rather than the top
+  // edge of a two-line card.
+  itemChevron: { flexShrink: 0, marginTop: 10 },
 
   itemTitleRow: {
     flexDirection: 'row',

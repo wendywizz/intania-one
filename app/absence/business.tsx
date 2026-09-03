@@ -48,7 +48,11 @@ import {
   isRetryableInitialError,
   startOfDay,
 } from "@/utils/absence-form";
-import { getStaffDisplayLabel } from "@/utils/staff-label";
+import {
+  getStaffDisplayLabel,
+  getStaffNameLabel,
+  getStaffPositionLabel,
+} from "@/utils/staff-label";
 
 // Remove the default focus outline on web so active inputs match the
 // borderless underline style (RN Web only; no-op on native).
@@ -73,6 +77,10 @@ type SelectOption = {
   value: string;
   staffId?: string;
   photoId?: string;
+  // Staff options render as two lines (position over a bold name) instead of
+  // the flat `label`, which stays as the collapsed value and search text.
+  position?: string;
+  name?: string;
 };
 
 function getApproverList(data: absence | null): Approver[] {
@@ -592,6 +600,8 @@ export default function BusinessScreen() {
           value: getPositionId(item),
           staffId: getStaffId(item),
           photoId: getStaffPhotoId(item),
+          position: getStaffPositionLabel(item),
+          name: getStaffNameLabel(item),
         }))
         .filter((item) => item.label && item.value),
     [initialabsenceData],
@@ -973,18 +983,20 @@ export default function BusinessScreen() {
             onSelect={() => {}}
           />
 
-          {/* The approver list carries a face and a position, so each option
-              keeps its avatar and puts the position on the second line — the
-              same shape the executive-calendar picker uses. */}
+          {/* The approver list carries a face, a position and a name, so each
+              option keeps its avatar and leads with the position over the
+              name. */}
           <SelectSheet
             visible={openSelect === "approver"}
             onClose={() => setOpenSelect(null)}
             title={TEXT.ABSENCE_APPROVER_LABEL}
             options={approverOptions.map((option) => ({
               id: option.value,
-              // This form's approver options carry only a combined label (no
-              // separate name/position), so it goes on one line.
-              label: option.label,
+              // Position over the name, the name in bold — the same approver
+              // row shape every absence form uses.
+              overline: option.position,
+              label: option.name || option.label,
+              searchText: option.label,
               leading: option.photoId ? (
                 <UserAvatar staffId={option.photoId} size={40} />
               ) : undefined,

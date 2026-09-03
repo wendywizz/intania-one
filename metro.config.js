@@ -14,7 +14,7 @@ const API_DOMAINS = {
 
 const AUTH_REDIRECT_DOMAINS = {
   development: 'http://localhost:8081',
-  native: process.env.EXPO_PUBLIC_AUTH_NATIVE_REDIRECT_DOMAIN || 'com.ecs.staffbuddy',
+  native: process.env.EXPO_PUBLIC_AUTH_NATIVE_REDIRECT_DOMAIN || 'th.ac.psu.eng.scooba',
 };
 
 const API_BASE_URL =

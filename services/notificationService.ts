@@ -8,6 +8,8 @@ const NOTIFICATION_HISTORY_STORAGE_KEY = "PUSH_NOTIFICATION_HISTORY";
 const MAX_NOTIFICATION_HISTORY_ITEMS = 80;
 const LOCAL_DISPLAY_DATA_KEY = "__localNotificationDisplay";
 const SOURCE_NOTIFICATION_ID_DATA_KEY = "__sourceNotificationId";
+// The launch tap already acted on, kept across processes — see deliverLaunchTap.
+const LAST_LAUNCH_TAP_STORAGE_KEY = "PUSH_LAST_LAUNCH_TAP_ID";
 
 export type PushNotificationHistoryItem = {
   id: string;
@@ -171,6 +173,115 @@ async function upsertNotificationHistoryItem(item: PushNotificationHistoryItem) 
   await writeStoredHistory(nextItems);
 }
 
+export type NotificationTapHandler = (item: PushNotificationHistoryItem) => void;
+
+let tapHandler: NotificationTapHandler | null = null;
+let heldTapItem: PushNotificationHistoryItem | null = null;
+let lastDeliveredTapKey = "";
+
+/**
+ * Hand a tapped notification to whoever is listening — the OS banner, the tray,
+ * the lock screen. This module stays out of routing: it reports *which*
+ * notification was tapped and nothing about where that leads.
+ *
+ * Two sources can report the same tap — the response listener, and the
+ * cold-start read of `getLastNotificationResponseAsync()` — so a key is checked
+ * first; without it, the notification that launched the app navigates twice.
+ *
+ * With nobody listening yet the tap is held rather than dropped. On a cold start
+ * the response arrives while the splash screen is still up and no navigator
+ * exists — which is exactly the case where a push is what opened the app.
+ */
+function deliverTap(item: PushNotificationHistoryItem, key: string) {
+  if (key && key === lastDeliveredTapKey) {
+    return;
+  }
+
+  lastDeliveredTapKey = key;
+
+  if (tapHandler) {
+    tapHandler(item);
+  } else {
+    heldTapItem = item;
+  }
+}
+
+/**
+ * Register what to do when a notification is tapped outside the app, or clear it
+ * with `null`. Setting a handler immediately drains a tap held from before the
+ * navigator existed.
+ */
+export function setNotificationTapHandler(handler: NotificationTapHandler | null) {
+  tapHandler = handler;
+
+  if (!handler || !heldTapItem) {
+    return;
+  }
+
+  const held = heldTapItem;
+  heldTapItem = null;
+  handler(held);
+}
+
+/**
+ * One tap, however it reached us: record it as read and report it.
+ *
+ * Shared by the listener and the cold-start read so the two can never disagree
+ * about what a tap means.
+ */
+function handleNotificationResponse(response: ExpoNotifications.NotificationResponse) {
+  const sourceNotificationId = getSourceNotificationId(response.notification);
+  const item = getNotificationHistoryItem(response.notification, "read");
+
+  if (sourceNotificationId) {
+    // A local copy stands in for a push that arrived while the app was open; the
+    // history row belongs to the push, so that is the one marked read.
+    void markNotificationRead(sourceNotificationId);
+  } else {
+    void upsertNotificationHistoryItem(item);
+  }
+
+  // The copy carries the push's own `data`, so either one routes to the same
+  // place. Keying on the source id is what keeps them from counting as two taps.
+  deliverTap(item, sourceNotificationId || item.id);
+}
+
+/**
+ * The tap that launched the app, if a push is what launched it.
+ *
+ * The response listener alone is not enough here: on a cold start the OS
+ * delivers the response before any JavaScript is running, so nothing is
+ * subscribed when it happens. `deliverTap` de-duplicates within the process, so
+ * this costs nothing when the listener does also fire.
+ *
+ * The handled response is remembered in storage, not just in memory, because
+ * the platform keeps answering this question with the same response after the
+ * app is reopened from the launcher. Without that, every ordinary launch would
+ * replay the last notification the user ever tapped and throw them onto a screen
+ * they did not ask for.
+ */
+async function deliverLaunchTap(Notifications: typeof ExpoNotifications) {
+  try {
+    const response = await Notifications.getLastNotificationResponseAsync();
+    if (!response) {
+      return;
+    }
+
+    const item = getNotificationHistoryItem(response.notification, "read");
+    const tapKey = getSourceNotificationId(response.notification) || item.id;
+
+    const handledKey = await AsyncStorage.getItem(LAST_LAUNCH_TAP_STORAGE_KEY);
+    if (handledKey === tapKey) {
+      return;
+    }
+
+    await AsyncStorage.setItem(LAST_LAUNCH_TAP_STORAGE_KEY, tapKey);
+    handleNotificationResponse(response);
+  } catch {
+    // Nothing launched the app, or the platform has no answer for the question.
+  }
+}
+
 function registerNotificationHistoryListeners(Notifications: typeof ExpoNotifications) {
   if (listenersRegistered) {
     return;
@@ -195,15 +306,7 @@ function registerNotificationHistoryListeners(Notifications: typeof ExpoNotifica
     void showForegroundNotificationCopy(Notifications, notification);
   });
 
-  Notifications.addNotificationResponseReceivedListener((response) => {
-    const sourceNotificationId = getSourceNotificationId(response.notification);
-    if (sourceNotificationId) {
-      void markNotificationRead(sourceNotificationId);
-      return;
-    }
-
-    void upsertNotificationHistoryItem(getNotificationHistoryItem(response.notification, "read"));
-  });
+  Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
 }
 
 const NOTIFICATION_ENABLED_KEY = 'PUSH_NOTIFICATION_ENABLED';
@@ -260,5 +363,8 @@ export function registerForegroundNotificationHandler() {
     setForegroundNotificationHandler(Notifications);
     void ensureNotificationChannel(Notifications);
     registerNotificationHistoryListeners(Notifications);
+    // After the listener, so a tap the listener also sees is de-duplicated by
+    // key rather than by whichever of the two happened to be first.
+    void deliverLaunchTap(Notifications);
   });
 }

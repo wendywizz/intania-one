@@ -5,7 +5,8 @@
  * an optional trailing value + chevron, and press feedback. ≥56pt tall for a
  * comfortable touch target. Themed via useColors().
  */
-import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { AppText as Text } from '@/components/app-text';
 
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';

@@ -1055,17 +1055,19 @@ export default function SickScreen() {
             onSelect={() => {}}
           />
 
-          {/* The approver list carries a face and a position, so each option
-              keeps its avatar and puts the position on the second line — the
-              same shape the executive-calendar picker uses. */}
+          {/* The approver list carries a face, a position and a name, so each
+              option keeps its avatar and leads with the position over the
+              name. */}
           <SelectSheet
             visible={openSelect === "approver"}
             onClose={() => setOpenSelect(null)}
             title={TEXT.ABSENCE_APPROVER_LABEL}
             options={approverOptions.map((option) => ({
               id: option.value,
+              // Position over the name, the name in bold — the same approver
+              // row shape every absence form uses.
+              overline: option.subtitle,
               label: option.title || option.label,
-              description: option.subtitle,
               searchText: option.label,
               leading: option.photoId ? (
                 <UserAvatar staffId={option.photoId} size={40} />

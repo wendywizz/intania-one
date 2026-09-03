@@ -13,6 +13,7 @@ import { ToastProvider } from '@/components/toast-provider';
 import { STACK_SCREEN_OPTIONS } from '@/constants/navigation';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import { useNotificationDeepLink } from '@/hooks/use-notification-deep-link';
 import { registerForegroundNotificationHandler } from '@/services/notificationService';
 
 SplashScreen.preventAutoHideAsync();
@@ -23,7 +24,12 @@ export const unstable_settings = {
 
 function AppStack() {
   const { isDarkMode } = useTheme();
-  const { initializing: isRestoringSession } = useAuth();
+  const { initializing: isRestoringSession, user } = useAuth();
+
+  // Tapping a notification from the OS opens the screen it is about. Armed from
+  // here because the navigator it drives is the one rendered below; the hook
+  // waits for that navigator and holds any tap that beats it.
+  useNotificationDeepLink(!isRestoringSession && Boolean(user));
 
   /**
    * Nothing mounts until the session is restored.

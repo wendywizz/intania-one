@@ -335,8 +335,8 @@ export default function TimestampCalendarScreen() {
     if (!selectedDay) {
       return (
         <View style={styles.emptyDetail}>
-          <CalendarDays size={44} color={c.textFaint} strokeWidth={1.5} />
-          <ThemedText style={styles.hintText}>{TEXT.TIMESTAMP_CALENDAR_HINT}</ThemedText>
+          <CalendarDays size={18} color={c.textFaint} strokeWidth={1.75} />
+          <ThemedText style={styles.emptyDetailText}>{TEXT.TIMESTAMP_CALENDAR_HINT}</ThemedText>
         </View>
       );
     }
@@ -367,6 +367,7 @@ export default function TimestampCalendarScreen() {
           ) : null}
         </View>
 
+        <View style={styles.detailBody}>
         {hasTimes || isWorkDay ? (
           <>
             <View style={styles.timeRow}>
@@ -431,6 +432,7 @@ export default function TimestampCalendarScreen() {
             <ArrowRight size={18} color="#FFFFFF" />
           </Pressable>
         ) : null}
+        </View>
       </View>
     );
   };
@@ -488,6 +490,24 @@ export default function TimestampCalendarScreen() {
           />
         }
       >
+        {/* The selected day reads above the grid it was picked from: it is the
+            answer to the tap, and putting it under a full month of cells meant
+            scrolling away from the calendar to see what the tap did. */}
+        {renderSelectedDetail()}
+
+        <MonthCalendar
+          style={styles.calendarCard}
+          visibleMonth={new Date(year, month - 1, 1)}
+          monthLabel={monthLabel}
+          onPrevMonth={goToPreviousMonth}
+          onNextMonth={goToNextMonth}
+          colorWeekendLabels
+          renderDay={renderDay}
+        />
+        {legend}
+
+        {/* Last: a running total for the month, not something to act on. The
+            legend stays directly under the grid because it explains the grid. */}
         {lateInfo ? (
           <View style={styles.lateSummary}>
             <Clock size={16} color={LATE_COLOR} />
@@ -500,18 +520,6 @@ export default function TimestampCalendarScreen() {
             </ThemedText>
           </View>
         ) : null}
-
-        <MonthCalendar
-          style={styles.calendarCard}
-          visibleMonth={new Date(year, month - 1, 1)}
-          monthLabel={monthLabel}
-          onPrevMonth={goToPreviousMonth}
-          onNextMonth={goToNextMonth}
-          colorWeekendLabels
-          renderDay={renderDay}
-        />
-        {legend}
-        {renderSelectedDetail()}
       </ScrollView>
     );
   };
@@ -668,26 +676,48 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
+  // No padding of its own any more: the header is a band that runs to the card's
+  // edges, so the padding moved into detailHeader and detailBody. `overflow`
+  // clips the band's top corners to the card radius.
   detailCard: {
     backgroundColor: c.surface,
     borderRadius: 16,
-    padding: 16,
-    gap: 12,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(223,191,189,0.25)',
   },
+  // Slate, deliberately NOT the brand red: MonthCalendar's month header sits a
+  // few points below this one, and two red bands on one screen read as the same
+  // control repeated — the month nav — rather than as two different cards.
+  //
+  // Deep rather than tinted, though: the status chip beside the date carries a
+  // pale status colour (see DAY_STATUS_STYLE), and every pale band collides with
+  // one of them — #FDECEC "ขาดงาน" with a red tint, #EFF1F5 "วันหยุด" with a grey
+  // one. On a dark band every chip reads.
+  //
+  // A fixed Defo swatch, so it is the same slate in light and dark; the card
+  // surface moves around it and `textOnPrimary` is white in both themes.
   detailHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
+    backgroundColor: c.wetAsphalt,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
+  detailBody: {
+    padding: 16,
+    gap: 12,
+  },
+  // Reads on the brand band, not on the card surface. `style` is applied after
+  // ThemedText's own colour, so this wins without needing lightColor/darkColor.
   detailDate: {
     flex: 1,
     fontSize: 15,
     lineHeight: 21,
     fontWeight: '700',
-    color: c.text,
+    color: c.textOnPrimary,
     fontFamily: AppFonts.psuBold,
   },
   statusChip: {
@@ -808,22 +838,24 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
-  inlineEmpty: {
-    paddingVertical: 16,
+  // One compact row, not the 200pt empty panel this was while it sat at the
+  // bottom of the screen. Above the grid it holds the slot the detail card will
+  // fill, and paging a month clears the selection — so a tall placeholder would
+  // shove the calendar down the screen on every press of the month arrows.
+  emptyDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: c.surfaceMuted,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  hintText: {
-    textAlign: 'center',
+  emptyDetailText: {
+    flex: 1,
     fontSize: 13,
     lineHeight: 19,
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
-    paddingVertical: 8,
-  },
-  emptyDetail: {
-    minHeight: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 32,
   },
 });

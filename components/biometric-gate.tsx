@@ -32,6 +32,7 @@ import {
   isRejectedScan,
   type LockPlan,
 } from '@/services/biometricService';
+import { consumeNotificationNavigation } from '@/utils/notification-link';
 
 // react-native-web has no native animation driver.
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
@@ -133,10 +134,17 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
     // Done here, at the top of the reveal, because the overlay is still fully
     // opaque: the stack unwinds out of sight and the cover lifts onto home,
     // instead of the user watching their screens pop away one by one.
+    //
+    // Unless a notification tap is what brought the app forward. The reset is
+    // for state that went stale while the user was away — a push they tapped
+    // seconds ago is the opposite of that, and it already navigated to the
+    // screen they asked for behind this overlay.
     if (isReturnLockRef.current) {
       isReturnLockRef.current = false;
-      if (router.canDismiss()) router.dismissAll();
-      router.replace('/');
+      if (!consumeNotificationNavigation()) {
+        if (router.canDismiss()) router.dismissAll();
+        router.replace('/');
+      }
     }
 
     if (Platform.OS !== 'web') {

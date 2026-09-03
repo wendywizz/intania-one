@@ -1,6 +1,7 @@
 import { StyleSheet, Text, type TextProps } from 'react-native';
 
 import { AppFonts } from '@/constants/fonts';
+import { MAX_FONT_SCALE } from '@/constants/typography';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 export type ThemedTextProps = TextProps & {
@@ -20,6 +21,8 @@ export function ThemedText({
 
   return (
     <Text
+      // Before the spread: a screen with room to spare can still pass its own.
+      maxFontSizeMultiplier={MAX_FONT_SCALE}
       style={[
         { color },
         type === 'default' ? styles.default : undefined,

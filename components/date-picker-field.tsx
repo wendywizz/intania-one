@@ -1,7 +1,7 @@
 import { CalendarDays } from 'lucide-react-native';
-import { InfinityLoader } from '@/components/infinity-loader';
 import { useEffect, useState } from 'react';
-import { Modal,
+import { ActivityIndicator,
+  Modal,
   Pressable,
   StyleSheet,
   View,
@@ -289,13 +289,12 @@ export function DatePickerField({
 
       <Modal transparent visible={isOpen} animationType="fade" onRequestClose={() => setIsOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setIsOpen(false)}>
-          <Pressable>
+          {/* Catches taps on the card so they don't close the modal, and — via
+              calendarWrap — is what gives the calendar a width to be 100% of. */}
+          <Pressable style={styles.calendarWrap}>
             {isMonthLoading ? (
               <View style={[styles.calendar, styles.loadingCard]}>
-                <InfinityLoader size={60} />
-                <ThemedText style={styles.loadingText}>
-                  {TEXT.SHARED_LOADING_DATA_TITLE}
-                </ThemedText>
+                <ActivityIndicator color={c.textMuted} />
               </View>
             ) : (
               <MonthCalendar
@@ -351,13 +350,27 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
-    padding: 24,
+    // Narrow side padding: a month grid is seven columns wide and every point
+    // taken off the sides is taken off all seven. Vertical padding stays
+    // generous — height is not what was short.
+    paddingHorizontal: 12,
+    paddingVertical: 24,
+  },
+  // The tap-catching wrapper around the card. It must stretch: `backdrop` is
+  // `alignItems: 'center'`, so without this the wrapper shrinks to fit its
+  // content, and the calendar's `width: '100%'` then resolves against a parent
+  // whose width the calendar itself defines. That circle collapses to the
+  // narrowest the content can be drawn at — which is what squeezed the grid.
+  calendarWrap: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
   },
   // Width/sizing only — the card surface, radius and header band come from the
-  // shared MonthCalendar.
+  // shared MonthCalendar. The cap is above any phone's width so it binds only on
+  // a tablet, where a full-bleed calendar would be absurd rather than generous.
   calendar: {
     width: '100%',
-    maxWidth: 360,
+    maxWidth: 460,
   },
   // Shown while the visible month's holidays are still loading, in place of the
   // calendar, so the days only appear once already marked.
@@ -365,14 +378,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     minHeight: 220,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
     padding: 32,
     backgroundColor: c.surface,
     borderRadius: 16,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: c.textMuted,
   },
   // The inner day pill carries the colour and rounded shape; the shared grid
   // provides the 1/7 column around it.

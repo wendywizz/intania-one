@@ -87,6 +87,9 @@ export const TEXT = {
   // list from June to October, and what this tile is for is the two afternoons
   // of it that fall today.
   HOME_SHIFT_BOOKING_TODAY: 'ใช้ห้องวันนี้',
+  // Read out for the red dot on a module tile. The dot itself says only "there
+  // is something here" — the count, and what it is, are in the band above.
+  HOME_MENU_PENDING_A11Y: 'มีกิจกรรมที่รอดำเนินการ',
   HOME_GREETINGS: ['สวัสดี', 'หวัดดี', 'ว่าไง', 'ดีจ้า', 'ยินดีต้อนรับ', 'เฮลโหล'],
   HOME_DAY_NAMES: ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'],
   HOME_MONTH_NAMES: [
@@ -145,7 +148,7 @@ export const TEXT = {
   // Biometric app lock
   BIOMETRIC_LOCK_TITLE: 'ปลดล็อกแอปพลิเคชัน',
   BIOMETRIC_LOCK_DESCRIPTION: 'ยืนยันตัวตนด้วยใบหน้าหรือลายนิ้วมือเพื่อเข้าใช้งาน',
-  BIOMETRIC_LOCK_PROMPT: 'ยืนยันตัวตนเพื่อเข้าใช้งาน Intania Staff Buddy',
+  BIOMETRIC_LOCK_PROMPT: 'ยืนยันตัวตนเพื่อเข้าใช้งาน Intania One',
   BIOMETRIC_LOCK_UNLOCK: 'ปลดล็อก',
   BIOMETRIC_LOCK_CANCEL: 'ยกเลิก',
   BIOMETRIC_ENABLE_PROMPT: 'ยืนยันตัวตนเพื่อเปิดใช้งานการล็อกแอป',

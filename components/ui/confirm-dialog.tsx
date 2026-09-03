@@ -6,7 +6,8 @@
  * cancel (secondary) + confirm (primary/danger) action pair. Themed via
  * useColors().
  */
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { AppText as Text } from '@/components/app-text';
 
 import { Button } from '@/components/ui/button';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';

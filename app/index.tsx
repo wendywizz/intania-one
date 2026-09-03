@@ -11,10 +11,11 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { AppText as Text } from '@/components/app-text';
+import { useFontScale } from '@/constants/typography';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from 'expo-router';
@@ -134,32 +135,70 @@ const D = {
   gap: 12,
 } as const;
 
+// The edge under both card kinds the signed-in home is built from — the pending
+// tiles and the module tiles. One spec because they sit on the same canvas at
+// the same level: a shadow that differed between them would read as one being
+// nearer the reader than the other.
+//
+// Tight rather than diffuse: a short offset and a small blur, so it reads as a
+// defined edge under the hairline border these cards already carry, not as a
+// glow the card is floating above. Darker than a wide shadow would be, because
+// a shadow this small has far less area to be seen in — the blur stays at 3 and
+// only the opacity moves, since softening it is what would undo the edge.
+const CARD_SHADOW = { y: 1, blur: 3, opacity: 0.26 } as const;
+
 // Published-date accent on the news cards — shared by the icon and the label so
 // they always match.
 const NEWS_DATE_COLOR = '#F1C40F';
 
+// Line heights for the news card, named because they are needed twice: once in
+// the stylesheet and once multiplied by the device font scale at the call site.
+// A lineHeight written in a stylesheet is a fixed number of points — the glyphs
+// inside it grow with the device text-size setting and it does not, so at large
+// sizes the lines collide and the card clips them.
+const NEWS_TITLE_LINE_HEIGHT = 21;
+const NEWS_DATE_LINE_HEIGHT = 17;
+
 type IconName = Parameters<typeof IconSymbol>[0]['name'];
+
+// The menu tile a module owns. Named once and used by both the grid below and
+// every shift item's `module`, so the red dot on a tile and the tiles in the
+// pending band are two views of one list and cannot drift apart. A shift item's
+// own `onPress` target is deeper than this and sometimes a different path
+// entirely (the exam roster's menu entry is /examiner, its screen /examinar),
+// which is why the two are separate fields rather than one.
+const MODULE_HREF = {
+  timestamp: '/timestamp/calendar',
+  absence: '/absence/pending',
+  meeting: '/meeting',
+  repair: '/repair-computer',
+  noticeRepair: '/notice-repair',
+  booking: '/booking-room',
+  exam: '/examiner',
+  calendar: '/calendar',
+  person: '/person-search',
+} as const;
 
 // The order the grid draws them in, and the only thing that decides it. Daily
 // business first, then the things asked for when something is needed, with
 // reference lookups last.
 const MENU_ITEMS: readonly { title: string; href: string; icon: IconName }[] = [
-  { title: TEXT.TIMESTAMP_TITLE, href: '/timestamp/calendar', icon: 'calendar-clock' },
+  { title: TEXT.TIMESTAMP_TITLE, href: MODULE_HREF.timestamp, icon: 'calendar-clock' },
   // Straight to the pending list, not to /absence: the leave-form chooser there
   // is no longer a tab, so landing on it would show a tab bar with nothing
   // selected. Starting a new request is a button on this list.
   // A document, not another calendar: leave is filed as ใบลา, and the grid can
   // only carry so many calendar glyphs before they stop telling each other apart.
-  { title: TEXT.ABSENCE_TITLE, href: '/absence/pending', icon: 'doc.text.fill' },
-  { title: TEXT.MEETING_MENU_TITLE, href: '/meeting', icon: 'person.2.fill' },
-  { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: '/repair-computer', icon: 'laptop' },
-  { title: TEXT.NOTICE_REPAIR__MENU_TITLE, href: '/notice-repair', icon: 'wrench.fill' },
-  { title: TEXT.BOOKING_ROOM_MENU_TITLE, href: '/booking-room', icon: 'door.open' },
+  { title: TEXT.ABSENCE_TITLE, href: MODULE_HREF.absence, icon: 'doc.text.fill' },
+  { title: TEXT.MEETING_MENU_TITLE, href: MODULE_HREF.meeting, icon: 'person.2.fill' },
+  { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: MODULE_HREF.repair, icon: 'laptop' },
+  { title: TEXT.NOTICE_REPAIR__MENU_TITLE, href: MODULE_HREF.noticeRepair, icon: 'wrench.fill' },
+  { title: TEXT.BOOKING_ROOM_MENU_TITLE, href: MODULE_HREF.booking, icon: 'door.open' },
   // A clipboard, not a checkmark: a tick reads as "approved/done", and this is a
   // roster of duty to turn up for.
-  { title: TEXT.EXAMINER_MENU_TITLE, href: '/examiner', icon: 'clipboard-list' },
-  { title: TEXT.CALENDAR_TITLE, href: '/calendar', icon: 'calendar-range' },
-  { title: TEXT.PERSON_SEARCH_TITLE, href: '/person-search', icon: 'user-round-search' },
+  { title: TEXT.EXAMINER_MENU_TITLE, href: MODULE_HREF.exam, icon: 'clipboard-list' },
+  { title: TEXT.CALENDAR_TITLE, href: MODULE_HREF.calendar, icon: 'calendar-range' },
+  { title: TEXT.PERSON_SEARCH_TITLE, href: MODULE_HREF.person, icon: 'user-round-search' },
 ];
 
 function getDateString() {
@@ -209,6 +248,12 @@ type ShiftItem = {
   label: string;
   /** Which module it belongs to, e.g. 'แจ้งซ่อมคอม · หัวหน้าช่าง'. */
   caption: string;
+  /**
+   * The module tile this belongs to — one of `MODULE_HREF`. Not where the tile
+   * navigates (that is `onPress`, which goes to the exact queue): this is what
+   * puts the red dot on the right square of the menu grid.
+   */
+  module: string;
   count: number;
   icon: IconName;
   onPress: () => void;
@@ -226,14 +271,166 @@ const SHIFT_ICONS = {
   booking: 'door.open',
 } as const satisfies Record<string, IconName>;
 
-type UpcomingShiftSectionProps = {
+type ShiftSources = {
   data: ActiveSummaryData | null;
-  loading: boolean;
-  error: boolean;
-  onReload: () => void;
   upcomingExams: ExamTask[];
   absenceApproval: { show: boolean; count: number };
   timestampApproval: { show: boolean; count: number };
+};
+
+/**
+ * Everything outstanding, from every module, as one flat list.
+ *
+ * This lives outside the section that draws it because two things on this
+ * screen need the answer: the band of tiles, and the red dot on each module
+ * tile in the grid below it. Deriving the dots from this list rather than
+ * re-reading the summary is the whole point — a dot can only appear where a
+ * tile exists, so the grid can never claim work the band does not show, or
+ * stay clean while the band lists five things.
+ */
+function buildShiftItems({ data, upcomingExams, absenceApproval, timestampApproval }: ShiftSources): ShiftItem[] {
+  // A tile with nothing outstanding is not worth showing, so the count check
+  // lives here rather than at each of the eleven call sites.
+  const tiles: ShiftItem[] = [];
+  const add = (item: ShiftItem) => {
+    if (item.count > 0) tiles.push(item);
+  };
+  const to = (path: string) => () => navPush(path as Parameters<typeof navPush>[0]);
+
+  // ── Repair computer: one tile per role-specific queue ──────────────────────
+  if (data?.repairComputer.success) {
+    const repairTasks = data.repairComputer.tasks ?? [];
+    const countOf = (key: string) =>
+      repairTasks.find((task) => task.key === key)?.count ?? 0;
+    // No role in the caption. The summary reports one `role` per account, so
+    // only that role's keys come back with a count — the tiles below are already
+    // mutually exclusive in practice and naming the role would add nothing.
+    const repair = (key: string, label: string, count: number, path: string) =>
+      add({
+        key,
+        label,
+        caption: TEXT.REPAIR_COMPUTER_MENU_TITLE,
+        module: MODULE_HREF.repair,
+        count,
+        icon: SHIFT_ICONS.repair,
+        onPress: to(path),
+      });
+
+    // Informer: only the current job.
+    repair('repair-informer', TEXT.HOME_SHIFT_CURRENT_JOB,
+      countOf('user-current-job'), '/repair-computer/current-job');
+    // Foreman: new job + current jobs (running / supply approvals).
+    repair('repair-foreman-new', TEXT.HOME_SHIFT_NEW_JOB,
+      countOf('foreman-new-job'), '/repair-computer/foreman-new-job');
+    repair('repair-foreman-current', TEXT.HOME_SHIFT_CURRENT_JOB,
+      countOf('foreman-running') + countOf('foreman-supply-approve'),
+      '/repair-computer/manage-job');
+    // Worker: new job + current jobs (in progress / awaiting supply).
+    repair('repair-worker-new', TEXT.HOME_SHIFT_NEW_JOB,
+      countOf('worker-new-job'), '/repair-computer/worker-new-job');
+    repair('repair-worker-current', TEXT.HOME_SHIFT_CURRENT_JOB,
+      countOf('worker-current-job') + countOf('worker-supply-wait'),
+      '/repair-computer/worker-current-job');
+  }
+
+  // ── Absence: own requests (all roles) + approvals (boss only) ───────────────
+  if (data?.absence.success) {
+    add({
+      key: 'absence-mine',
+      label: TEXT.HOME_SHIFT_MY_LEAVE,
+      caption: TEXT.ABSENCE_TITLE,
+      module: MODULE_HREF.absence,
+      count: (data.absence.pending?.length ?? 0) + (data.absence.cancelled?.length ?? 0),
+      icon: SHIFT_ICONS.absence,
+      onPress: to('/absence/my-leave'),
+    });
+  }
+  if (absenceApproval.show) {
+    add({
+      key: 'absence-approve',
+      label: TEXT.HOME_SHIFT_APPROVE_LEAVE,
+      caption: TEXT.ABSENCE_TITLE,
+      module: MODULE_HREF.absence,
+      count: absenceApproval.count,
+      icon: SHIFT_ICONS.absence,
+      onPress: to('/absence/approve-leave'),
+    });
+  }
+
+  // ── Meeting ────────────────────────────────────────────────────────────────
+  if (data?.meeting.success) {
+    add({
+      key: 'meeting-today',
+      label: TEXT.HOME_SHIFT_MEETINGS_TODAY,
+      caption: TEXT.MEETING_MENU_TITLE,
+      module: MODULE_HREF.meeting,
+      count: data.meeting.items.length,
+      icon: SHIFT_ICONS.meeting,
+      onPress: to('/meeting'),
+    });
+  }
+
+  // ── Booking room: rooms this person is due in today ────────────────────────
+  //
+  // Optional-chained on the field itself, unlike the sections above: this one
+  // was added after the app shipped, so a build talking to a gateway that has
+  // not been updated gets `undefined` here rather than a section, and reading
+  // `.success` off it would take the whole home screen down.
+  if (data?.bookingRoom?.success) {
+    add({
+      key: 'booking-today',
+      label: TEXT.HOME_SHIFT_BOOKING_TODAY,
+      caption: TEXT.BOOKING_ROOM_MENU_TITLE,
+      module: MODULE_HREF.booking,
+      count: data.bookingRoom.items.length,
+      icon: SHIFT_ICONS.booking,
+      onPress: to('/booking-room'),
+    });
+  }
+
+  // ── Timestamp: own forgot-timestamp requests + approvals (boss only) ────────
+  if (data?.timestamp.success) {
+    add({
+      key: 'timestamp-mine',
+      label: TEXT.HOME_SHIFT_TIMESTAMP,
+      caption: TEXT.TIMESTAMP_TITLE,
+      module: MODULE_HREF.timestamp,
+      count: data.timestamp.items.length,
+      icon: SHIFT_ICONS.timestamp,
+      onPress: to('/timestamp/forgot-timestamp'),
+    });
+  }
+  if (timestampApproval.show) {
+    add({
+      key: 'timestamp-approve',
+      label: TEXT.HOME_SHIFT_APPROVE_TIMESTAMP,
+      caption: TEXT.TIMESTAMP_TITLE,
+      module: MODULE_HREF.timestamp,
+      count: timestampApproval.count,
+      icon: SHIFT_ICONS.timestamp,
+      onPress: to('/timestamp/approve'),
+    });
+  }
+
+  // ── Examinar: upcoming exams ───────────────────────────────────────────────
+  add({
+    key: 'exam-upcoming',
+    label: TEXT.HOME_SHIFT_UPCOMING_EXAM,
+    caption: TEXT.EXAMINAR_HEADER_TITLE,
+    module: MODULE_HREF.exam,
+    count: upcomingExams.length,
+    icon: SHIFT_ICONS.exam,
+    onPress: to('/examinar'),
+  });
+
+  return tiles;
+}
+
+type UpcomingShiftSectionProps = {
+  tiles: ShiftItem[];
+  loading: boolean;
+  error: boolean;
+  onReload: () => void;
 };
 
 // Module mark and count on top, what-to-do underneath. Every tile uses this one
@@ -267,139 +464,13 @@ function ShiftTile({ item, width }: { item: ShiftItem; width: number }) {
   );
 }
 
-function UpcomingShiftSection({ data, loading, error, onReload, upcomingExams, absenceApproval, timestampApproval }: UpcomingShiftSectionProps) {
+function UpcomingShiftSection({ tiles, loading, error, onReload }: UpcomingShiftSectionProps) {
   const m = useMinimal();
   const s = useMStyles(makeShiftStyles);
   const { width: screenWidth } = useWindowDimensions();
   // Two tiles plus a sliver of the third, so the row visibly continues past the
   // edge. Capped so tiles don't balloon on a tablet.
   const tileWidth = Math.min(190, Math.floor(screenWidth * 0.4));
-
-  // A tile with nothing outstanding is not worth showing, so the count check
-  // lives here rather than at each of the eleven call sites.
-  const tiles: ShiftItem[] = [];
-  const add = (item: ShiftItem) => {
-    if (item.count > 0) tiles.push(item);
-  };
-  const to = (path: string) => () => navPush(path as Parameters<typeof navPush>[0]);
-
-  // ── Repair computer: one tile per role-specific queue ──────────────────────
-  if (data?.repairComputer.success) {
-    const repairTasks = data.repairComputer.tasks ?? [];
-    const countOf = (key: string) =>
-      repairTasks.find((task) => task.key === key)?.count ?? 0;
-    // No role in the caption. The summary reports one `role` per account, so
-    // only that role's keys come back with a count — the tiles below are already
-    // mutually exclusive in practice and naming the role would add nothing.
-    const repair = (key: string, label: string, count: number, path: string) =>
-      add({
-        key,
-        label,
-        caption: TEXT.REPAIR_COMPUTER_MENU_TITLE,
-        count,
-        icon: SHIFT_ICONS.repair,
-        onPress: to(path),
-      });
-
-    // Informer: only the current job.
-    repair('repair-informer', TEXT.HOME_SHIFT_CURRENT_JOB,
-      countOf('user-current-job'), '/repair-computer/current-job');
-    // Foreman: new job + current jobs (running / supply approvals).
-    repair('repair-foreman-new', TEXT.HOME_SHIFT_NEW_JOB,
-      countOf('foreman-new-job'), '/repair-computer/foreman-new-job');
-    repair('repair-foreman-current', TEXT.HOME_SHIFT_CURRENT_JOB,
-      countOf('foreman-running') + countOf('foreman-supply-approve'),
-      '/repair-computer/manage-job');
-    // Worker: new job + current jobs (in progress / awaiting supply).
-    repair('repair-worker-new', TEXT.HOME_SHIFT_NEW_JOB,
-      countOf('worker-new-job'), '/repair-computer/worker-new-job');
-    repair('repair-worker-current', TEXT.HOME_SHIFT_CURRENT_JOB,
-      countOf('worker-current-job') + countOf('worker-supply-wait'),
-      '/repair-computer/worker-current-job');
-  }
-
-  // ── Absence: own requests (all roles) + approvals (boss only) ───────────────
-  if (data?.absence.success) {
-    add({
-      key: 'absence-mine',
-      label: TEXT.HOME_SHIFT_MY_LEAVE,
-      caption: TEXT.ABSENCE_TITLE,
-      count: (data.absence.pending?.length ?? 0) + (data.absence.cancelled?.length ?? 0),
-      icon: SHIFT_ICONS.absence,
-      onPress: to('/absence/my-leave'),
-    });
-  }
-  if (absenceApproval.show) {
-    add({
-      key: 'absence-approve',
-      label: TEXT.HOME_SHIFT_APPROVE_LEAVE,
-      caption: TEXT.ABSENCE_TITLE,
-      count: absenceApproval.count,
-      icon: SHIFT_ICONS.absence,
-      onPress: to('/absence/approve-leave'),
-    });
-  }
-
-  // ── Meeting ────────────────────────────────────────────────────────────────
-  if (data?.meeting.success) {
-    add({
-      key: 'meeting-today',
-      label: TEXT.HOME_SHIFT_MEETINGS_TODAY,
-      caption: TEXT.MEETING_MENU_TITLE,
-      count: data.meeting.items.length,
-      icon: SHIFT_ICONS.meeting,
-      onPress: to('/meeting'),
-    });
-  }
-
-  // ── Booking room: rooms this person is due in today ────────────────────────
-  //
-  // Optional-chained on the field itself, unlike the sections above: this one
-  // was added after the app shipped, so a build talking to a gateway that has
-  // not been updated gets `undefined` here rather than a section, and reading
-  // `.success` off it would take the whole home screen down.
-  if (data?.bookingRoom?.success) {
-    add({
-      key: 'booking-today',
-      label: TEXT.HOME_SHIFT_BOOKING_TODAY,
-      caption: TEXT.BOOKING_ROOM_MENU_TITLE,
-      count: data.bookingRoom.items.length,
-      icon: SHIFT_ICONS.booking,
-      onPress: to('/booking-room'),
-    });
-  }
-
-  // ── Timestamp: own forgot-timestamp requests + approvals (boss only) ────────
-  if (data?.timestamp.success) {
-    add({
-      key: 'timestamp-mine',
-      label: TEXT.HOME_SHIFT_TIMESTAMP,
-      caption: TEXT.TIMESTAMP_TITLE,
-      count: data.timestamp.items.length,
-      icon: SHIFT_ICONS.timestamp,
-      onPress: to('/timestamp/forgot-timestamp'),
-    });
-  }
-  if (timestampApproval.show) {
-    add({
-      key: 'timestamp-approve',
-      label: TEXT.HOME_SHIFT_APPROVE_TIMESTAMP,
-      caption: TEXT.TIMESTAMP_TITLE,
-      count: timestampApproval.count,
-      icon: SHIFT_ICONS.timestamp,
-      onPress: to('/timestamp/approve'),
-    });
-  }
-
-  // ── Examinar: upcoming exams ───────────────────────────────────────────────
-  add({
-    key: 'exam-upcoming',
-    label: TEXT.HOME_SHIFT_UPCOMING_EXAM,
-    caption: TEXT.EXAMINAR_HEADER_TITLE,
-    count: upcomingExams.length,
-    icon: SHIFT_ICONS.exam,
-    onPress: to('/examinar'),
-  });
 
   // Loaded, and nothing outstanding.
   const isEmpty = !loading && !error && tiles.length === 0;
@@ -489,17 +560,22 @@ const makeShiftStyles = (m: M) => StyleSheet.create({
     gap: D.gap,
     paddingRight: 4,
   },
+  // Height budget, because four values decide it together and changing one alone
+  // just moves the slack somewhere else: 13+13 padding, a 30pt icon row, a 10pt
+  // gap, then label 20 + 2 + caption 17 — about 105 for the usual one-line
+  // caption. minHeight is only a floor; the row's content container stretches
+  // every tile to match the tallest, so a caption that wraps lifts them all.
   tile: {
-    minHeight: 132,
+    minHeight: 104,
     justifyContent: 'space-between',
-    gap: 14,
+    gap: 10,
     backgroundColor: m.card,
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 13,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: m.border,
-    boxShadow: boxShadow(m.shadow, { y: 3, blur: 10, opacity: 0.06 }),
+    boxShadow: boxShadow(m.shadow, CARD_SHADOW),
   },
   tilePressed: {
     opacity: 0.7,
@@ -511,20 +587,21 @@ const makeShiftStyles = (m: M) => StyleSheet.create({
     gap: 8,
   },
   tileIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: m.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   // Big enough to be the tile's anchor, small enough that a 2-digit count still
-  // fits beside the icon on a narrow phone.
+  // fits beside the icon on a narrow phone. Kept under the icon's 30pt so the
+  // count is never what sets the top row's height.
   tileCount: {
     fontFamily: F.semibold,
-    fontSize: 26,
-    lineHeight: 30,
+    fontSize: 22,
+    lineHeight: 26,
     letterSpacing: -0.4,
     color: m.accent,
   },
@@ -592,6 +669,7 @@ export default function HomeScreen() {
     state?: string;
   }>();
   const { width: screenWidth } = useWindowDimensions();
+  const fontScale = useFontScale();
   const insets = useSafeAreaInsets();
 
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
@@ -727,6 +805,21 @@ export default function HomeScreen() {
 
       return () => { isActive = false; };
     }, [authUser, eligibility]),
+  );
+
+  // Built here, not inside the band, because the module grid needs the same
+  // answer: a red dot goes on exactly those module tiles that have a tile in
+  // the band. One list, two renderings — see buildShiftItems.
+  const shiftTiles = useMemo(
+    () => buildShiftItems({ data: activeSummary, upcomingExams, absenceApproval, timestampApproval }),
+    [activeSummary, upcomingExams, absenceApproval, timestampApproval],
+  );
+
+  // Which module hrefs carry a dot. A set, not a count: the dot says only that
+  // there is something waiting, and the number is on the tile in the band.
+  const pendingModules = useMemo(
+    () => new Set(shiftTiles.map((tile) => tile.module)),
+    [shiftTiles],
   );
 
   const reloadActiveSummary = useCallback(() => {
@@ -986,11 +1079,17 @@ export default function HomeScreen() {
                       pressed && styles.pressed,
                     ]}
                     onPress={() => openNews(item)}>
-                    <Text numberOfLines={2} style={styles.newsTitle}>{item.title}</Text>
+                    <Text
+                      numberOfLines={2}
+                      style={[styles.newsTitle, { lineHeight: NEWS_TITLE_LINE_HEIGHT * fontScale }]}>
+                      {item.title}
+                    </Text>
                     {item.pubDate ? (
                       <View style={styles.newsDateRow}>
                         <IconSymbol name="calendar" size={13} color={NEWS_DATE_COLOR} />
-                        <Text numberOfLines={1} style={styles.newsDate}>
+                        <Text
+                          numberOfLines={1}
+                          style={[styles.newsDate, { lineHeight: NEWS_DATE_LINE_HEIGHT * fontScale }]}>
                           {formatNewsDateTime(item.pubDate)}
                         </Text>
                       </View>
@@ -1046,29 +1145,34 @@ export default function HomeScreen() {
           {isGuest ? null : (
             <>
               <UpcomingShiftSection
-                data={activeSummary}
+                tiles={shiftTiles}
                 loading={isActiveSummaryLoading}
                 error={isActiveSummaryError}
                 onReload={reloadActiveSummary}
-                upcomingExams={upcomingExams}
-                absenceApproval={absenceApproval}
-                timestampApproval={timestampApproval}
               />
 
               {/* Menu section — matches the upcoming band's vertical padding and
                   sits flush beneath it. */}
               <View style={styles.menuSection}>
                 <View style={styles.menuGrid}>
-                  {MENU_ITEMS.map((item) => (
-                    <Pressable
-                      key={item.href}
-                      accessibilityRole="button"
-                      style={({ pressed }) => [styles.menuCard, { width: menuCardWidth }, pressed && styles.pressed]}
-                      onPress={() => navPush(item.href as Parameters<typeof navPush>[0])}>
-                      <IconSymbol name={item.icon} size={30} color={m.icon} />
-                      <Text numberOfLines={2} style={styles.menuLabel}>{item.title}</Text>
-                    </Pressable>
-                  ))}
+                  {MENU_ITEMS.map((item) => {
+                    // Same dot the bell wears, in the same place, for the same
+                    // reason — so it reads as "unattended" on sight rather than
+                    // as a decoration this grid invented.
+                    const hasPending = pendingModules.has(item.href);
+                    return (
+                      <Pressable
+                        key={item.href}
+                        accessibilityRole="button"
+                        accessibilityLabel={hasPending ? `${item.title}, ${TEXT.HOME_MENU_PENDING_A11Y}` : item.title}
+                        style={({ pressed }) => [styles.menuCard, { width: menuCardWidth }, pressed && styles.pressed]}
+                        onPress={() => navPush(item.href as Parameters<typeof navPush>[0])}>
+                        <IconSymbol name={item.icon} size={30} color={m.icon} />
+                        <Text numberOfLines={2} style={styles.menuLabel}>{item.title}</Text>
+                        {hasPending ? <View style={styles.menuBadge} /> : null}
+                      </Pressable>
+                    );
+                  })}
                 </View>
               </View>
             </>
@@ -1512,7 +1616,11 @@ const makeStyles = (m: M) => StyleSheet.create({
     backgroundColor: '#8A2626',
     borderRadius: 22,
     padding: 18,
-    height: 112,
+    // minHeight, not height: the title is allowed two lines and both of them
+    // grow with the device text-size setting, so a fixed 112 is a box the text
+    // spills out of. The cards are in a horizontal row and stretch to the
+    // tallest one, so they still line up.
+    minHeight: 112,
     gap: 8,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255, 255, 255, 0.22)',
@@ -1522,7 +1630,7 @@ const makeStyles = (m: M) => StyleSheet.create({
   newsTitle: {
     fontFamily: F.medium,
     fontSize: 15,
-    lineHeight: 21,
+    lineHeight: NEWS_TITLE_LINE_HEIGHT,
     color: m.accentText,
   },
   newsDateRow: {
@@ -1533,7 +1641,7 @@ const makeStyles = (m: M) => StyleSheet.create({
   newsDate: {
     fontFamily: F.regular,
     fontSize: 13,
-    lineHeight: 17,
+    lineHeight: NEWS_DATE_LINE_HEIGHT,
     color: NEWS_DATE_COLOR,
   },
   newsEmptyCard: {
@@ -1583,7 +1691,7 @@ const makeStyles = (m: M) => StyleSheet.create({
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: m.border,
-    boxShadow: boxShadow(m.shadow, { y: 3, blur: 10, opacity: 0.06 }),
+    boxShadow: boxShadow(m.shadow, CARD_SHADOW),
   },
   menuLabel: {
     fontFamily: F.regular,
@@ -1591,6 +1699,20 @@ const makeStyles = (m: M) => StyleSheet.create({
     lineHeight: 17,
     color: m.text,
     textAlign: 'center',
+  },
+  // Deliberately the bellBadge geometry, one point larger: the tile is a bigger
+  // target than the icon button, and the ring in the card colour is what keeps
+  // the dot legible where it overlaps the tile's own border.
+  menuBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: m.notify,
+    borderWidth: 1.5,
+    borderColor: m.card,
   },
 
   // Modals

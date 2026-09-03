@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 
-const OPENID_BASE_URL = 'https://psusso.psu.ac.th/application/o/coe-intania-sb';
+const OPENID_BASE_URL = 'https://psusso.psu.ac.th/application/o/eng-scooba';
 const OPENID_DISCOVERY_URL = `${OPENID_BASE_URL}/.well-known/openid-configuration`;
 
 const expoExtra = (Constants.expoConfig?.extra ?? {}) as Record<string, string>;
@@ -18,7 +18,7 @@ function getEnvValue(name: string, fallback = '') {
 export const ENV = {
   expoOs: process.env.EXPO_OS ?? '',
   appMode: getEnvValue('EXPO_PUBLIC_MODE', 'development'),
-  authNativeRedirectDomain: getEnvValue('EXPO_PUBLIC_AUTH_NATIVE_REDIRECT_DOMAIN', 'com.ecs.staffbuddy'),
+  authNativeRedirectDomain: getEnvValue('EXPO_PUBLIC_AUTH_NATIVE_REDIRECT_DOMAIN', 'th.ac.psu.eng.scooba'),
   authRedirectDomain: getEnvValue('EXPO_PUBLIC_AUTH_REDIRECT_DOMAIN', ''),
   apiBaseUrl: getEnvValue('EXPO_PUBLIC_API_BASE_URL', ''),
   openIdAndroidBrowserPackage: getEnvValue('EXPO_PUBLIC_OPENID_ANDROID_BROWSER_PACKAGE', ''),

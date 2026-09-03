@@ -48,7 +48,12 @@ import {
   isRetryableInitialError,
   startOfDay,
 } from "@/utils/absence-form";
-import { getStaffDisplayLabel } from "@/utils/staff-label";
+import {
+  getStaffDisplayLabel,
+  getStaffNameLabel,
+  getStaffPositionLabel,
+} from "@/utils/staff-label";
+import { StaffOptionLabel } from "@/components/staff-option-label";
 
 // Remove the default focus outline on web so active inputs match the
 // borderless underline style (RN Web only; no-op on native).
@@ -73,6 +78,10 @@ type SelectOption = {
   value: string;
   staffId?: string;
   photoId?: string;
+  // Staff options render as two lines (position over a bold name) instead of
+  // the flat `label`, which stays as the collapsed value and search text.
+  position?: string;
+  name?: string;
 };
 
 function getApproverList(data: absence | null): Approver[] {
@@ -362,14 +371,22 @@ function SelectField({
                         {option.photoId ? (
                           <UserAvatar staffId={option.photoId} size={38} />
                         ) : null}
-                        <ThemedText
-                          style={[
-                            styles.optionText,
-                            value === option.value ? styles.selectedOptionText : undefined,
-                          ]}
-                        >
-                          {option.label}
-                        </ThemedText>
+                        {option.position || option.name ? (
+                          <StaffOptionLabel
+                            position={option.position}
+                            name={option.name}
+                            selected={value === option.value}
+                          />
+                        ) : (
+                          <ThemedText
+                            style={[
+                              styles.optionText,
+                              value === option.value ? styles.selectedOptionText : undefined,
+                            ]}
+                          >
+                            {option.label}
+                          </ThemedText>
+                        )}
                       </View>
                       {optionActionLabel ? (
                         <ThemedText
@@ -563,6 +580,8 @@ export default function RelaxScreen() {
           value: getPositionId(item),
           staffId: getStaffId(item),
           photoId: getStaffPhotoId(item),
+          position: getStaffPositionLabel(item),
+          name: getStaffNameLabel(item),
         }))
         .filter((item) => item.label && item.value),
     [initialabsenceData],

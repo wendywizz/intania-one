@@ -499,9 +499,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 5,
     marginTop: 2,
   },
+  // Still the tile's anchor — the count is what the card is for — but no longer
+  // more than twice the size of everything around it, which is what made it read
+  // as a display figure rather than one value among several.
   tileValueBig: {
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 24,
+    lineHeight: 30,
     fontFamily: AppFonts.psuBold,
   },
   tileValueUnit: {

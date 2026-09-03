@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Intania One — Store Screenshots</title>
+<style>
+/* ── Sarabun: the app's own bundled family ───────────────────────────────── */
+@font-face { font-family: Sarabun; src: url('../assets/fonts/Sarabun/Sarabun-Regular.ttf');  font-weight: 400; }
+@font-face { font-family: Sarabun; src: url('../assets/fonts/Sarabun/Sarabun-Medium.ttf');   font-weight: 500; }
+@font-face { font-family: Sarabun; src: url('../assets/fonts/Sarabun/Sarabun-SemiBold.ttf'); font-weight: 600; }
+@font-face { font-family: Sarabun; src: url('../assets/fonts/Sarabun/Sarabun-Bold.ttf');     font-weight: 700; }
+
+/* ── App palette (constants/theme.ts + app/index.tsx LIGHT) ──────────────── */
+:root {
+  --bg:#F4F6F8; --card:#FFFFFF; --fill:#EEF1F4;
+  --text:#141414; --muted:#8D8E92; --faint:#B4B7BC;
+  --border:#E3E6EA; --icon:#2E3338;
+  --accent:#B33939; --accent-deep:#8A2626; --accent-soft:rgba(179,57,57,.14);
+  --notify:#C0392B; --news-date:#F1C40F;
+  --success:#2ECC71; --success-soft:#E9F9F0;
+  --warning:#F1C40F; --warning-soft:#FEF9E0;
+  --danger:#E74C3C;  --danger-soft:#FDECEA;
+  --info:#3498DB;    --info-soft:#EAF4FB;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #000; }
+body { font-family: Sarabun, sans-serif; -webkit-font-smoothing: antialiased; }
+
+/* ── The store canvas ────────────────────────────────────────────────────── */
+.shot {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center;
+  background: linear-gradient(168deg, #C24747 0%, #A83232 42%, #7A2020 100%);
+}
+/* A soft off-centre glow keeps the flat gradient from banding on export. */
+.shot::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(120% 65% at 78% 6%, rgba(255,255,255,.18), transparent 62%);
+  pointer-events: none;
+}
+.shot > * { position: relative; z-index: 1; }
+
+.copy { width: 100%; text-align: center; flex-shrink: 0; }
+.headline {
+  font-weight: 700; color: #fff; letter-spacing: -.01em;
+  text-shadow: 0 2px 18px rgba(60,8,8,.28);
+}
+.sub { font-weight: 400; color: rgba(255,255,255,.82); }
+
+/* Wrapper the phone is scaled inside — JS fits it to whatever room is left. */
+.stage { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; min-height: 0; }
+.phone-scaler { transform-origin: center center; }
+
+/* ── Device frame ────────────────────────────────────────────────────────── */
+.phone {
+  width: 390px; height: 844px; border-radius: 54px; padding: 11px;
+  background: linear-gradient(150deg, #3A3A3C, #131315 55%, #2A2A2C);
+  box-shadow: 0 40px 90px rgba(40,4,4,.45), 0 0 0 1px rgba(255,255,255,.12);
+}
+.screen {
+  width: 100%; height: 100%; border-radius: 44px; overflow: hidden;
+  background: var(--bg); color: var(--text); position: relative;
+  display: flex; flex-direction: column;
+}
+/* iOS home indicator */
+.screen::after {
+  content: ''; position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
+  width: 134px; height: 5px; border-radius: 3px; background: rgba(0,0,0,.32); z-index: 5;
+}
+
+/* iOS status bar */
+.statusbar {
+  height: 50px; flex-shrink: 0; display: flex; align-items: flex-end;
+  justify-content: space-between; padding: 0 30px 6px; font-size: 14px; font-weight: 600;
+}
+/* On module screens the red top bar runs up into the safe area, as it does in
+   the app — white glyphs need the red behind them or they vanish. */
+.statusbar.on-accent { color: #fff; background: var(--accent); }
+.sb-right { display: flex; align-items: center; gap: 5px; }
+
+/* ── Shared app furniture ────────────────────────────────────────────────── */
+.navbar {
+  flex-shrink: 0; background: var(--accent); color: #fff;
+  padding: 4px 18px 16px; display: flex; align-items: center; gap: 12px;
+}
+.navbar .nav-icon {
+  width: 34px; height: 34px; border-radius: 17px; background: rgba(255,255,255,.18);
+  display: grid; place-items: center; border: 1.5px solid rgba(255,255,255,.55); flex-shrink: 0;
+}
+.navbar h1 { font-size: 17px; font-weight: 600; }
+.body { flex: 1; overflow: hidden; padding: 18px 20px 0; }
+.screen-title { font-size: 22px; font-weight: 600; margin-bottom: 18px; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.tab {
+  flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: var(--muted);
+  padding: 9px 0; border-radius: 999px; background: var(--fill);
+}
+.tab.on { background: var(--accent); color: #fff; }
+
+/* The app-wide list row — components/ui/list-card.tsx */
+.list-card {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(154,163,174,.06);
+}
+.ic-circle {
+  width: 40px; height: 40px; border-radius: 20px; background: var(--accent-soft);
+  display: grid; place-items: center; flex-shrink: 0; color: var(--accent);
+}
+.lc-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.lc-title { font-size: 15px; line-height: 21px; font-weight: 700; }
+/* One line, ellipsised — the real ListCard renders meta with numberOfLines={1}. */
+.lc-meta {
+  font-size: 13px; line-height: 18px; color: var(--muted); display: flex;
+  align-items: center; gap: 5px; min-width: 0; white-space: nowrap;
+}
+.lc-meta span { overflow: hidden; text-overflow: ellipsis; }
+.lc-meta svg { flex-shrink: 0; }
+.lc-meta b { font-weight: 700; }
+.lc-right { display: flex; align-items: flex-start; gap: 6px; flex-shrink: 0; }
+.badge {
+  border-radius: 999px; padding: 3px 10px; font-size: 11px; line-height: 16px; font-weight: 700;
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+}
+.chev { color: var(--faint); margin-top: 2px; }
+
+.b-warn { background: var(--warning-soft); color: #9A7B06; }
+.b-ok   { background: var(--success-soft); color: #1E8449; }
+.b-info { background: var(--info-soft);    color: #1F6FA8; }
+.b-dang { background: var(--danger-soft);  color: #B23A2F; }
+
+.fab-row { position: absolute; left: 20px; right: 20px; bottom: 26px; }
+.btn-primary {
+  width: 100%; background: var(--accent); color: #fff; border-radius: 14px;
+  padding: 15px 0; text-align: center; font-size: 15px; font-weight: 600;
+  box-shadow: 0 8px 20px rgba(179,57,57,.32); display: flex; align-items: center;
+  justify-content: center; gap: 8px;
+}
+
+/* ═══ SHOT 1 — Home ══════════════════════════════════════════════════════ */
+.home-head { padding: 10px 20px 4px; display: flex; align-items: center; gap: 12px; }
+.avatar {
+  width: 44px; height: 44px; border-radius: 22px; overflow: hidden; flex-shrink: 0;
+  border: 2px solid #fff; box-shadow: 0 4px 10px rgba(154,163,174,.14); background: var(--fill);
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.greet { flex: 1; min-width: 0; }
+.greet .name { font-size: 20px; line-height: 26px; font-weight: 600; }
+.greet .date { font-size: 13px; line-height: 18px; color: var(--muted); }
+.head-actions { display: flex; gap: 10px; }
+.icon-btn {
+  width: 42px; height: 42px; border-radius: 21px; background: #fff; position: relative;
+  display: grid; place-items: center; color: var(--icon); box-shadow: 0 4px 8px rgba(154,163,174,.12);
+}
+.bell-dot {
+  position: absolute; top: 9px; right: 9px; width: 9px; height: 9px; border-radius: 5px;
+  background: var(--notify); border: 1.5px solid #fff;
+}
+
+.news-band { background: var(--accent); padding: 20px 20px 22px; margin-top: 20px; }
+.news-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.news-head h2 { color: #fff; font-size: 16px; font-weight: 600; }
+.pill {
+  background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.4);
+  border-radius: 999px; padding: 6px 14px; color: #fff; font-size: 13px; font-weight: 500;
+}
+.news-row { display: flex; gap: 12px; }
+.news-card {
+  width: 281px; height: 112px; flex-shrink: 0; background: var(--accent-deep);
+  border: 1px solid rgba(255,255,255,.22); border-radius: 22px; padding: 18px;
+  display: flex; flex-direction: column; gap: 8px; box-shadow: 0 4px 18px rgba(74,15,17,.18);
+}
+.news-card .t { color: #fff; font-size: 15px; line-height: 21px; font-weight: 500; }
+.news-card .d { color: var(--news-date); font-size: 13px; display: flex; align-items: center; gap: 5px; }
+
+.shift-band { background: var(--fill); padding: 22px 20px 26px; }
+.shift-band h2 { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
+.tile-row { display: flex; gap: 12px; }
+.tile {
+  width: 156px; min-height: 132px; flex-shrink: 0; background: #fff; border: 1px solid var(--border);
+  border-radius: 20px; padding: 16px; display: flex; flex-direction: column;
+  justify-content: space-between; gap: 14px; box-shadow: 0 3px 10px rgba(154,163,174,.06);
+}
+.tile-top { display: flex; align-items: center; justify-content: space-between; }
+.tile-ic { width: 34px; height: 34px; border-radius: 17px; background: var(--accent-soft); display: grid; place-items: center; color: var(--accent); }
+.tile-count { font-size: 26px; line-height: 30px; font-weight: 600; letter-spacing: -.4px; color: var(--accent); }
+.tile-label { font-size: 14px; line-height: 20px; font-weight: 600; }
+.tile-cap { font-size: 12px; line-height: 17px; color: var(--muted); }
+
+.menu-grid { padding: 24px 20px 22px; display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.menu-card {
+  background: #fff; border: 1px solid var(--border); border-radius: 20px; min-height: 112px;
+  padding: 20px 8px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 12px; box-shadow: 0 3px 10px rgba(154,163,174,.06); color: var(--icon);
+}
+.menu-card span { font-size: 13px; line-height: 17px; color: var(--text); text-align: center; }
+
+/* ═══ SHOT 2 — Timestamp calendar ════════════════════════════════════════ */
+.cal-card { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(154,163,174,.05); }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.cal-head .m { font-size: 16px; font-weight: 600; }
+.cal-nav { width: 32px; height: 32px; border-radius: 16px; background: var(--accent-deep); color: #fff; display: grid; place-items: center; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; text-align: center; }
+.cal-grid .dow { font-size: 11px; font-weight: 700; color: var(--muted); padding-bottom: 6px; }
+.cal-day { aspect-ratio: 1; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 13px; }
+.cal-day .dot { width: 5px; height: 5px; border-radius: 3px; }
+.d-in   { background: var(--success-soft); color: #1E8449; font-weight: 700; }
+.d-late { background: var(--warning-soft); color: #9A7B06; font-weight: 700; }
+.d-off  { background: var(--fill); color: var(--faint); }
+.d-hol  { background: var(--danger-soft); color: #B23A2F; }
+.d-none { color: var(--text); }
+.d-today { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 700; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; font-size: 12px; color: var(--muted); }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 5px; vertical-align: -1px; }
+.stat-row { display: flex; gap: 12px; margin: 16px 0; }
+.stat {
+  flex: 1; background: #fff; border: 1px solid var(--border); border-radius: 14px;
+  padding: 14px; text-align: center; box-shadow: 0 2px 8px rgba(154,163,174,.05);
+}
+.stat .n { font-size: 22px; font-weight: 700; line-height: 28px; }
+.stat .l { font-size: 12px; color: var(--muted); }
+
+/* ═══ SHOT 4 — Leave form ════════════════════════════════════════════════ */
+.field { margin-bottom: 20px; }
+.field label { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+.field .control {
+  border-bottom: 1.5px solid #8E98A3; padding-bottom: 9px; font-size: 15px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.field .control.ph { color: var(--faint); }
+.textarea {
+  border: 1px solid var(--border); border-radius: 12px; background: #fff; padding: 12px 14px;
+  font-size: 14px; line-height: 21px; min-height: 84px; color: var(--text);
+}
+.chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 600; background: var(--fill); color: var(--muted); }
+.chip.on { background: var(--accent-soft); color: var(--accent); }
+.summary {
+  background: var(--info-soft); border-radius: 12px; padding: 14px 16px; display: flex;
+  gap: 10px; align-items: flex-start; font-size: 13px; line-height: 19px; color: #1F6FA8;
+}
+
+/* ═══ SHOT 5 — Booking / meeting ═════════════════════════════════════════ */
+.day-strip { display: flex; gap: 8px; margin-bottom: 18px; }
+.day {
+  flex: 1; border-radius: 14px; background: var(--fill); padding: 10px 0; text-align: center;
+}
+.day.on { background: var(--accent); color: #fff; }
+.day .w { font-size: 11px; opacity: .75; }
+.day .n { font-size: 17px; font-weight: 700; line-height: 24px; }
+.slot { display: flex; gap: 12px; margin-bottom: 14px; }
+.slot .time { width: 46px; flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--muted); padding-top: 16px; text-align: right; }
+.slot .rail { width: 2px; background: var(--border); border-radius: 2px; position: relative; flex-shrink: 0; }
+.slot .rail::before {
+  content: ''; position: absolute; top: 18px; left: -4px; width: 10px; height: 10px;
+  border-radius: 5px; background: var(--accent); border: 2px solid #fff;
+}
+.slot .card {
+  flex: 1; background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(154,163,174,.05); display: flex; flex-direction: column; gap: 5px;
+}
+.slot .card .t { font-size: 15px; font-weight: 700; line-height: 21px; }
+.slot .card .m { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+</style>
+</head>
+<body>
+<div class="shot" id="shot"></div>
+
+<script>
+// ── Mock content only. No real staff record, no live news feed. ────────────
+const ICONS = {
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  bell:'<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  calendarClock:'<path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="17.5" cy="17.5" r="4.5"/><path d="M17.5 15.5v2.2l1.5.9"/>',
+  doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  laptop:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/>',
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  door:'<path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3M13 20h9M10 12v.01"/><path d="M13 4.8v14.4a.6.6 0 0 1-.7.6l-5-1A.6.6 0 0 1 7 18.2V5.8a.6.6 0 0 1 .5-.6l5-1a.6.6 0 0 1 .5.6z"/>',
+  clipboard:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/>',
+  calRange:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M17 14h-6M13 18H7"/>',
+  search:'<circle cx="10" cy="8" r="5"/><path d="M2 21a8 8 0 0 1 10.4-7.6"/><circle cx="18" cy="18" r="3"/><path d="m22 22-1.9-1.9"/>',
+  cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+  chev:'<path d="m9 18 6-6-6-6"/>',
+  chevL:'<path d="m15 18-6-6 6-6"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+  user:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  wifi:'<path d="M5 12.55a11 11 0 0 1 14 0M8.5 16.1a6 6 0 0 1 7 0M2 8.82a15 15 0 0 1 20 0"/><path d="M12 20h.01"/>',
+  battery:'<rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/>',
+  signal:'<path d="M2 20h.01M7 20v-4M12 20v-8M17 20V8"/>'
+};
+const svg = (n, size = 24, sw = 1.75) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
+
+const statusbar = (onAccent = false) => `
+  <div class="statusbar${onAccent ? ' on-accent' : ''}">
+    <span>9:41</span>
+    <span class="sb-right">${svg('signal',15,2)}${svg('wifi',15,1.6)}${svg('battery',17,1.6)}</span>
+  </div>`;
+
+const navbar = (icon, title) => `
+  <div class="navbar">
+    <div class="nav-icon">${svg(icon, 18)}</div>
+    <h1>${title}</h1>
+  </div>`;
+
+// ── Screen 1: home ─────────────────────────────────────────────────────────
+const MENU = [
+  ['calendarClock','การลงเวลา'], ['doc','การลา'], ['users','การประชุม'],
+  ['laptop','แจ้งซ่อมคอม'], ['wrench','แจ้งซ่อมทั่วไป'], ['door','จองห้อง'],
+  ['clipboard','ตารางคุมสอบ'], ['calRange','ปฏิทิน'], ['search','ค้นหาบุคลากร'],
+];
+// Data-bearing strings — names, record titles, dates, times, locations — are
+// masked to `x` per character. Word breaks and the `·` separators survive so the
+// rows keep the shape of real content; app chrome (nav titles, tabs, buttons,
+// menu labels, section headings, stat numbers) is never passed through here.
+// The Example placeholders below are only the source of that shape: no real
+// value exists on the page to begin with.
+const pii = (t) => t.replace(/[^\s·—–-]/g, 'x');
+
+const NEWS = [
+  ['Example Text — Example Text Example Text', 'Example Date'],
+  ['Example Text Example Text Example', 'Example Date'],
+];
+const TILES = [
+  ['clipboard','2','คุมสอบที่จะถึง','ตารางคุมสอบ'],
+  ['laptop','3','งานใหม่','แจ้งซ่อมคอม'],
+  ['calendarClock','1','ลืมลงเวลา','การลงเวลา'],
+];
+
+const screenHome = () => `
+  ${statusbar()}
+  <div class="home-head">
+    <div class="avatar"><img src="../assets/images/user-placeholder.jpg" alt=""></div>
+    <div class="greet">
+      <div class="name">${pii('Example User')}</div>
+      <div class="date">${pii('Example Date')}</div>
+    </div>
+    <div class="head-actions">
+      <div class="icon-btn">${svg('gear',20)}</div>
+      <div class="icon-btn">${svg('bell',20)}<span class="bell-dot"></span></div>
+    </div>
+  </div>
+  <div class="news-band">
+    <div class="news-head"><h2>ข่าวบุคลากร</h2><span class="pill">ดูทั้งหมด</span></div>
+    <div class="news-row">
+      ${NEWS.map(([t,d]) => `
+        <div class="news-card">
+          <div class="t">${pii(t)}</div>
+          <div class="d">${svg('cal',13,2)}<span>${pii(d)}</span></div>
+        </div>`).join('')}
+    </div>
+  </div>
+  <div class="shift-band">
+    <h2>กิจกรรมที่รอดำเนินการ</h2>
+    <div class="tile-row">
+      ${TILES.map(([ic,n,l,c]) => `
+        <div class="tile">
+          <div class="tile-top"><div class="tile-ic">${svg(ic,18)}</div><div class="tile-count">${n}</div></div>
+          <div><div class="tile-label">${l}</div><div class="tile-cap">${c}</div></div>
+        </div>`).join('')}
+    </div>
+  </div>
+  <div class="menu-grid">
+    ${MENU.map(([ic,t]) => `<div class="menu-card">${svg(ic,30,1.6)}<span>${t}</span></div>`).join('')}
+  </div>`;
+
+// ── Screen 2: timestamp calendar ───────────────────────────────────────────
+function calendarDays() {
+  // สิงหาคม 2569 — 1st falls on a Saturday, 31 days.
+  let out = '';
+  const dow = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+  out += dow.map(d => `<div class="dow">${d}</div>`).join('');
+  for (let i = 0; i < 6; i++) out += '<div></div>';          // lead-in to Saturday
+  for (let d = 1; d <= 31; d++) {
+    const day = (d + 5) % 7;                                  // 0 = Sunday
+    const weekend = day === 0 || day === 6;
+    let cls = 'd-in', dot = '#2ECC71';
+    if (weekend) { cls = 'd-off'; dot = ''; }
+    else if (d === 12) { cls = 'd-hol'; dot = ''; }            // วันแม่แห่งชาติ
+    else if (d === 5 || d === 19) { cls = 'd-late'; dot = '#F1C40F'; }
+    if (d > 31) break;
+    const today = d === 31 ? ' d-today' : '';
+    out += `<div class="cal-day ${cls}${today}">${d}${dot ? `<span class="dot" style="background:${dot}"></span>` : ''}</div>`;
+  }
+  return out;
+}
+const screenTimestamp = () => `
+  ${statusbar(true)}
+  ${navbar('calendarClock','การลงเวลา')}
+  <div class="body">
+    <div class="tabs"><div class="tab on">ปฏิทินลงเวลา</div><div class="tab">ลืมลงเวลา</div></div>
+    <div class="cal-card">
+      <div class="cal-head">
+        <div class="cal-nav">${svg('chevL',16,2.2)}</div>
+        <div class="m">${pii('Example Month')}</div>
+        <div class="cal-nav">${svg('chev',16,2.2)}</div>
+      </div>
+      <div class="cal-grid">${calendarDays()}</div>
+      <div class="legend">
+        <span><i style="background:var(--success-soft)"></i>ลงเวลาครบ</span>
+        <span><i style="background:var(--warning-soft)"></i>เข้างานสาย</span>
+        <span><i style="background:var(--danger-soft)"></i>วันหยุดนักขัตฤกษ์</span>
+        <span><i style="background:var(--fill)"></i>เสาร์–อาทิตย์</span>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="n" style="color:#1E8449">20</div><div class="l">วันทำงาน</div></div>
+      <div class="stat"><div class="n" style="color:#9A7B06">2</div><div class="l">มาสาย</div></div>
+      <div class="stat"><div class="n" style="color:var(--accent)">1</div><div class="l">ลืมลงเวลา</div></div>
+    </div>
+    <div class="screen-title" style="font-size:16px;margin:2px 0 12px">ลงเวลาล่าสุด</div>
+    ${[['Example Date','Example Time · Example Time','ปกติ','b-ok'],
+       ['Example Date','Example Time · Example Time','เข้างานสาย','b-warn']]
+      .map(([d,t,bt,bc]) => `
+      <div class="list-card">
+        <div class="ic-circle">${svg('clock',18)}</div>
+        <div class="lc-info">
+          <div class="lc-title">${pii(d)}</div>
+          <div class="lc-meta"><span>${pii(t)}</span></div>
+        </div>
+        <div class="lc-right"><span class="badge ${bc}">${bt}</span></div>
+      </div>`).join('')}
+  </div>`;
+
+// ── Screen 3: notice-repair list ───────────────────────────────────────────
+const REPAIRS = [
+  ['wrench','Example Text Example Text','Example Date','Example Location','กำลังดำเนินการ','b-info'],
+  ['wrench','Example Text Example','Example Date','Example Location','รออนุมัติ','b-warn'],
+  ['wrench','Example Text Example Text','Example Date','Example Location','ซ่อมเสร็จแล้ว','b-ok'],
+];
+const screenRepair = () => `
+  ${statusbar(true)}
+  ${navbar('wrench','แจ้งซ่อมทั่วไป')}
+  <div class="body">
+    <div class="tabs"><div class="tab on">รายการของฉัน</div><div class="tab">ประวัติ</div></div>
+    ${REPAIRS.map(([ic,t,d,loc,bt,bc]) => `
+      <div class="list-card">
+        <div class="ic-circle">${svg(ic,18)}</div>
+        <div class="lc-info">
+          <div class="lc-title">${pii(t)}</div>
+          <div class="lc-meta"><span>${pii(d)}</span></div>
+          <div class="lc-meta">${svg('pin',13,2)}<span>${pii(loc)}</span></div>
+        </div>
+        <div class="lc-right"><span class="badge ${bc}">${bt}</span><span class="chev">${svg('chev',16,2.2)}</span></div>
+      </div>`).join('')}
+  </div>
+  <div class="fab-row"><div class="btn-primary">${svg('plus',18,2.4)}<span>แจ้งซ่อมใหม่</span></div></div>`;
+
+// ── Screen 4: leave request form ───────────────────────────────────────────
+const screenLeave = () => `
+  ${statusbar(true)}
+  ${navbar('doc','การลา')}
+  <div class="body">
+    <div class="screen-title">ยื่นใบลา</div>
+    <div class="field">
+      <label>ประเภทการลา</label>
+      <div class="chip-row">
+        <span class="chip on">ลาพักผ่อน</span><span class="chip">ลากิจ</span><span class="chip">ลาป่วย</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>วันที่เริ่มลา</label>
+      <div class="control"><span>${pii('Example Date')}</span>${svg('cal',18,2)}</div>
+    </div>
+    <div class="field">
+      <label>วันที่สิ้นสุด</label>
+      <div class="control"><span>${pii('Example Date')}</span>${svg('cal',18,2)}</div>
+    </div>
+    <div class="field">
+      <label>เหตุผลการลา</label>
+      <div class="textarea">${pii('Example Text Example Text Example Text')}</div>
+    </div>
+    <div class="summary">
+      ${svg('info',16,2)}
+      <span>รวม <b>3 วันทำการ</b> — ระบบข้ามวันเสาร์–อาทิตย์และวันหยุดนักขัตฤกษ์ให้อัตโนมัติ</span>
+    </div>
+    <div class="screen-title" style="font-size:16px;margin:22px 0 12px">วันลาคงเหลือปีนี้</div>
+    <div class="stat-row" style="margin:0">
+      <div class="stat"><div class="n" style="color:#1E8449">8</div><div class="l">ลาพักผ่อน</div></div>
+      <div class="stat"><div class="n" style="color:#1F6FA8">3</div><div class="l">ลากิจ</div></div>
+      <div class="stat"><div class="n" style="color:var(--accent)">15</div><div class="l">ลาป่วย</div></div>
+    </div>
+  </div>
+  <div class="fab-row"><div class="btn-primary">${svg('check',18,2.4)}<span>ส่งใบลา</span></div></div>`;
+
+// ── Screen 5: booking room / today's schedule ──────────────────────────────
+const DAYS = [['จ','1'],['อ','2'],['พ','3'],['พฤ','4'],['ศ','5'],['ส','6'],['อา','7']];
+// The time rail stays sharp: generic clock values carry no record data, and
+// they are what makes the panel read as a schedule.
+const SLOTS = [
+  ['09:00','Example Text Example Text','Example Location'],
+  ['13:30','Example Text Example','Example Location'],
+  ['15:30','Example Text Example Text','Example Location'],
+  ['16:30','Example Text Example','Example Location'],
+];
+const screenBooking = () => `
+  ${statusbar(true)}
+  ${navbar('door','จองห้อง')}
+  <div class="body">
+    <div class="screen-title">ตารางวันนี้</div>
+    <div class="day-strip">
+      ${DAYS.map(([w,n],i) => `<div class="day${i===2?' on':''}"><div class="w">${w}</div><div class="n">${n}</div></div>`).join('')}
+    </div>
+    ${SLOTS.map(([t,title,meta]) => `
+      <div class="slot">
+        <div class="time">${t}</div>
+        <div class="rail"></div>
+        <div class="card">
+          <div class="t">${pii(title)}</div>
+          <div class="m">${svg('pin',13,2)}<span>${pii(meta)}</span></div>
+        </div>
+      </div>`).join('')}
+    <div class="list-card" style="margin-top:6px">
+      <div class="ic-circle">${svg('door',18)}</div>
+      <div class="lc-info">
+        <div class="lc-title">${pii('Example Text Example')}</div>
+        <div class="lc-meta"><span>${pii('Example Location · Example Time')}</span></div>
+      </div>
+      <div class="lc-right"><span class="badge b-ok">จองได้</span><span class="chev">${svg('chev',16,2.2)}</span></div>
+    </div>
+  </div>
+  <div class="fab-row"><div class="btn-primary">${svg('plus',18,2.4)}<span>จองห้องประชุม</span></div></div>`;
+
+// ── The five store panels ──────────────────────────────────────────────────
+const SHOTS = [
+  { h: 'ทุกงานของบุคลากร<br>รวมอยู่ในแอปเดียว', s: 'ลงเวลา ลา แจ้งซ่อม ประชุม จองห้อง คุมสอบ', screen: screenHome },
+  { h: 'ลงเวลาปฏิบัติงาน<br>ดูย้อนหลังได้ทั้งเดือน', s: 'รู้ทันทีว่าวันไหนสาย วันไหนลืมลงเวลา', screen: screenTimestamp },
+  { h: 'แจ้งซ่อม<br>ติดตามสถานะได้ทันที', s: 'ตั้งแต่แจ้งเรื่อง จนช่างปิดงาน', screen: screenRepair },
+  { h: 'ยื่นใบลา<br>ได้จากมือถือ', s: 'นับวันทำการให้อัตโนมัติ ข้ามวันหยุดให้เอง', screen: screenLeave },
+  { h: 'จองห้องประชุม<br>และดูตารางคุมสอบ', s: 'ตารางของวันนี้ อยู่บนหน้าจอเดียว', screen: screenBooking },
+];
+
+// ── Render ────────────────────────────────────────────────────────────────
+const q = new URLSearchParams(location.search);
+const idx = Math.max(0, Math.min(SHOTS.length - 1, Number(q.get('i') ?? 0)));
+const W = Number(q.get('w') ?? 1290);
+const H = Number(q.get('h') ?? 2796);
+const shot = SHOTS[idx];
+
+const root = document.getElementById('shot');
+// Everything scales off the canvas width so both store sizes stay in proportion.
+const pad = Math.round(W * 0.075);
+root.style.width = W + 'px';
+root.style.height = H + 'px';
+root.style.padding = `${Math.round(H * 0.045)}px ${pad}px ${Math.round(H * 0.035)}px`;
+root.style.gap = Math.round(H * 0.028) + 'px';
+document.body.style.width = W + 'px';
+document.body.style.height = H + 'px';
+
+root.innerHTML = `
+  <div class="copy">
+    <div class="headline" style="font-size:${Math.round(W*0.062)}px;line-height:1.28">${shot.h}</div>
+    <div class="sub" style="font-size:${Math.round(W*0.031)}px;line-height:1.5;margin-top:${Math.round(W*0.022)}px">${shot.s}</div>
+  </div>
+  <div class="stage"><div class="phone-scaler"><div class="phone"><div class="screen">${shot.screen()}</div></div></div></div>`;
+
+// Fit the 390×844 device into whatever height the headline left behind.
+// Must wait for Sarabun: measured against the fallback face the headline is a
+// different height, the stage reads too tall, and the phone scales off the
+// bottom of the canvas.
+const stage = root.querySelector('.stage');
+const scaler = root.querySelector('.phone-scaler');
+scaler.style.width = '390px';
+scaler.style.height = '844px';
+
+function fitPhone() {
+  const k = Math.min(stage.clientWidth / 390, stage.clientHeight / 844);
+  scaler.style.transform = `scale(${k})`;
+  document.documentElement.dataset.ready = '1';
+  document.body.dataset.debug = JSON.stringify({
+    stageW: stage.clientWidth, stageH: stage.clientHeight, k: +k.toFixed(3),
+    copyH: root.querySelector('.copy').offsetHeight,
+    phoneTop: Math.round(scaler.getBoundingClientRect().top),
+    phoneBottom: Math.round(scaler.getBoundingClientRect().bottom),
+    canvasH: H,
+  });
+}
+
+// Fit three times rather than waiting on one signal. Headless Chrome takes the
+// screenshot as soon as its virtual clock drains, and a requestAnimationFrame
+// callback is not guaranteed to have run by then — a missed fit leaves the
+// phone at scale 1 and the shot is silently wrong. The first call always lands;
+// the later two only refine it once Sarabun has changed the headline's height.
+fitPhone();
+document.fonts.ready.then(fitPhone);
+setTimeout(fitPhone, 400);
+</script>
+</body>
+</html>

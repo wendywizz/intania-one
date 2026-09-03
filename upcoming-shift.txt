@@ -1,5 +1,5 @@
 ================================================================================
-สรุประบบ Upcoming Shift ("งานที่รอดำเนินการ") — intania-staff-buddy
+สรุประบบ Upcoming Shift ("งานที่รอดำเนินการ") — intania-one
 อัปเดต: 2026-07-28  (สรุปจากโค้ดจริง app/index.tsx — หลังออกแบบใหม่เป็นแถวเดียวกันทั้งหมด)
 ================================================================================
 
@@ -180,3 +180,37 @@ Section บนหน้า Home ที่รวม "งานค้าง" ข�
              HOME_MENU_SECTION_TITLE ('เมนู') หัวข้อ section เมนูถูกถอดออก
              HOME_SHIFT_ROLE_* + HOME_SHIFT_CAPTION_SEPARATOR
                (caption เลิกบอกบทบาทแล้ว)
+
+
+================================================================================
+5. จุดสีแดงบนเมนูโมดูล (เพิ่ม 2026-09-03)
+================================================================================
+
+หน้า Home มี 2 ที่ที่บอกว่ามีงานค้าง และทั้งคู่อ่านจาก "รายการเดียวกัน"
+  1) แถบ tile "กิจกรรมที่รอดำเนินการ"  <- บอกว่ามีอะไร กี่รายการ
+  2) จุดสีแดงมุมบนขวาของการ์ดเมนูด้านล่าง  <- บอกแค่ว่า "โมดูลนี้มีงานค้าง"
+
+โค้ด
+  buildShiftItems()   app/index.tsx  (ย้ายออกมานอก UpcomingShiftSection แล้ว)
+    -> คืน ShiftItem[]  ซึ่งเป็นแหล่งเดียวของทั้ง 2 จุด
+  ShiftItem.module    ฟิลด์ใหม่ = href ของการ์ดเมนูที่ item นั้นสังกัด
+  MODULE_HREF         ตาราง href ของทุกโมดูล ใช้ร่วมกันกับ MENU_ITEMS
+  pendingModules      Set<string> ใน HomeScreen = new Set(tiles.map(t => t.module))
+  styles.menuBadge    จุดแดง 10px มุมบนขวา (ทรงเดียวกับ bellBadge ของกระดิ่ง)
+
+เหตุผลที่ต้องมาจากรายการเดียวกัน
+  ถ้าจุดแดงไปอ่าน activeSummary เองอีกรอบ จะมีโอกาสที่จุดแดงขึ้นแต่ไม่มี tile
+  (หรือกลับกัน) เพราะเงื่อนไข add() ที่ count > 0 อยู่ในตัว buildShiftItems
+
+โมดูลที่ "มีสิทธิ์" ขึ้นจุดแดง (6 จาก 9 การ์ด)
+  /timestamp/calendar  /absence/pending  /meeting
+  /repair-computer     /booking-room     /examiner
+
+โมดูลที่ไม่มีทางขึ้นจุดแดง เพราะไม่มีแหล่งข้อมูลงานค้าง
+  /notice-repair   (ไม่ได้อยู่ใน active-summary)
+  /calendar        /person-search   (เป็นข้อมูลอ้างอิง ไม่มีงานให้ทำ)
+
+หมายเหตุ ShiftItem.module ไม่เท่ากับปลายทางของ tile
+  tile คุมสอบ  onPress -> /examinar   แต่ module = /examiner (การ์ดเมนู)
+  tile ลืมลงเวลา onPress -> /timestamp/forgot-timestamp
+                             แต่ module = /timestamp/calendar (การ์ดเมนู)

@@ -10,12 +10,13 @@ import {
   Pressable,
   StyleProp,
   StyleSheet,
-  Text,
   TextInput,
   type TextInputProps,
   View,
   ViewStyle,
 } from 'react-native';
+import { AppText as Text } from '@/components/app-text';
+import { MAX_FONT_SCALE } from '@/constants/typography';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
@@ -61,6 +62,8 @@ export function TextField({
 
       <View style={styles.inputWrap}>
         <TextInput
+          // TextInput has its own scaling knob; the cap on Text does not reach it.
+          maxFontSizeMultiplier={MAX_FONT_SCALE}
           multiline={multiline}
           numberOfLines={multiline ? 2 : 1}
           secureTextEntry={isPassword && hidden}
