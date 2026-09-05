@@ -113,6 +113,15 @@ export const ENDPOINTS = {
   bookingRoomPeriodRooms: `${API_BASE_URL}/api/booking-room/book/period-rooms`,
   bookingRoomPeriodCreate: `${API_BASE_URL}/api/booking-room/book/period-create`,
 
+  // --- meeting-room ----------------------------------------------------------
+  meetingRoomOptions: `${API_BASE_URL}/api/meeting-room/options`,
+  meetingRoomAvailability: `${API_BASE_URL}/api/meeting-room/availability`,
+  meetingRoomWeek: `${API_BASE_URL}/api/meeting-room/week`,
+  meetingRoomCreate: `${API_BASE_URL}/api/meeting-room/create`,
+  meetingRoomList: `${API_BASE_URL}/api/meeting-room/list`,
+  meetingRoomDetail: `${API_BASE_URL}/api/meeting-room/detail`,
+  meetingRoomCancel: `${API_BASE_URL}/api/meeting-room/cancel`,
+
   // --- notice-repair -------------------------------------------------------
   noticeRepair: `${API_BASE_URL}/api/notice-repair`,
   noticeRepairRoleCheck: `${API_BASE_URL}/api/role/check`,

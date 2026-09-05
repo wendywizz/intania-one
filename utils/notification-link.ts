@@ -33,6 +33,14 @@ const ROUTE_BY_TYPE: Readonly<Record<string, string>> = {
   ABSENCE_response: '/absence/my-leave',
   ABSENCE_rejected: '/absence/my-leave',
 
+  // ── Meeting Room ───────────────────────────────────────────────────────────
+  // Raised by room/leader_order.php itself at the moment the dept leader
+  // decides — see the plan this pair was built from. Both land on the merged
+  // current list (services/roomBookingAggregator.ts): approved and rejected
+  // are still status < 90, so the request is still "current", not "history".
+  meeting_room_approved: '/booking-room',
+  meeting_room_rejected: '/booking-room',
+
   // ── Timestamp (forgot to clock in/out) ─────────────────────────────────────
   forget_timestamp_new_request: '/timestamp/approve',
   // A decided request has left the pending tab; the history is where it is now.

@@ -1,11 +1,13 @@
 /**
  * Booking Room → เสร็จสิ้น (tab key: booking_history).
  *
- * The signed-in person's finished bookings — everything whose last slot is
- * behind us — most recent first. The same rows the website's
- * "รายงานจองห้องของคุณ" page lists (index.php?main=report), minus the ones that
- * have not happened yet: those live on the รายการจอง tab instead, and showing
- * them in both places would only make the two tabs argue.
+ * The signed-in person's finished bookings and closed meeting-room requests —
+ * everything whose last slot is behind us, or whose request has been
+ * cancelled/closed — most recent first, from both room-booking systems in one
+ * list. See services/roomBookingAggregator.ts for why the two are merged here
+ * rather than shown as two separate sections, and why only classroom
+ * bookings are paged (meeting-room's own request volume per person is too low
+ * to need it — its whole set rides along on page one).
  *
  * The tab was called ประวัติจอง and the file history.tsx until people — the
  * author of the feature included — read an empty list here as a booking that
@@ -14,14 +16,15 @@
  * says which of the two lists it belongs in.
  *
  * The API scope is still `history` on purpose: that is the upstream's own
- * wording, in a PHP route and a gateway endpoint that the app does not get to
- * rename. The boundary is this file — everything the reader sees says
- * "เสร็จสิ้น", everything on the wire says "history".
+ * wording (both upstreams', now), in a PHP route and a gateway endpoint the
+ * app does not get to rename. The boundary is this file — everything the
+ * reader sees says "เสร็จสิ้น", everything on the wire says "history".
  *
- * Paged: the busiest accounts here have several hundred finished bookings, so
- * the list loads thirty at a time. Scrolling near the bottom fetches the next
- * thirty — the same FlatList/onEndReached arrangement the notice-repair lists
- * use, so paging feels the same wherever it happens in the app.
+ * Paged: the busiest accounts here have several hundred finished classroom
+ * bookings, so that side loads thirty at a time. Scrolling near the bottom
+ * fetches the next thirty — the same FlatList/onEndReached arrangement the
+ * notice-repair lists use, so paging feels the same wherever it happens in
+ * the app.
  */
 import { useCallback, useRef, useState } from 'react';
 import { InfinityLoader } from '@/components/infinity-loader';
@@ -33,36 +36,28 @@ import { ErrorState } from '@/components/error-state';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { listMyBookings, type MyBooking } from '@/services/bookingRoomService';
-import { formatDateRange } from '@/utils/date-format';
+import { listUnifiedBookings, type UnifiedBooking } from '@/services/roomBookingAggregator';
 import { navPush } from '@/utils/navigation';
 
-/** Rows per fetch. Matches the server's own default. */
+/** Rows per fetch, classroom side. Matches the server's own default. */
 const PAGE_SIZE = 30;
-
-/** Same three glyphs the type chooser uses, so a row points back at the form
- *  that made it. */
-function bookingIcon(typeId: number): IconSymbolName {
-  if (typeId === 2) return 'calendar-range';
-  if (typeId === 3) return 'calendar-clock';
-  return 'calendar';
-}
 
 export default function BookingRoomHistoryScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const { user, loading: authLoading } = useAuth();
 
-  // UNI_STAFF_ID — the id the app signs in with, and what the booking website
-  // stores in tb_book.tb_user_id.
+  // UNI_STAFF_ID — the id the app signs in with, and what both upstreams key
+  // a person's own rows by (booking-room's tb_book.tb_user_id, meeting-room
+  // via CENTRAL.STAFF_INFO).
   const staffId = user?.staffId ?? '';
 
-  const [bookings, setBookings] = useState<MyBooking[]>([]);
+  const [items, setItems] = useState<UnifiedBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -81,10 +76,17 @@ export default function BookingRoomHistoryScreen() {
    */
   const fetching = useRef(false);
 
+  // Only classroom rows count toward the offset — meeting-room's whole set
+  // rode along on page one and is not repeated on later pages.
+  const classroomCount = useCallback(
+    (list: UnifiedBooking[]) => list.filter((item) => item.kind === 'classroom').length,
+    [],
+  );
+
   const loadFirstPage = useCallback(
     async (isRefresh = false) => {
       if (!staffId) {
-        setBookings([]);
+        setItems([]);
         setHasMore(false);
         setLoading(false);
         return;
@@ -95,12 +97,9 @@ export default function BookingRoomHistoryScreen() {
       setError(null);
 
       try {
-        const page = await listMyBookings(staffId, 'history', { limit: PAGE_SIZE, offset: 0 });
-        setBookings(page);
-        // A short page is the last page. Cheaper than asking the server for a
-        // total, and wrong only where the count lands exactly on a page
-        // boundary — then one empty fetch settles it.
-        setHasMore(page.length === PAGE_SIZE);
+        const page = await listUnifiedBookings(staffId, 'history', { limit: PAGE_SIZE, offset: 0 });
+        setItems(page.items);
+        setHasMore(page.hasMore);
       } catch (err) {
         setError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_COMPLETED_ERROR);
       } finally {
@@ -118,20 +117,20 @@ export default function BookingRoomHistoryScreen() {
     setLoadingMore(true);
 
     try {
-      const offset = bookings.length;
-      const page = await listMyBookings(staffId, 'history', { limit: PAGE_SIZE, offset });
+      const offset = classroomCount(items);
+      const page = await listUnifiedBookings(staffId, 'history', { limit: PAGE_SIZE, offset });
 
-      setBookings((prev) => {
+      setItems((prev) => {
         // The list may have been replaced underneath this fetch — a refresh, or
         // a sign-in landing — in which case appending a page read from the old
         // offset would interleave two different lists. Drop it.
-        if (prev.length !== offset) return prev;
+        if (classroomCount(prev) !== offset) return prev;
 
-        const seen = new Set(prev.map((b) => b.book_id));
-        return [...prev, ...page.filter((b) => !seen.has(b.book_id))];
+        const seen = new Set(prev.map((item) => item.id));
+        return [...prev, ...page.items.filter((item) => !seen.has(item.id))];
       });
 
-      setHasMore(page.length === PAGE_SIZE);
+      setHasMore(page.hasMore);
     } catch (err) {
       // The rows already on screen stay; only the attempt to extend them failed.
       setError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_COMPLETED_ERROR);
@@ -139,7 +138,7 @@ export default function BookingRoomHistoryScreen() {
       fetching.current = false;
       setLoadingMore(false);
     }
-  }, [staffId, hasMore, loading, refreshing, bookings.length]);
+  }, [staffId, hasMore, loading, refreshing, items, classroomCount]);
 
   useFocusEffect(
     useCallback(() => {
@@ -147,49 +146,23 @@ export default function BookingRoomHistoryScreen() {
     }, [loadFirstPage]),
   );
 
-  // Title, kind of booking, and when it ran — nothing else. The rooms, the
-  // teacher and the slot count were all true and all noise: this is a log of
-  // past bookings, and a log wants to be scannable. Whatever was dropped is a
-  // tap away on the detail screen.
+  // Title, kind of room, and when it ran — nothing else. Whatever was dropped
+  // is a tap away on the detail screen the row already points at.
   const renderItem = useCallback(
-    ({ item }: { item: MyBooking }) => (
+    ({ item }: { item: UnifiedBooking }) => (
       <ListCard
-        onPress={() =>
-          navPush({
-            pathname: '/booking-room/booking-detail',
-            // `from` tells the detail screen which list to send back to.
-            params: { book_id: String(item.book_id), from: 'completed' },
-          } as Parameters<typeof navPush>[0])
-        }
-        icon={<IconSymbol name={bookingIcon(item.booktype.id)} size={20} color={c.textMuted} />}
+        onPress={() => navPush(item.onPressRoute as Parameters<typeof navPush>[0])}
+        icon={<IconSymbol name={item.icon} size={20} color={c.textMuted} />}
         // Muted rather than the brand tint the current list uses: these are
         // done, and should not compete with what is still coming up.
         iconBackground={c.surfaceAlt}
-        title={item.subject_id || item.objective || TEXT.BOOKING_ROOM_TAB_COMPLETED}
-        // Both facts as meta lines rather than the type sitting on the plain
-        // `date` line: a line with a glyph in front of it and a line without
-        // read as two different kinds of fact, and these are the same kind.
-        //
-        // The dates are when the booking ran, not when it was made — in a log
-        // of finished bookings the span is what identifies one, and "จองเมื่อ"
-        // is a fact about the paperwork.
+        title={item.title}
+        badge={item.badge}
         meta={[
-          {
-            icon: (
-              <IconSymbol
-                name={bookingIcon(item.booktype.id)}
-                size={13}
-                color={c.textMuted}
-              />
-            ),
-            text: item.booktype.label,
-          },
+          { icon: <IconSymbol name={item.icon} size={13} color={c.textMuted} />, text: item.kindLabel },
           {
             icon: <IconSymbol name="calendar-range" size={13} color={c.textMuted} />,
-            text: formatDateRange(
-              item.first_date || item.start_date,
-              item.last_date || item.end_date,
-            ),
+            text: item.dateLabel,
           },
         ]}
       />
@@ -198,9 +171,9 @@ export default function BookingRoomHistoryScreen() {
   );
 
   const listFooter = () => {
-    if (bookings.length === 0) return null;
+    if (items.length === 0) return null;
 
-    if (loadingMore) {
+    if (loadingMore || hasMore) {
       return (
         <View style={styles.footer}>
           <InfinityLoader size={44} strokeWidth={4} />
@@ -208,19 +181,9 @@ export default function BookingRoomHistoryScreen() {
       );
     }
 
-    if (!hasMore) {
-      return (
-        <View style={styles.footer}>
-          <ThemedText style={styles.footerText}>{TEXT.BOOKING_ROOM_END_OF_LIST}</ThemedText>
-        </View>
-      );
-    }
-
-    // hasMore but not fetching: onEndReached has not fired yet. A spinner here
-    // says "there is more coming" without asking for a tap.
     return (
       <View style={styles.footer}>
-        <InfinityLoader size={44} strokeWidth={4} />
+        <ThemedText style={styles.footerText}>{TEXT.BOOKING_ROOM_END_OF_LIST}</ThemedText>
       </View>
     );
   };
@@ -244,7 +207,7 @@ export default function BookingRoomHistoryScreen() {
     );
   }
 
-  if (!staffId || (error && bookings.length === 0)) {
+  if (!staffId || (error && items.length === 0)) {
     return (
       <ThemedView style={styles.container}>
         <ScreenHeader
@@ -276,12 +239,10 @@ export default function BookingRoomHistoryScreen() {
       />
 
       <FlatList
-        data={bookings}
-        keyExtractor={(item) => String(item.book_id)}
+        data={items}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={
-          bookings.length === 0 ? styles.emptyContainer : styles.list
-        }
+        contentContainerStyle={items.length === 0 ? styles.emptyContainer : styles.list}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

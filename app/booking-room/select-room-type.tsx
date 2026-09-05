@@ -1,12 +1,15 @@
 /**
- * Booking Room → เลือกประเภทการจอง.
+ * Booking Room → เลือกประเภทห้อง.
  *
- * The same card list the absence module uses to pick a leave form — same shape,
- * same reading order — because it is the same decision: pick a form, then fill
- * it in. Reached from the dashed "จองห้อง" button on the bookings tab.
+ * The one new screen this module's unification with meeting-room adds: the
+ * "+เพิ่มการจอง" row on the current-bookings tab used to open select-booking.tsx
+ * (the 3-card จองทั่วไป/จองเทอม/จองช่วง picker) directly. It now opens here
+ * first — a person picks a room *kind*, and only classroom booking still has
+ * a further choice of *style* underneath it.
  *
- * The three types are tb_booktype's DAY / TERM / PERIOD on the booking website,
- * which is why there are exactly three and why the order matches the site's.
+ * Same card-list shape as select-booking.tsx (and, before that, absence's own
+ * form chooser) on purpose: it is the same kind of decision — pick a card,
+ * land on that thing's own screen — so it should look like the same decision.
  */
 import { Link } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -20,41 +23,29 @@ import { boxShadow } from '@/constants/shadows';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
-type BookingMenuItem = {
+type RoomTypeMenuItem = {
   title: string;
   description: string;
-  href:
-    | '/booking-room/general-booking'
-    | '/booking-room/term-booking'
-    | '/booking-room/period-booking';
+  href: '/booking-room/select-booking' | '/booking-room/meeting-room-form';
   icon: IconSymbolName;
 };
 
-// All three are calendar glyphs — they are three ways of choosing dates, and
-// pretending otherwise would make the icons argue with the labels. What tells
-// them apart is the span each one draws: a day, a range, a range with a clock.
-const bookingMenus: BookingMenuItem[] = [
+const roomTypeMenus: RoomTypeMenuItem[] = [
   {
-    title: TEXT.BOOKING_ROOM_GENERAL_TITLE,
-    description: TEXT.BOOKING_ROOM_GENERAL_DESCRIPTION,
-    href: '/booking-room/general-booking',
-    icon: 'calendar',
+    title: TEXT.BOOKING_ROOM_ADD_BOOKING,
+    description: TEXT.MEETING_ROOM_HUB_CLASSROOM_DESCRIPTION,
+    href: '/booking-room/select-booking',
+    icon: 'door.open',
   },
   {
-    title: TEXT.BOOKING_ROOM_TERM_TITLE,
-    description: TEXT.BOOKING_ROOM_TERM_DESCRIPTION,
-    href: '/booking-room/term-booking',
-    icon: 'calendar-range',
-  },
-  {
-    title: TEXT.BOOKING_ROOM_PERIOD_TITLE,
-    description: TEXT.BOOKING_ROOM_PERIOD_DESCRIPTION,
-    href: '/booking-room/period-booking',
-    icon: 'calendar-clock',
+    title: TEXT.MEETING_ROOM_HUB_CARD_TITLE,
+    description: TEXT.MEETING_ROOM_HUB_CARD_DESCRIPTION,
+    href: '/booking-room/meeting-room-form',
+    icon: 'presentation',
   },
 ];
 
-export default function SelectBookingScreen() {
+export default function SelectRoomTypeScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
@@ -62,10 +53,8 @@ export default function SelectBookingScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScreenHeader
-        title={TEXT.BOOKING_ROOM_CREATE_NAV_TITLE}
-        // Reached via select-room-type.tsx now, not directly from the current
-        // list, so back goes there rather than skipping past it.
-        backHref="/booking-room/select-room-type"
+        title={TEXT.MEETING_ROOM_HUB_NAV_TITLE}
+        backHref="/booking-room"
         titleInNavBar
         showHomeButton={false}
         tone="primary"
@@ -75,14 +64,12 @@ export default function SelectBookingScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
         showsVerticalScrollIndicator={false}>
         <View style={styles.intro}>
-          <ThemedText style={styles.screenTitle}>{TEXT.BOOKING_ROOM_CREATE_TITLE}</ThemedText>
-          <ThemedText style={styles.screenDesc}>
-            {TEXT.BOOKING_ROOM_CREATE_DESCRIPTION}
-          </ThemedText>
+          <ThemedText style={styles.screenTitle}>{TEXT.MEETING_ROOM_HUB_TITLE}</ThemedText>
+          <ThemedText style={styles.screenDesc}>{TEXT.MEETING_ROOM_HUB_DESCRIPTION}</ThemedText>
         </View>
 
         <View style={styles.cardList}>
-          {bookingMenus.map((menu) => (
+          {roomTypeMenus.map((menu) => (
             <Link key={menu.href} href={menu.href} asChild>
               <Pressable accessibilityRole="button" style={styles.card}>
                 <View style={styles.iconBg}>
@@ -90,7 +77,7 @@ export default function SelectBookingScreen() {
                 </View>
                 <View style={styles.cardText}>
                   <ThemedText style={styles.cardTitle}>{menu.title}</ThemedText>
-                  <ThemedText style={styles.cardDesc} numberOfLines={1}>
+                  <ThemedText style={styles.cardDesc} numberOfLines={2}>
                     {menu.description}
                   </ThemedText>
                 </View>

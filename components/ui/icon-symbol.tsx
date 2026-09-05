@@ -72,6 +72,7 @@ import X from 'lucide-react-native/dist/cjs/icons/x';
 import LogOut from 'lucide-react-native/dist/cjs/icons/log-out';
 import LockOpen from 'lucide-react-native/dist/cjs/icons/lock-open';
 import ShoppingCart from 'lucide-react-native/dist/cjs/icons/shopping-cart';
+import Presentation from 'lucide-react-native/dist/cjs/icons/presentation';
 import type { LucideIcon } from 'lucide-react-native';
 import { OpaqueColorValue, StyleProp, ViewStyle } from 'react-native';
 
@@ -127,6 +128,10 @@ const MAPPING = {
   // A door rather than a calendar: the menu grid already carries three calendar
   // glyphs, so room booking needs to be tellable apart at a glance.
   'door.open': DoorOpen,
+  // Meeting-room requests in the merged จองห้อง list — deliberately not
+  // 'person.2.fill', which already marks the meetingv2 minutes/agenda module
+  // on the home grid and would read as the same feature.
+  'presentation': Presentation,
   // Repair categories
   'bolt.fill': Zap,
   'lightbulb.fill': Lightbulb,

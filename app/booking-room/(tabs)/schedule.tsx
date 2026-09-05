@@ -1,6 +1,21 @@
 /**
  * Booking Room → ตารางจอง (tab key: booking_schedule).
  *
+ * One room's week, whichever room-booking system owns it — classroom rooms
+ * from booking-room, meeting rooms (ห้องประชุมดงยาง, มงคลสุข, S307, ...) from
+ * meeting-room, in the same picker and the same timeline view. Kept as one
+ * shared tab rather than split by system: unlike the current/history tabs,
+ * splitting this one would mean the schedule tab silently "not covering"
+ * whichever system it currently isn't showing, which only gets more visible
+ * as a third room-booking system (studio) joins the other two.
+ *
+ * Confirmed the two systems' rooms are genuinely disjoint sets (classroom's
+ * tb_room does hold a few department-level ห้องประชุม of its own — EEMEETINGROOM,
+ * IEMEET1-3 — but those are a different, smaller class of room than the
+ * faculty-level ones meeting-room manages) — so the picker can offer both
+ * lists side by side with no id collision, as long as each option's id stays
+ * namespaced by kind (see `roomKey`/`splitRoomKey` below).
+ *
  * Shows the same week the website's roombook page shows — one room, Monday to
  * Sunday — but not the same way. That page is a 32-column grid (07:00–23:00 in
  * half-hours) which works on a projector and not at all on a phone. The data is
@@ -32,13 +47,17 @@ import { AppFonts } from '@/constants/fonts';
 import { boxShadow } from '@/constants/shadows';
 import { TEXT } from '@/constants/text';
 import { LightColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 import {
   getRoomWeekSchedule,
   listBookingRooms,
   type BookingRoom,
-  type RoomBooking,
-  type RoomWeekSchedule,
 } from '@/services/bookingRoomService';
+import {
+  getMeetingRoomOptions,
+  getMeetingRoomWeek,
+  type MeetingRoomOption,
+} from '@/services/meetingRoomService';
 
 const THAI_DAYS = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 const THAI_MONTHS = [
@@ -46,31 +65,66 @@ const THAI_MONTHS = [
   'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.',
 ];
 
-/**
- * The booking's own colour, or nothing.
- *
- * The website stores whatever was picked in the form, so the value is trusted
- * only when it is a plain hex — an empty string, a stray label or a colour name
- * falls back to the card's normal surface instead of reaching the style engine.
- */
+/** Which system a picked room belongs to — carried in the room id itself
+ *  (`classroom:5` / `meeting-room:6`) so the two id-spaces never collide. */
+type RoomKind = 'classroom' | 'meeting-room';
+
+type UnifiedRoom = { key: string; kind: RoomKind; nativeId: string; name: string; capacity: number };
+
+type UnifiedWeekBooking = {
+  key: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  title: string;
+  subtitle: string;
+  color?: string;
+};
+
+type UnifiedWeekSchedule = {
+  room: UnifiedRoom | null;
+  week: { start: string; end: string; dates: string[] };
+  bookings: UnifiedWeekBooking[];
+};
+
+function roomKey(kind: RoomKind, nativeId: string): string {
+  return `${kind}:${nativeId}`;
+}
+
+function splitRoomKey(key: string): { kind: RoomKind; nativeId: string } {
+  const [kind, ...rest] = key.split(':');
+  return { kind: kind as RoomKind, nativeId: rest.join(':') };
+}
+
+function toUnifiedClassroomRoom(room: BookingRoom): UnifiedRoom {
+  return { key: roomKey('classroom', room.id), kind: 'classroom', nativeId: room.id, name: room.name, capacity: room.capacity };
+}
+
+function toUnifiedMeetingRoom(room: MeetingRoomOption): UnifiedRoom {
+  return {
+    key: roomKey('meeting-room', String(room.id)),
+    kind: 'meeting-room',
+    nativeId: String(room.id),
+    name: room.name,
+    capacity: room.arrangements[0]?.capacity ?? 0,
+  };
+}
+
+/** The booking's own colour, or nothing — classroom bookings carry one,
+ *  meeting-room requests don't (there is no equivalent field server-side). */
 function bookingColor(value?: string) {
   const hex = (value ?? '').trim();
   if (!/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex)) return undefined;
-  // Expand #abc so the alpha suffix below can just be appended.
   return hex.length === 4
     ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
     : hex;
 }
 
-/** The same colour at a fraction of its strength, as #RRGGBBAA. */
 function withAlpha(hex: string, alpha: number) {
-  const aa = Math.round(alpha * 255)
-    .toString(16)
-    .padStart(2, '0');
+  const aa = Math.round(alpha * 255).toString(16).padStart(2, '0');
   return `${hex}${aa}`;
 }
 
-/** 'YYYY-MM-DD' -> local Date, avoiding the UTC shift `new Date(str)` applies. */
 function parseDate(value: string) {
   const [y, m, d] = value.split('-').map(Number);
   return new Date(y, (m ?? 1) - 1, d ?? 1);
@@ -96,14 +150,7 @@ function weekLabel(start: string, end: string) {
     : `${a.getDate()} ${THAI_MONTHS[a.getMonth()]} – ${b.getDate()} ${THAI_MONTHS[b.getMonth()]} ${year}`;
 }
 
-/**
- * "A303 (88 ที่นั่ง)" — the room and how many it seats on one line.
- *
- * Capacity used to sit on its own line under the picker, which read as a second
- * fact about the screen rather than part of the room's name. It belongs to the
- * room, so it travels with it.
- */
-function roomLabel(room?: BookingRoom | null) {
+function roomLabel(room?: UnifiedRoom | null) {
   if (!room) return undefined;
   return room.capacity > 0
     ? `${room.name} (${room.capacity} ${TEXT.BOOKING_ROOM_SCHEDULE_SEAT_UNIT})`
@@ -113,30 +160,84 @@ function roomLabel(room?: BookingRoom | null) {
 export default function BookingRoomScheduleScreen() {
   const c = useColors();
   const styles = useThemedStyles(createStyles);
+  const { user } = useAuth();
+  const staffId = user?.staffId ?? '';
 
   const [anchorDate, setAnchorDate] = useState(() => toISODate(new Date()));
-  const [roomId, setRoomId] = useState<string | undefined>(undefined);
+  const [roomSelection, setRoomSelection] = useState<string | undefined>(undefined);
 
-  const [schedule, setSchedule] = useState<RoomWeekSchedule | null>(null);
+  const [schedule, setSchedule] = useState<UnifiedWeekSchedule | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [rooms, setRooms] = useState<BookingRoom[]>([]);
+  const [rooms, setRooms] = useState<UnifiedRoom[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const load = useCallback(
-    async (isRefresh = false) => {
-      if (isRefresh) setRefreshing(true);
-      else setLoading(true);
+    async (selection?: string) => {
+      const current = selection ?? roomSelection;
+
+      setLoading((wasLoading) => wasLoading);
       setError(null);
 
       try {
-        const data = await getRoomWeekSchedule(roomId, anchorDate);
+        let data: UnifiedWeekSchedule;
+
+        if (current) {
+          const { kind, nativeId } = splitRoomKey(current);
+          if (kind === 'meeting-room') {
+            const week = await getMeetingRoomWeek(nativeId, anchorDate);
+            data = {
+              room: { key: current, kind, nativeId, name: week.room.name, capacity: 0 },
+              week: week.week,
+              bookings: week.bookings.map((b, i) => ({
+                key: `${b.date}-${b.start_time}-${i}`,
+                date: b.date,
+                startTime: b.start_time,
+                endTime: b.end_time,
+                title: b.title,
+                subtitle: b.requester ?? '',
+              })),
+            };
+          } else {
+            const week = await getRoomWeekSchedule(nativeId, anchorDate);
+            data = {
+              room: toUnifiedClassroomRoom(week.room),
+              week: week.week,
+              bookings: week.bookings.map((b) => ({
+                key: String(b.detail_id),
+                date: b.date,
+                startTime: b.start_time,
+                endTime: b.end_time,
+                title: b.section ? `${b.subject_id} (${b.section})` : b.subject_id,
+                subtitle: b.teacher || b.objective || '',
+                color: bookingColor(b.bgcolor),
+              })),
+            };
+          }
+        } else {
+          // Cold start: no room chosen yet — default to the classroom
+          // schedule's own default room, matching what happened before this
+          // screen knew about a second system.
+          const week = await getRoomWeekSchedule(undefined, anchorDate);
+          data = {
+            room: toUnifiedClassroomRoom(week.room),
+            week: week.week,
+            bookings: week.bookings.map((b) => ({
+              key: String(b.detail_id),
+              date: b.date,
+              startTime: b.start_time,
+              endTime: b.end_time,
+              title: b.section ? `${b.subject_id} (${b.section})` : b.subject_id,
+              subtitle: b.teacher || b.objective || '',
+              color: bookingColor(b.bgcolor),
+            })),
+          };
+        }
+
         setSchedule(data);
-        // The server picks the default room; adopt it so paging weeks afterwards
-        // stays on the same room instead of silently re-defaulting.
-        if (!roomId && data?.room?.id) setRoomId(data.room.id);
+        if (!current && data.room) setRoomSelection(data.room.key);
       } catch (err) {
         setError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_SCHEDULE_LOAD_ERROR);
       } finally {
@@ -144,33 +245,50 @@ export default function BookingRoomScheduleScreen() {
         setRefreshing(false);
       }
     },
-    [anchorDate, roomId],
+    [anchorDate, roomSelection],
   );
 
   useEffect(() => {
+    setLoading(true);
     void load();
-  }, [load]);
+    // Deliberately excludes `load` — this should only re-run when the anchor
+    // date or the chosen room actually changes, not on every render load()
+    // itself is recreated for.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anchorDate, roomSelection]);
 
   const openPicker = useCallback(async () => {
     setPickerOpen(true);
     if (rooms.length === 0) {
       try {
-        setRooms(await listBookingRooms());
+        const [classroomRooms, meetingRoomOptions] = await Promise.allSettled([
+          listBookingRooms(),
+          staffId ? getMeetingRoomOptions(staffId) : Promise.resolve(null),
+        ]);
+
+        const combined: UnifiedRoom[] = [];
+        if (classroomRooms.status === 'fulfilled') {
+          combined.push(...classroomRooms.value.map(toUnifiedClassroomRoom));
+        }
+        if (meetingRoomOptions.status === 'fulfilled' && meetingRoomOptions.value) {
+          combined.push(...meetingRoomOptions.value.rooms.map(toUnifiedMeetingRoom));
+        }
+        setRooms(combined);
       } catch {
         // The picker just stays empty; the schedule on screen is unaffected.
       }
     }
-  }, [rooms.length]);
+  }, [rooms.length, staffId]);
 
   // SelectSheet owns the searching and the empty state; this only maps rooms
-  // onto its option shape.
+  // onto its option shape. `overline` names the kind, since the same picker
+  // now mixes two systems' rooms.
   const roomOptions = useMemo(
     () =>
       rooms.map((r) => ({
-        id: r.id,
+        id: r.key,
         label: r.name,
-        // "88 ที่นั่ง", not a bare "88" — the number alone could be read as a
-        // floor, a code, anything.
+        overline: r.kind === 'meeting-room' ? TEXT.MEETING_ROOM_KIND_LABEL : TEXT.BOOKING_ROOM_KIND_LABEL,
         meta:
           r.capacity > 0
             ? `${r.capacity} ${TEXT.BOOKING_ROOM_SCHEDULE_SEAT_UNIT}`
@@ -186,31 +304,18 @@ export default function BookingRoomScheduleScreen() {
       date,
       bookings: schedule.bookings
         .filter((b) => b.date === date)
-        .sort((a, b) => a.start_time.localeCompare(b.start_time)),
+        .sort((a, b) => a.startTime.localeCompare(b.startTime)),
     }));
   }, [schedule]);
 
   const today = toISODate(new Date());
 
-  function BookingRow({ booking }: { booking: RoomBooking }) {
-    const subject = booking.section
-      ? `${booking.subject_id} (${booking.section})`
-      : booking.subject_id;
-    // The colour picked when the booking was made. It fills the card, but at a
-    // tenth of its strength: enough to tell two lecturers' blocks apart down a
-    // day, faint enough that the themed text stays the readable thing on the
-    // card. The dot on the rail carries the colour at full strength, so each
-    // row still has one place where the colour is exactly itself. Anything that
-    // is not a plain hex is dropped rather than passed to the style engine.
-    const tint = bookingColor(booking.bgcolor);
+  function BookingRow({ booking }: { booking: UnifiedWeekBooking }) {
+    const tint = bookingColor(booking.color);
 
     return (
-      // The same timeline row the meeting screens use: start and end times sit
-      // in the left gutter on two lines, a dot on a continuous rail marks the
-      // slot, and the details float in a card beside it. A day's bookings are
-      // already in time order, so consecutive rails read as one line down the day.
       <EventTimelineItem
-        time={`${booking.start_time}\n${booking.end_time}`}
+        time={`${booking.startTime}\n${booking.endTime}`}
         cardStyle={
           tint
             ? { backgroundColor: withAlpha(tint, 0.1), borderColor: withAlpha(tint, 0.45) }
@@ -218,16 +323,11 @@ export default function BookingRoomScheduleScreen() {
         }
         dotColor={tint}>
         <ThemedText style={styles.bookingTitle} numberOfLines={2}>
-          {subject || booking.teacher || booking.objective}
+          {booking.title}
         </ThemedText>
-        {booking.teacher ? (
+        {booking.subtitle ? (
           <ThemedText style={styles.bookingNote} numberOfLines={1}>
-            {booking.teacher}
-          </ThemedText>
-        ) : null}
-        {booking.objective ? (
-          <ThemedText style={styles.bookingNote} numberOfLines={2}>
-            {booking.objective}
+            {booking.subtitle}
           </ThemedText>
         ) : null}
       </EventTimelineItem>
@@ -235,9 +335,6 @@ export default function BookingRoomScheduleScreen() {
   }
 
   const body = () => {
-    // A reload with a schedule already on screen: the controls stay, and only
-    // the week below them is replaced. The cold-start case never reaches here —
-    // it takes over the whole screen, see `initialLoading` below.
     if (loading) {
       return (
         <View style={styles.centered}>
@@ -271,20 +368,11 @@ export default function BookingRoomScheduleScreen() {
       const isToday = day.date === today;
       const isPicked = day.date === anchorDate;
       const free = day.bookings.length === 0;
-      // The day being looked at, whichever way it was arrived at — tapped in
-      // the calendar, or today on a week nobody has touched.
       const active = isPicked || (isToday && anchorDate === today);
 
       return (
-        // Each day is its own card. A rule between days used to do this job,
-        // but once a day could hold several timeline rows the gap inside a day
-        // and the gap between two days looked the same; a card has an edge.
         <View key={day.date} style={[styles.dayCard, active && styles.dayCardActive]}>
           <View style={[styles.dayHeader, !free && styles.dayHeaderSplit]}>
-            {/* The date as a plate rather than a grey sentence. Number over
-                month, so the eye lands on the number — inside one week that
-                is the only part that changes. The active day fills the plate
-                with brand red; that reads from across the screen. */}
             <View style={[styles.dateBadge, active && styles.dateBadgeActive]}>
               <ThemedText style={[styles.dateNum, active && styles.dateOnActive]}>
                 {d.getDate()}
@@ -311,9 +399,6 @@ export default function BookingRoomScheduleScreen() {
               ) : null}
             </View>
 
-            {/* Whether the room is free is the reason to look at a day at
-                all, so it sits with the date instead of as a grey line
-                underneath. A free day needs nothing below its header. */}
             <View style={[styles.statusChip, free ? styles.statusFree : styles.statusBusy]}>
               <ThemedText style={[styles.statusText, free && styles.statusTextFree]}>
                 {free
@@ -324,16 +409,13 @@ export default function BookingRoomScheduleScreen() {
           </View>
 
           {day.bookings.map((b) => (
-            <BookingRow key={b.detail_id} booking={b} />
+            <BookingRow key={b.key} booking={b} />
           ))}
         </View>
       );
     });
   };
 
-  // Cold start: nothing has loaded yet, so the room picker has no room to name
-  // and the week stepper no week to step from. Showing them empty invites a tap
-  // that cannot be answered, so the screen waits as one thing instead.
   const initialLoading = loading && !schedule;
 
   if (initialLoading) {
@@ -363,9 +445,6 @@ export default function BookingRoomScheduleScreen() {
       />
 
       <View style={styles.toolbar}>
-        {/* Same card-style trigger the executive calendar uses for its source
-            picker: a raised surface with the current choice and a chevron, not
-            a pill. Both open the same sheet, so they should look the same too. */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={TEXT.BOOKING_ROOM_SCHEDULE_PICK_ROOM}
@@ -379,11 +458,6 @@ export default function BookingRoomScheduleScreen() {
           <IconSymbol name="chevron.down" size={24} color={LightColors.primary} />
         </Pressable>
 
-        {/* The week control is one stepper, not three loose parts: two arrows
-            with the week between them, inside a single outlined pill. That
-            shape is deliberately unlike the room card above it — a stepper you
-            page through rather than a field that opens a list — so the two
-            controls are told apart before either is read. */}
         <View style={styles.weekNav}>
           <Pressable
             style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}
@@ -392,13 +466,7 @@ export default function BookingRoomScheduleScreen() {
             <IconSymbol name="chevron.left" size={18} color={LightColors.primary} />
           </Pressable>
 
-          {/* The label is the date picker's trigger: tapping the week opens a
-              calendar, and whatever day is chosen decides which week is shown.
-              `hideLabel` keeps it looking like a label rather than a form field. */}
           <View style={styles.weekLabelWrap}>
-            {/* The button shows the week, not the day that chose it: the picked
-                date is only a way of pointing at a week, and showing it as well
-                left two dates on screen competing to look like "the" date. */}
             <DatePickerField
               label={TEXT.BOOKING_ROOM_SCHEDULE_PICK_DATE}
               hideLabel
@@ -408,29 +476,16 @@ export default function BookingRoomScheduleScreen() {
                   ? weekLabel(schedule.week.start, schedule.week.end)
                   : TEXT.BOOKING_ROOM_SCHEDULE_PICK_DATE
               }
-              // The week is named in the caption below the grid rather than
-              // painted across it — a filled band fought with the weekend and
-              // holiday colours the days already carry.
-              // A week runs Monday to Sunday and the room is bookable at the
-              // weekend, so both ends of the band have to be reachable.
               allowWeekends
-              // …and states that range in words under the grid, so the picker
-              // says which week it is on rather than only drawing it.
               caption={
                 schedule
                   ? `${TEXT.BOOKING_ROOM_SCHEDULE_WEEK_SHOWN} ${weekLabel(schedule.week.start, schedule.week.end)}`
                   : undefined
               }
               onChange={(date) => setAnchorDate(toISODate(date))}
-              // The field sits on the white plate above, so its colours come
-              // from the light palette rather than the theme's — otherwise the
-              // dark theme would put pale text on white.
               buttonStyle={styles.weekField}
               textStyle={styles.weekFieldText}
               iconColor={LightColors.textMuted}
-              // As tall as the line it sits next to (15pt bold ≈ 20pt line), so
-              // glyph and range read as one object rather than a mark before a
-              // label.
               iconSize={19}
             />
           </View>
@@ -449,7 +504,10 @@ export default function BookingRoomScheduleScreen() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => void load(true)}
+            onRefresh={() => {
+              setRefreshing(true);
+              void load();
+            }}
             tintColor={c.primary}
           />
         }>
@@ -462,8 +520,8 @@ export default function BookingRoomScheduleScreen() {
         title={TEXT.BOOKING_ROOM_SCHEDULE_PICK_ROOM}
         searchPlaceholder={TEXT.BOOKING_ROOM_SCHEDULE_SEARCH_ROOM}
         options={roomOptions}
-        selectedId={schedule?.room?.id}
-        onSelect={(option) => setRoomId(option.id)}
+        selectedId={schedule?.room?.key}
+        onSelect={(option) => setRoomSelection(option.id)}
       />
     </ThemedView>
   );
@@ -472,26 +530,16 @@ export default function BookingRoomScheduleScreen() {
 const createStyles = (c: ReturnType<typeof useColors>) =>
   StyleSheet.create({
     container: { flex: 1 },
-    // Fills what is left of the screen so the loader sits in the middle of it,
-    // not 48pt below whatever is above it.
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 48 },
 
     toolbar: {
       paddingHorizontal: 16,
-      // The room picker is a raised card; sitting it straight under the nav bar
-      // made the two read as one block. This gives it room to be its own thing.
       paddingTop: 16,
       paddingBottom: 12,
       gap: 10,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.border,
     },
-    // The room: a full-width white card, tall, with the room's name reading as
-    // a heading. No border — on a darker panel an outline only muddies the edge
-    // the tone gap already draws; the shadow does the lifting instead.
-    // White in both themes, by request. Because the plate no longer follows the
-    // theme, nothing drawn on it may either — text, placeholder and chevron all
-    // come from the light palette.
     roomButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -513,10 +561,6 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
     },
     roomPlaceholder: { color: LightColors.textMuted, fontFamily: AppFonts.psuRegular },
 
-    // The week: one white pill holding both arrows and the range, divided into
-    // three segments. Deliberately unlike the card above it — a stepper you page
-    // through, not a field that opens a list — so the two are told apart before
-    // either is read, while the shared white keeps them a set.
     weekNav: {
       flexDirection: 'row',
       alignItems: 'stretch',
@@ -532,13 +576,8 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
       justifyContent: 'center',
     },
     navButtonPressed: { backgroundColor: LightColors.primarySoft },
-    // The middle segment of the pill, divided from the arrows by hairlines so
-    // it is legible as its own target — tapping the week opens the calendar,
-    // tapping an arrow steps a week.
     weekLabelWrap: {
       flex: 1,
-      // `stretch`, not `center`: the field inside has to take the full width of
-      // the segment, otherwise its label has nothing to lay out in.
       alignItems: 'stretch',
       justifyContent: 'center',
       paddingHorizontal: 8,
@@ -546,18 +585,12 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
       borderRightWidth: StyleSheet.hairlineWidth,
       borderColor: LightColors.border,
     },
-    // No underline: the pill around it is the affordance now. Centred as a pair
-    // — glyph then range — rather than the glyph pinned left and the text
-    // centred, which left a gap between them the width of the segment.
     weekField: {
       borderBottomWidth: 0,
       justifyContent: 'center',
       minHeight: 38,
       gap: 6,
     },
-    // Sized to its own text so it sits right beside the glyph. Spelled out as
-    // grow/shrink/basis rather than `flex: 0`, which resolves to a zero basis on
-    // web and once left the range with no width at all — only the glyph showed.
     weekFieldText: {
       flexGrow: 0,
       flexShrink: 1,
@@ -569,13 +602,8 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
       fontFamily: AppFonts.psuBold,
     },
 
-    // flexGrow so a short body — the loader, an empty state — fills the
-    // viewport and centres in it rather than sitting under the toolbar.
     scroll: { padding: 16, paddingBottom: 32, gap: 12, flexGrow: 1 },
 
-    // One card per day. `surface` rather than `surfaceAlt`, because the date
-    // badge and the busy chip are surfaceAlt — on a matching plate they would
-    // disappear.
     dayCard: {
       backgroundColor: c.surface,
       borderRadius: 14,
@@ -585,17 +613,8 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
       paddingVertical: 12,
       boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.05 }),
     },
-    // The day being looked at keeps a brand edge so it stays findable after
-    // scrolling — the fill stays neutral, because the timeline rows inside it
-    // have to stay readable.
-    // The same blue the date picker fills the chosen day with — the card and
-    // the calendar cell are marking the same thing, so they say it the same way.
     dayCardActive: { borderColor: c.belizeHole },
     dayHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-    // A rule between the day and its bookings. It runs to the card's edges —
-    // hence the negative margins undoing the card padding — so it reads as a
-    // division of the card rather than as an underline on the header text.
-    // Only drawn when there is something below it to divide from.
     dayHeaderSplit: {
       marginHorizontal: -12,
       paddingHorizontal: 12,

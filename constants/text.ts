@@ -1016,6 +1016,88 @@ export const TEXT = {
   BOOKING_ROOM_STEP_NEED_START_TIME: 'กรุณาเลือกเวลาเริ่มก่อน',
   BOOKING_ROOM_STEP_NEED_TIME: 'กรุณาเลือกเวลาเริ่มและเวลาสิ้นสุดก่อน',
 
+  // --- Meeting Room (module key: meeting-room) ---
+  // Lives under the same "จองห้อง" home tile and the same รายการจอง/เสร็จสิ้น
+  // tabs as booking-room — see services/roomBookingAggregator.ts. Only the
+  // hub, the form, and the detail screen are meeting-room's own; the merged
+  // list rows reuse BOOKING_ROOM_TAB_* etc. directly, no separate keys needed.
+
+  // The new top-level "จองห้องเรียน / จองห้องประชุม" hub, reached from the
+  // "+เพิ่มการจอง" row that used to open select-booking.tsx directly.
+  MEETING_ROOM_HUB_NAV_TITLE: 'จองห้อง',
+  MEETING_ROOM_HUB_TITLE: 'เลือกประเภทห้อง',
+  MEETING_ROOM_HUB_DESCRIPTION: 'เลือกว่าต้องการจองห้องเรียนหรือห้องประชุม',
+  // The classroom card's title reuses BOOKING_ROOM_ADD_BOOKING ('จองห้องเรียน')
+  // rather than a second key for the same Thai string.
+  MEETING_ROOM_HUB_CLASSROOM_DESCRIPTION: 'จองทั่วไป จองเทอม หรือจองเป็นช่วง',
+  MEETING_ROOM_HUB_CARD_TITLE: 'จองห้องประชุม',
+  MEETING_ROOM_HUB_CARD_DESCRIPTION: 'ขอใช้ห้องประชุมของคณะ ต้องรอหัวหน้าภาคอนุมัติ',
+
+  // Merged-list row kind labels (services/roomBookingAggregator.ts)
+  MEETING_ROOM_KIND_LABEL: 'ห้องประชุม',
+  BOOKING_ROOM_KIND_LABEL: 'ห้องเรียน',
+
+  // Form
+  MEETING_ROOM_FORM_NAV_TITLE: 'จองห้องประชุม',
+  MEETING_ROOM_FORM_LOAD_ERROR: 'โหลดแบบฟอร์มขอใช้ห้องประชุมไม่สำเร็จ',
+  MEETING_ROOM_FORM_PURPOSE_LABEL: 'รายละเอียดงาน',
+  MEETING_ROOM_FORM_TYPE_LABEL: 'ประเภทงาน',
+  MEETING_ROOM_FORM_TYPE_PICK: 'เลือกประเภทงาน',
+  MEETING_ROOM_FORM_MAN_LABEL: 'จำนวนผู้เข้าร่วม',
+  MEETING_ROOM_FORM_ROOM_LABEL: 'ห้องประชุม',
+  MEETING_ROOM_FORM_ROOM_PICK: 'เลือกห้องประชุม',
+  MEETING_ROOM_FORM_ARRANGEMENT_LABEL: 'รูปแบบการจัดห้อง',
+  MEETING_ROOM_FORM_ARRANGEMENT_PICK: 'เลือกรูปแบบการจัดห้อง',
+  MEETING_ROOM_FORM_DATES_LABEL: 'วันและเวลาที่ใช้ห้อง',
+  MEETING_ROOM_FORM_ADD_DATE: 'เพิ่มวัน',
+  MEETING_ROOM_FORM_REMOVE_DATE: 'ลบวันนี้',
+  MEETING_ROOM_FORM_DATE_LABEL: 'วันที่',
+  MEETING_ROOM_FORM_START_TIME_LABEL: 'เวลาเริ่ม',
+  MEETING_ROOM_FORM_END_TIME_LABEL: 'เวลาสิ้นสุด',
+  MEETING_ROOM_FORM_ROOM_UNAVAILABLE: 'ช่วงเวลานี้มีการใช้ห้องแล้ว',
+  MEETING_ROOM_FORM_AUDIO_LABEL: 'อุปกรณ์โสตทัศนูปกรณ์',
+  MEETING_ROOM_FORM_AUDIO_HINT: 'ระบุจำนวนเฉพาะรายการที่ต้องการ เว้นว่างหรือใส่ 0 หากไม่ต้องการ',
+  MEETING_ROOM_FORM_FOOD_LABEL: 'อาหารและเครื่องดื่ม',
+  MEETING_ROOM_FORM_FOOD_HINT: 'ระบุจำนวนเฉพาะรายการที่ต้องการ เว้นว่างหรือใส่ 0 หากไม่ต้องการ',
+  MEETING_ROOM_FORM_LEADER_LABEL: 'ผู้อนุมัติ (หัวหน้าภาควิชา/หน่วยงาน)',
+  MEETING_ROOM_FORM_LEADER_PICK: 'เลือกผู้อนุมัติ',
+  MEETING_ROOM_FORM_LEADER_NONE: 'ไม่พบรายชื่อผู้อนุมัติสำหรับหน่วยงานของคุณ',
+  MEETING_ROOM_FORM_COMMENT_LABEL: 'หมายเหตุ',
+  MEETING_ROOM_FORM_REQUIRED_ERROR: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+  MEETING_ROOM_FORM_NEED_ONE_DATE: 'กรุณาเพิ่มอย่างน้อย 1 วัน',
+  MEETING_ROOM_FORM_TIME_ORDER_ERROR: 'เวลาสิ้นสุดต้องหลังเวลาเริ่ม',
+  MEETING_ROOM_FORM_PAST_DATE_ERROR: 'ไม่สามารถเลือกวันที่ผ่านมาแล้วได้',
+  MEETING_ROOM_CONFIRM_TITLE: 'ยืนยันการขอใช้ห้องประชุม',
+  MEETING_ROOM_CONFIRM_MESSAGE: 'ตรวจสอบข้อมูลก่อนส่งคำขอ คำขอจะถูกส่งให้หัวหน้าภาคพิจารณาอนุมัติ',
+  MEETING_ROOM_CONFIRM_ACTION: 'ส่งคำขอ',
+  MEETING_ROOM_CONFIRM_CANCEL: 'ตรวจสอบอีกครั้ง',
+  MEETING_ROOM_SUBMIT_SUCCESS: 'ส่งคำขอใช้ห้องประชุมเรียบร้อย รอหัวหน้าภาคอนุมัติ',
+  MEETING_ROOM_SUBMIT_ERROR: 'ส่งคำขอไม่สำเร็จ',
+
+  // Detail
+  MEETING_ROOM_DETAIL_TITLE: 'รายละเอียดคำขอใช้ห้องประชุม',
+  MEETING_ROOM_DETAIL_ERROR: 'โหลดรายละเอียดคำขอไม่สำเร็จ',
+  MEETING_ROOM_DETAIL_INFO: 'ข้อมูลคำขอ',
+  MEETING_ROOM_DETAIL_DATES: 'วันและเวลาที่ขอใช้ห้อง',
+  MEETING_ROOM_DETAIL_THINGS: 'อุปกรณ์และอาหารที่ขอ',
+  MEETING_ROOM_DETAIL_STATUS_LABEL: 'สถานะ',
+  MEETING_ROOM_DETAIL_LEADER_LABEL: 'ผู้อนุมัติ',
+  // Cancellation mirrors the server's own tiered rule (status ≤ 3 deletes the
+  // request outright; 4–89 only marks it cancelled, pending staff to see it) —
+  // two different messages because the two are genuinely different outcomes,
+  // not one button with one confirmation.
+  MEETING_ROOM_CANCEL_ACTION: 'ยกเลิกคำขอ',
+  MEETING_ROOM_CANCEL_CONFIRM_TITLE: 'ยกเลิกคำขอใช้ห้องประชุม',
+  MEETING_ROOM_CANCEL_CONFIRM_EARLY: 'คำขอนี้ยังไม่ผ่านการพิจารณา ต้องการยกเลิกและลบคำขอนี้ใช่หรือไม่',
+  MEETING_ROOM_CANCEL_CONFIRM_LATE:
+    'คำขอนี้ผ่านการพิจารณาไปแล้ว การยกเลิกจะแจ้งให้เจ้าหน้าที่ทราบ และอาจต้องใช้เวลาดำเนินการ ต้องการยกเลิกใช่หรือไม่',
+  MEETING_ROOM_CANCEL_SUCCESS: 'ยกเลิกคำขอแล้ว',
+  MEETING_ROOM_CANCEL_ERROR: 'ยกเลิกคำขอไม่สำเร็จ',
+  MEETING_ROOM_CANCEL_ALREADY: 'คำขอนี้ถูกยกเลิกหรือดำเนินการเสร็จสิ้นไปแล้ว',
+
+  // Schedule tab — the meeting-room half of the merged room picker
+  MEETING_ROOM_SCHEDULE_LOAD_ERROR: 'โหลดตารางห้องประชุมไม่สำเร็จ',
+
   // Examiner / Examinar
   EXAMINER_MENU_TITLE: 'ตารางคุมสอบ',
   EXAMINAR_HEADER_TITLE: 'ตารางคุมสอบ',
@@ -1087,6 +1169,12 @@ export const TEXT = {
   LECT_TIMESTAMP_BUTTON: 'ลงเวลาวันนี้',
   LECT_TIMESTAMP_STAMPED_HEADLINE: 'วันนี้ลงเวลาแล้ว',
   LECT_TIMESTAMP_NOT_STAMPED_HEADLINE: 'วันนี้ยังไม่ได้ลงเวลา',
+  // Shown instead of the two above on a weekend or public holiday — "not
+  // stamped yet" reads as a lapse on a day nobody was expected to stamp.
+  // Followed by the holiday's name when there is one ("วันนี้วันหยุด
+  // วันสงกรานต์"), or LECT_TIMESTAMP_WEEKEND_LABEL on a plain weekend.
+  LECT_TIMESTAMP_HOLIDAY_HEADLINE_PREFIX: 'วันนี้วันหยุด',
+  LECT_TIMESTAMP_WEEKEND_LABEL: 'เสาร์-อาทิตย์',
   // Prefixes the time dug out of the stamp's remark. Kept apart from the
   // headline so the two can be laid out separately.
   LECT_TIMESTAMP_STAMPED_AT: 'เมื่อ',
@@ -1148,6 +1236,10 @@ export const TEXT = {
   TIMESTAMP_CALENDAR_HINT: 'แตะที่วันเพื่อดูรายละเอียดการลงเวลา',
   TIMESTAMP_CALENDAR_NO_TIME_DATA: 'ยังไม่มีข้อมูลเวลาเข้า-ออกจากระบบ',
   TIMESTAMP_CALENDAR_MAKE_REQUEST: 'ทำเรื่องลืมลงเวลา',
+  // Shown under the request button once `canRequest` (Phoenix's own verdict,
+  // see timestampService.ts) says the window to file has closed — the button
+  // stays visible but disabled rather than disappearing without explanation.
+  TIMESTAMP_CALENDAR_REQUEST_CLOSED: 'หมดเขตยื่นเรื่องลืมลงเวลาสำหรับวันนี้แล้ว',
   TIMESTAMP_CALENDAR_LATE: 'มาสาย',
   TIMESTAMP_CALENDAR_LATE_SHORT: 'สาย',
   TIMESTAMP_CALENDAR_LATE_DESC: 'เข้างานสาย',
