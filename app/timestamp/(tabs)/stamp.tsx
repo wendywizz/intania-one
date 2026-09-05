@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ErrorState } from '@/components/error-state';
@@ -15,6 +15,7 @@ import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
+import { useHolidays } from '@/hooks/use-holidays';
 import { MESSAGE_CANNOT_CONNECT_TO_SERVER } from '@/services/api';
 import {
   getLectTimestampStatus,
@@ -67,6 +68,21 @@ export default function LectTimestampScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [stamping, setStamping] = useState(false);
   const [error, setError] = useState('');
+
+  // The upstream only refuses a stamp for a weekend (reason === 'weekend'); a
+  // public holiday is not one of its refusal codes at all, so canStamp stays
+  // true and reason stays '' on one — the "not stamped yet" headline would
+  // otherwise read as a lapse on a day nobody was expected to stamp. Same
+  // holiday source the calendar tab and absence forms use.
+  const holidays = useHolidays(staffId);
+  useEffect(() => {
+    const serverDate = status?.serverDate ?? '';
+    const [year, month] = serverDate.split('-').map(Number);
+    if (year && month) void holidays.ensureMonth(year, month);
+    // holidays.ensureMonth is stable per staffId (see useHolidays) — only the
+    // server date should re-trigger this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status?.serverDate]);
 
   const load = useCallback(
     async (mode: 'initial' | 'refresh') => {
@@ -140,6 +156,27 @@ export default function LectTimestampScreen() {
     const stamped = status?.stamped === true;
     const canStamp = status?.canStamp === true;
 
+    // The upstream only flags 'weekend'; a public holiday has to be checked
+    // against the same calendar the timestamp tab and absence forms use.
+    const serverDate = status?.serverDate ?? '';
+    const isWeekend = status?.reason === 'weekend';
+    const isPublicHoliday = Boolean(serverDate) && holidays.holidaySet.has(serverDate);
+    const holidayName = serverDate ? holidays.holidayNames.get(serverDate) : undefined;
+    const isDayOff = isWeekend || isPublicHoliday;
+    // A named holiday wins over the generic weekend label when a holiday
+    // lands on one — it says more. Falls back to the plain prefix on the
+    // rare day flagged a holiday with no name attached.
+    const dayOffHeadline = [
+      TEXT.LECT_TIMESTAMP_HOLIDAY_HEADLINE_PREFIX,
+      holidayName || (isWeekend ? TEXT.LECT_TIMESTAMP_WEEKEND_LABEL : ''),
+    ].filter(Boolean).join(' ');
+
+    const headline = stamped
+      ? TEXT.LECT_TIMESTAMP_STAMPED_HEADLINE
+      : isDayOff
+        ? dayOffHeadline
+        : TEXT.LECT_TIMESTAMP_NOT_STAMPED_HEADLINE;
+
     return (
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -165,11 +202,7 @@ export default function LectTimestampScreen() {
             />
           </View>
 
-          <ThemedText style={styles.headline}>
-            {stamped
-              ? TEXT.LECT_TIMESTAMP_STAMPED_HEADLINE
-              : TEXT.LECT_TIMESTAMP_NOT_STAMPED_HEADLINE}
-          </ThemedText>
+          <ThemedText style={styles.headline}>{headline}</ThemedText>
 
           {/* The time they actually tapped. Not in_time, which is the constant
               08:00 every lecturer stamp carries. Absent on older rows, so it

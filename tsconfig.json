@@ -3,6 +3,7 @@
   "compilerOptions": {
     "allowJs": true,
     "strict": true,
+    "types": ["jest"],
     "paths": {
       "@/*": [
         "./*"

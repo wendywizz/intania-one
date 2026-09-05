@@ -22,7 +22,6 @@ import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
 
-import { InfinityLoader } from '@/components/infinity-loader';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PillButton } from '@/components/ui';
@@ -495,17 +494,18 @@ function UpcomingShiftSection({ tiles, loading, error, onReload }: UpcomingShift
   // edge. Capped so tiles don't balloon on a tablet.
   const tileWidth = Math.min(190, Math.floor(screenWidth * 0.4));
 
-  // Loaded, and nothing outstanding.
+  // Loaded, and nothing outstanding — the whole band is omitted below, title
+  // included: nothing pending means nothing to head either.
   const isEmpty = !loading && !error && tiles.length === 0;
+  if (isEmpty) return null;
 
   return (
     <View style={s.coverCard}>
       {/* The title is part of the content, not the frame: it heads a list of
           pending work, so it only appears when there is some. While loading we
-          don't yet know, and when there is none the message says so on its own
-          — a heading above it would announce a list that isn't there. The error
-          state keeps it, because there the work is unknown, not absent. */}
-      {!loading && !isEmpty && <Text style={s.coverTitle}>{TEXT.HOME_UPCOMING_SHIFT_TITLE}</Text>}
+          don't yet know. The error state keeps it, because there the work is
+          unknown, not absent. */}
+      {!loading && <Text style={s.coverTitle}>{TEXT.HOME_UPCOMING_SHIFT_TITLE}</Text>}
 
       {loading ? (
         <View style={s.stateWrap}>
@@ -524,15 +524,6 @@ function UpcomingShiftSection({ tiles, loading, error, onReload }: UpcomingShift
             <IconSymbol name="arrow.triangle.2.circlepath" size={16} color={m.accent} />
             <Text style={s.reloadBtnText}>{TEXT.SHARED_RETRY}</Text>
           </Pressable>
-        </View>
-      ) : isEmpty ? (
-        // The section used to unmount itself here, which read as a failure to
-        // load — the row was simply absent, with no way to tell "nothing
-        // pending" from "never arrived". Saying so is the answer, and it is a
-        // good one: the tick is the point.
-        <View style={s.stateWrap}>
-          <IconSymbol name="checkmark.circle.fill" size={22} color={m.textFaint} />
-          <Text style={s.emptyText}>{TEXT.HOME_SHIFT_EMPTY}</Text>
         </View>
       ) : (
         <ScrollView
@@ -700,13 +691,18 @@ export default function HomeScreen() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [newsItems, setNewsItems] = useState<News[]>([]);
-  const [isNewsLoading, setIsNewsLoading] = useState(true);
+  const [isNewsReady, setIsNewsReady] = useState(false);
   const [isNewsError, setIsNewsError] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [isCompactHeader, setIsCompactHeader] = useState(false);
   const [activeSummary, setActiveSummary] = useState<ActiveSummaryData | null>(null);
   const [isActiveSummaryLoading, setIsActiveSummaryLoading] = useState(false);
   const [isActiveSummaryError, setIsActiveSummaryError] = useState(false);
+  // Whether the shift-tile group (summary + exams + absence/timestamp
+  // approvals) has settled at least once. Distinct from isActiveSummaryLoading,
+  // which also flips true/false around a later manual retry — that retry must
+  // not re-trigger the whole-page gate below.
+  const [isSummaryReady, setIsSummaryReady] = useState(false);
   const [upcomingExams, setUpcomingExams] = useState<ExamTask[]>([]);
   const [absenceApproval, setAbsenceApproval] = useState<{ show: boolean; count: number }>({
     show: false,
@@ -718,10 +714,6 @@ export default function HomeScreen() {
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Whether the news feed has ever loaded (successfully or not). Cleared
-  // never — a ref so the focus effect below always reads the latest value
-  // without needing newsItems in its own deps.
-  const hasLoadedNewsRef = useRef(false);
   const processedCallbackRef = useRef('');
   const { completeWebSignIn, eligibility, loading: isAuthLoading, signIn, signOut, user: authUser } = useAuth();
   const completeWebSignInRef = useRef(completeWebSignIn);
@@ -771,27 +763,21 @@ export default function HomeScreen() {
         setUnreadCount(0);
       }
 
-      // Only the very first load has nothing to show yet, so only it blocks
-      // the section on the loader. Coming back from another tab already has
-      // last time's cards on screen — this refetches quietly behind them and
-      // swaps in the fresh list once it lands, instead of flashing back to a
-      // loading state for news the user has already seen.
-      if (!hasLoadedNewsRef.current) setIsNewsLoading(true);
+      // No per-section spinner here — the whole page stays gated behind the
+      // single full-screen loader below until this settles, then the news
+      // cards just appear already populated. A later refetch (coming back
+      // from another tab) still runs here but the page is already showing,
+      // so it swaps the cards in place instead of blanking anything.
       void staffNewsFeed().then((items) => {
         if (!isActive) return;
-        hasLoadedNewsRef.current = true;
         setNewsItems(items);
         setIsNewsError(false);
-        setIsNewsLoading(false);
       }).catch(() => {
         if (!isActive) return;
-        // A background refresh failing quietly keeps whatever news was
-        // already on screen; only a first-load failure blanks the section.
-        if (!hasLoadedNewsRef.current) {
-          setNewsItems([]);
-          setIsNewsError(true);
-        }
-        setIsNewsLoading(false);
+        setNewsItems([]);
+        setIsNewsError(true);
+      }).finally(() => {
+        if (isActive) setIsNewsReady(true);
       });
 
       return () => { isActive = false; };
@@ -801,47 +787,65 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
+      // Auth is still resolving — its own gate already blocks the page, and
+      // authUser/eligibility aren't trustworthy yet. Deciding "nothing to
+      // fetch" from an authUser that just hasn't loaded YET would mark this
+      // group ready before the real fetch below even starts. Wait it out;
+      // this effect re-fires once isAuthLoading flips (it's a dep).
+      if (isAuthLoading) return;
+
       const staffId = String(authUser?.staffId ?? '').trim();
       const userId = String(authUser?.userId ?? authUser?.staffId ?? '').trim();
       // Someone outside the faculty sees none of this, so there is nothing to
-      // fetch — skip the round trip to every module's summary API.
-      if (!staffId || eligibility === 'denied') return;
+      // fetch — skip the round trip to every module's summary API. Nothing to
+      // wait for either, so the tile group counts as settled straight away.
+      if (!staffId || eligibility === 'denied') {
+        setIsSummaryReady(true);
+        return;
+      }
 
       setIsActiveSummaryLoading(true);
       setIsActiveSummaryError(false);
-      void getActiveSummary(staffId, userId).then((data) => {
-        if (!isActive) return;
-        setActiveSummary(data);
-        setIsActiveSummaryError(false);
-        setIsActiveSummaryLoading(false);
-      }).catch(() => {
-        if (!isActive) return;
-        setActiveSummary(null);
-        setIsActiveSummaryError(true);
-        setIsActiveSummaryLoading(false);
-      });
 
       const examParams = getCurrentExamParams();
-      void listExamTasks({ staff_id: staffId, ...examParams }).then((tasks) => {
-        if (isActive) setUpcomingExams(tasks.filter(isExamUpcoming));
-      }).catch(() => {
-        if (isActive) setUpcomingExams([]);
-      });
+      // All four settle together — the page-level gate waits for this whole
+      // group, so it must not lift on whichever call happens to answer first.
+      void Promise.allSettled([
+        getActiveSummary(staffId, userId),
+        listExamTasks({ staff_id: staffId, ...examParams }),
+        approvingWaitingData(staffId),
+        getForgetApprovalWaiting(staffId),
+      ]).then(([summaryResult, examResult, absenceResult, timestampResult]) => {
+        if (!isActive) return;
 
-      void approvingWaitingData(staffId).then((result) => {
-        if (isActive) setAbsenceApproval({ show: result.show, count: result.data.length });
-      }).catch(() => {
-        if (isActive) setAbsenceApproval({ show: false, count: 0 });
-      });
+        if (summaryResult.status === 'fulfilled') {
+          setActiveSummary(summaryResult.value);
+          setIsActiveSummaryError(false);
+        } else {
+          setActiveSummary(null);
+          setIsActiveSummaryError(true);
+        }
 
-      void getForgetApprovalWaiting(staffId).then((result) => {
-        if (isActive) setTimestampApproval({ show: result.show, count: result.data.length });
-      }).catch(() => {
-        if (isActive) setTimestampApproval({ show: false, count: 0 });
+        setUpcomingExams(
+          examResult.status === 'fulfilled' ? examResult.value.filter(isExamUpcoming) : [],
+        );
+        setAbsenceApproval(
+          absenceResult.status === 'fulfilled'
+            ? { show: absenceResult.value.show, count: absenceResult.value.data.length }
+            : { show: false, count: 0 },
+        );
+        setTimestampApproval(
+          timestampResult.status === 'fulfilled'
+            ? { show: timestampResult.value.show, count: timestampResult.value.data.length }
+            : { show: false, count: 0 },
+        );
+
+        setIsActiveSummaryLoading(false);
+        setIsSummaryReady(true);
       });
 
       return () => { isActive = false; };
-    }, [authUser, eligibility]),
+    }, [authUser, eligibility, isAuthLoading]),
   );
 
   // Built here, not inside the band, because the module grid needs the same
@@ -961,12 +965,18 @@ export default function HomeScreen() {
     );
   }, []);
 
-  // ─── Auth loading ───────────────────────────────────────────────────────────
-
-  if (isAuthLoading) {
+  // ─── Whole-page loading gate ────────────────────────────────────────────────
+  // Nothing on this screen renders piecemeal: auth, the news feed and the
+  // shift-tile group (summary + exams + absence/timestamp approvals) all have
+  // to have settled at least once before anything shows. Until then the page
+  // is blank but for the loader — no header, no partially-loaded sections
+  // popping in one at a time. A later refetch (coming back from another tab)
+  // no longer flips isNewsReady/isSummaryReady back to false, so this only
+  // gates the very first load, never a revisit.
+  if (isAuthLoading || !isNewsReady || !isSummaryReady) {
     return (
       <View style={[styles.container, styles.center]}>
-        <LoadingAnimate title={TEXT.AUTH_SIGNING_IN_TITLE} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
+        <LoadingAnimate />
       </View>
     );
   }
@@ -1084,11 +1094,7 @@ export default function HomeScreen() {
 
             {/* News cards — horizontal scroll, break out to the band edges */}
             <View style={styles.newsScrollOuter}>
-            {isNewsLoading ? (
-              <View style={styles.newsLoadingWrap}>
-                <InfinityLoader size={48} />
-              </View>
-            ) : displayedNews.length === 0 ? (
+            {displayedNews.length === 0 ? (
               <View style={[styles.newsEmptyCard, { width: screenWidth - D.pad * 2 }]}>
                 <View style={styles.newsEmptyIcon}>
                   <IconSymbol name="doc.text.fill" size={20} color={m.textFaint} />
@@ -1195,15 +1201,30 @@ export default function HomeScreen() {
                   {MENU_ITEMS.map((item) => {
                     // Same dot the bell wears, in the same place, for the same
                     // reason — so it reads as "unattended" on sight rather than
-                    // as a decoration this grid invented.
+                    // as a decoration this grid invented. Keyed on MODULE_HREF.absence
+                    // regardless of role — see the boss branch below — so this still
+                    // matches shiftTiles' own `module` field for both leave tiles.
                     const hasPending = pendingModules.has(item.href);
+                    // MODULE_HREF.absence points at the pending list, which is a
+                    // general-user tab (see _layout.tsx) — a boss/approver has no
+                    // such tab and would land on a screen the tab bar doesn't
+                    // show as selected. Unlike the timestamp module, /absence
+                    // itself isn't free to be a role-aware redirect: it's the
+                    // leave-type picker, and other screens already push to it
+                    // expecting that. So the branch lives here instead.
+                    // approve-leave is now the boss's first tab (see _layout.tsx) —
+                    // land there, not on my-leave, so the tab that opens is the
+                    // one already showing active in the bar.
+                    const target = item.href === MODULE_HREF.absence && absenceApproval.show
+                      ? '/absence/approve-leave'
+                      : item.href;
                     return (
                       <Pressable
                         key={item.href}
                         accessibilityRole="button"
                         accessibilityLabel={hasPending ? `${item.title}, ${TEXT.HOME_MENU_PENDING_A11Y}` : item.title}
                         style={({ pressed }) => [styles.menuCard, { width: menuCardWidth }, pressed && styles.pressed]}
-                        onPress={() => navPush(item.href as Parameters<typeof navPush>[0])}>
+                        onPress={() => navPush(target as Parameters<typeof navPush>[0])}>
                         <IconSymbol name={item.icon} size={30} color={m.icon} />
                         <Text numberOfLines={2} style={styles.menuLabel}>{item.title}</Text>
                         {hasPending ? <View style={styles.menuBadge} /> : null}
@@ -1638,12 +1659,6 @@ const makeStyles = (m: M) => StyleSheet.create({
   // card hard against the screen edge on web).
   newsScrollOuter: {
     minHeight: 112,
-  },
-  newsLoadingWrap: {
-    flex: 1,
-    minHeight: 112,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   newsScrollContent: {
     paddingRight: 4,

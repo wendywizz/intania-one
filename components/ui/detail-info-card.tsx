@@ -7,7 +7,14 @@ import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
-export type DetailRow = { label: string; value: string; icon?: IconSymbolName };
+export type DetailRow = {
+  label: string;
+  value: string;
+  icon?: IconSymbolName;
+  /** Caps the value to this many lines (ellipsized) — a long free-text note
+   *  shouldn't stretch the whole card. Omitted, the value wraps in full. */
+  numberOfLines?: number;
+};
 
 type DetailInfoCardProps = {
   /** Card header title. */
@@ -38,7 +45,9 @@ export function DetailRows({ rows, style }: { rows: DetailRow[]; style?: StylePr
           {row.icon ? <IconSymbol name={row.icon} size={22} color={c.inverse} /> : null}
           <View style={styles.rowText}>
             <ThemedText style={styles.label}>{row.label}</ThemedText>
-            <ThemedText style={styles.value}>{row.value}</ThemedText>
+            <ThemedText style={styles.value} numberOfLines={row.numberOfLines} ellipsizeMode="tail">
+              {row.value}
+            </ThemedText>
           </View>
         </View>
       ))}

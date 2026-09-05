@@ -1,17 +1,17 @@
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
-import { Fragment, useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ScreenHeader } from "@/components/screen-header";
+import { SectionCard } from "@/components/section-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
+import { DetailInfoCard } from "@/components/ui/detail-info-card";
 import { UserAvatar } from "@/components/user-avatar";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
-import { type AppColors, useColors, useScreenGutter, useThemedStyles } from "@/constants/theme";
-import { getAbsenceTypeAccent } from "@/constants/absence-visual";
+import { type AppColors, useScreenGutter, useThemedStyles } from "@/constants/theme";
 import {
   TYPE_ABSENCE_BIRTH,
   TYPE_ABSENCE_BUSINESS,
@@ -24,7 +24,6 @@ import type { absence } from "@/models/types";
 import { getabsenceData } from "@/services/absenceService";
 import { formatDateRange } from "@/utils/date-format";
 import { navPush } from "@/utils/navigation";
-import { boxShadow } from '@/constants/shadows';
 
 const absenceTypeLabels: Record<string, string> = {
   [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
@@ -34,19 +33,6 @@ const absenceTypeLabels: Record<string, string> = {
   [TYPE_ABSENCE_HELPMATE]: TEXT.ABSENCE_BIRTH_TITLE,
   [TYPE_ABSENCE_HAJJ]: TEXT.ABSENCE_HAJJ_TITLE,
 };
-
-const absenceTypeIcons: Record<string, IconSymbolName> = {
-  [TYPE_ABSENCE_SICK]: "cross.fill",
-  [TYPE_ABSENCE_BUSINESS]: "briefcase.fill",
-  [TYPE_ABSENCE_BIRTH]: "figure.child",
-  [TYPE_ABSENCE_RELAX]: "sun.max.fill",
-  [TYPE_ABSENCE_HELPMATE]: "figure.child",
-  [TYPE_ABSENCE_HAJJ]: "calendar-clock",
-};
-
-function getabsenceTypeIcon(type: string): IconSymbolName {
-  return absenceTypeIcons[type] || "calendar-clock";
-}
 
 const absenceTypeNameFields = ["absentTypeName", "absenceTypeName", "typeName", "type_name"];
 
@@ -168,25 +154,12 @@ function getStatusBadge(status: string): { bg: string; color: string } {
   return { bg: "#FDECEC", color: "#B33939" };
 }
 
-function InfoRow({ label, value, icon }: { label: string; value: string; icon?: IconSymbolName }) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  if (!value) return null;
-  return (
-    <View style={styles.infoRow}>
-      <ThemedText style={styles.infoLabel}>{label}</ThemedText>
-      <View style={styles.infoValueRow}>
-        {icon ? <IconSymbol name={icon} size={16} color={c.primary} /> : null}
-        <ThemedText style={styles.infoValue}>{value}</ThemedText>
-      </View>
-    </View>
-  );
-}
-
+// Avatar + name + position row — same look as the requester/delegate cards on
+// the absence detail (own-view) screen, so both screens read as one pattern.
 function PersonRow({ name, position, staffId }: StaffEntry) {
   const styles = useThemedStyles(makeStyles);
   return (
-    <View style={styles.personRow}>
+    <View style={styles.personCard}>
       <UserAvatar staffId={staffId} size={44} />
       <View style={styles.personText}>
         <ThemedText style={styles.personName}>{name}</ThemedText>
@@ -197,7 +170,6 @@ function PersonRow({ name, position, staffId }: StaffEntry) {
 }
 
 export default function ApproveDetailScreen() {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
   const params = useLocalSearchParams<{ item?: string }>();
@@ -236,8 +208,6 @@ export default function ApproveDetailScreen() {
     getText(fallback, ["approveName"]) ||
     absenceTypeLabels[routeType] ||
     TEXT.ABSENCE_TITLE;
-  const typeIcon = getabsenceTypeIcon(routeType);
-  const typeAccent = getAbsenceTypeAccent(routeType);
 
   const startDate = getText(item, ["startDate", "start_date"]);
   const endDate = getText(item, ["endDate", "end_date"]);
@@ -266,66 +236,59 @@ export default function ApproveDetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.ABSENCE_APPROVE_DETAIL_SUBTITLE} backHref="/absence/approve-leave" titleInNavBar tone="primary" />
+      <ScreenHeader title={typeLabel} backHref="/absence/approve-leave" titleInNavBar tone="primary" />
 
       {isLoading ? (
         <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
       ) : (
         <>
           <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]} showsVerticalScrollIndicator={false}>
-            {/* Leave-info card */}
-            <View style={styles.card}>
-              <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_DETAIL_INFO_SECTION}</ThemedText>
-
-              <View style={styles.typeRow}>
-                <View style={[styles.typeIconCircle, { backgroundColor: c[typeAccent] }]}>
-                  <IconSymbol name={typeIcon} size={20} color={c.textOnPrimary} />
-                </View>
-                <ThemedText style={styles.infoType} numberOfLines={2}>
-                  {typeLabel}
-                </ThemedText>
-                {statusLabel ? (
+            {/* Leave-info card — same titled card + icon/label/value rows as the
+                requester's own absence detail and the timestamp history detail. */}
+            <DetailInfoCard
+              title={TEXT.ABSENCE_DETAIL_INFO_SECTION}
+              trailing={
+                statusLabel ? (
                   <View style={[styles.statusBadge, { backgroundColor: statusBadge.bg }]}>
                     <ThemedText style={[styles.statusText, { color: statusBadge.color }]}>
                       {statusLabel}
                     </ThemedText>
                   </View>
-                ) : null}
-              </View>
-
-              <View style={styles.infoBody}>
-                <InfoRow label={TEXT.ABSENCE_LEAVE_DATE_LABEL} value={dateText} icon="calendar" />
-                <InfoRow
-                  label={TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL}
-                  value={leaveDay ? `${leaveDay} ${TEXT.ABSENCE_DAY_UNIT}` : ""}
-                  icon="calendar-range"
-                />
-                <InfoRow label={TEXT.ABSENCE_HALF_DAY_LABEL} value={halfDay} />
-                <InfoRow label={TEXT.ABSENCE_REASON_LABEL} value={reason} />
-                <InfoRow label={TEXT.ABSENCE_CONTACT_CHANNEL_LABEL} value={contact} icon="phone.fill" />
-                <InfoRow label={TEXT.ABSENCE_TRAVEL_DETAIL_LABEL} value={travelDetail} />
-              </View>
-            </View>
+                ) : null
+              }
+              rows={[
+                { label: TEXT.ABSENCE_LEAVE_DATE_LABEL, value: dateText, icon: "calendar" },
+                {
+                  label: TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL,
+                  value: leaveDay ? `${leaveDay} ${TEXT.ABSENCE_DAY_UNIT}` : "",
+                  icon: "calendar-range",
+                },
+                { label: TEXT.ABSENCE_HALF_DAY_LABEL, value: halfDay, icon: "calendar-clock" },
+                { label: TEXT.ABSENCE_REASON_LABEL, value: reason, icon: "list.bullet" },
+                { label: TEXT.ABSENCE_CONTACT_CHANNEL_LABEL, value: contact, icon: "phone.fill" },
+                { label: TEXT.ABSENCE_TRAVEL_DETAIL_LABEL, value: travelDetail, icon: "mappin" },
+              ]}
+            />
 
             {/* Requester card */}
             {requester.name ? (
-              <View style={styles.card}>
-                <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_REQUESTER_LABEL}</ThemedText>
+              <SectionCard title={TEXT.ABSENCE_REQUESTER_LABEL}>
                 <PersonRow name={requester.name} position={requester.position} staffId={requester.staffId} />
-              </View>
+              </SectionCard>
             ) : null}
 
             {/* Delegate card */}
             {agentEntries.length ? (
-              <View style={styles.card}>
-                <ThemedText style={styles.sectionTitle}>{TEXT.ABSENCE_DELEGATE_LABEL}</ThemedText>
+              <SectionCard title={TEXT.ABSENCE_DELEGATE_LABEL}>
                 {agentEntries.map((agent, index) => (
-                  <Fragment key={`${agent.name}-${index}`}>
-                    {index > 0 ? <View style={styles.agentDivider} /> : null}
-                    <PersonRow name={agent.name} position={agent.position} staffId={agent.staffId} />
-                  </Fragment>
+                  <PersonRow
+                    key={`${agent.name}-${index}`}
+                    name={agent.name}
+                    position={agent.position}
+                    staffId={agent.staffId}
+                  />
                 ))}
-              </View>
+              </SectionCard>
             ) : null}
           </ScrollView>
 
@@ -358,47 +321,12 @@ export default function ApproveDetailScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: c.surface,
+    backgroundColor: c.background,
   },
   scrollContent: {
-    paddingTop: 4,
+    paddingTop: 28,
     paddingBottom: 40,
-  },
-  card: {
-    marginBottom: 12,
-    backgroundColor: c.surface,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
     gap: 12,
-    boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
-  },
-  sectionTitle: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: "600",
-    color: c.textMuted,
-  },
-  typeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  typeIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  infoType: {
-    flex: 1,
-    fontFamily: AppFonts.psuBold,
-    fontSize: 17,
-    lineHeight: 24,
-    color: c.text,
   },
   statusBadge: {
     borderRadius: 9999,
@@ -411,43 +339,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
   },
-  infoBody: {
-    gap: 10,
-  },
-  infoRow: {
-    backgroundColor: c.surfaceAlt,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 4,
-  },
-  infoLabel: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: c.textFaint,
-  },
-  infoValueRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  infoValue: {
-    flex: 1,
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 15,
-    lineHeight: 22,
-    color: c.text,
-  },
-  personRow: {
+  personCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-  },
-  agentDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: c.border,
+    paddingVertical: 18,
   },
   personText: {
     flex: 1,

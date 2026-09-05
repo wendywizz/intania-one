@@ -2,6 +2,7 @@ import { CalendarDays } from 'lucide-react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
+import { UserAvatar } from '@/components/user-avatar';
 import { TEXT } from '@/constants/text';
 import { useColors } from '@/constants/theme';
 import {
@@ -77,6 +78,40 @@ function getMetaRows(item: absence): MetaRow[] {
   return rows;
 }
 
+// Mirrors the same field probing in app/absence/approve-detail.tsx, which is
+// what the raw queue/history item's shape is built to answer.
+function getStaffName(staff: object): string {
+  const s = staff as absence;
+  const fullName = getText(s, ['staffFullName', 'staff_full_name', 'fullname', 'fullName', 'staffName', 'staff_name', 'name']);
+  if (fullName) return fullName;
+  const prefix = getText(s, ['prefixNameTH', 'prefix_name_th', 'PREFIX_NAME_TH', 'prefix']);
+  const firstName = getText(s, ['firstNameTH', 'first_name_th', 'FIRST_NAME_TH', 'firstName', 'first_name']);
+  const lastName = getText(s, ['lastNameTH', 'last_name_th', 'LAST_NAME_TH', 'lastName', 'last_name']);
+  return [prefix, firstName, lastName].filter(Boolean).join(' ');
+}
+
+// Profile photos are keyed by UNI_STAFF_ID.
+function getStaffId(staff: object): string {
+  return getText(staff as absence, ['uniStaffId', 'uni_staff_id', 'UNI_STAFF_ID']);
+}
+
+type Requester = { name: string; staffId?: string };
+
+function getRequesterInfo(item: absence): Requester {
+  const record = item as Record<string, unknown>;
+  const req = record.requester;
+  if (req && typeof req === 'object' && !Array.isArray(req)) {
+    return { name: getStaffName(req), staffId: getStaffId(req) };
+  }
+  return {
+    name: getText(item, ['name', 'fullname', 'staffName', 'staff_name']),
+    // requestStaffId: what /approving and /approving-history return — those
+    // list endpoints carry no nested `requester` object, only a flat name and
+    // (as of the Phoenix-side fix) this one id field.
+    staffId: getText(item, ['requestStaffId', 'request_staff_id', 'uniStaffId', 'uni_staff_id']),
+  };
+}
+
 type IconName = 'cross.fill' | 'briefcase.fill' | 'sun.max.fill' | 'figure.child' | 'doc.text.fill';
 
 function getTypeIcon(type: string): IconName {
@@ -126,29 +161,50 @@ type AbsenceListItemProps = {
   onPress?: (item: absence) => void;
   /** Show extra detail rows (reason, approver, delegate) beneath the date. */
   showDetails?: boolean;
+  /**
+   * Lead with the requester's photo + name instead of the leave type — for an
+   * approver looking through other people's requests, whose leave it is
+   * matters more than what kind it is. The leave type moves down into a meta
+   * row above the date instead of disappearing. Own-leave lists (my-leave,
+   * pending, history) leave this off since there the requester is always the
+   * viewer.
+   */
+  showRequester?: boolean;
 };
 
 // Shared file-upload style leave row used by the pending, history and approval
 // lists so every leave item renders identically: monochrome type icon, leave
 // type, date range and a trailing status badge (or a chevron when there is no
 // badge).
-export function AbsenceListItem({ item, badge, onPress, showDetails }: AbsenceListItemProps) {
+export function AbsenceListItem({ item, badge, onPress, showDetails, showRequester }: AbsenceListItemProps) {
   const c = useColors();
   const type = getAbsenceType(item);
   const typeLabel = getAbsenceTypeLabel(item);
   const dateRange = getDateRange(item);
-  const icon = getTypeIcon(type);
+  const typeIcon = getTypeIcon(type);
   const metaRows = showDetails ? getMetaRows(item) : [];
+
+  const requester = showRequester ? getRequesterInfo(item) : null;
+  // Falls back to the plain type-icon row when the item carries no requester
+  // info at all (e.g. an older record shaped without it).
+  const hasRequester = Boolean(requester?.name || requester?.staffId);
 
   return (
     <ListCard
       onPress={onPress ? () => onPress(item) : undefined}
-      icon={<IconSymbol name={icon} size={22} color={c.text} />}
-      iconBackground={c.surfaceMuted}
-      title={typeLabel}
+      icon={
+        hasRequester ? (
+          <UserAvatar staffId={requester!.staffId} size={40} />
+        ) : (
+          <IconSymbol name={typeIcon} size={22} color={c.text} />
+        )
+      }
+      iconBackground={hasRequester ? undefined : c.surfaceMuted}
+      title={hasRequester ? requester!.name || typeLabel : typeLabel}
       badge={badge ? { text: badge.text, bg: badge.bg, color: badge.color } : null}
       showChevron={!badge}
       meta={[
+        ...(hasRequester ? [{ icon: <IconSymbol name={typeIcon} size={13} color={c.textMuted} />, text: typeLabel }] : []),
         ...(dateRange ? [{ icon: <CalendarDays size={13} color={c.textMuted} />, text: dateRange }] : []),
         ...metaRows.map((m) => ({ label: m.label, text: m.value })),
       ]}

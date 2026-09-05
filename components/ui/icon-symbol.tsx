@@ -16,6 +16,9 @@ import Network from 'lucide-react-native/dist/cjs/icons/network';
 import Ellipsis from 'lucide-react-native/dist/cjs/icons/ellipsis';
 import EllipsisVertical from 'lucide-react-native/dist/cjs/icons/ellipsis-vertical';
 import Projector from 'lucide-react-native/dist/cjs/icons/projector';
+import Utensils from 'lucide-react-native/dist/cjs/icons/utensils';
+import Coffee from 'lucide-react-native/dist/cjs/icons/coffee';
+import CupSoda from 'lucide-react-native/dist/cjs/icons/cup-soda';
 import Replace from 'lucide-react-native/dist/cjs/icons/replace';
 import PackagePlus from 'lucide-react-native/dist/cjs/icons/package-plus';
 import PaintRoller from 'lucide-react-native/dist/cjs/icons/paint-roller';
@@ -144,6 +147,9 @@ const MAPPING = {
   'network': Network,
   'projector': Projector,
   'mic': Mic,
+  'utensils': Utensils,
+  'coffee': Coffee,
+  'cup-soda': CupSoda,
   'package.plus': PackagePlus,
   'replace': Replace,
   'ellipsis': Ellipsis,

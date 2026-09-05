@@ -94,20 +94,23 @@ export default function absenceTabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="person.crop.circle.badge.minus" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="my-leave"
-        options={{
-          href: bossHref,
-          title: TEXT.ABSENCE_MY_LEAVE_TAB,
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="doc.text.fill" color={color} />,
-        }}
-      />
+      {/* Approver's own tabs, in tab-bar order: approve-leave leads — reviewing
+          others' requests is why a boss opens this module — with "การลาของฉัน"
+          second. */}
       <Tabs.Screen
         name="approve-leave"
         options={{
           href: bossHref,
           title: TEXT.ABSENCE_APPROVE_LEAVE_TAB,
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="checkmark.circle.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="my-leave"
+        options={{
+          href: bossHref,
+          title: TEXT.ABSENCE_MY_LEAVE_TAB,
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="doc.text.fill" color={color} />,
         }}
       />
       <Tabs.Screen

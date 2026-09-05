@@ -792,7 +792,7 @@ export const TEXT = {
   // A booking sits in รายการจอง until its last slot has passed, then moves
   // here, and this word is the only one that says so on its own.
   BOOKING_ROOM_TAB_COMPLETED: 'เสร็จสิ้น',
-  BOOKING_ROOM_CURRENT_EMPTY: 'ยังไม่มีรายการจองห้องเรียน',
+  BOOKING_ROOM_CURRENT_EMPTY: 'ยังไม่มีรายการจองห้อง',
   BOOKING_ROOM_CURRENT_ERROR: 'โหลดรายการจองไม่สำเร็จ',
   BOOKING_ROOM_NEED_SIGNIN: 'กรุณาเข้าสู่ระบบเพื่อดูรายการจองของคุณ',
   BOOKING_ROOM_ADD_BOOKING: 'จองห้องเรียน',
@@ -1029,9 +1029,9 @@ export const TEXT = {
   MEETING_ROOM_HUB_DESCRIPTION: 'เลือกว่าต้องการจองห้องเรียนหรือห้องประชุม',
   // The classroom card's title reuses BOOKING_ROOM_ADD_BOOKING ('จองห้องเรียน')
   // rather than a second key for the same Thai string.
-  MEETING_ROOM_HUB_CLASSROOM_DESCRIPTION: 'จองทั่วไป จองเทอม หรือจองเป็นช่วง',
+  MEETING_ROOM_HUB_CLASSROOM_DESCRIPTION: 'ขอใช้ห้องเรียนของคณะ',
   MEETING_ROOM_HUB_CARD_TITLE: 'จองห้องประชุม',
-  MEETING_ROOM_HUB_CARD_DESCRIPTION: 'ขอใช้ห้องประชุมของคณะ ต้องรอหัวหน้าภาคอนุมัติ',
+  MEETING_ROOM_HUB_CARD_DESCRIPTION: 'ขอใช้ห้องประชุมของคณะ',
 
   // Merged-list row kind labels (services/roomBookingAggregator.ts)
   MEETING_ROOM_KIND_LABEL: 'ห้องประชุม',
@@ -1040,21 +1040,55 @@ export const TEXT = {
   // Form
   MEETING_ROOM_FORM_NAV_TITLE: 'จองห้องประชุม',
   MEETING_ROOM_FORM_LOAD_ERROR: 'โหลดแบบฟอร์มขอใช้ห้องประชุมไม่สำเร็จ',
+
+  // 5-step wizard — same stepper shape as repair-computer's assign-job.tsx
+  // (numbered circles + connecting lines, a fixed back/next bar). Each
+  // "next" label names the step it leads to, not a bare "ถัดไป", so the
+  // button says what happens rather than just that something will.
+  //
+  // Steps: รายละเอียด → วันและเวลาที่ใช้ห้อง → โสตทัศนูปกรณ์ → อาหาร →
+  // ผู้อนุมัติ/สรุป (the last step folds the summary into the approver step
+  // rather than giving the recap its own page).
+  MEETING_ROOM_STEP_1_LABEL: 'รายละเอียด',
+  MEETING_ROOM_STEP_DATES_LABEL: 'วันเวลา',
+  MEETING_ROOM_STEP_2_LABEL: 'โสตทัศนูปกรณ์',
+  MEETING_ROOM_STEP_3_LABEL: 'อาหาร',
+  MEETING_ROOM_STEP_4_LABEL: 'ผู้อนุมัติ/สรุป',
+  MEETING_ROOM_STEP_5_LABEL: 'สรุป',
+  MEETING_ROOM_STEP_NEXT_TO_DATES: 'ถัดไป: วันและเวลาที่ใช้ห้อง',
+  MEETING_ROOM_STEP_NEXT_TO_AUDIO: 'ถัดไป: อุปกรณ์โสตทัศนูปกรณ์',
+  MEETING_ROOM_STEP_NEXT_TO_FOOD: 'ถัดไป: อาหารและเครื่องดื่ม',
+  MEETING_ROOM_STEP_NEXT_TO_APPROVAL: 'ถัดไป: ผู้อนุมัติและสรุป',
+  MEETING_ROOM_STEP_NEXT_TO_SUMMARY: 'ถัดไป: สรุปคำขอ',
+  MEETING_ROOM_FORM_AUDIO_TOGGLE: 'ต้องการอุปกรณ์โสตทัศนูปกรณ์',
+  MEETING_ROOM_FORM_FOOD_TOGGLE: 'ต้องการอาหารและเครื่องดื่ม',
+  MEETING_ROOM_SUMMARY_TITLE: 'สรุปคำขอใช้ห้องประชุม',
+  MEETING_ROOM_SUMMARY_NONE: 'ไม่มี',
+  MEETING_ROOM_SUMMARY_DATES_COUNT: '{count} วัน',
   MEETING_ROOM_FORM_PURPOSE_LABEL: 'รายละเอียดงาน',
+  MEETING_ROOM_FORM_PURPOSE_PLACEHOLDER: 'เช่น ประชุมทีมงาน',
   MEETING_ROOM_FORM_TYPE_LABEL: 'ประเภทงาน',
   MEETING_ROOM_FORM_TYPE_PICK: 'เลือกประเภทงาน',
   MEETING_ROOM_FORM_MAN_LABEL: 'จำนวนผู้เข้าร่วม',
+  MEETING_ROOM_FORM_MAN_PLACEHOLDER: 'เช่น 20',
   MEETING_ROOM_FORM_ROOM_LABEL: 'ห้องประชุม',
   MEETING_ROOM_FORM_ROOM_PICK: 'เลือกห้องประชุม',
   MEETING_ROOM_FORM_ARRANGEMENT_LABEL: 'รูปแบบการจัดห้อง',
   MEETING_ROOM_FORM_ARRANGEMENT_PICK: 'เลือกรูปแบบการจัดห้อง',
   MEETING_ROOM_FORM_DATES_LABEL: 'วันและเวลาที่ใช้ห้อง',
-  MEETING_ROOM_FORM_ADD_DATE: 'เพิ่มวัน',
+  MEETING_ROOM_FORM_ADD_DATE: 'เพิ่มวันและเวลา',
   MEETING_ROOM_FORM_REMOVE_DATE: 'ลบวันนี้',
   MEETING_ROOM_FORM_DATE_LABEL: 'วันที่',
   MEETING_ROOM_FORM_START_TIME_LABEL: 'เวลาเริ่ม',
   MEETING_ROOM_FORM_END_TIME_LABEL: 'เวลาสิ้นสุด',
   MEETING_ROOM_FORM_ROOM_UNAVAILABLE: 'ช่วงเวลานี้มีการใช้ห้องแล้ว',
+  MEETING_ROOM_FORM_DATES_EMPTY: 'ยังไม่ได้เพิ่มวันและเวลา แตะปุ่มด้านล่างเพื่อเพิ่ม',
+  // The dedicated add/edit page reached from the "เพิ่มวันและเวลา" button —
+  // date+time now lives on its own screen instead of an inline row, so a
+  // long list of slots does not turn step 1 into a scroll of repeated pickers.
+  MEETING_ROOM_DATE_NAV_TITLE_ADD: 'เพิ่มวันและเวลาที่ใช้ห้อง',
+  MEETING_ROOM_DATE_NAV_TITLE_EDIT: 'แก้ไขวันและเวลาที่ใช้ห้อง',
+  MEETING_ROOM_DATE_SAVE_ACTION: 'บันทึกวันและเวลา',
   MEETING_ROOM_FORM_AUDIO_LABEL: 'อุปกรณ์โสตทัศนูปกรณ์',
   MEETING_ROOM_FORM_AUDIO_HINT: 'ระบุจำนวนเฉพาะรายการที่ต้องการ เว้นว่างหรือใส่ 0 หากไม่ต้องการ',
   MEETING_ROOM_FORM_FOOD_LABEL: 'อาหารและเครื่องดื่ม',
@@ -1063,6 +1097,7 @@ export const TEXT = {
   MEETING_ROOM_FORM_LEADER_PICK: 'เลือกผู้อนุมัติ',
   MEETING_ROOM_FORM_LEADER_NONE: 'ไม่พบรายชื่อผู้อนุมัติสำหรับหน่วยงานของคุณ',
   MEETING_ROOM_FORM_COMMENT_LABEL: 'หมายเหตุ',
+  MEETING_ROOM_FORM_COMMENT_PLACEHOLDER: 'ระบุเพิ่มเติม (ถ้ามี)',
   MEETING_ROOM_FORM_REQUIRED_ERROR: 'กรุณากรอกข้อมูลให้ครบถ้วน',
   MEETING_ROOM_FORM_NEED_ONE_DATE: 'กรุณาเพิ่มอย่างน้อย 1 วัน',
   MEETING_ROOM_FORM_TIME_ORDER_ERROR: 'เวลาสิ้นสุดต้องหลังเวลาเริ่ม',
@@ -1258,7 +1293,11 @@ export const TEXT = {
 
   // Timestamp - index screen
   TIMESTAMP_APPEAL_DOCUMENT: 'กรุณาไปที่พอร์ทัล HR เพื่อยื่นอุทธรณ์พร้อมเอกสารประกอบ',
-  TIMESTAMP_OVER_APPEAL_WINDOW: 'ลืมลงเวลาเกิน 3 วัน ท่านต้องเขียนแบบฟอร์มในเครื่องคอมพิวเตอร์ เพื่อยื่นเรื่องไปยังฝ่ายบุคคล',
+  TIMESTAMP_OVER_APPEAL_WINDOW: 'ลืมลงเวลาเกิน 3 วัน ท่านต้องเขียนแบบฟอร์มและยื่นเรื่องรับรองการลงเวลาไปยังฝ่ายบุคคล',
+  // Same notice, "ขาดงาน" cards (stampType "all" — neither stamp at all): no
+  // in-app correction ever applies here, so the wording doesn't tie it to the
+  // 3-day window the way TIMESTAMP_OVER_APPEAL_WINDOW does for in/out.
+  TIMESTAMP_OVER_APPEAL_WINDOW_ABSENT: 'ท่านต้องเขียนแบบฟอร์มและยื่นเรื่องรับรองการทำงานไปยังฝ่ายบุคคล',
   TIMESTAMP_CYCLE_LABEL: 'รอบการลงเวลาปัจจุบัน',
   TIMESTAMP_NOTE_LABEL: 'คำแนะนำ',
   TIMESTAMP_NOTE_TEXT: 'หากคุณลืมลงเวลาเข้างานหรือออกงาน คุณสามารถกรอกแบบฟอร์มคำขอลืมลงเวลาภายใน 3 วันหลังจากวันที่ลืมลงเวลาได้ที่หน้านี้',

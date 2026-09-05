@@ -1,5 +1,4 @@
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Inbox } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
@@ -131,10 +130,6 @@ export default function ApproveLeaveScreen() {
     } as Parameters<typeof navPush>[0]);
   }, []);
 
-  const renderEmpty = (text: string) => (
-    <EmptyState icon={Inbox} message={text} />
-  );
-
   const renderContent = () => {
     // Only while there is nothing to show; see components/timestamp/timestamp-forgot-list.
     if (isLoading && queue.length === 0 && history.length === 0) {
@@ -159,6 +154,7 @@ export default function ApproveLeaveScreen() {
             item={item}
             badge={isPending ? PENDING_BADGE : getStatusBadge(item)}
             onPress={isPending ? openApproval : openView}
+            showRequester
           />
         )}
         onEndReached={isPending ? undefined : loadMoreHistory}
@@ -170,7 +166,15 @@ export default function ApproveLeaveScreen() {
             </View>
           ) : null
         }
-        ListEmptyComponent={renderEmpty(isPending ? TEXT.ABSENCE_APPROVE_EMPTY : TEXT.ABSENCE_APPROVE_HISTORY_EMPTY)}
+        ListEmptyComponent={
+          isPending ? (
+            // Empty queue is the good outcome here, same as pending.tsx's
+            // approve list — everything sent to this approver has been dealt with.
+            <EmptyState preset="cleared" message={TEXT.ABSENCE_APPROVE_EMPTY} />
+          ) : (
+            <EmptyState preset="history" message={TEXT.ABSENCE_APPROVE_HISTORY_EMPTY} />
+          )
+        }
       />
     );
   };

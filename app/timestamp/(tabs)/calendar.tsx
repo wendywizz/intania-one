@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarDays, Clock, LogIn, LogOut } from 'lucide-react-native';
+import { ArrowRight, CalendarDays, Clock, LogIn, LogOut, UserX } from 'lucide-react-native';
 import moment from 'moment';
 import 'moment/locale/th';
 import { router, useFocusEffect } from 'expo-router';
@@ -350,7 +350,11 @@ export default function TimestampCalendarScreen() {
     const statusStyle = STATUS_STYLE[status];
     const hasTimes = Boolean(selectedData?.inTime || selectedData?.outTime);
     const isWorkDay = status === 'present' || status === 'incomplete' || status === 'absent';
-    const isForgetDay = Boolean(selectedData) && (status === 'incomplete' || status === 'absent');
+    // 'incomplete' (one stamp missing) can still be corrected via a
+    // forgot-timestamp request. 'absent' (neither stamp at all) has nothing to
+    // correct, so it gets its own hand-off to the leave module below instead.
+    const isForgetDay = Boolean(selectedData) && status === 'incomplete';
+    const isAbsentDay = Boolean(selectedData) && status === 'absent';
     const canRequest = Boolean(selectedData?.canRequest);
 
     return (
@@ -368,44 +372,56 @@ export default function TimestampCalendarScreen() {
         </View>
 
         <View style={styles.detailBody}>
-        {hasTimes || isWorkDay ? (
-          <>
-            <View style={styles.timeRow}>
-              <View style={styles.timeBox}>
-                {/* The glyph in a tinted circle, the shape every other icon on
-                    this screen already has — bare it read as decoration beside
-                    the time rather than as a label for it. */}
-                <View style={[styles.timeIcon, { backgroundColor: 'rgba(30,126,52,0.12)' }]}>
-                  <LogIn size={18} color="#1E7E34" />
-                </View>
-                <View>
-                  <ThemedText style={styles.timeLabel}>{TEXT.TIMESTAMP_CALENDAR_IN}</ThemedText>
-                  <ThemedText style={styles.timeValue}>{selectedData?.inTime || '—'}</ThemedText>
-                  {selectedData?.isLate ? (
-                    <View style={styles.lateChip}>
-                      <Clock size={11} color={LATE_COLOR} />
-                      <ThemedText style={styles.lateChipText}>{TEXT.TIMESTAMP_CALENDAR_LATE}</ThemedText>
-                    </View>
-                  ) : null}
-                </View>
+        {isAbsentDay ? (
+          // Neither stamp exists, so the in/out pair has nothing to show — two
+          // dashes there read as a data problem, not an answer. One row saying
+          // "ขาดงาน" replaces both boxes instead of sitting awkwardly beside them.
+          <View style={styles.timeRow}>
+            <View style={styles.timeBox}>
+              <View style={[styles.timeIcon, { backgroundColor: 'rgba(179,38,30,0.12)' }]}>
+                <UserX size={18} color={STATUS_STYLE.absent.dot} />
               </View>
-              <View style={styles.timeDivider} />
-              <View style={styles.timeBox}>
-                <View style={[styles.timeIcon, { backgroundColor: 'rgba(180,83,9,0.12)' }]}>
-                  <LogOut size={18} color="#B45309" />
-                </View>
-                <View>
-                  <ThemedText style={styles.timeLabel}>{TEXT.TIMESTAMP_CALENDAR_OUT}</ThemedText>
-                  <ThemedText style={styles.timeValue}>{selectedData?.outTime || '—'}</ThemedText>
-                </View>
+              <View>
+                <ThemedText style={styles.timeValue}>
+                  {TEXT.TIMESTAMP_CALENDAR_LEGEND_ABSENT}
+                </ThemedText>
+                {selectedData?.note ? (
+                  <ThemedText style={styles.timeLabel}>{selectedData.note}</ThemedText>
+                ) : null}
               </View>
             </View>
-            {!hasTimes ? (
-              <ThemedText style={styles.detailCaption}>
-                {selectedData?.note || TEXT.TIMESTAMP_CALENDAR_NO_TIME_DATA}
-              </ThemedText>
-            ) : null}
-          </>
+          </View>
+        ) : hasTimes || isWorkDay ? (
+          <View style={styles.timeRow}>
+            <View style={styles.timeBox}>
+              {/* The glyph in a tinted circle, the shape every other icon on
+                  this screen already has — bare it read as decoration beside
+                  the time rather than as a label for it. */}
+              <View style={[styles.timeIcon, { backgroundColor: 'rgba(30,126,52,0.12)' }]}>
+                <LogIn size={18} color="#1E7E34" />
+              </View>
+              <View>
+                <ThemedText style={styles.timeLabel}>{TEXT.TIMESTAMP_CALENDAR_IN}</ThemedText>
+                <ThemedText style={styles.timeValue}>{selectedData?.inTime || '—'}</ThemedText>
+                {selectedData?.isLate ? (
+                  <View style={styles.lateChip}>
+                    <Clock size={11} color={LATE_COLOR} />
+                    <ThemedText style={styles.lateChipText}>{TEXT.TIMESTAMP_CALENDAR_LATE}</ThemedText>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+            <View style={styles.timeDivider} />
+            <View style={styles.timeBox}>
+              <View style={[styles.timeIcon, { backgroundColor: 'rgba(180,83,9,0.12)' }]}>
+                <LogOut size={18} color="#B45309" />
+              </View>
+              <View>
+                <ThemedText style={styles.timeLabel}>{TEXT.TIMESTAMP_CALENDAR_OUT}</ThemedText>
+                <ThemedText style={styles.timeValue}>{selectedData?.outTime || '—'}</ThemedText>
+              </View>
+            </View>
+          </View>
         ) : (
           // A day with no in/out times at all: a holiday, a leave day, or one
           // the system simply has nothing for. Just the sentence, set flush left
@@ -420,17 +436,39 @@ export default function TimestampCalendarScreen() {
           </ThemedText>
         )}
 
-        {isForgetDay && selectedData && canRequest ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => openRequestForm(selectedData)}
-            style={({ pressed }) => [styles.requestButton, pressed && styles.requestButtonPressed]}
-          >
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" style={styles.requestButtonText}>
-              {TEXT.TIMESTAMP_CALENDAR_MAKE_REQUEST}
-            </ThemedText>
-            <ArrowRight size={18} color="#FFFFFF" />
-          </Pressable>
+        {isForgetDay && selectedData ? (
+          // The button itself never disappears once a day qualifies as a forget
+          // day — only its enabled state changes. Hiding it entirely when
+          // `canRequest` is false left no way to tell "nothing to do here" apart
+          // from "the window to ask has closed"; the disabled button plus the
+          // hint below says which one it is.
+          <View style={styles.requestSection}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !canRequest }}
+              disabled={!canRequest}
+              onPress={() => openRequestForm(selectedData)}
+              style={({ pressed }) => [
+                styles.requestButton,
+                !canRequest && styles.requestButtonDisabled,
+                pressed && canRequest && styles.requestButtonPressed,
+              ]}
+            >
+              <ThemedText
+                lightColor={canRequest ? '#FFFFFF' : c.textFaint}
+                darkColor={canRequest ? '#FFFFFF' : c.textFaint}
+                style={styles.requestButtonText}
+              >
+                {TEXT.TIMESTAMP_CALENDAR_MAKE_REQUEST}
+              </ThemedText>
+              <ArrowRight size={18} color={canRequest ? '#FFFFFF' : c.textFaint} />
+            </Pressable>
+            {!canRequest ? (
+              <ThemedText style={styles.requestDisabledHint}>
+                {TEXT.TIMESTAMP_CALENDAR_REQUEST_CLOSED}
+              </ThemedText>
+            ) : null}
+          </View>
         ) : null}
         </View>
       </View>
@@ -808,11 +846,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
   },
-  detailCaption: {
-    fontSize: 12,
-    lineHeight: 18,
-    color: c.textMuted,
-    fontFamily: AppFonts.psuRegular,
+  requestSection: {
+    gap: 8,
   },
   requestButton: {
     flexDirection: 'row',
@@ -827,10 +862,24 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   requestButtonPressed: {
     opacity: 0.85,
   },
+  // Deadline passed (or the record no longer qualifies): the button stays put
+  // so the row doesn't shift, but reads as inert — muted fill, no brand red.
+  requestButtonDisabled: {
+    backgroundColor: c.surfaceMuted,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
   requestButtonText: {
     fontSize: 15,
     fontWeight: '600',
     fontFamily: AppFonts.psuBold,
+  },
+  requestDisabledHint: {
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: 'center',
+    color: c.textFaint,
+    fontFamily: AppFonts.psuRegular,
   },
   detailNote: {
     fontSize: 13,

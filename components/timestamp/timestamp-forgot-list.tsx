@@ -194,7 +194,9 @@ function TimestampItem({ item }: { item: Timestamp }) {
     >
       {showAppealNotice ? (
         <ThemedText style={styles.appealMessage}>
-          {TEXT.TIMESTAMP_OVER_APPEAL_WINDOW}
+          {stampType === "all"
+            ? TEXT.TIMESTAMP_OVER_APPEAL_WINDOW_ABSENT
+            : TEXT.TIMESTAMP_OVER_APPEAL_WINDOW}
         </ThemedText>
       ) : null}
     </ListCard>

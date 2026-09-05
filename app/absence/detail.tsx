@@ -106,7 +106,7 @@ function getDisplayText(value: string) {
   return v && v !== '0' ? v : '';
 }
 
-// Staff name/position split — the approver and delegate cards show the name as a
+// Staff name/position split — the requester and delegate cards show the name as a
 // bold title with the position underneath (rather than the combined
 // "position (name)" label used inside the forms).
 function getStaffName(staff: object): string {
@@ -167,43 +167,23 @@ function getStaffId(staff: object): string {
 
 type StaffEntry = { name: string; position: string; staffId?: string };
 
-// The server returns the approver as a `mainApprover` object plus an
-// `approverPosition` code + `approverList`, not a ready display string.
-function getApproverInfo(item: absence): StaffEntry {
+// Same shape the approver-facing screen (approve-detail.tsx) reads: a nested
+// `requester` object when present, else the record's own top-level name
+// fields — this view can be reached either as "my own request" (history/
+// my-leave, where that's redundant) or, via a boss's approve-leave history
+// tab, as someone else's decided request — where knowing who asked matters
+// more than re-showing the boss their own name as "ผู้อนุมัติ".
+function getRequesterInfo(item: absence): StaffEntry {
   const record = item as Record<string, unknown>;
-
-  const position = getText(item, [
-    'approverPosition',
-    'approver_position',
-    'approverPositionId',
-    'approver_position_id',
-  ]);
-  const list = Array.isArray(record.approverList) ? (record.approverList as object[]) : [];
-
-  let staff: object | null = null;
-  if (position && list.length) {
-    staff =
-      list.find(
-        (entry) =>
-          entry &&
-          typeof entry === 'object' &&
-          getText(entry as absence, ['positionId', 'position_id', 'POSITION_ID']) === position,
-      ) ?? null;
+  const req = record.requester;
+  if (req && typeof req === 'object' && !Array.isArray(req)) {
+    return { name: getStaffName(req), position: getStaffPosition(req), staffId: getStaffId(req) };
   }
-  if (!staff) {
-    const main = record.mainApprover;
-    if (main && typeof main === 'object' && !Array.isArray(main)) {
-      staff = main as object;
-    }
-  }
-  if (staff) {
-    return { name: getStaffName(staff), position: getStaffPosition(staff), staffId: getStaffId(staff) };
-  }
-
-  const posName = getText(item, ['approverPositionName', 'approver_position_name']);
-  const name = getText(item, ['approverName', 'approver_name', 'approver']);
-  if (name) return { name, position: posName };
-  return { name: posName, position: '' };
+  return {
+    name: getText(item, ['name', 'fullname', 'staffName', 'staff_name']),
+    position: '',
+    staffId: getText(item, ['uniStaffId', 'uni_staff_id']),
+  };
 }
 
 function getAgentEntries(item: absence): StaffEntry[] {
@@ -274,7 +254,7 @@ function getStatusBadge(status: string): { bg: string; color: string } {
   return { bg: '#FDECEC', color: '#B33939' };
 }
 
-// Avatar + name + position row used by both the approver and delegate cards.
+// Avatar + name + position row used by both the requester and delegate cards.
 function PersonRow({ name, position, staffId }: StaffEntry) {
   const styles = useThemedStyles(makeStyles);
   return (
@@ -314,7 +294,7 @@ export default function absenceDetailScreen() {
   const endDate = getText(item, ['endDate', 'end_date', 'dateEnd', 'date_end']);
   const dateText = formatDateRange(startDate, endDate);
   const leaveDay = getText(item, ['numDays', 'num_days', 'absentDays', 'absent_days', 'absenceDays', 'ABSENCE_days', 'leaveDay', 'leave_day', 'days', 'day']);
-  const approver = getApproverInfo(item);
+  const requester = getRequesterInfo(item);
   const agentEntries = getAgentEntries(item);
   const reason = getText(item, ['reason', 'detail', 'description']);
   const halfDay = getDisplayHalfDay(getText(item, ['partFlag', 'part_flag', 'startpart', 'half_day', 'halfDay']));
@@ -421,10 +401,10 @@ export default function absenceDetailScreen() {
           ]}
         />
 
-        {/* Approver card */}
-        {approver.name ? (
-          <SectionCard title={TEXT.ABSENCE_APPROVER_LABEL}>
-            <PersonRow name={approver.name} position={approver.position} staffId={approver.staffId} />
+        {/* Requester card */}
+        {requester.name ? (
+          <SectionCard title={TEXT.ABSENCE_REQUESTER_LABEL}>
+            <PersonRow name={requester.name} position={requester.position} staffId={requester.staffId} />
           </SectionCard>
         ) : null}
 

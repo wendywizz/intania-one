@@ -1,5 +1,4 @@
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Inbox } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { type AppColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
@@ -133,10 +132,6 @@ export default function MyLeaveScreen() {
 
   const pendingItems = [pending.remain, pending.cancel].filter(Boolean) as absence[];
 
-  const renderEmpty = (text: string) => (
-    <EmptyState icon={Inbox} message={text} />
-  );
-
   const renderContent = () => {
     // Only while there is nothing to show; see components/timestamp/timestamp-forgot-list.
     if (isLoading && !pending.remain && !pending.cancel && history.length === 0) {
@@ -163,7 +158,16 @@ export default function MyLeaveScreen() {
             onPress={isPending ? openEdit : openView}
           />
         )}
-        ListEmptyComponent={renderEmpty(isPending ? TEXT.SHARED_NO_ITEMS : TEXT.SHARED_NO_HISTORY)}
+        ListEmptyComponent={
+          isPending ? (
+            // Nothing of this person's is waiting on anyone — same picture and
+            // wording as the general user's "mine" tab (pending.tsx), which
+            // shows the identical list under a different role's tab bar.
+            <EmptyState preset="pending" message={TEXT.ABSENCE_MINE_EMPTY} />
+          ) : (
+            <EmptyState preset="history" message={TEXT.ABSENCE_HISTORY_EMPTY} />
+          )
+        }
       />
     );
   };

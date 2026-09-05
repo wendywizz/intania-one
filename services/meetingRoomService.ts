@@ -33,7 +33,15 @@ export type MeetingRoomOption = {
 
 export type MeetingRoomThing = { id: number; detail: string };
 
-export type MeetingRoomLeader = { staff_id: number; name: string };
+export type MeetingRoomLeader = {
+  staff_id: number;
+  /** OpenID identifier — what the avatar photo lookup actually keys on
+   *  (UserAvatar/personnel photo API), unlike the rest of this module which
+   *  keys on the internal staff_id. Null when the leader has no active
+   *  CENTRAL record; the client falls back to staff_id itself then. */
+  uni_staff_id: string | null;
+  name: string;
+};
 
 export type MeetingRoomOptions = {
   requester: { staff_id: number; name: string; dept_id: string };

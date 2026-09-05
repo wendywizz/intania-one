@@ -101,11 +101,15 @@ export default function BookingRoomCurrentScreen() {
   const addButton = (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={TEXT.BOOKING_ROOM_ADD_BOOKING}
+      // BOOKING_ROOM_MENU_TITLE ('จองห้อง'), not BOOKING_ROOM_ADD_BOOKING
+      // ('จองห้องเรียน') — this button opens select-room-type.tsx, the hub
+      // for both classroom and meeting-room booking, so calling it out as
+      // classroom-only here would be stale the moment it's tapped.
+      accessibilityLabel={TEXT.BOOKING_ROOM_MENU_TITLE}
       onPress={openNewBooking}
       style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}>
       <IconSymbol name="plus" size={20} color={c.primary} />
-      <ThemedText style={styles.addButtonText}>{TEXT.BOOKING_ROOM_ADD_BOOKING}</ThemedText>
+      <ThemedText style={styles.addButtonText}>{TEXT.BOOKING_ROOM_MENU_TITLE}</ThemedText>
     </Pressable>
   );
 
@@ -155,7 +159,7 @@ export default function BookingRoomCurrentScreen() {
           preset="room"
           message={TEXT.BOOKING_ROOM_CURRENT_EMPTY}
           action={
-            <Button title={TEXT.BOOKING_ROOM_ADD_BOOKING} icon="plus" onPress={openNewBooking} />
+            <Button title={TEXT.BOOKING_ROOM_MENU_TITLE} icon="plus" onPress={openNewBooking} />
           }
         />
       );

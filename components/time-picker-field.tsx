@@ -12,12 +12,13 @@
  *     of our own to manage.
  *   - iOS: an inline spinner shown under the trigger, dismissed by a "เสร็จ"
  *     button, since iOS has no native modal for this picker.
- * Web has no native time picker in Expo's RN runtime, so it falls back to two
- * plain numeric TextInputs (hour, minute) — simpler than reproducing the
- * SelectSheet-based dropdown pair app/timestamp/detail.tsx builds for its own
- * web fallback, and this field is used in a repeatable list (one row per
- * date), where a lighter fallback matters more than matching that screen
- * pixel-for-pixel.
+ * Web has no native time picker in Expo's RN runtime, so the trigger opens
+ * the app-wide `SelectSheet` with one combined "HH:MM" list — hour and minute
+ * picked together in one sheet, not two separate taps/sheets, the same as a
+ * single native time-picker dialog reads as one action. The list is half-hour
+ * slots from 06:00 to 23:30 (`TIME_OPTIONS`/`MINUTE_INTERVAL`/
+ * `DAY_START_HOUR`) — meeting-room bookings are scheduled on the hour or the
+ * half-hour, never any finer, and never before the building opens.
  */
 import DateTimePicker, {
   DateTimePickerAndroid,
@@ -29,7 +30,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  TextInput,
   View,
   type StyleProp,
   type TextStyle,
@@ -37,6 +37,7 @@ import {
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { SelectSheet } from '@/components/ui/select-sheet';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 type TimePickerFieldProps = {
@@ -49,8 +50,34 @@ type TimePickerFieldProps = {
   textStyle?: StyleProp<TextStyle>;
   iconColor?: string;
   iconSize?: number;
+  /**
+   * Web sheet only: hides every time at or before this Date's time-of-day —
+   * an end-time field passes its paired start time so it can never even be
+   * set to an invalid value. Native pickers aren't restricted (Android's own
+   * time dialog has no such option); the screen's own validation is what
+   * enforces the rule there, and stays the real backstop everywhere.
+   */
+  minExclusive?: Date | null;
   onChange: (date: Date) => void;
 };
+
+const MINUTE_INTERVAL = 30;
+// The building isn't open before this — no meeting-room slot starts earlier,
+// so the list's first item is 06:00 rather than midnight.
+const DAY_START_HOUR = 6;
+
+// Every half-hour slot from 06:00 through 23:30 — one flat list so the web
+// picker selects a whole time in one sheet rather than hour and minute apart.
+const TIME_OPTIONS = Array.from(
+  { length: ((24 - DAY_START_HOUR) * 60) / MINUTE_INTERVAL },
+  (_, i) => {
+    const totalMinutes = DAY_START_HOUR * 60 + i * MINUTE_INTERVAL;
+    const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+    const minutes = String(totalMinutes % 60).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  },
+);
+const TIME_SHEET_OPTIONS = TIME_OPTIONS.map((time) => ({ id: time, label: time }));
 
 function formatTime(date: Date | null) {
   if (!date) return '';
@@ -74,11 +101,17 @@ export function TimePickerField({
   textStyle,
   iconColor,
   iconSize = 16,
+  minExclusive,
   onChange,
 }: TimePickerFieldProps) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const [isIosPickerOpen, setIsIosPickerOpen] = useState(false);
+  const [isWebSheetOpen, setIsWebSheetOpen] = useState(false);
+
+  const timeSheetOptions = minExclusive
+    ? TIME_SHEET_OPTIONS.filter((option) => option.id > formatTime(minExclusive))
+    : TIME_SHEET_OPTIONS;
 
   const handleChange = (event: DateTimePickerEvent, nextDate?: Date) => {
     if (Platform.OS === 'android') {
@@ -100,68 +133,50 @@ export function TimePickerField({
         mode: 'time',
         is24Hour: true,
         display: 'default',
+        minuteInterval: MINUTE_INTERVAL,
         onChange: handleChange,
       });
       return;
     }
     if (Platform.OS === 'ios') {
       setIsIosPickerOpen(true);
+      return;
     }
-    // web: nothing to open — the two numeric fields below handle it directly.
+    setIsWebSheetOpen(true);
   };
 
-  const setHour = (raw: string) => {
-    const hours = Number(raw.replace(/[^0-9]/g, ''));
-    if (Number.isNaN(hours) || raw === '') return;
-    onChange(withTimeParts(value, Math.min(23, hours), value?.getMinutes() ?? 0));
-  };
-
-  const setMinute = (raw: string) => {
-    const minutes = Number(raw.replace(/[^0-9]/g, ''));
-    if (Number.isNaN(minutes) || raw === '') return;
-    onChange(withTimeParts(value, value?.getHours() ?? 0, Math.min(59, minutes)));
+  const selectTime = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    onChange(withTimeParts(value, hours, minutes));
+    setIsWebSheetOpen(false);
   };
 
   return (
     <View style={styles.container}>
       {hideLabel ? null : <ThemedText type="defaultSemiBold">{label}</ThemedText>}
 
+      <Pressable
+        accessibilityRole="button"
+        onPress={openPicker}
+        style={[styles.button, hasError ? styles.inputError : undefined, buttonStyle]}>
+        <Clock size={iconSize} color={iconColor ?? c.textMuted} />
+        <ThemedText
+          numberOfLines={1}
+          style={[styles.buttonText, !value && styles.placeholder, textStyle]}>
+          {formatTime(value) || `เลือก${label}`}
+        </ThemedText>
+      </Pressable>
+
       {Platform.OS === 'web' ? (
-        <View style={[styles.button, hasError ? styles.inputError : undefined, buttonStyle, styles.webRow]}>
-          <Clock size={iconSize} color={iconColor ?? c.textMuted} />
-          <TextInput
-            value={value ? String(value.getHours()).padStart(2, '0') : ''}
-            onChangeText={setHour}
-            placeholder="HH"
-            placeholderTextColor={c.textFaint}
-            keyboardType="number-pad"
-            maxLength={2}
-            style={[styles.webInput, textStyle]}
-          />
-          <ThemedText style={styles.webColon}>:</ThemedText>
-          <TextInput
-            value={value ? String(value.getMinutes()).padStart(2, '0') : ''}
-            onChangeText={setMinute}
-            placeholder="MM"
-            placeholderTextColor={c.textFaint}
-            keyboardType="number-pad"
-            maxLength={2}
-            style={[styles.webInput, textStyle]}
-          />
-        </View>
-      ) : (
-        <Pressable
-          accessibilityRole="button"
-          onPress={openPicker}
-          style={[styles.button, hasError ? styles.inputError : undefined, buttonStyle]}>
-          <Clock size={iconSize} color={iconColor ?? c.textMuted} />
-          <ThemedText
-            numberOfLines={1}
-            style={[styles.buttonText, !value && styles.placeholder, textStyle]}>
-            {formatTime(value) || `เลือก${label}`}
-          </ThemedText>
-        </Pressable>
-      )}
+        <SelectSheet
+          visible={isWebSheetOpen}
+          onClose={() => setIsWebSheetOpen(false)}
+          title={label}
+          options={timeSheetOptions}
+          selectedId={value ? formatTime(value) : undefined}
+          onSelect={(option) => selectTime(option.id)}
+        />
+      ) : null}
 
       {Platform.OS === 'ios' && isIosPickerOpen ? (
         <>
@@ -170,6 +185,7 @@ export function TimePickerField({
             mode="time"
             display="spinner"
             is24Hour
+            minuteInterval={MINUTE_INTERVAL}
             onChange={handleChange}
           />
           <Pressable
@@ -203,15 +219,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   buttonText: { flex: 1, color: c.text, fontSize: 15 },
   placeholder: { color: c.textFaint },
-  webRow: { justifyContent: 'flex-start' },
-  webInput: {
-    color: c.text,
-    fontSize: 15,
-    minWidth: 28,
-    textAlign: 'center',
-    paddingVertical: 0,
-  },
-  webColon: { color: c.text, fontSize: 15 },
   doneButton: {
     alignSelf: 'flex-end',
     backgroundColor: c.primary,
