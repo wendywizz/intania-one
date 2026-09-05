@@ -47,12 +47,29 @@ export type ActiveSummaryBookingRoom = {
   error?: string;
 };
 
+/**
+ * Whether the signed-in lecturer has stamped today.
+ *
+ * No `items`, unlike its neighbours: there is exactly one row a day and the
+ * home screen only needs to know whether it exists. `isLecturer` false is a
+ * real answer — the gateway asks for everybody, because it has no cheaper way
+ * to tell who is teaching staff — and the home screen leaves the card out on it.
+ */
+export type ActiveSummaryLectTimestamp = {
+  success: boolean;
+  isLecturer: boolean;
+  stamped: boolean;
+  date: string;
+  error?: string;
+};
+
 export type ActiveSummaryData = {
   repairComputer: ActiveSummaryRepairComputer;
   absence: ActiveSummaryAbsence;
   meeting: ActiveSummaryMeeting;
   timestamp: ActiveSummaryTimestamp;
   bookingRoom: ActiveSummaryBookingRoom;
+  lectTimestamp: ActiveSummaryLectTimestamp;
 };
 
 type ApiResponse = {

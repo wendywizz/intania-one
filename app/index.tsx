@@ -22,6 +22,7 @@ import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TEXT } from '@/constants/text';
 
+import { InfinityLoader } from '@/components/infinity-loader';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PillButton } from '@/components/ui';
@@ -168,7 +169,10 @@ type IconName = Parameters<typeof IconSymbol>[0]['name'];
 // entirely (the exam roster's menu entry is /examiner, its screen /examinar),
 // which is why the two are separate fields rather than one.
 const MODULE_HREF = {
-  timestamp: '/timestamp/calendar',
+  // The tab group's own index, not a named tab: which tab opens first depends
+  // on whether this person is teaching staff, and that branch lives in
+  // app/timestamp/(tabs)/index.tsx so a deep link lands where the menu does.
+  timestamp: '/timestamp',
   absence: '/absence/pending',
   meeting: '/meeting',
   repair: '/repair-computer',
@@ -267,6 +271,9 @@ const SHIFT_ICONS = {
   absence: 'doc.text.fill',
   meeting: 'person.2.fill',
   timestamp: 'calendar-clock',
+  // The same glyph the lecturer tab carries, so the tile and the tab it opens
+  // are recognisably the same thing.
+  lectTimestamp: 'log-in',
   exam: 'clipboard-list',
   booking: 'door.open',
 } as const satisfies Record<string, IconName>;
@@ -385,6 +392,22 @@ function buildShiftItems({ data, upcomingExams, absenceApproval, timestampApprov
       count: data.bookingRoom.items.length,
       icon: SHIFT_ICONS.booking,
       onPress: to('/booking-room'),
+    });
+  }
+
+  // ── Lecturer stamping: today, and only while it is still outstanding ───────
+  // Counted 1/0 rather than by a list: there is one stamp a day, so `add()`
+  // dropping a zero-count tile is exactly the behaviour wanted — the card is
+  // there until they stamp and then it is gone.
+  if (data?.lectTimestamp.success && data.lectTimestamp.isLecturer) {
+    add({
+      key: 'lect-timestamp',
+      label: TEXT.HOME_SHIFT_LECT_TIMESTAMP,
+      caption: TEXT.TIMESTAMP_TITLE,
+      module: MODULE_HREF.timestamp,
+      count: data.lectTimestamp.stamped ? 0 : 1,
+      icon: SHIFT_ICONS.lectTimestamp,
+      onPress: to('/timestamp/stamp'),
     });
   }
 
@@ -695,6 +718,10 @@ export default function HomeScreen() {
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Whether the news feed has ever loaded (successfully or not). Cleared
+  // never — a ref so the focus effect below always reads the latest value
+  // without needing newsItems in its own deps.
+  const hasLoadedNewsRef = useRef(false);
   const processedCallbackRef = useRef('');
   const { completeWebSignIn, eligibility, loading: isAuthLoading, signIn, signOut, user: authUser } = useAuth();
   const completeWebSignInRef = useRef(completeWebSignIn);
@@ -744,16 +771,26 @@ export default function HomeScreen() {
         setUnreadCount(0);
       }
 
-      setIsNewsLoading(true);
+      // Only the very first load has nothing to show yet, so only it blocks
+      // the section on the loader. Coming back from another tab already has
+      // last time's cards on screen — this refetches quietly behind them and
+      // swaps in the fresh list once it lands, instead of flashing back to a
+      // loading state for news the user has already seen.
+      if (!hasLoadedNewsRef.current) setIsNewsLoading(true);
       void staffNewsFeed().then((items) => {
         if (!isActive) return;
+        hasLoadedNewsRef.current = true;
         setNewsItems(items);
         setIsNewsError(false);
         setIsNewsLoading(false);
       }).catch(() => {
         if (!isActive) return;
-        setNewsItems([]);
-        setIsNewsError(true);
+        // A background refresh failing quietly keeps whatever news was
+        // already on screen; only a first-load failure blanks the section.
+        if (!hasLoadedNewsRef.current) {
+          setNewsItems([]);
+          setIsNewsError(true);
+        }
         setIsNewsLoading(false);
       });
 
@@ -1049,7 +1086,7 @@ export default function HomeScreen() {
             <View style={styles.newsScrollOuter}>
             {isNewsLoading ? (
               <View style={styles.newsLoadingWrap}>
-                <ActivityIndicator color={m.textMuted} />
+                <InfinityLoader size={48} />
               </View>
             ) : displayedNews.length === 0 ? (
               <View style={[styles.newsEmptyCard, { width: screenWidth - D.pad * 2 }]}>

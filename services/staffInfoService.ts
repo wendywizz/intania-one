@@ -17,15 +17,32 @@ export type StaffEligibility = {
   facultyName: string;
   departmentName: string;
   campusId: string;
+  /** CENTRAL.STAFF_INFO.POSITION_ID, for display and support. */
+  positionId: string;
+  positionName: string;
+  /**
+   * Whether this person may use the lecturer-stamping tab.
+   *
+   * The gateway decides it from POSITION_ID; the app never compares the id
+   * itself, so which positions count can change without a new build. PSU
+   * Passport carries no claim about position at all — this is the only place
+   * the app can learn it.
+   */
+  isLecturer: boolean;
   eligible: boolean;
   /** 'eligible' | 'other_faculty' | 'not_found' — for logs and support. */
   reason: string;
 };
 
 const CACHE_KEY_PREFIX = 'staffEligibility:';
+const LECTURER_CACHE_KEY_PREFIX = 'staffIsLecturer:';
 
 function cacheKey(staffId: string) {
   return `${CACHE_KEY_PREFIX}${staffId}`;
+}
+
+function lecturerCacheKey(staffId: string) {
+  return `${LECTURER_CACHE_KEY_PREFIX}${staffId}`;
 }
 
 /**
@@ -68,5 +85,36 @@ export async function writeCachedEligibility(staffId: string, eligible: boolean)
     await AsyncStorage.setItem(cacheKey(staffId), eligible ? 'true' : 'false');
   } catch {
     // A cache that will not persist costs a re-check, nothing more.
+  }
+}
+
+/**
+ * Whether this person was a lecturer last time we asked, or null if nobody has.
+ *
+ * Cached separately from `eligible` rather than as one object: the two answer
+ * different questions, are read by different code, and a stored shape that grows
+ * a field is a stored shape that can be half-written. Two keys cannot disagree
+ * with each other about which half is current.
+ *
+ * What it buys: the timestamp tab bar draws the lecturer tab on its very first
+ * frame, and entering the module lands on the right tab, instead of both
+ * waiting on a network round trip that has already been made once.
+ */
+export async function readCachedIsLecturer(staffId: string): Promise<boolean | null> {
+  try {
+    const stored = await AsyncStorage.getItem(lecturerCacheKey(staffId));
+    if (stored === 'true') return true;
+    if (stored === 'false') return false;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function writeCachedIsLecturer(staffId: string, isLecturer: boolean): Promise<void> {
+  try {
+    await AsyncStorage.setItem(lecturerCacheKey(staffId), isLecturer ? 'true' : 'false');
+  } catch {
+    // Same as above: a cache that will not persist costs a re-check.
   }
 }

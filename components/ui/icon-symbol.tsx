@@ -25,6 +25,7 @@ import Wifi from 'lucide-react-native/dist/cjs/icons/wifi';
 import Wind from 'lucide-react-native/dist/cjs/icons/wind';
 import Zap from 'lucide-react-native/dist/cjs/icons/zap';
 import CalendarClock from 'lucide-react-native/dist/cjs/icons/calendar-clock';
+import LogIn from 'lucide-react-native/dist/cjs/icons/log-in';
 import CalendarRange from 'lucide-react-native/dist/cjs/icons/calendar-range';
 import Calendar from 'lucide-react-native/dist/cjs/icons/calendar';
 import ChartBar from 'lucide-react-native/dist/cjs/icons/chart-bar';
@@ -106,6 +107,11 @@ const MAPPING = {
   'calendar-clock': CalendarClock,
   'calendar-range': CalendarRange,
   'clock.fill': Clock,
+  // Clocking in for the day (ลงเวลาปฏิบัติราชการ). An arrow going in, not
+  // another clock face: it shares a tab bar with 'calendar-range' and
+  // 'clock.fill', and a third round dial there would be one clock too many to
+  // tell apart at 28px.
+  'log-in': LogIn,
   // Work
   'briefcase.fill': Briefcase,
   'doc.text.fill': FileText,

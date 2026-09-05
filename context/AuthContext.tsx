@@ -6,7 +6,9 @@ import {registerLoggedInDevice, subscribeToLoggedInDevicePushTokenChanges} from 
 import {
   fetchStaffEligibility,
   readCachedEligibility,
+  readCachedIsLecturer,
   writeCachedEligibility,
+  writeCachedIsLecturer,
 } from '../services/staffInfoService';
 import {DEV_STAFF_ID} from '../constants/devConfig';
 
@@ -36,6 +38,16 @@ type AuthContextValue = {
   signedIn: boolean;
   /** Faculty check for `user`; see StaffEligibilityStatus. */
   eligibility: StaffEligibilityStatus;
+  /**
+   * Whether `user` is teaching staff — what the lecturer-stamping tab is gated
+   * on.
+   *
+   * A plain boolean rather than a three-state like `eligibility`: this one only
+   * hides a tab, so "we do not know yet" and "no" lead to the same screen. It
+   * is answered by the gateway from CENTRAL.STAFF_INFO.POSITION_ID — PSU
+   * Passport carries no claim about position, so it cannot come from the token.
+   */
+  isLecturer: boolean;
   completeWebSignIn: (params: Parameters<typeof authService.completeWebLogin>[0]) => Promise<void>;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -73,6 +85,9 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(true);
   const [eligibility, setEligibility] = useState<StaffEligibilityStatus>('unknown');
+  // Resolved by the same call as `eligibility` — one request answers both, so
+  // they can never disagree about which account they describe.
+  const [isLecturer, setIsLecturer] = useState(false);
   const signInPromiseRef = useRef<Promise<void> | null>(null);
   const userRef = useRef<AuthUser | null>(null);
   // Guards against a stale check overwriting a newer one — a slow reply for the
@@ -91,18 +106,34 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     // No staff id means nothing to check against — fail open rather than
     // stranding the user on an empty home screen.
     if (!staffId) {
-      if (isCurrent()) setEligibility('unknown');
+      if (isCurrent()) {
+        setEligibility('unknown');
+        setIsLecturer(false);
+      }
       return;
     }
 
-    const cached = await readCachedEligibility(staffId);
+    const [cached, cachedLecturer] = await Promise.all([
+      readCachedEligibility(staffId),
+      readCachedIsLecturer(staffId),
+    ]);
     if (!isCurrent()) return;
     setEligibility(cached === null ? 'checking' : cached ? 'allowed' : 'denied');
+    // Null (never asked) is treated as "not a lecturer": the tab simply is not
+    // there yet, and the re-check below adds it a moment later. The opposite
+    // default would flash a tab at everyone on their first launch.
+    setIsLecturer(cachedLecturer === true);
 
     try {
       const result = await fetchStaffEligibility(staffId);
-      await writeCachedEligibility(staffId, result.eligible);
-      if (isCurrent()) setEligibility(result.eligible ? 'allowed' : 'denied');
+      await Promise.all([
+        writeCachedEligibility(staffId, result.eligible),
+        writeCachedIsLecturer(staffId, result.isLecturer),
+      ]);
+      if (isCurrent()) {
+        setEligibility(result.eligible ? 'allowed' : 'denied');
+        setIsLecturer(result.isLecturer);
+      }
     } catch (error) {
       // Could not reach the gateway. Keep whatever the cache said; with no cached
       // verdict, fall back to 'unknown' (= allowed) rather than turning a network
@@ -161,6 +192,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       initializing,
       signedIn: Boolean(effectiveUser),
       eligibility,
+      isLecturer,
       completeWebSignIn: async (params) => {
         setLoading(true);
         try {
@@ -204,7 +236,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         setEligibility('unknown');
       },
     }),
-    [loading, initializing, effectiveUser, eligibility, verifyEligibility],
+    [loading, initializing, effectiveUser, eligibility, isLecturer, verifyEligibility],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

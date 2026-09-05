@@ -16,7 +16,7 @@ import { scaleFont } from "@/utils/font-scale";
 
 export default function TimestampTabLayout() {
   const c = useColors();
-  const { user: authUser } = useAuth();
+  const { user: authUser, isLecturer } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
 
   // Whether the user may approve others' miss-timestamp requests (holds an active
@@ -66,6 +66,20 @@ export default function TimestampTabLayout() {
         },
       }}
     >
+      <Tabs.Screen
+        name="stamp"
+        options={{
+          // Lecturers only (POSITION_ID), and declared first so it is the tab a
+          // lecturer's eye lands on. `isLecturer` comes from AuthContext, which
+          // seeds it from AsyncStorage before the first paint — unlike the
+          // approval tab below, this one does not arrive a beat late.
+          href: isLecturer ? undefined : null,
+          title: TEXT.LECT_TIMESTAMP_TAB,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="log-in" color={color} />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="calendar"
         options={{

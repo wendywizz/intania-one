@@ -120,6 +120,13 @@ There are eleven, listed in the order they appear on the home grid.
       (`(tabs)/history.tsx`, `history-detail.tsx`, `detail.tsx`)
     - Approver can see requests waiting on them (`(tabs)/approve.tsx`), open the full
       detail (`approve-detail.tsx`) and allow or deny with a reason (`approve-reason.tsx`)
+    - **Lecturer (POSITION_ID 1, 341, 33, 47, 32) can stamp today's attendance**
+      (`(tabs)/stamp.tsx`, gateway `/api/timestamp/lecturer`). One button, one row a
+      day, `08:00`–`16:30` written as constants — a lecturer records *that* they were
+      at work, not the hour they arrived. The tab exists only for them and is the one
+      they land on: `isLecturer` comes from `/api/staff-info` at sign-in (PSU Passport
+      carries no claim about position) and is cached, so the tab bar is right on its
+      first frame. See *Anti-fraud checks before a lecturer stamps* below.
 
 - Absence — `app/absence/`, `services/absenceService.ts`, gateway `/api/absence`:
     # Module Context
@@ -299,6 +306,88 @@ There are eleven, listed in the order they appear on the home grid.
     - The photo is re-encoded to JPEG and sent as base64; the gateway rebuilds the
       multipart request the photo host wants.
 
+# Anti-fraud checks before a lecturer stamps
+
+Five things are checked. **Only two of them are enforcement; the other three are
+deterrents.** The difference is not a detail — it decides how much weight anyone
+should put on them, and it is the reason each one is where it is.
+
+Status: **1 and 2 are built.** 3, 4 and 5 are specified here and not yet written —
+they need `expo-location` / `expo-network`, which means a new build (see the end of
+this section).
+
+One thing to verify on a real phone before trusting check 2 against the VPN: the
+address that decides the verdict is the one **scooba-service** sees, and a VPN
+concentrator that NAT-ed its clients into `172.31.x.x` would defeat it while the
+client still displayed `10.66.x.x`. The test is one minute: mobile data, VPN on, open
+the stamp screen. `ปิด VPN` or `ต้องเชื่อมต่อเครือข่ายภายในคณะฯ` means it holds;
+being allowed to stamp means the concentrator NATs and the deny-list needs whatever
+range it NATs to.
+
+**Enforced — the client cannot lie about these**
+
+1. **The stamping rules themselves** (already stamped / weekend / 06:00–24:00), decided
+   by `/lect_timestamp/api` against its own database. Nothing the app sends affects them.
+2. **On the faculty network.** The address checked is the socket address
+   scooba-service *sees*, not one the app reports, so a patched client cannot forge it.
+   Two config values on the PHP side, in `lect_timestamp/api/inc/config.php`:
+   - `faculty_ip_prefixes()` — **allow**: `172.31.`. Tightened from the website's
+     original `172.`, which matched the whole of `172.0.0.0/8` and would have accepted
+     public addresses such as Google's `172.217.x.x`.
+   - `blocked_ip_prefixes()` — **deny, checked first**: `10.66.`, the pool PSU's
+     FortiClient VPN assigns from (observed 2026-09-04: `10.66.81.30`).
+
+   **"No VPN" is enforced by the allow-list, not by the deny-list.** The VPN pool is
+   `10.66.x.x`, which is outside `172.31.` and therefore already refused. What the
+   deny entry changes is the *answer*: a blocked address returns `reason: 'vpn'`
+   instead of `off_network`, so a lecturer sitting at their desk with a VPN left
+   running is told to switch it off rather than told to "connect to the faculty
+   network" — which they would read as wrong, because they are on it. Same refusal,
+   useful instead of baffling.
+
+   The deny-list is checked *before* the exemptions (`work_from_home()`,
+   `network_exempt_staff_ids()`, quarantine) so that a range which exists to disguise
+   where somebody is cannot be reached by any route. It costs the exempt nothing: they
+   may already stamp from any public address, so the VPN gains them nothing either.
+
+**Deterrent + audit trail — client-asserted, and forgeable by a determined person**
+
+3. **VPN switched off**, reported by the device. iOS and Android can both be asked, but
+   the answer arrives in the request body like any other field.
+4. **Inside the faculty**, from the device's own GPS: a circle of radius **350 m**
+   around `7.006805835290992, 100.50118297181535`.
+   - A circle, not a polygon tracing the site boundary. The threat is somebody stamping
+     from home, not somebody stamping from the Starbucks across the road, so accuracy at
+     the boundary buys nothing — while a tight fence costs real refusals, because the
+     faculty is a large concrete building and an indoor GPS fix is routinely ±50 m and
+     can be ±150 m deep inside. 350 m covers all four corners of the site with room for
+     that error; 200 m would cut the north-east and south corners off.
+   - **No location permission → cannot stamp.** Otherwise the check is opt-out and
+     everybody opts out. **Permission granted but no usable fix → ask them to try
+     again**, never a hard refusal: a lecturer in a basement office has done nothing
+     wrong and their alternative is filing a ลืมลงเวลา form.
+5. **Not a mocked location.** Android exposes this; **iOS has no equivalent API**, so on
+   iOS this check does not exist at all.
+
+Why bother with 3–5 if they can be forged: the app bundle carries the API token, so
+anyone willing to unpack it can call the endpoint directly with any body they like.
+Practically nobody does. These stop ordinary opportunism and, just as importantly, they
+are **recorded with every stamp**, so a pattern is reviewable afterwards — which is what
+the original website was reaching for when it put `$elat:$elong` into its audit row
+(`z/chkUser.php:53`, though its `geoFindMe()` call was left commented out).
+
+Consequences worth knowing before starting:
+
+- `expo-location` and `expo-network` are **not** in the project yet. A new native
+  module can never go out over the air, so this is a **new build, not an OTA update**
+  — and on this project that needs care, because `runtimeVersion` is the `appVersion`
+  policy (`1.0.0`), not a fingerprint. An OTA is accepted by *any* build carrying the
+  same app version, including ones built before these modules existed, which would
+  hand them JS calling a native module they do not have. **Bump `version` in the same
+  change that adds the dependency.**
+- The app must not decide any of this for itself. It collects the facts and sends them;
+  the verdict is the gateway's and the upstream's, exactly as `canStamp` already works.
+  A rule copied into the client is a rule that will drift from the one being enforced.
 
 # Build Environment
 

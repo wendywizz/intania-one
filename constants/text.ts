@@ -79,6 +79,9 @@ export const TEXT = {
   HOME_SHIFT_CURRENT_JOB: 'งานปัจจุบัน',
   HOME_SHIFT_MEETINGS_TODAY: 'การประชุมวันนี้',
   HOME_SHIFT_TIMESTAMP: 'ลืมลงเวลา',
+  // Only shown while today is still un-stamped, so it can be phrased as the
+  // thing left to do rather than as a neutral label.
+  HOME_SHIFT_LECT_TIMESTAMP: 'ยังไม่ได้ลงเวลาวันนี้',
   HOME_SHIFT_MY_LEAVE: 'การลาของฉัน',
   HOME_SHIFT_APPROVE_LEAVE: 'อนุมัติการลา',
   HOME_SHIFT_APPROVE_TIMESTAMP: 'อนุมัติการลงเวลา',
@@ -1070,6 +1073,24 @@ export const TEXT = {
   TIMESTAMP_HISTORY_EMPTY: 'ไม่มีประวัติการยื่นขอแก้ไข',
   TIMESTAMP_LIST_SUBTITLE: 'รายการคำขอลืมลงเวลา',
   TIMESTAMP_FORGOT_HISTORY_SUBTITLE: 'ประวัติการลืมลงเวลา',
+
+  // Timestamp - ลงเวลาปฏิบัติราชการของอาจารย์ (lecturer stamping)
+  //
+  // Only the labels that are fixed live here. Everything the server decides —
+  // whether today is stamped, and why it cannot be — arrives as wording from
+  // the gateway (`config/text.js`), so those sentences can change without a new
+  // build and can never disagree with the rule that produced them.
+  // One constant for both the tab label and the screen title, the way
+  // TIMESTAMP_CALENDAR_TAB is used — two names holding the same string is two
+  // things to keep in step for no gain.
+  LECT_TIMESTAMP_TAB: 'ลงเวลา',
+  LECT_TIMESTAMP_BUTTON: 'ลงเวลาวันนี้',
+  LECT_TIMESTAMP_STAMPED_HEADLINE: 'วันนี้ลงเวลาแล้ว',
+  LECT_TIMESTAMP_NOT_STAMPED_HEADLINE: 'วันนี้ยังไม่ได้ลงเวลา',
+  // Prefixes the time dug out of the stamp's remark. Kept apart from the
+  // headline so the two can be laid out separately.
+  LECT_TIMESTAMP_STAMPED_AT: 'เมื่อ',
+  LECT_TIMESTAMP_LOAD_ERROR: 'ไม่สามารถโหลดสถานะการลงเวลาได้',
 
   // Timestamp - approval (boss inbox)
   TIMESTAMP_APPROVE_TAB: 'รับรอง',
