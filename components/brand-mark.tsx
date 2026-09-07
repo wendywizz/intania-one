@@ -45,12 +45,16 @@ export function BrandMark({ size = 216, pulseRings = false, style }: BrandMarkPr
   const reveal = useRef(new Animated.Value(0)).current;
   const rings = useRef([new Animated.Value(0), new Animated.Value(0)]).current;
 
-  // The icon's own scale-and-settle entrance.
+  // The icon's own entrance: fades and scales up past 1 before settling back
+  // — a visible pop rather than a snap, now that it's the only thing that
+  // announces the mark has arrived (the rotating sweep that used to share
+  // that job is gone). Low friction relative to tension is what gives a
+  // spring its overshoot.
   useEffect(() => {
     Animated.spring(reveal, {
       toValue: 1,
-      friction: 6,
-      tension: 90,
+      friction: 4,
+      tension: 45,
       useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
   }, [reveal]);
