@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BiometricGate } from '@/components/biometric-gate';
 import { ConnectionGate } from '@/components/connection-gate';
 import { ToastProvider } from '@/components/toast-provider';
+import { UpdateGate } from '@/components/update-gate';
 import { STACK_SCREEN_OPTIONS } from '@/constants/navigation';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
@@ -113,13 +114,18 @@ export default function RootLayout() {
         <AuthProvider>
           <ThemeProvider>
             <ToastProvider>
-              {/* Outermost gate: nothing below it mounts — not the app lock,
-                  not the navigator — until scooba-service has answered. */}
-              <ConnectionGate>
-                <BiometricGate>
-                  <AppStack />
-                </BiometricGate>
-              </ConnectionGate>
+              {/* Checked before anything else — an EAS Update is unrelated to
+                  scooba-service, so it's offered even if the gateway below is
+                  unreachable. */}
+              <UpdateGate>
+                {/* Nothing below this mounts — not the app lock, not the
+                    navigator — until scooba-service has answered. */}
+                <ConnectionGate>
+                  <BiometricGate>
+                    <AppStack />
+                  </BiometricGate>
+                </ConnectionGate>
+              </UpdateGate>
             </ToastProvider>
           </ThemeProvider>
         </AuthProvider>

@@ -148,6 +148,16 @@ export const TEXT = {
   SERVICE_UNAVAILABLE_RETRY: 'ลองเชื่อมต่ออีกครั้ง',
   SERVICE_UNAVAILABLE_RETRYING: 'กำลังเชื่อมต่อ…',
 
+  // App update (EAS Update, checked on every launch)
+  APP_UPDATE_TITLE: 'กำลังอัปเดตแอป',
+  APP_UPDATE_DOWNLOADING: 'กำลังดาวน์โหลดเวอร์ชันล่าสุด',
+  APP_UPDATE_INSTALLING: 'กำลังติดตั้งอัปเดต',
+  APP_UPDATE_HINT: 'กรุณารอสักครู่ แอปจะรีสตาร์ทโดยอัตโนมัติ',
+  APP_UPDATE_ERROR_TITLE: 'อัปเดตแอปไม่สำเร็จ',
+  APP_UPDATE_ERROR_MESSAGE: 'ไม่สามารถดาวน์โหลดอัปเดตได้ กรุณาลองใหม่ หรือใช้งานเวอร์ชันปัจจุบันไปก่อน',
+  APP_UPDATE_RETRY: 'ลองอีกครั้ง',
+  APP_UPDATE_SKIP: 'ใช้งานเวอร์ชันปัจจุบัน',
+
   // Biometric app lock
   BIOMETRIC_LOCK_TITLE: 'ปลดล็อกแอปพลิเคชัน',
   BIOMETRIC_LOCK_DESCRIPTION: 'ยืนยันตัวตนด้วยใบหน้าหรือลายนิ้วมือเพื่อเข้าใช้งาน',

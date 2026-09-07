@@ -11,7 +11,8 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/31d71936-d7c8-435e-bc91-f7027444706a"
+      "url": "https://u.expo.dev/31d71936-d7c8-435e-bc91-f7027444706a",
+      "checkAutomatically": "NEVER"
     },
     "ios": {
       "bundleIdentifier": "th.ac.psu.eng.scooba",
@@ -55,11 +56,11 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 280,
+          "imageWidth": 320,
           "resizeMode": "contain",
-          "backgroundColor": "#AD1C28",
+          "backgroundColor": "#B33939",
           "dark": {
-            "backgroundColor": "#AD1C28"
+            "backgroundColor": "#B33939"
           }
         }
       ],
