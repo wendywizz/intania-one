@@ -1,7 +1,7 @@
 /**
- * The app icon, dressed up as a loading mark: a rotating sweep of the brand's
- * own gradient glows behind it, and — on the cold-start splash only — two
- * rings pulse outward like a radar ping.
+ * The app icon, dressed up as a loading mark: on the cold-start splash, two
+ * rings pulse outward behind it like a radar ping; everywhere it's used, the
+ * icon itself scales and settles in on mount.
  *
  * Shared by ColdStartSplash and UpdateGate so the two red-branded "please
  * wait" screens read as one family instead of two separately-invented looks.
@@ -22,15 +22,12 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { APP_ICON_MARK } from '@/constants/images';
 
 // react-native-web has no native animation driver.
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
-/** One rotation of the glow behind the icon. */
-const SPIN_MS = 3400;
 /** One radar ping, rings-out-and-fades. */
 const PULSE_MS = 2600;
 
@@ -45,24 +42,8 @@ type BrandMarkProps = {
 };
 
 export function BrandMark({ size = 216, pulseRings = false, style }: BrandMarkProps) {
-  const spin = useRef(new Animated.Value(0)).current;
   const reveal = useRef(new Animated.Value(0)).current;
   const rings = useRef([new Animated.Value(0), new Animated.Value(0)]).current;
-
-  // The rotating gradient glow — runs for as long as the mark is on screen,
-  // cold-start splash or update download alike.
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.timing(spin, {
-        toValue: 1,
-        duration: SPIN_MS,
-        easing: Easing.linear,
-        useNativeDriver: USE_NATIVE_DRIVER,
-      }),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [spin]);
 
   // The icon's own scale-and-settle entrance.
   useEffect(() => {
@@ -97,8 +78,6 @@ export function BrandMark({ size = 216, pulseRings = false, style }: BrandMarkPr
     return () => loops.forEach((l) => l.stop());
   }, [pulseRings, rings]);
 
-  const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
-  const glowSize = size * 0.9;
   const ringSize = size * 0.94;
   // No tile/ring around it any more, so the mark itself can run bigger —
   // it was capped smaller before to leave room for the border.
@@ -123,34 +102,6 @@ export function BrandMark({ size = 216, pulseRings = false, style }: BrandMarkPr
             ]}
           />
         ))}
-
-      <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
-        <Svg width={glowSize} height={glowSize} viewBox="0 0 100 100">
-          <Defs>
-            {/* The app's own gradient run (matches InfinityLoader), so the glow
-                reads as the icon's own colour rather than a generic spinner. */}
-            <LinearGradient id="brandSweep" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor="#2E86DE" />
-              <Stop offset="0.3" stopColor="#20BF6B" />
-              <Stop offset="0.55" stopColor="#F7B731" />
-              <Stop offset="0.78" stopColor="#FA8231" />
-              <Stop offset="1" stopColor="#FC5C7D" />
-            </LinearGradient>
-          </Defs>
-          <Circle
-            cx="50"
-            cy="50"
-            r="42"
-            fill="none"
-            stroke="url(#brandSweep)"
-            strokeWidth={size * 0.085}
-            strokeLinecap="round"
-            // ~40% of the ring lit, the rest a gap — a sweep, not a solid halo.
-            strokeDasharray="105 158"
-            opacity={0.55}
-          />
-        </Svg>
-      </Animated.View>
 
       <Animated.View
         pointerEvents="none"
