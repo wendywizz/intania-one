@@ -8,9 +8,9 @@
  *
  * `initializing` is usually a local-storage read and settles in well under a
  * second — too fast for the reveal below to play out. Rather than cut the
- * animation off mid-beat, the splash holds for MIN_DISPLAY_MS (matching the
- * design's own "1.8s intro") and only then dismisses, once the session is
- * *also* ready.
+ * animation off mid-beat, the splash holds for MIN_DISPLAY_MS (the design's
+ * own "1.8s intro" plus a bit more breathing room) and only then dismisses,
+ * once the session is *also* ready.
  */
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
@@ -25,7 +25,9 @@ import { type AppColors, useThemedStyles } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
-const MIN_DISPLAY_MS = 1800;
+// The design's "1.8s intro" (1800ms) plus 500ms more so the reveal has room
+// to settle before the fade-out starts.
+const MIN_DISPLAY_MS = 2300;
 const FADE_OUT_MS = 320;
 
 export function ColdStartSplash() {
