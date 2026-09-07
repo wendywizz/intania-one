@@ -9,6 +9,7 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -46,7 +47,9 @@ const REVEAL_MS = 340;
 const SCANS_BEFORE_PASSCODE = 2;
 // The progress bar that runs before the unlock button appears.
 const ACTION_REVEAL_MS = 500;
-// Side of the icon tile, and therefore the diameter of the success circle.
+// Diameter of the success tick's circle, and the floor for the responsive
+// app-icon size below (see iconSize in the component) — never smaller than
+// this on a narrow phone.
 const LOCK_TILE_SIZE = 96;
 
 type Status = 'checking' | 'locked' | 'unlocking' | 'unlocked';
@@ -79,6 +82,11 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
   const styles = useThemedStyles(makeStyles);
   const c = useColors();
   const { user, loading: isAuthLoading } = useAuth();
+  // Two-fifths of the screen's width scales the mark up on ordinary phones —
+  // never below the old fixed size, and capped so a tablet's (supportsTablet
+  // is on) far wider screen doesn't balloon it or crowd the keypad below.
+  const { width: screenWidth } = useWindowDimensions();
+  const iconSize = Math.max(LOCK_TILE_SIZE, Math.min(160, Math.round(screenWidth * 0.4)));
   // Starts as 'checking' so the app content is never briefly visible before we
   // know whether the lock applies — the cover is up from the very first frame.
   // Web has no biometrics at all, so it skips straight past the cover.
@@ -386,8 +394,9 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
           <Animated.View style={[styles.lockContent, { opacity: promptOpacity }]}>
           {/* Bare mark, no tile behind it — same treatment as ColdStartSplash's
               BrandMark, so the app icon never shows its own background tile
-              here. */}
-          <BrandMark size={LOCK_TILE_SIZE} style={styles.iconMark} />
+              here. Sized off the screen width (iconSize above), not the
+              fixed LOCK_TILE_SIZE the success tick still uses. */}
+          <BrandMark size={iconSize} style={styles.iconMark} />
           <View style={styles.prompt}>
             <ThemedText style={styles.title}>{TEXT.BIOMETRIC_LOCK_TITLE}</ThemedText>
             <ThemedText style={styles.description}>
