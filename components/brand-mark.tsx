@@ -49,12 +49,13 @@ export function BrandMark({ size = 216, pulseRings = false, style }: BrandMarkPr
   // — a visible pop rather than a snap, now that it's the only thing that
   // announces the mark has arrived (the rotating sweep that used to share
   // that job is gone). Low friction relative to tension is what gives a
-  // spring its overshoot.
+  // spring its overshoot; low tension on its own is what stretches the whole
+  // motion out so it reads clearly instead of resolving in a blink.
   useEffect(() => {
     Animated.spring(reveal, {
       toValue: 1,
       friction: 4,
-      tension: 45,
+      tension: 20,
       useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
   }, [reveal]);
