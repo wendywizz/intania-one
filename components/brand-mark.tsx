@@ -6,10 +6,10 @@
  * Shared by ColdStartSplash and UpdateGate so the two red-branded "please
  * wait" screens read as one family instead of two separately-invented looks.
  *
- * The icon itself keeps its baked-in red background (see icon.png/app-icon.png),
- * which is a slightly different shade than the overlay's `c.primary` — the
- * same mismatch BiometricGate's lock screen has, and the same fix: a white
- * ring around the tile so the two reds never touch directly.
+ * Renders APP_ICON_MARK — the icon's own linework with its red backing
+ * colour-keyed out — rather than APP_ICON, so the mark sits bare on the
+ * splash's red the way the source design has it, with nothing behind it to
+ * ring or tile.
  */
 import { Image } from 'expo-image';
 import { useEffect, useRef } from 'react';
@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
-import { APP_ICON } from '@/constants/images';
+import { APP_ICON_MARK } from '@/constants/images';
 
 // react-native-web has no native animation driver.
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
@@ -100,7 +100,9 @@ export function BrandMark({ size = 216, pulseRings = false, style }: BrandMarkPr
   const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   const glowSize = size * 0.9;
   const ringSize = size * 0.94;
-  const tileSize = size * 0.6;
+  // No tile/ring around it any more, so the mark itself can run bigger —
+  // it was capped smaller before to leave room for the border.
+  const markSize = size * 0.72;
 
   return (
     <View style={[styles.center, { width: size, height: size }, style]}>
@@ -151,18 +153,18 @@ export function BrandMark({ size = 216, pulseRings = false, style }: BrandMarkPr
       </Animated.View>
 
       <Animated.View
+        pointerEvents="none"
         style={[
-          styles.tile,
+          styles.markWrap,
           {
-            width: tileSize,
-            height: tileSize,
-            borderRadius: tileSize * 0.22,
+            width: markSize,
+            height: markSize,
             opacity: reveal,
             transform: [{ scale: reveal.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }],
           },
         ]}
       >
-        <Image source={APP_ICON} style={styles.icon} contentFit="cover" />
+        <Image source={APP_ICON_MARK} style={styles.icon} contentFit="contain" />
       </Animated.View>
     </View>
   );
@@ -175,12 +177,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.55)',
   },
-  tile: {
-    position: 'absolute',
-    overflow: 'hidden',
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.92)',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
+  // No background/border here on purpose — the mark is transparent PNG
+  // linework, meant to sit bare on the red behind it.
+  markWrap: { position: 'absolute' },
   icon: { width: '100%', height: '100%' },
 });
