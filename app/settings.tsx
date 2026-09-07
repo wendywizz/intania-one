@@ -126,8 +126,15 @@ export default function SettingsScreen() {
       void Promise.all([getPasswordUnlockEnabled(), hasAppPassword()]).then(
         ([enabled, exists]) => {
           setPasswordExists(exists);
-          // A preference with no password behind it protects nothing.
+          // A preference with no password behind it protects nothing — treat
+          // it as off, both on screen and in storage. Turning the toggle on
+          // never persists `enabled` until a passcode is actually saved (see
+          // handlePasswordToggle), so the only way to land here is a passcode
+          // that existed once and was since forgotten — clearing the stray
+          // flag rather than just hiding it keeps the lock screen's own read
+          // of "enabled" in sync with what this screen is showing.
           setPasswordEnabledState(enabled && exists);
+          if (enabled && !exists) void setPasswordUnlockEnabled(false);
         },
       );
     }, [syncNotificationState]),

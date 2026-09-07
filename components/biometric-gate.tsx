@@ -1,5 +1,4 @@
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Check } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -14,11 +13,11 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
+import { BrandMark } from '@/components/brand-mark';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { AppFonts } from '@/constants/fonts';
 import { PasscodePad } from '@/components/passcode-pad';
-import { APP_ICON } from '@/constants/images';
 import { ABSOLUTE_FILL } from '@/constants/layout';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
@@ -385,9 +384,10 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
               passcode keypad makes this column tall and pushes it well above
               the middle of the screen. */}
           <Animated.View style={[styles.lockContent, { opacity: promptOpacity }]}>
-          <View style={styles.iconTile}>
-            <Image source={APP_ICON} style={styles.appIcon} contentFit="cover" />
-          </View>
+          {/* Bare mark, no tile behind it — same treatment as ColdStartSplash's
+              BrandMark, so the app icon never shows its own background tile
+              here. */}
+          <BrandMark size={LOCK_TILE_SIZE} style={styles.iconMark} />
           <View style={styles.prompt}>
             <ThemedText style={styles.title}>{TEXT.BIOMETRIC_LOCK_TITLE}</ThemedText>
             <ThemedText style={styles.description}>
@@ -500,24 +500,18 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // The app icon as a rounded tile. The artwork is red and so is the overlay,
-  // so a white ring is what separates the two.
+  // Spacing to match where the tile used to sit — BrandMark draws its own
+  // mark with no tile/ring behind it.
+  iconMark: { marginBottom: 8 },
+  // The success tick's own circle. Unrelated to the app icon above: this one
+  // is deliberately a solid tile so the checkmark reads as a confirmation,
+  // rounded all the way to a circle.
   iconTile: {
     width: LOCK_TILE_SIZE,
     height: LOCK_TILE_SIZE,
-    borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.92)',
-    backgroundColor: 'rgba(255,255,255,0.16)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
   },
-  appIcon: { width: '100%', height: '100%' },
-  // Fills in solid on success so the tick reads as a confirmation, and rounds
-  // all the way to a circle — the icon's squircle belongs to the app's artwork,
-  // the confirmation is its own mark.
   iconTileSuccess: {
     backgroundColor: c.textOnPrimary,
     borderRadius: LOCK_TILE_SIZE / 2,

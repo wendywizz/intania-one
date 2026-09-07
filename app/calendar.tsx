@@ -2,6 +2,7 @@
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+    ActivityIndicator,
     FlatList,
     Modal,
     Pressable,
@@ -481,52 +482,51 @@ export default function CalendarScreen() {
       {/* Selected-date events — timeline rows on the background, matching the
           meeting lists (shared EventTimelineItem). */}
       <View style={styles.eventsPane}>
-        <FlatList
-          style={styles.eventList}
-          data={showLoader ? [] : selectedEvents}
-          keyExtractor={(item, index) => `${String(item.id || "event")}-${index}`}
-          renderItem={renderEvent}
-          contentContainerStyle={styles.eventListContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={c.primary}
-              colors={[c.primary]}
-            />
-          }
-          ListHeaderComponent={
-            <>
-              <View style={styles.dateHeader}>
-                <ThemedText style={styles.dateHeaderText}>
-                  {formatSelectedDate(selectedDate)}
-                </ThemedText>
-              </View>
-              {showLoader ? (
-                <LoadingAnimate
-                  fill={false}
-                  title={TEXT.SHARED_LOADING_DATA_TITLE}
-                  desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
-                />
-              ) : null}
-            </>
-          }
-          ListEmptyComponent={
-            showLoader ? null : errorMessage ? (
-              <View style={styles.errorBox}>
-                <ThemedText style={styles.errorTitle}>
-                  {TEXT.SHARED_UNABLE_TO_COMPLETE}
-                </ThemedText>
-                <ThemedText style={styles.errorDetail}>{errorMessage}</ThemedText>
-                <Pressable style={styles.retryBtn} onPress={handleRefresh}>
-                  <ThemedText style={styles.retryBtnText}>{TEXT.SHARED_RETRY}</ThemedText>
-                </Pressable>
-              </View>
-            ) : (
-              <EmptyState preset="schedule" message={TEXT.CALENDAR_DAY_EMPTY} />
-            )
-          }
-        />
+        <View style={styles.dateHeader}>
+          <ThemedText style={styles.dateHeaderText}>
+            {formatSelectedDate(selectedDate)}
+          </ThemedText>
+        </View>
+
+        {showLoader ? (
+          // A plain spinner, centered in the space below the date header —
+          // this loads only the selected day's events, with the calendar
+          // grid and source picker above still live.
+          <View style={styles.eventsLoading}>
+            <ActivityIndicator color={c.textMuted} />
+          </View>
+        ) : (
+          <FlatList
+            style={styles.eventList}
+            data={selectedEvents}
+            keyExtractor={(item, index) => `${String(item.id || "event")}-${index}`}
+            renderItem={renderEvent}
+            contentContainerStyle={styles.eventListContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={c.primary}
+                colors={[c.primary]}
+              />
+            }
+            ListEmptyComponent={
+              errorMessage ? (
+                <View style={styles.errorBox}>
+                  <ThemedText style={styles.errorTitle}>
+                    {TEXT.SHARED_UNABLE_TO_COMPLETE}
+                  </ThemedText>
+                  <ThemedText style={styles.errorDetail}>{errorMessage}</ThemedText>
+                  <Pressable style={styles.retryBtn} onPress={handleRefresh}>
+                    <ThemedText style={styles.retryBtnText}>{TEXT.SHARED_RETRY}</ThemedText>
+                  </Pressable>
+                </View>
+              ) : (
+                <EmptyState preset="schedule" message={TEXT.CALENDAR_DAY_EMPTY} />
+              )
+            }
+          />
+        )}
       </View>
     </ThemedView>
   );
@@ -623,6 +623,13 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   eventListContent: {
     flexGrow: 1,
     paddingBottom: 24,
+  },
+  // Fills the pane below the date header, centered on both axes — not just
+  // vertically padded like a list header would leave it.
+  eventsLoading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   // ─── Empty / error states ────────────────────────────────────────

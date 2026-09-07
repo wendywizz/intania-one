@@ -724,23 +724,18 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(223,191,189,0.25)',
   },
-  // Slate, deliberately NOT the brand red: MonthCalendar's month header sits a
-  // few points below this one, and two red bands on one screen read as the same
-  // control repeated — the month nav — rather than as two different cards.
+  // Brand red, matching MonthCalendar's own header band below it — the two are
+  // meant to read as one system now, not two different cards.
   //
-  // Deep rather than tinted, though: the status chip beside the date carries a
-  // pale status colour (see DAY_STATUS_STYLE), and every pale band collides with
-  // one of them — #FDECEC "ขาดงาน" with a red tint, #EFF1F5 "วันหยุด" with a grey
-  // one. On a dark band every chip reads.
-  //
-  // A fixed Defo swatch, so it is the same slate in light and dark; the card
-  // surface moves around it and `textOnPrimary` is white in both themes.
+  // `textOnPrimary` (white, fixed in both themes) still carries the date text;
+  // the status chip beside it keeps its own pale fill (see DAY_STATUS_STYLE),
+  // which still reads fine against the darker red.
   detailHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    backgroundColor: c.wetAsphalt,
+    backgroundColor: c.primary,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },

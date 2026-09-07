@@ -769,11 +769,12 @@ export default function HomeScreen() {
         setUnreadCount(0);
       }
 
-      // No per-section spinner here — the whole page stays gated behind the
-      // single full-screen loader below until this settles, then the news
-      // cards just appear already populated. A later refetch (coming back
-      // from another tab) still runs here but the page is already showing,
-      // so it swaps the cards in place instead of blanking anything.
+      // No per-section spinner here — the whole page gates behind the single
+      // full-screen loader below until this settles. Reset on every focus
+      // (not just first mount) so coming back from another screen shows that
+      // loader again rather than leaving the last visit's cards up while this
+      // refetches quietly underneath.
+      setIsNewsReady(false);
       void staffNewsFeed().then((items) => {
         if (!isActive) return;
         setNewsItems(items);
@@ -799,6 +800,11 @@ export default function HomeScreen() {
       // group ready before the real fetch below even starts. Wait it out;
       // this effect re-fires once isAuthLoading flips (it's a dep).
       if (isAuthLoading) return;
+
+      // Reset on every focus, not just first mount — matches isNewsReady
+      // above, so a revisit gates the whole page behind the full-screen
+      // loader again instead of only the upcoming-shift band's own spinner.
+      setIsSummaryReady(false);
 
       const staffId = String(authUser?.staffId ?? '').trim();
       const userId = String(authUser?.userId ?? authUser?.staffId ?? '').trim();
@@ -974,11 +980,12 @@ export default function HomeScreen() {
   // ─── Whole-page loading gate ────────────────────────────────────────────────
   // Nothing on this screen renders piecemeal: auth, the news feed and the
   // shift-tile group (summary + exams + absence/timestamp approvals) all have
-  // to have settled at least once before anything shows. Until then the page
-  // is blank but for the loader — no header, no partially-loaded sections
-  // popping in one at a time. A later refetch (coming back from another tab)
-  // no longer flips isNewsReady/isSummaryReady back to false, so this only
-  // gates the very first load, never a revisit.
+  // to have settled before anything shows. Until then the page is blank but
+  // for the loader — no header, no partially-loaded sections popping in one
+  // at a time. isNewsReady/isSummaryReady are reset to false at the top of
+  // their own useFocusEffect (see above), so returning to this screen from
+  // anywhere re-gates the whole page behind the loader, the same as a first
+  // load — not just the upcoming-shift band's own spinner.
   if (isAuthLoading || !isNewsReady || !isSummaryReady) {
     return (
       <View style={[styles.container, styles.center]}>

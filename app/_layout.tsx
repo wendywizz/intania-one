@@ -12,7 +12,7 @@ import { ColdStartSplash } from '@/components/cold-start-splash';
 import { ConnectionGate } from '@/components/connection-gate';
 import { ToastProvider } from '@/components/toast-provider';
 import { UpdateGate } from '@/components/update-gate';
-import { STACK_SCREEN_OPTIONS } from '@/constants/navigation';
+import { REDIRECT_SCREEN_OPTIONS, STACK_SCREEN_OPTIONS } from '@/constants/navigation';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { useBlurOnNavigate } from '@/hooks/use-blur-on-navigate';
@@ -66,7 +66,13 @@ function AppStack() {
           default. Listing routes one by one meant a new route that forgot its
           entry got the native header *as well as* its NavTopBar — two stacked
           bars. Opting out here makes that impossible. */}
-      <Stack screenOptions={STACK_SCREEN_OPTIONS} />
+      <Stack screenOptions={STACK_SCREEN_OPTIONS}>
+        {/* Auth/session hops the user never asked to "navigate" to — no
+            transition should be visible when they land. */}
+        <Stack.Screen name="login-callback" options={REDIRECT_SCREEN_OPTIONS} />
+        <Stack.Screen name="clear-auth" options={REDIRECT_SCREEN_OPTIONS} />
+        <Stack.Screen name="oauth/callback" options={REDIRECT_SCREEN_OPTIONS} />
+      </Stack>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
     </>
   );
