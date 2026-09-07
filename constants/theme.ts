@@ -67,10 +67,13 @@ export const Fonts = Platform.select({
  * inline colors or `useThemedStyles((c) => StyleSheet.create({…}))` for
  * StyleSheet-based screens.
  *
- * The brand accent is brick-red (#B33939); in dark it is softened (#E07A7A) to
- * keep contrast against dark surfaces. The top nav bar is red in light and
- * becomes a dark elevated surface in dark mode so the whole app reads as a
- * proper dark theme (not just a dark body).
+ * The brand accent is brick-red (#B33939) — the same hex in both themes. A
+ * softened dark-mode tint (#E07A7A) was tried and read as a washed-out
+ * salmon/pink once it was actually on screen against a dark surface, so
+ * `primary` stays the real brand red and only what sits *behind* it (soft
+ * tints, surfaces) adapts. The top nav bar is red in light and becomes a dark
+ * elevated surface in dark mode (its *default* tone, not `tone="primary"`) so
+ * the whole app reads as a proper dark theme, not just a dark body.
  */
 export type AppColors = {
   // Surfaces
@@ -102,10 +105,14 @@ export type AppColors = {
   navBar: string;
   navBarText: string;
   // Status
-  success: string; successSoft: string;
-  warning: string; warningSoft: string;
-  danger: string;  dangerSoft: string;
-  info: string;    infoSoft: string;
+  success: string; successSoft: string; successOnSoft: string;
+  warning: string; warningSoft: string; warningOnSoft: string;
+  danger: string;  dangerSoft: string;  dangerOnSoft: string;
+  info: string;    infoSoft: string;    infoOnSoft: string;
+  // "Leave"/"holiday" state chips (calendar day status, etc.) — not a
+  // success/warning/danger concept, so they get their own soft/text pair.
+  leave: string;   leaveSoft: string;   leaveOnSoft: string;
+  holiday: string; holidaySoft: string; holidayOnSoft: string;
   // Flat UI (Defo) palette — fixed named swatches, identical in light & dark
   turquoise: string;   emerald: string;
   peterRiver: string;  amethyst: string;
@@ -160,10 +167,12 @@ export const LightColors: AppColors = {
   primaryDeep: '#8A2626',
   navBar: '#FFFFFF',
   navBarText: '#141414',
-  success: Defo.emerald,    successSoft: '#E9F9F0',
-  warning: Defo.sunFlower,  warningSoft: '#FEF9E0',
-  danger: Defo.alizarin,    dangerSoft: '#FDECEA',
-  info: Defo.peterRiver,    infoSoft: '#EAF4FB',
+  success: Defo.emerald,    successSoft: '#E9F9F0', successOnSoft: '#065F46',
+  warning: Defo.sunFlower,  warningSoft: '#FEF9E0', warningOnSoft: '#92400E',
+  danger: Defo.alizarin,    dangerSoft: '#FDECEA',  dangerOnSoft: '#991B1B',
+  info: Defo.peterRiver,    infoSoft: '#EAF4FB',    infoOnSoft: '#1D4ED8',
+  leave: '#5B5BD6',   leaveSoft: '#EEF0FF',   leaveOnSoft: '#5B5BD6',
+  holiday: '#9AA0AA', holidaySoft: '#EFF1F5', holidayOnSoft: '#9AA0AA',
   // Flat UI (Defo) palette — fixed named swatches
   ...Defo,
   // Extra named accents
@@ -186,15 +195,20 @@ export const DarkColors: AppColors = {
   border: '#2A333B',
   borderStrong: '#333E47',
   inputBorder: '#5C6772',
-  primary: '#E07A7A',
-  primarySoft: 'rgba(224,122,122,0.18)',
+  // Same red as light mode, not a lightened tint of it — the lightened
+  // version read as a washed-out salmon/pink rather than the brand's actual
+  // red once it was on screen against a dark background.
+  primary: '#B33939',
+  primarySoft: 'rgba(179,57,57,0.22)',
   primaryDeep: '#7A2E2E',
   navBar: '#161C21',
   navBarText: '#F3F4F6',
-  success: Defo.emerald,    successSoft: 'rgba(46,204,113,0.16)',
-  warning: Defo.sunFlower,  warningSoft: 'rgba(241,196,15,0.16)',
-  danger: Defo.alizarin,    dangerSoft: 'rgba(231,76,60,0.16)',
-  info: Defo.peterRiver,    infoSoft: 'rgba(52,152,219,0.16)',
+  success: Defo.emerald,    successSoft: 'rgba(46,204,113,0.16)',  successOnSoft: '#34D399',
+  warning: Defo.sunFlower,  warningSoft: 'rgba(241,196,15,0.16)',  warningOnSoft: '#FBBF6B',
+  danger: Defo.alizarin,    dangerSoft: 'rgba(231,76,60,0.16)',    dangerOnSoft: '#F5726C',
+  info: Defo.peterRiver,    infoSoft: 'rgba(52,152,219,0.16)',     infoOnSoft: '#7DD3FC',
+  leave: '#A8AEF0',   leaveSoft: 'rgba(91,91,214,0.28)',    leaveOnSoft: '#A8AEF0',
+  holiday: '#C7CBD1', holidaySoft: 'rgba(154,160,170,0.22)', holidayOnSoft: '#C7CBD1',
   // Flat UI (Defo) palette — same fixed swatches as light
   ...Defo,
   // Extra named accents

@@ -13,6 +13,7 @@ import { DetailInfoCard } from '@/components/ui/detail-info-card';
 import { UserAvatar } from '@/components/user-avatar';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
+import { getApprovalStatusBadge } from '@/constants/approval-status';
 import { TEXT } from '@/constants/text';
 import {
   TYPE_ABSENCE_BIRTH,
@@ -240,18 +241,19 @@ function getAgentEntries(item: absence): StaffEntry[] {
   return [];
 }
 
-function getStatusBadge(status: string): { bg: string; color: string } {
+// The colour values live on AppColors (constants/theme.ts) — this just maps
+// the label text to the right kind (see constants/approval-status.ts).
+function getStatusBadge(status: string, c: AppColors): { bg: string; color: string } {
   const lower = status.toLowerCase();
-  if (lower.includes('อนุมัติแล้ว') || lower.includes('approved') || lower.includes('completed') || lower.includes('success')) {
-    return { bg: '#D1FAE5', color: '#065F46' };
-  }
-  if (lower.includes('รออนุมัติ') || lower.includes('pending') || lower.includes('waiting') || lower.includes('processing')) {
-    return { bg: '#FEF3C7', color: '#92400E' };
-  }
-  if (lower.includes('ไม่อนุมัติ') || lower.includes('reject') || lower.includes('cancel') || lower.includes('denied')) {
-    return { bg: '#FEE2E2', color: '#991B1B' };
-  }
-  return { bg: '#FDECEC', color: '#B33939' };
+  const kind =
+    lower.includes('อนุมัติแล้ว') || lower.includes('approved') || lower.includes('completed') || lower.includes('success')
+      ? 'approved'
+      : lower.includes('รออนุมัติ') || lower.includes('pending') || lower.includes('waiting') || lower.includes('processing')
+        ? 'pending'
+        : lower.includes('ไม่อนุมัติ') || lower.includes('reject') || lower.includes('cancel') || lower.includes('denied')
+          ? 'rejected'
+          : 'unknown';
+  return getApprovalStatusBadge(kind, c);
 }
 
 // Avatar + name + position row used by both the requester and delegate cards.
@@ -308,7 +310,7 @@ export default function absenceDetailScreen() {
   const statusLabel = statusName || (statusCode && statusCode !== '0' ? statusCode : '');
 
   const isSick = absType === TYPE_ABSENCE_SICK;
-  const statusBadge = statusLabel ? getStatusBadge(statusLabel) : null;
+  const statusBadge = statusLabel ? getStatusBadge(statusLabel, c) : null;
   const attachmentTitle = isSick ? TEXT.ABSENCE_MEDICAL_CERTIFICATE_LABEL : TEXT.ABSENCE_DETAIL_ATTACHMENT_SECTION;
 
   const loadDetail = useCallback(async () => {

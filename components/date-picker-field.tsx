@@ -9,7 +9,7 @@ import { ActivityIndicator,
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { DAY_STATUS_STYLE } from '@/constants/calendar-status';
+import { getDayStatusStyle } from '@/constants/calendar-status';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { TEXT } from '@/constants/text';
@@ -143,6 +143,9 @@ export function DatePickerField({
 }: DatePickerFieldProps) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  // Theme-aware — see constants/calendar-status.ts for why this can no
+  // longer be a flat constant baked into makeStyles.
+  const dayStatusStyle = getDayStatusStyle(c);
   const [isOpen, setIsOpen] = useState(false);
   const [isMonthLoading, setIsMonthLoading] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(value ?? minimumDate ?? new Date());
@@ -222,9 +225,9 @@ export function DatePickerField({
         <View
           style={[
             styles.dayInner,
-            isHighlighted ? styles.highlightedDayButton : undefined,
-            isWeekend ? styles.weekendDayButton : undefined,
-            isHoliday ? styles.holidayDayButton : undefined,
+            isHighlighted ? { backgroundColor: dayStatusStyle.leave.bg } : undefined,
+            isWeekend ? { backgroundColor: dayStatusStyle.holiday.bg } : undefined,
+            isHoliday ? { backgroundColor: dayStatusStyle.holiday.bg } : undefined,
             isSelected ? styles.selectedDayButton : undefined,
             isOutOfRange ? styles.disabledDayButton : undefined,
           ]}>
@@ -254,11 +257,11 @@ export function DatePickerField({
       ) : null}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendSwatch, styles.weekendDayButton]} />
+          <View style={[styles.legendSwatch, { backgroundColor: dayStatusStyle.holiday.bg }]} />
           <ThemedText style={styles.legendText}>{TEXT.DATE_PICKER_LEGEND_WEEKEND}</ThemedText>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendSwatch, styles.holidayDayButton]} />
+          <View style={[styles.legendSwatch, { backgroundColor: dayStatusStyle.holiday.bg }]} />
           <ThemedText style={styles.legendText}>{TEXT.DATE_PICKER_LEGEND_HOLIDAY}</ThemedText>
         </View>
       </View>
@@ -394,18 +397,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   selectedDayButton: {
     backgroundColor: c.belizeHole,
   },
-  // Backgrounds mirror the timestamp calendar (the source of truth): weekends &
-  // public holidays share the "holiday" grey; the requested leave span uses the
-  // "leave" blue. See constants/calendar-status.ts.
-  weekendDayButton: {
-    backgroundColor: DAY_STATUS_STYLE.holiday.bg,
-  },
-  holidayDayButton: {
-    backgroundColor: DAY_STATUS_STYLE.holiday.bg,
-  },
-  highlightedDayButton: {
-    backgroundColor: DAY_STATUS_STYLE.leave.bg,
-  },
+  // Weekend/holiday/highlighted backgrounds are applied inline from
+  // getDayStatusStyle(c) at the call site, not here — makeStyles's own
+  // factory already re-runs off `c` too, but this keeps the day-status
+  // lookup colocated with its one shared definition. See
+  // constants/calendar-status.ts.
   disabledDayButton: {
     opacity: 0.35,
   },

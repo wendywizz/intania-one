@@ -880,6 +880,12 @@ export const TEXT = {
   BOOKING_ROOM_SUBMIT: 'บันทึกการจอง',
   BOOKING_ROOM_SUBMIT_SUCCESS: 'บันทึกการจองเรียบร้อย',
   BOOKING_ROOM_EXTRA_TOGGLE: 'จองรายวิชาอื่นๆ/กิจกรรมนอกตารางเรียน',
+  // The toggle's two states, named as summary-row labels/values rather than
+  // an on/off state — "จองรายวิชาสอน" is what the toggle being *off* means,
+  // and it never had a label of its own before there was a summary step to
+  // state it on.
+  BOOKING_ROOM_BOOKING_TYPE_LABEL: 'ประเภทการจอง',
+  BOOKING_ROOM_SUBJECT_BOOKING_LABEL: 'จองรายวิชาสอน',
   BOOKING_ROOM_SUBJECT_PICK: 'เลือกรายวิชา',
   BOOKING_ROOM_SUBJECT_SEARCH: 'ค้นหารายวิชา',
   BOOKING_ROOM_NO_SUBJECT: 'ไม่พบรายวิชาที่สอนในภาคการศึกษานี้',
@@ -1015,6 +1021,21 @@ export const TEXT = {
   BOOKING_ROOM_STEP_NEED_DATE: 'กรุณาเลือกวันที่ก่อน',
   BOOKING_ROOM_STEP_NEED_START_TIME: 'กรุณาเลือกเวลาเริ่มก่อน',
   BOOKING_ROOM_STEP_NEED_TIME: 'กรุณาเลือกเวลาเริ่มและเวลาสิ้นสุดก่อน',
+
+  // Wizard chrome shared by all three classroom-booking forms (general/term/
+  // period) — same numbered-circle stepper + fixed back/next bar as the
+  // meeting-room form. Step content differs per form; these are just the
+  // stepper's own column labels and each step's "next" button wording.
+  BOOKING_ROOM_WIZARD_STEP_DETAILS: 'รายละเอียด',
+  BOOKING_ROOM_WIZARD_STEP_DATETIME: 'วันและเวลา',
+  BOOKING_ROOM_WIZARD_STEP_RANGE: 'ช่วงวันที่',
+  BOOKING_ROOM_WIZARD_STEP_ROOM: 'ห้องและสรุป',
+  BOOKING_ROOM_WIZARD_STEP_SUMMARY: 'สรุป',
+  BOOKING_ROOM_WIZARD_NEXT_TO_DATETIME: 'ถัดไป: วันและเวลา',
+  BOOKING_ROOM_WIZARD_NEXT_TO_RANGE: 'ถัดไป: ช่วงวันที่',
+  BOOKING_ROOM_WIZARD_NEXT_TO_ROOM: 'ถัดไป: เลือกห้อง',
+  BOOKING_ROOM_WIZARD_NEXT_TO_DAYS: 'ถัดไป: เลือกวัน',
+  BOOKING_ROOM_WIZARD_NEXT_TO_SUMMARY: 'ถัดไป: สรุป',
 
   // --- Meeting Room (module key: meeting-room) ---
   // Lives under the same "จองห้อง" home tile and the same รายการจอง/เสร็จสิ้น

@@ -794,7 +794,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     position: 'absolute', left: 0, right: 0, bottom: 0,
     flexDirection: 'row', gap: 12,
     paddingHorizontal: 20, paddingTop: 16, paddingBottom: 18,
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    backgroundColor: c.surface,
     borderTopWidth: 1, borderTopColor: c.border,
   },
   actionBtn: { minHeight: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 8 },

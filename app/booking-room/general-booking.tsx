@@ -17,6 +17,16 @@
  * The room picker deliberately opens only once a date and both times are set:
  * "which rooms are free" has no answer before then, and the website disables
  * its own picker for the same reason.
+ *
+ * A 3-step wizard, same stepper shape as the meeting-room form
+ * (app/booking-room/meeting-room-form.tsx) — numbered circles + connecting
+ * lines + a fixed back/next bar:
+ *   1. รายละเอียด — the อื่นๆ toggle, subject/extra fields, teacher
+ *   2. วันและเวลา  — date, start/end time, and the room itself, in that order
+ *      (each answer narrows the next, same as before); colour is picked
+ *      automatically rather than asked for at all
+ *   3. สรุป        — a pure read-only recap of everything above, then the
+ *      real "ใส่ตะกร้า" button
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { InfinityLoader } from '@/components/infinity-loader';
@@ -38,6 +48,7 @@ import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button, Toggle } from '@/components/ui';
+import { DetailInfoCard, type DetailRow } from '@/components/ui/detail-info-card';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { SelectSheet, type SelectSheetOption } from '@/components/ui/select-sheet';
 import { AppFonts } from '@/constants/fonts';
@@ -62,12 +73,23 @@ import {
   type TeachingSubject,
 } from '@/services/bookingRoomService';
 
-/** The swatches generalbook.php's colour input is usually left on. */
+/**
+ * generalbook.php's colour input, picked automatically rather than shown to
+ * the person — it exists to tell entries apart on the calendar, not to be a
+ * preference someone has an opinion about, so asking for it is a step with
+ * nothing to decide.
+ */
 const COLORS = ['#8080FF', '#FF8080', '#80C080', '#FFC080', '#C080FF', '#80D0D0'];
+function randomColor() {
+  return COLORS[Math.floor(Math.random() * COLORS.length)];
+}
 
 // Removes the browser focus outline on web so an active input shows only its
 // bottom border — the same line the absence forms use.
 const webNoOutline: any = Platform.OS === 'web' ? { outlineStyle: 'none' } : null;
+
+type FormStep = 'details' | 'datetime' | 'summary';
+const STEP_ORDER: FormStep[] = ['details', 'datetime', 'summary'];
 
 /** The fields that must be answered before the booking can be submitted. */
 type FieldKey =
@@ -99,6 +121,8 @@ export default function GeneralBookingScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  const [step, setStep] = useState<FormStep>('details');
+
   // Form state
   //
   // The toggle starts off, the same state generalbook.php's checkbox loads in
@@ -114,7 +138,7 @@ export default function GeneralBookingScreen() {
   const [date, setDate] = useState<Date | null>(null);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
-  const [color, setColor] = useState(COLORS[0]);
+  const [color, setColor] = useState(randomColor());
   const [room, setRoom] = useState<BookableRoom | null>(null);
 
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -144,7 +168,7 @@ export default function GeneralBookingScreen() {
 
         setOptions(data);
         setTeacher(data.teacher);
-        setColor(data.default_color || COLORS[0]);
+        setColor(data.default_color || randomColor());
       } catch (err) {
         if (!cancelled) {
           setLoadError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_FORM_LOAD_ERROR);
@@ -327,14 +351,8 @@ export default function GeneralBookingScreen() {
     });
   }, []);
 
-  /**
-   * Every unanswered field at once, keyed by field.
-   *
-   * All of them, not the first — being told about one missing answer, fixing
-   * it, and being told about the next is a worse way to fill in a form than
-   * seeing everything that is missing in one pass.
-   */
-  const validate = (): FieldErrors => {
+  /** Step 1's own fields — subject/extra + teacher. */
+  const detailsErrors = useCallback((): FieldErrors => {
     const found: FieldErrors = {};
 
     if (extra) {
@@ -345,6 +363,14 @@ export default function GeneralBookingScreen() {
     }
 
     if (!teacher.trim()) found.teacher = TEXT.BOOKING_ROOM_FIELD_REQUIRED;
+
+    return found;
+  }, [extra, extraSubject, extraObjective, subject, teacher]);
+
+  /** Step 2's own fields — date, time window, and (now that it lives on the
+   *  same step) the room itself. */
+  const datetimeErrors = useCallback((): FieldErrors => {
+    const found: FieldErrors = {};
 
     if (!isoDate) {
       found.date = TEXT.BOOKING_ROOM_FIELD_SELECT_REQUIRED;
@@ -361,7 +387,17 @@ export default function GeneralBookingScreen() {
     if (!room) found.room = TEXT.BOOKING_ROOM_FIELD_SELECT_REQUIRED;
 
     return found;
-  };
+  }, [isoDate, verdict, startTime, endTime, room]);
+
+  /**
+   * Every unanswered field at once, keyed by field — reuses the two step
+   * checks above, so the final submit and the two "next" buttons never
+   * disagree about what counts as answered.
+   */
+  const validate = useCallback(
+    (): FieldErrors => ({ ...detailsErrors(), ...datetimeErrors() }),
+    [detailsErrors, datetimeErrors],
+  );
 
   /**
    * Whether a booking is possible at all yet — not whether the form is
@@ -371,13 +407,36 @@ export default function GeneralBookingScreen() {
    * subjects to pick, and showMe() enables it the moment the "อื่นๆ" toggle is
    * ticked. The same rule stated once: something has to say what is being
    * booked, and until the toggle is on that something can only be a subject
-   * from the list.
-   *
-   * Everything else the form needs — date, times, room — is checked on submit
-   * and reported per field, because those are omissions to fix rather than a
-   * reason the screen cannot be used.
+   * from the list. It gates step 1's own "next" button — the moment that is
+   * true, everything past it is an ordinary field to fill in and check.
    */
   const canSubmit = extra || subject !== null;
+
+  const goNext = useCallback(() => {
+    if (step === 'details') {
+      const found = detailsErrors();
+      setErrors(found);
+      if (Object.keys(found).length > 0 || !canSubmit) return;
+    }
+    if (step === 'datetime') {
+      const found = datetimeErrors();
+      setErrors(found);
+      if (Object.keys(found).length > 0) return;
+    }
+
+    setErrors({});
+    const index = STEP_ORDER.indexOf(step);
+    if (index < STEP_ORDER.length - 1) setStep(STEP_ORDER[index + 1]);
+  }, [step, detailsErrors, datetimeErrors, canSubmit]);
+
+  const goBack = useCallback(() => {
+    const index = STEP_ORDER.indexOf(step);
+    if (index === 0) {
+      router.replace('/booking-room/select-booking');
+      return;
+    }
+    setStep(STEP_ORDER[index - 1]);
+  }, [step]);
 
   /**
    * The submit button: check, then put it in the cart.
@@ -492,278 +551,344 @@ export default function GeneralBookingScreen() {
 
   const noSubjects = options.subjects.length === 0;
 
+  const renderDetailsStep = () => (
+    <>
+      <SectionCard>
+        <View style={styles.field}>
+          <View style={styles.toggleRow}>
+            <ThemedText style={[styles.fieldLabel, styles.toggleLabel]}>
+              {TEXT.BOOKING_ROOM_EXTRA_TOGGLE}
+            </ThemedText>
+            {/* Never disabled, even with no subjects to pick — starting off,
+                that is precisely when someone needs to turn it on. */}
+            <Toggle
+              value={extra}
+              onValueChange={(next) => {
+                setExtra(next);
+                setErrors({});
+              }}
+            />
+          </View>
+
+          {noSubjects ? (
+            <View style={styles.hintRow}>
+              <IconSymbol name="info.circle.fill" size={14} color={c.danger} />
+              <ThemedText style={[styles.fieldError, styles.hintText]}>
+                {TEXT.BOOKING_ROOM_NO_SUBJECT}
+              </ThemedText>
+            </View>
+          ) : null}
+        </View>
+      </SectionCard>
+
+      <SectionCard>
+        {extra ? (
+          <>
+            <FormTextField
+              label={TEXT.BOOKING_ROOM_EXTRA_SUBJECT_LABEL}
+              required
+              value={extraSubject}
+              onChangeText={(next) => {
+                setExtraSubject(next);
+                clearError('extraSubject');
+              }}
+              placeholder={TEXT.BOOKING_ROOM_EXTRA_SUBJECT_LABEL}
+              error={errors.extraSubject}
+              styles={styles}
+              color={c}
+            />
+            <FormTextField
+              label={TEXT.BOOKING_ROOM_EXTRA_SECTION_LABEL}
+              value={extraSection}
+              onChangeText={setExtraSection}
+              maxLength={2}
+              placeholder="-"
+              styles={styles}
+              color={c}
+            />
+            <FormTextField
+              label={TEXT.BOOKING_ROOM_EXTRA_OBJECTIVE_LABEL}
+              required
+              value={extraObjective}
+              onChangeText={(next) => {
+                setExtraObjective(next);
+                clearError('extraObjective');
+              }}
+              placeholder={TEXT.BOOKING_ROOM_EXTRA_OBJECTIVE_LABEL}
+              error={errors.extraObjective}
+              styles={styles}
+              color={c}
+            />
+          </>
+        ) : (
+          <PickerField
+            label={TEXT.BOOKING_ROOM_SUBJECT_PICK}
+            required
+            value={subjectLabel}
+            placeholder={TEXT.BOOKING_ROOM_SUBJECT_PICK}
+            onPress={() => setPicker('subject')}
+            error={errors.subject}
+            styles={styles}
+            color={c}
+          />
+        )}
+
+        <FormTextField
+          label={TEXT.BOOKING_ROOM_TEACHER_LABEL}
+          required
+          value={teacher}
+          onChangeText={(next) => {
+            setTeacher(next);
+            clearError('teacher');
+          }}
+          placeholder={TEXT.BOOKING_ROOM_TEACHER_LABEL}
+          error={errors.teacher}
+          styles={styles}
+          color={c}
+        />
+      </SectionCard>
+
+      {/* Same disabled-button explanation generalbook.php prints beside its
+          own disabled submit — now beside the step that is actually blocked. */}
+      {!canSubmit ? (
+        <ThemedText style={styles.blockedHint}>
+          {noSubjects ? TEXT.BOOKING_ROOM_BLOCKED_NO_SUBJECT : TEXT.BOOKING_ROOM_BLOCKED_PICK_SUBJECT}
+        </ThemedText>
+      ) : null}
+    </>
+  );
+
+  const renderDatetimeStep = () => (
+    <>
+      <SectionCard>
+        <View style={styles.field}>
+          <FieldLabel label={TEXT.BOOKING_ROOM_STEP_1_TITLE} required styles={styles} />
+          {/* The row is what DatePickerField expects around it — its own
+              container is flex:1, sized by a row the way the absence form
+              sizes its start/end pair. */}
+          <View style={styles.dateRow}>
+            <DatePickerField
+              label={TEXT.BOOKING_ROOM_DATE_LABEL}
+              hideLabel
+              value={date}
+              onChange={(next) => {
+                setDate(next);
+                clearError('date');
+              }}
+              minimumDate={new Date()}
+              // The building is open at the weekend and so is the booking
+              // system — a Sunday needs two days' notice, a Saturday one,
+              // and the server says so per date via `check-date`.
+              allowWeekends
+              hasError={Boolean(dateError)}
+            />
+          </View>
+
+          {dateError ? (
+            <ThemedText style={styles.fieldError}>{dateError}</ThemedText>
+          ) : verdict?.holiday_name ? (
+            <ThemedText style={styles.hint}>{verdict.holiday_name}</ThemedText>
+          ) : null}
+        </View>
+      </SectionCard>
+
+      <SectionCard>
+        <FieldLabel label={TEXT.BOOKING_ROOM_STEP_2_TITLE} required styles={styles} />
+        {/* The start/end pair is drawn the way the absence forms draw their
+            start/end dates: two triggers side by side under the one group
+            heading, each led by its icon, with the placeholder — not a label
+            above it — saying which end of the range it is. */}
+        <View style={styles.timeRow}>
+          <View style={styles.timeCol}>
+            <PickerField
+              value={startTime}
+              placeholder={TEXT.BOOKING_ROOM_PICK_START_TIME}
+              icon="clock.fill"
+              onPress={() => openStep('start')}
+              locked={Boolean(startBlocked)}
+              hasError={Boolean(timeError)}
+              styles={styles}
+              color={c}
+            />
+          </View>
+          <View style={styles.timeCol}>
+            <PickerField
+              value={endTime}
+              placeholder={TEXT.BOOKING_ROOM_PICK_END_TIME}
+              icon="clock.fill"
+              onPress={() => openStep('end')}
+              locked={Boolean(endBlocked)}
+              hasError={Boolean(timeError)}
+              styles={styles}
+              color={c}
+            />
+          </View>
+        </View>
+
+        {timeError ? (
+          <ThemedText style={styles.fieldError}>{timeError}</ThemedText>
+        ) : startBlocked ? (
+          <StepWarning message={startBlocked} styles={styles} color={c} />
+        ) : null}
+      </SectionCard>
+
+      <SectionCard>
+        <PickerField
+          label={TEXT.BOOKING_ROOM_STEP_3_TITLE}
+          required
+          value={room?.name ?? ''}
+          placeholder={TEXT.BOOKING_ROOM_ROOM_PLACEHOLDER}
+          onPress={() => openStep('room')}
+          locked={Boolean(roomBlocked)}
+          hasError={Boolean(errors.room)}
+          styles={styles}
+          color={c}
+        />
+
+        {errors.room ? (
+          <ThemedText style={styles.fieldError}>{errors.room}</ThemedText>
+        ) : roomBlocked ? (
+          <StepWarning message={roomBlocked} styles={styles} color={c} />
+        ) : room ? (
+          <RoomSummary room={room} styles={styles} color={c} />
+        ) : null}
+      </SectionCard>
+    </>
+  );
+
+  const summaryRows: DetailRow[] = [
+    {
+      label: TEXT.BOOKING_ROOM_BOOKING_TYPE_LABEL,
+      value: extra ? TEXT.BOOKING_ROOM_EXTRA_TOGGLE : TEXT.BOOKING_ROOM_SUBJECT_BOOKING_LABEL,
+    },
+    {
+      label: extra ? TEXT.BOOKING_ROOM_EXTRA_SUBJECT_LABEL : TEXT.BOOKING_ROOM_SUBJECT_LABEL,
+      value: extra ? extraSubject.trim() : subjectLabel,
+    },
+    // Only for an activity, not a taught subject — subjectLabel already
+    // carries the subject's own name, so a second "what is this" line would
+    // repeat it for the ordinary case.
+    ...(extra && extraObjective.trim()
+      ? [{ label: TEXT.BOOKING_ROOM_EXTRA_OBJECTIVE_LABEL, value: extraObjective.trim() }]
+      : []),
+    { label: TEXT.BOOKING_ROOM_TEACHER_LABEL, value: teacher },
+    {
+      label: TEXT.BOOKING_ROOM_STEP_1_TITLE,
+      value: isoDate ? `${formatFullDate(isoDate)} ${startTime}-${endTime}` : '',
+    },
+  ];
+
+  const renderSummaryStep = () => (
+    <>
+      <DetailInfoCard title={TEXT.BOOKING_ROOM_WIZARD_STEP_SUMMARY} rows={summaryRows} />
+
+      {/* The room, spelled out — the flat "A303" a DetailRow would show says
+          nothing about what it seats or comes with, and that is exactly what
+          the room step's own picker already showed before this recap. */}
+      <SectionCard title={TEXT.BOOKING_ROOM_STEP_3_TITLE}>
+        {room ? (
+          <>
+            <View style={styles.summaryRoomRow}>
+              <IconSymbol name="door.open" size={14} color={c.textMuted} />
+              <ThemedText style={styles.hint}>{room.name}</ThemedText>
+            </View>
+            <RoomSummary room={room} styles={styles} color={c} />
+          </>
+        ) : null}
+      </SectionCard>
+
+      {error ? (
+        <View style={styles.errorBox}>
+          <IconSymbol name="exclamationmark.triangle.fill" size={16} color={c.danger} />
+          <ThemedText style={styles.errorText}>{error}</ThemedText>
+        </View>
+      ) : null}
+    </>
+  );
+
+  const stepLabels: Record<FormStep, string> = {
+    details: TEXT.BOOKING_ROOM_WIZARD_STEP_DETAILS,
+    datetime: TEXT.BOOKING_ROOM_WIZARD_STEP_DATETIME,
+    summary: TEXT.BOOKING_ROOM_WIZARD_STEP_SUMMARY,
+  };
+
+  const nextLabel: Record<Exclude<FormStep, 'summary'>, string> = {
+    details: TEXT.BOOKING_ROOM_WIZARD_NEXT_TO_DATETIME,
+    datetime: TEXT.BOOKING_ROOM_WIZARD_NEXT_TO_SUMMARY,
+  };
+
+  const stepIndex = STEP_ORDER.indexOf(step);
+  const isLastStep = step === 'summary';
+
   return (
     <ThemedView style={styles.container}>
       <Header />
 
+      {/* Step progress — numbered circles (check when done) + connectors,
+          the same shape the meeting-room form's wizard uses. */}
+      <View style={[styles.stepperWrap, { paddingHorizontal: gutter }]}>
+        <View style={styles.stepper}>
+          {STEP_ORDER.map((s, i) => {
+            const isDone = i < stepIndex;
+            const isActive = i === stepIndex;
+            return (
+              <View key={s} style={styles.stepCol}>
+                <View style={styles.stepCircleRow}>
+                  <View
+                    style={[
+                      styles.stepLine,
+                      i <= stepIndex ? styles.stepLineOn : styles.stepLineOff,
+                      i === 0 && styles.stepLineHidden,
+                    ]}
+                  />
+                  <View style={[styles.stepDot, (isDone || isActive) && styles.stepDotOn]}>
+                    {isDone ? (
+                      <IconSymbol name="checkmark" size={13} color={c.textOnPrimary} />
+                    ) : (
+                      <ThemedText style={[styles.stepDotNum, isActive && styles.stepDotNumOn]}>
+                        {i + 1}
+                      </ThemedText>
+                    )}
+                  </View>
+                  <View
+                    style={[
+                      styles.stepLine,
+                      i < stepIndex ? styles.stepLineOn : styles.stepLineOff,
+                      i === STEP_ORDER.length - 1 && styles.stepLineHidden,
+                    ]}
+                  />
+                </View>
+                <ThemedText
+                  style={[styles.stepColLabel, isActive && styles.stepColLabelActive]}
+                  numberOfLines={1}>
+                  {stepLabels[s]}
+                </ThemedText>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+
       <ScrollView
+        style={styles.scrollFlex}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: gutter }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        <SectionCard>
-          <View style={styles.field}>
-            <View style={styles.toggleRow}>
-              <ThemedText style={[styles.fieldLabel, styles.toggleLabel]}>
-                {TEXT.BOOKING_ROOM_EXTRA_TOGGLE}
-              </ThemedText>
-              {/* Never disabled, even with no subjects to pick — starting off,
-                  that is precisely when someone needs to turn it on. */}
-              <Toggle
-                value={extra}
-                onValueChange={(next) => {
-                  setExtra(next);
-                  setErrors({});
-                }}
-              />
-            </View>
-
-            {noSubjects ? (
-              <View style={styles.notice}>
-                <IconSymbol name="info.circle.fill" size={16} color={c.warning} />
-                <View style={styles.noticeText}>
-                  <ThemedText style={styles.noticeTitle}>
-                    {TEXT.BOOKING_ROOM_NO_SUBJECT}
-                  </ThemedText>
-                  <ThemedText style={styles.noticeBody}>
-                    {TEXT.BOOKING_ROOM_NO_SUBJECT_HINT}
-                  </ThemedText>
-                </View>
-              </View>
-            ) : null}
-          </View>
-        </SectionCard>
-
-        <SectionCard>
-          {extra ? (
-            <>
-              <FormTextField
-                label={TEXT.BOOKING_ROOM_EXTRA_SUBJECT_LABEL}
-                required
-                value={extraSubject}
-                onChangeText={(next) => {
-                  setExtraSubject(next);
-                  clearError('extraSubject');
-                }}
-                placeholder={TEXT.BOOKING_ROOM_EXTRA_SUBJECT_LABEL}
-                error={errors.extraSubject}
-                styles={styles}
-                color={c}
-              />
-              <FormTextField
-                label={TEXT.BOOKING_ROOM_EXTRA_SECTION_LABEL}
-                value={extraSection}
-                onChangeText={setExtraSection}
-                maxLength={2}
-                placeholder="-"
-                styles={styles}
-                color={c}
-              />
-              <FormTextField
-                label={TEXT.BOOKING_ROOM_EXTRA_OBJECTIVE_LABEL}
-                required
-                value={extraObjective}
-                onChangeText={(next) => {
-                  setExtraObjective(next);
-                  clearError('extraObjective');
-                }}
-                placeholder={TEXT.BOOKING_ROOM_EXTRA_OBJECTIVE_LABEL}
-                error={errors.extraObjective}
-                styles={styles}
-                color={c}
-              />
-            </>
-          ) : (
-            <PickerField
-              label={TEXT.BOOKING_ROOM_SUBJECT_PICK}
-              required
-              value={subjectLabel}
-              placeholder={TEXT.BOOKING_ROOM_SUBJECT_PICK}
-              onPress={() => setPicker('subject')}
-              error={errors.subject}
-              styles={styles}
-              color={c}
-            />
-          )}
-
-          <FormTextField
-            label={TEXT.BOOKING_ROOM_TEACHER_LABEL}
-            required
-            value={teacher}
-            onChangeText={(next) => {
-              setTeacher(next);
-              clearError('teacher');
-            }}
-            placeholder={TEXT.BOOKING_ROOM_TEACHER_LABEL}
-            error={errors.teacher}
-            styles={styles}
-            color={c}
-          />
-        </SectionCard>
-
-        {/* The three ordered steps. Each is its own card so the sequence is
-            visible before anything is tapped, rather than only being enforced
-            once someone taps out of turn.
-
-            Their headings are FieldLabels inside the card rather than the
-            card's own `title`, which takes a plain string and so cannot carry
-            a red asterisk. */}
-        <SectionCard>
-          <View style={styles.field}>
-            <FieldLabel label={TEXT.BOOKING_ROOM_STEP_1_TITLE} required styles={styles} />
-            {/* The row is what DatePickerField expects around it — its own
-                container is flex:1, sized by a row the way the absence form
-                sizes its start/end pair. */}
-            <View style={styles.dateRow}>
-              <DatePickerField
-                label={TEXT.BOOKING_ROOM_DATE_LABEL}
-                hideLabel
-                value={date}
-                onChange={(next) => {
-                  setDate(next);
-                  clearError('date');
-                }}
-                minimumDate={new Date()}
-                // The building is open at the weekend and so is the booking
-                // system — a Sunday needs two days' notice, a Saturday one,
-                // and the server says so per date via `check-date`.
-                allowWeekends
-                hasError={Boolean(dateError)}
-              />
-            </View>
-
-            {dateError ? (
-              <ThemedText style={styles.fieldError}>{dateError}</ThemedText>
-            ) : verdict?.holiday_name ? (
-              <ThemedText style={styles.hint}>{verdict.holiday_name}</ThemedText>
-            ) : null}
-          </View>
-        </SectionCard>
-
-        <SectionCard>
-          <FieldLabel label={TEXT.BOOKING_ROOM_STEP_2_TITLE} required styles={styles} />
-          {/* The start/end pair is drawn the way the absence forms draw their
-              start/end dates: two triggers side by side under the one group
-              heading, each led by its icon, with the placeholder — not a label
-              above it — saying which end of the range it is. */}
-          <View style={styles.timeRow}>
-            <View style={styles.timeCol}>
-              <PickerField
-                value={startTime}
-                placeholder={TEXT.BOOKING_ROOM_PICK_START_TIME}
-                icon="clock.fill"
-                onPress={() => openStep('start')}
-                locked={Boolean(startBlocked)}
-                hasError={Boolean(timeError)}
-                styles={styles}
-                color={c}
-              />
-            </View>
-            <View style={styles.timeCol}>
-              <PickerField
-                value={endTime}
-                placeholder={TEXT.BOOKING_ROOM_PICK_END_TIME}
-                icon="clock.fill"
-                onPress={() => openStep('end')}
-                locked={Boolean(endBlocked)}
-                hasError={Boolean(timeError)}
-                styles={styles}
-                color={c}
-              />
-            </View>
-          </View>
-
-          {timeError ? (
-            <ThemedText style={styles.fieldError}>{timeError}</ThemedText>
-          ) : startBlocked ? (
-            <StepWarning message={startBlocked} styles={styles} color={c} />
-          ) : null}
-        </SectionCard>
-
-        <SectionCard>
-          <PickerField
-            label={TEXT.BOOKING_ROOM_STEP_3_TITLE}
-            required
-            value={room?.name ?? ''}
-            placeholder={TEXT.BOOKING_ROOM_ROOM_PLACEHOLDER}
-            onPress={() => openStep('room')}
-            locked={Boolean(roomBlocked)}
-            hasError={Boolean(errors.room)}
-            styles={styles}
-            color={c}
-          />
-
-          {errors.room ? (
-            <ThemedText style={styles.fieldError}>{errors.room}</ThemedText>
-          ) : roomBlocked ? (
-            <StepWarning message={roomBlocked} styles={styles} color={c} />
-          ) : room ? (
-            <RoomSummary room={room} styles={styles} color={c} />
-          ) : null}
-        </SectionCard>
-
-        <SectionCard>
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>{TEXT.BOOKING_ROOM_COLOR_LABEL}</ThemedText>
-            <View style={styles.swatchRow}>
-              {COLORS.map((swatch) => (
-                <Pressable
-                  key={swatch}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: color === swatch }}
-                  onPress={() => setColor(swatch)}
-                  style={[
-                    styles.swatch,
-                    { backgroundColor: swatch },
-                    color === swatch && styles.swatchActive,
-                  ]}>
-                  {color === swatch ? (
-                    <IconSymbol name="checkmark" size={14} color="#FFFFFF" />
-                  ) : null}
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        </SectionCard>
-
-        {/* Clears the floating bar so the last card can still be scrolled out
-            from under it. */}
-        <View style={styles.bottomSpacer} />
+        {step === 'details' ? renderDetailsStep() : null}
+        {step === 'datetime' ? renderDatetimeStep() : null}
+        {step === 'summary' ? renderSummaryStep() : null}
       </ScrollView>
 
-      {/* The submit bar is pinned rather than scrolled to, like every absence
-          form: on a form this long the action would otherwise be several
-          flicks away from wherever the person is looking. */}
       <View style={[styles.bottomBar, { paddingHorizontal: gutter }]}>
-        {/* The reason a submit failed belongs next to the button that failed —
-            up in the scroll it can be off-screen at the moment it appears. */}
-        {error ? (
-          <View style={styles.errorBox}>
-            <IconSymbol name="exclamationmark.triangle.fill" size={16} color={c.danger} />
-            <ThemedText style={styles.errorText}>{error}</ThemedText>
-          </View>
-        ) : null}
-
-        {/* A disabled button with no explanation is a dead end. This says what
-            to do about it — the red "ไม่สามารถจองห้องได้" the web form prints
-            beside its own disabled submit, turned into an instruction. */}
-        {!canSubmit ? (
-          <ThemedText style={styles.blockedHint}>
-            {noSubjects
-              ? TEXT.BOOKING_ROOM_BLOCKED_NO_SUBJECT
-              : TEXT.BOOKING_ROOM_BLOCKED_PICK_SUBJECT}
-          </ThemedText>
-        ) : null}
-
+        <Button title={TEXT.SHARED_BACK_THAI} variant="secondary" onPress={goBack} />
         <Button
           // "ใส่ตะกร้า", not "บันทึกการจอง": the tap does not book the room,
-          // and a button that overstates what it does is the one way this flow
-          // can mislead somebody into losing a room they thought they had.
-          title={TEXT.BOOKING_ROOM_CART_ADD_ACTION}
-          onPress={requestSubmit}
-          loading={submitting}
-          disabled={!canSubmit}
-          size="lg"
-          fullWidth
+          // and a button that overstates what it does is the one way this
+          // flow can mislead somebody into losing a room they thought they had.
+          title={isLastStep ? TEXT.BOOKING_ROOM_CART_ADD_ACTION : nextLabel[step]}
+          onPress={isLastStep ? requestSubmit : goNext}
+          loading={isLastStep && submitting}
+          style={styles.ctaButton}
         />
       </View>
 
@@ -1105,7 +1230,10 @@ function PickerField({
 const makeStyles = (c: AppColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: c.background },
-    scroll: { paddingTop: 16, paddingBottom: 40, gap: 14 },
+    // The ScrollView itself needs flex:1 (not just its content) so it fills
+    // the space between the stepper and the fixed bottom bar.
+    scrollFlex: { flex: 1 },
+    scroll: { paddingTop: 16, paddingBottom: 32, gap: 14 },
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
     // --- The absence forms' field shape -------------------------------------
@@ -1177,16 +1305,14 @@ const makeStyles = (c: AppColors) =>
     timeRow: { flexDirection: 'row', gap: 12 },
     timeCol: { flex: 1 },
 
-    notice: {
-      flexDirection: 'row',
-      gap: 10,
-      padding: 12,
-      borderRadius: 12,
-      backgroundColor: c.warningSoft,
-    },
-    noticeText: { flex: 1, gap: 2 },
-    noticeTitle: { fontSize: 13, color: c.text, fontFamily: AppFonts.psuBold },
-    noticeBody: { fontSize: 12, color: c.textMuted },
+    // Plain icon + text, no box — the "no subjects" notice used to be a
+    // coloured card; a fact about the term's data isn't a warning that needs
+    // to be shouted, so this reads the same weight as any other field hint.
+    // Centered, not flex-start: with the hint down to a single line now, the
+    // icon has one line's worth of text to align with, not a two-line block
+    // whose top edge it used to match.
+    hintRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+    hintText: { flex: 1 },
 
     equipmentRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     equipmentCapacity: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -1197,34 +1323,47 @@ const makeStyles = (c: AppColors) =>
     roomFacts: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14 },
     roomFact: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     roomFactText: { fontSize: 13, lineHeight: 18, color: c.textMuted },
+    summaryRoomRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
 
-    swatchRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
-    swatch: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+    // ── Stepper (mirrors meeting-room-form.tsx) ─────────────────────────────
+    stepperWrap: {
+      paddingTop: 12,
+      paddingBottom: 4,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    stepper: { flexDirection: 'row' },
+    stepCol: { flex: 1, alignItems: 'center', gap: 6 },
+    stepCircleRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' },
+    stepLine: { flex: 1, height: 2 },
+    stepLineOn: { backgroundColor: c.primary },
+    stepLineOff: { backgroundColor: c.surfaceMuted },
+    stepLineHidden: { backgroundColor: 'transparent' },
+    stepDot: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: c.surfaceMuted,
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.border,
     },
-    swatchActive: { borderWidth: 2, borderColor: c.text },
+    stepDotOn: { backgroundColor: c.primary },
+    stepDotNum: { fontSize: 11, fontFamily: AppFonts.psuBold, color: c.textMuted },
+    stepDotNumOn: { color: c.textOnPrimary },
+    stepColLabel: { fontSize: 10, lineHeight: 14, color: c.textMuted, textAlign: 'center' },
+    stepColLabelActive: { color: c.primary, fontFamily: AppFonts.psuBold },
 
-    // Same pinned action bar the absence forms use — surface plate, hairline
-    // top rule, generous bottom padding for the home indicator.
-    bottomSpacer: { height: 100 },
+    // ── Fixed bottom bar ─────────────────────────────────────────────────────
     bottomBar: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
+      flexDirection: 'row',
       gap: 10,
       paddingTop: 12,
-      paddingBottom: 28,
+      paddingBottom: 16,
       backgroundColor: c.surface,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: c.border,
     },
+    ctaButton: { flex: 1 },
 
     errorBox: {
       flexDirection: 'row',

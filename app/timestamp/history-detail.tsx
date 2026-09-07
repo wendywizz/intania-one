@@ -1,6 +1,7 @@
 import { useLocalSearchParams, type Href } from "expo-router";
 import { useMemo } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
+import { getApprovalStatusBadge } from '@/constants/approval-status';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { ScreenHeader } from "@/components/screen-header";
@@ -55,10 +56,12 @@ function getStampTypeLabel(stampType: string) {
   return stampType || TEXT.TIMESTAMP_FORGOT_TAB;
 }
 
-function getStatusBadge(status: string): { bg: string; color: string } {
-  if (status === "1") return { bg: "#D1FAE5", color: "#065F46" };
-  if (status === "2") return { bg: "#FEE2E2", color: "#991B1B" };
-  return { bg: "#FEF3C7", color: "#92400E" };
+// The colour values live on AppColors (constants/theme.ts) — this just maps
+// the status code to the right kind, same as every other "pending/approved/
+// rejected" badge in the app (see constants/approval-status.ts).
+function getStatusBadge(status: string, c: AppColors): { bg: string; color: string } {
+  const kind = status === "1" ? "approved" : status === "2" ? "rejected" : "pending";
+  return getApprovalStatusBadge(kind, c);
 }
 
 function PersonRow({
@@ -129,7 +132,7 @@ export default function TimestampHistoryDetailScreen() {
       : statusCode === "2"
         ? TEXT.TIMESTAMP_APPROVE_STATUS_REJECTED
         : TEXT.TIMESTAMP_APPROVE_STATUS_PENDING;
-  const statusBadge = getStatusBadge(statusCode);
+  const statusBadge = getStatusBadge(statusCode, c);
 
   const stampDate = getText(item, ["stampDate", "stamp_date", "workDate", "work_date"]);
   const stampDateLabel = stampDate ? formatFullDate(stampDate) : "";

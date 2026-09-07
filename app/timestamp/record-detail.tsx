@@ -2,6 +2,7 @@ import { useFocusEffect, useLocalSearchParams, type Href } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { getApprovalStatusBadge } from '@/constants/approval-status';
 
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
@@ -42,10 +43,11 @@ function formatTime(value?: string | null) {
   return match ? `${match[1].padStart(2, "0")}:${match[2]}` : "";
 }
 
-function getStatusBadge(status: string): { bg: string; color: string } {
-  if (status === "1") return { bg: "#D1FAE5", color: "#065F46" };
-  if (status === "2") return { bg: "#FEE2E2", color: "#991B1B" };
-  return { bg: "#FEF3C7", color: "#92400E" };
+// The colour values live on AppColors (constants/theme.ts) — this just maps
+// the status code to the right kind (see constants/approval-status.ts).
+function getStatusBadge(status: string, c: AppColors): { bg: string; color: string } {
+  const kind = status === "1" ? "approved" : status === "2" ? "rejected" : "pending";
+  return getApprovalStatusBadge(kind, c);
 }
 
 function PersonRow({
@@ -119,7 +121,7 @@ export default function TimestampRecordDetailScreen() {
       : statusCode === "2"
         ? TEXT.TIMESTAMP_APPROVE_STATUS_REJECTED
         : TEXT.TIMESTAMP_APPROVE_STATUS_PENDING);
-  const statusBadge = getStatusBadge(statusCode);
+  const statusBadge = getStatusBadge(statusCode, c);
 
   const stampDate = detail?.stampDate ? formatFullDate(String(detail.stampDate)) : "";
   const writeDate = detail?.writeDate ? formatFullDate(String(detail.writeDate)) : "";

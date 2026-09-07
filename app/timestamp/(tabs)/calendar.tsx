@@ -12,7 +12,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MonthCalendar } from '@/components/ui';
-import { DAY_STATUS_STYLE, type DayStatus } from '@/constants/calendar-status';
+import { getDayStatusStyle, type DayStatus } from '@/constants/calendar-status';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { USER_ID } from '@/constants/user';
@@ -25,9 +25,6 @@ import {
 import { boxShadow } from '@/constants/shadows';
 
 moment.locale('th');
-
-// Day-status colours are shared app-wide (this calendar is the source of truth).
-const STATUS_STYLE = DAY_STATUS_STYLE;
 
 // Late arrival (ABSENCE.timestamp.flag_in = 2) is orthogonal to day status — a
 // present day can still be flagged late — so it gets its own amber marker.
@@ -160,6 +157,9 @@ function buildCells(
 export default function TimestampCalendarScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  // Theme-aware — see constants/calendar-status.ts for why this can no
+  // longer be a flat module-level constant.
+  const STATUS_STYLE = useMemo(() => getDayStatusStyle(c), [c]);
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
   const today = useMemo(() => moment(), []);

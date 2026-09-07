@@ -46,7 +46,7 @@ import { SelectSheet } from '@/components/ui/select-sheet';
 import { AppFonts } from '@/constants/fonts';
 import { boxShadow } from '@/constants/shadows';
 import { TEXT } from '@/constants/text';
-import { LightColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import {
   getRoomWeekSchedule,
@@ -455,7 +455,7 @@ export default function BookingRoomScheduleScreen() {
             numberOfLines={1}>
             {roomLabel(schedule?.room) ?? TEXT.BOOKING_ROOM_SCHEDULE_PICK_ROOM}
           </ThemedText>
-          <IconSymbol name="chevron.down" size={24} color={LightColors.primary} />
+          <IconSymbol name="chevron.down" size={24} color={c.primary} />
         </Pressable>
 
         <View style={styles.weekNav}>
@@ -463,7 +463,7 @@ export default function BookingRoomScheduleScreen() {
             style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}
             onPress={() => setAnchorDate((d) => shiftDays(d, -7))}
             accessibilityLabel={TEXT.BOOKING_ROOM_SCHEDULE_PREV_WEEK}>
-            <IconSymbol name="chevron.left" size={18} color={LightColors.primary} />
+            <IconSymbol name="chevron.left" size={18} color={c.primary} />
           </Pressable>
 
           <View style={styles.weekLabelWrap}>
@@ -485,7 +485,7 @@ export default function BookingRoomScheduleScreen() {
               onChange={(date) => setAnchorDate(toISODate(date))}
               buttonStyle={styles.weekField}
               textStyle={styles.weekFieldText}
-              iconColor={LightColors.textMuted}
+              iconColor={c.textMuted}
               iconSize={19}
             />
           </View>
@@ -494,7 +494,7 @@ export default function BookingRoomScheduleScreen() {
             style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}
             onPress={() => setAnchorDate((d) => shiftDays(d, 7))}
             accessibilityLabel={TEXT.BOOKING_ROOM_SCHEDULE_NEXT_WEEK}>
-            <IconSymbol name="chevron.right" size={18} color={LightColors.primary} />
+            <IconSymbol name="chevron.right" size={18} color={c.primary} />
           </Pressable>
         </View>
       </View>
@@ -548,7 +548,7 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
       minHeight: 50,
       paddingVertical: 12,
       paddingHorizontal: 16,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: c.surface,
       borderRadius: 14,
       boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.14 }),
     },
@@ -556,16 +556,16 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
       flex: 1,
       fontSize: 15,
       lineHeight: 20,
-      color: LightColors.text,
+      color: c.text,
       fontFamily: AppFonts.psuBold,
     },
-    roomPlaceholder: { color: LightColors.textMuted, fontFamily: AppFonts.psuRegular },
+    roomPlaceholder: { color: c.textMuted, fontFamily: AppFonts.psuRegular },
 
     weekNav: {
       flexDirection: 'row',
       alignItems: 'stretch',
       minHeight: 44,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: c.surface,
       borderRadius: 999,
       overflow: 'hidden',
       boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.14 }),
@@ -575,7 +575,7 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    navButtonPressed: { backgroundColor: LightColors.primarySoft },
+    navButtonPressed: { backgroundColor: c.primarySoft },
     weekLabelWrap: {
       flex: 1,
       alignItems: 'stretch',
@@ -583,7 +583,7 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
       paddingHorizontal: 8,
       borderLeftWidth: StyleSheet.hairlineWidth,
       borderRightWidth: StyleSheet.hairlineWidth,
-      borderColor: LightColors.border,
+      borderColor: c.border,
     },
     weekField: {
       borderBottomWidth: 0,
@@ -598,7 +598,7 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
       textAlign: 'center',
       fontSize: 15,
       lineHeight: 19,
-      color: LightColors.text,
+      color: c.text,
       fontFamily: AppFonts.psuBold,
     },
 

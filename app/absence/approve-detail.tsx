@@ -11,7 +11,8 @@ import { DetailInfoCard } from "@/components/ui/detail-info-card";
 import { UserAvatar } from "@/components/user-avatar";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
-import { type AppColors, useScreenGutter, useThemedStyles } from "@/constants/theme";
+import { type AppColors, useColors, useScreenGutter, useThemedStyles } from "@/constants/theme";
+import { getApprovalStatusBadge } from "@/constants/approval-status";
 import {
   TYPE_ABSENCE_BIRTH,
   TYPE_ABSENCE_BUSINESS,
@@ -146,12 +147,19 @@ function getAgentEntries(item: absence): StaffEntry[] {
   return [];
 }
 
-function getStatusBadge(status: string): { bg: string; color: string } {
+// The colour values live on AppColors (constants/theme.ts) — this just maps
+// the label text to the right kind (see constants/approval-status.ts).
+function getStatusBadge(status: string, c: AppColors): { bg: string; color: string } {
   const lower = status.toLowerCase();
-  if (lower.includes("อนุมัติแล้ว") || lower.includes("approved")) return { bg: "#D1FAE5", color: "#065F46" };
-  if (lower.includes("รออนุมัติ") || lower.includes("pending") || lower.includes("waiting")) return { bg: "#FEF3C7", color: "#92400E" };
-  if (lower.includes("ไม่อนุมัติ") || lower.includes("reject")) return { bg: "#FEE2E2", color: "#991B1B" };
-  return { bg: "#FDECEC", color: "#B33939" };
+  const kind =
+    lower.includes("อนุมัติแล้ว") || lower.includes("approved")
+      ? "approved"
+      : lower.includes("รออนุมัติ") || lower.includes("pending") || lower.includes("waiting")
+        ? "pending"
+        : lower.includes("ไม่อนุมัติ") || lower.includes("reject")
+          ? "rejected"
+          : "unknown";
+  return getApprovalStatusBadge(kind, c);
 }
 
 // Avatar + name + position row — same look as the requester/delegate cards on
@@ -170,6 +178,7 @@ function PersonRow({ name, position, staffId }: StaffEntry) {
 }
 
 export default function ApproveDetailScreen() {
+  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
   const params = useLocalSearchParams<{ item?: string }>();
@@ -223,7 +232,7 @@ export default function ApproveDetailScreen() {
   const statusName = getText(item, ["statusName", "status_name"]);
   const statusCode = getText(item, ["status"]);
   const statusLabel = statusName || (statusCode && statusCode !== "0" ? statusCode : TEXT.ABSENCE_PENDING_BADGE);
-  const statusBadge = getStatusBadge(statusLabel);
+  const statusBadge = getStatusBadge(statusLabel, c);
 
   const goToDecision = (status: "1" | "2") => {
     navPush({

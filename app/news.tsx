@@ -43,13 +43,18 @@ function NewsListItem({ item, onPress }: NewsListItemProps) {
   const styles = useThemedStyles(makeStyles);
   const date = item.pubDate ? formatNewsDateTime(item.pubDate) : '';
 
+  // Two sibling Pressables, not the PillButton nested inside the card's own
+  // Pressable — a Pressable with accessibilityRole="button" renders as a real
+  // HTML <button> on web, and a <button> can never contain another <button>.
+  // Both trigger the same onPress; the pill is just a second, more visible
+  // way to reach it, not a different action.
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={() => onPress(item)}
-      style={({ pressed }) => (pressed ? styles.cardPressed : undefined)}
-    >
-      <View style={styles.newsCard}>
+    <View style={styles.newsCard}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => onPress(item)}
+        style={({ pressed }) => [styles.newsCardBody, pressed && styles.cardPressed]}
+      >
         {item.category ? (
           <ThemedText style={styles.categoryTag}>
             {item.category.toUpperCase()}
@@ -64,15 +69,15 @@ function NewsListItem({ item, onPress }: NewsListItemProps) {
             <ThemedText style={styles.dateText}>{date}</ThemedText>
           </View>
         ) : null}
-        <PillButton
-          style={styles.readMoreButton}
-          label={TEXT.NEWS_READ_MORE}
-          onPress={() => onPress(item)}
-          variant="soft"
-          trailing={<ArrowRight size={14} color={c.primary} />}
-        />
-      </View>
-    </Pressable>
+      </Pressable>
+      <PillButton
+        style={styles.readMoreButton}
+        label={TEXT.NEWS_READ_MORE}
+        onPress={() => onPress(item)}
+        variant="soft"
+        trailing={<ArrowRight size={14} color={c.primary} />}
+      />
+    </View>
   );
 }
 
@@ -240,6 +245,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   cardPressed: {
     opacity: 0.75,
+  },
+  // The tappable region inside the card, excluding the "อ่านเพิ่มเติม" pill —
+  // needs its own gap now that it (not the card) is what stacks the
+  // category/title/date rows.
+  newsCardBody: {
+    gap: 10,
   },
   categoryTag: {
     fontSize: 12,

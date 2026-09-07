@@ -102,10 +102,16 @@ const DARK: M = {
   textFaint: '#6E675B',
   border: '#2C2925',
   icon: '#E6E1D8',
-  accent: '#E07A7A',
-  accentSoft: 'rgba(224, 122, 122, 0.30)',
-  accentText: '#0B1220',
-  notify: '#E4726D',
+  // Same red as light mode, not a lightened tint of it — the lightened
+  // version read as a washed-out salmon/pink against the dark background,
+  // and accentText was paired to *that* (dark navy, for a light pink fill) —
+  // now that the fill is a proper dark red again, its text goes back to
+  // white, same as light mode.
+  accent: '#B33939',
+  accentSoft: 'rgba(179, 57, 57, 0.30)',
+  accentText: '#FFFFFF',
+  // Same red as light mode — same reasoning as accent above.
+  notify: '#C0392B',
   shadow: '#000000',
   onCanvas: '#F2EFEA',
   onCanvasMuted: '#A39C90',

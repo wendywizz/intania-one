@@ -21,6 +21,13 @@
  * As with จองทั่วไป, the web form's submit only fills a $_SESSION cart; this
  * posts once and the booking exists. Every rule is enforced again on the
  * server; the copies here exist only to explain them early.
+ *
+ * A 3-step wizard, same stepper shape as the meeting-room form
+ * (app/booking-room/meeting-room-form.tsx):
+ *   1. รายละเอียด — the term banner, the อื่นๆ toggle, subject/extra, teacher
+ *   2. เลือกวัน   — the seven weekday cards, each expanding into its own
+ *      time+room pickers once ticked
+ *   3. สีและสรุป  — colour, then the real "ใส่ตะกร้า" button
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { InfinityLoader } from '@/components/infinity-loader';
@@ -41,6 +48,7 @@ import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button, Toggle } from '@/components/ui';
+import { DetailInfoCard, type DetailRow } from '@/components/ui/detail-info-card';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { SelectSheet, type SelectSheetOption } from '@/components/ui/select-sheet';
 import { AppFonts } from '@/constants/fonts';
@@ -65,8 +73,14 @@ import {
 
 /** The swatches termbook.php's colour input is usually left on. */
 const COLORS = ['#8080FF', '#FF8080', '#80C080', '#FFC080', '#C080FF', '#80D0D0'];
+function randomColor() {
+  return COLORS[Math.floor(Math.random() * COLORS.length)];
+}
 
 const webNoOutline: any = Platform.OS === 'web' ? { outlineStyle: 'none' } : null;
+
+type FormStep = 'details' | 'days' | 'summary';
+const STEP_ORDER: FormStep[] = ['details', 'days', 'summary'];
 
 /** What one ticked weekday holds while the form is being filled in. */
 type DayDraft = {
@@ -107,13 +121,15 @@ export default function TermBookingScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  const [step, setStep] = useState<FormStep>('details');
+
   const [extra, setExtra] = useState(false);
   const [subject, setSubject] = useState<TeachingSubject | null>(null);
   const [extraSubject, setExtraSubject] = useState('');
   const [extraSection, setExtraSection] = useState('');
   const [extraObjective, setExtraObjective] = useState('');
   const [teacher, setTeacher] = useState('');
-  const [color, setColor] = useState(COLORS[0]);
+  const [color, setColor] = useState(randomColor());
 
   /** Keyed by the server's day name — 'Monday' … 'Sunday'. */
   const [drafts, setDrafts] = useState<Record<string, DayDraft>>({});
@@ -150,7 +166,7 @@ export default function TermBookingScreen() {
 
         setOptions(data);
         setTeacher(data.teacher);
-        setColor(data.default_color || COLORS[0]);
+        setColor(data.default_color || randomColor());
         setDrafts(
           Object.fromEntries(data.days.map((d) => [d.day, { ...EMPTY_DAY }])),
         );
@@ -315,7 +331,8 @@ export default function TermBookingScreen() {
     [activeDays, drafts],
   );
 
-  const validate = (): FieldErrors => {
+  /** Step 1's own fields — subject/extra + teacher. */
+  const detailsErrors = useCallback((): FieldErrors => {
     const found: FieldErrors = {};
 
     if (extra) {
@@ -326,6 +343,13 @@ export default function TermBookingScreen() {
     }
 
     if (!teacher.trim()) found.teacher = TEXT.BOOKING_ROOM_FIELD_REQUIRED;
+
+    return found;
+  }, [extra, extraSubject, extraObjective, subject, teacher]);
+
+  /** Step 2's own field — at least one complete weekday. */
+  const daysErrors = useCallback((): FieldErrors => {
+    const found: FieldErrors = {};
 
     if (activeDays.length === 0) {
       found.days = TEXT.BOOKING_ROOM_TERM_NO_DAY;
@@ -346,23 +370,50 @@ export default function TermBookingScreen() {
     }
 
     return found;
-  };
+  }, [activeDays, drafts]);
+
+  const validate = useCallback(
+    (): FieldErrors => ({ ...detailsErrors(), ...daysErrors() }),
+    [detailsErrors, daysErrors],
+  );
 
   /**
    * Whether a booking is possible at all yet — not whether the form is
    * complete.
    *
    * termbook.php ships its submit button disabled when the person has no
-   * subjects to pick, and showMe() enables it the moment the "อื่นๆ" toggle is
-   * ticked. The same rule stated once: something has to say what is being
-   * booked, and until the toggle is on that something can only be a subject
-   * from the list.
-   *
-   * Everything else the form needs — days, times, rooms — is checked on submit
-   * and reported per field, because those are omissions to fix rather than a
-   * reason the screen cannot be used.
+   * subjects to pick, and showMe() re-enables its submit button the moment the
+   * "อื่นๆ" toggle is ticked. The same rule stated once, gating step 1's own
+   * "next" button: something has to say what is being booked, and until the
+   * toggle is on that something can only be a subject from the list.
    */
   const canSubmit = extra || subject !== null;
+
+  const goNext = useCallback(() => {
+    if (step === 'details') {
+      const found = detailsErrors();
+      setErrors(found);
+      if (Object.keys(found).length > 0 || !canSubmit) return;
+    }
+    if (step === 'days') {
+      const found = daysErrors();
+      setErrors(found);
+      if (Object.keys(found).length > 0) return;
+    }
+
+    setErrors({});
+    const index = STEP_ORDER.indexOf(step);
+    if (index < STEP_ORDER.length - 1) setStep(STEP_ORDER[index + 1]);
+  }, [step, detailsErrors, daysErrors, canSubmit]);
+
+  const goBack = useCallback(() => {
+    const index = STEP_ORDER.indexOf(step);
+    if (index === 0) {
+      router.replace('/booking-room/select-booking');
+      return;
+    }
+    setStep(STEP_ORDER[index - 1]);
+  }, [step]);
 
   const requestSubmit = () => {
     const found = validate();
@@ -465,302 +516,381 @@ export default function TermBookingScreen() {
   const noSubjects = options.subjects.length === 0;
   const hasPastWeeks = options.days.some((d) => d.past_count > 0);
 
+  const renderDetailsStep = () => (
+    <>
+      {/* The card's own identity is the toggle — its label is the header
+          title, the switch itself sits in the header's trailing slot — since
+          that is the one real decision this card makes. The term is not
+          chosen (the website posts whichever term is flagged default, so it
+          is stated, not offered) and is context for that decision rather
+          than a field of its own, so it has no heading — just the first
+          thing in the card's body. */}
+      <SectionCard
+        title={TEXT.BOOKING_ROOM_EXTRA_TOGGLE}
+        trailing={
+          // Never disabled, even with no subjects to pick — that is
+          // precisely when someone needs to turn it on. termbook.php's
+          // showMe() re-enables its submit button the moment this is
+          // ticked, for the same reason.
+          <Toggle
+            value={extra}
+            onValueChange={(next) => {
+              setExtra(next);
+              setErrors({});
+            }}
+          />
+        }>
+        <View style={styles.termRow}>
+          <IconSymbol name="calendar-range" size={18} color={c.primary} />
+          <View style={styles.termText}>
+            <ThemedText style={styles.termValue}>
+              {fill(TEXT.BOOKING_ROOM_TERM_VALUE, options.term)}
+            </ThemedText>
+            <ThemedText style={styles.hint}>
+              {fill(TEXT.BOOKING_ROOM_TERM_RANGE, {
+                start: formatFullDate(options.term.startdate),
+                end: formatFullDate(options.term.enddate),
+              })}
+            </ThemedText>
+          </View>
+        </View>
+
+        {hasPastWeeks ? (
+          <View style={styles.hintRow}>
+            <IconSymbol name="info.circle.fill" size={14} color={c.textMuted} />
+            <ThemedText style={[styles.hint, styles.hintText]}>
+              {TEXT.BOOKING_ROOM_TERM_PAST_WARNING}
+            </ThemedText>
+          </View>
+        ) : null}
+
+        {noSubjects ? (
+          <View style={styles.hintRow}>
+            <IconSymbol name="info.circle.fill" size={14} color={c.danger} />
+            <ThemedText style={[styles.fieldError, styles.hintText]}>
+              {TEXT.BOOKING_ROOM_NO_SUBJECT}
+            </ThemedText>
+          </View>
+        ) : null}
+      </SectionCard>
+
+      <SectionCard>
+        {extra ? (
+          <>
+            <FormTextField
+              label={TEXT.BOOKING_ROOM_EXTRA_SUBJECT_LABEL}
+              required
+              value={extraSubject}
+              onChangeText={(next) => {
+                setExtraSubject(next);
+                clearError('extraSubject');
+              }}
+              placeholder={TEXT.BOOKING_ROOM_EXTRA_SUBJECT_LABEL}
+              error={errors.extraSubject}
+              styles={styles}
+              color={c}
+            />
+            <FormTextField
+              label={TEXT.BOOKING_ROOM_EXTRA_SECTION_LABEL}
+              value={extraSection}
+              onChangeText={setExtraSection}
+              maxLength={2}
+              placeholder="-"
+              styles={styles}
+              color={c}
+            />
+            <FormTextField
+              label={TEXT.BOOKING_ROOM_EXTRA_OBJECTIVE_LABEL}
+              required
+              value={extraObjective}
+              onChangeText={(next) => {
+                setExtraObjective(next);
+                clearError('extraObjective');
+              }}
+              placeholder={TEXT.BOOKING_ROOM_EXTRA_OBJECTIVE_LABEL}
+              error={errors.extraObjective}
+              styles={styles}
+              color={c}
+            />
+          </>
+        ) : (
+          <PickerField
+            label={TEXT.BOOKING_ROOM_SUBJECT_PICK}
+            required
+            value={subjectLabel}
+            placeholder={TEXT.BOOKING_ROOM_SUBJECT_PICK}
+            onPress={() => setPicker({ kind: 'subject' })}
+            error={errors.subject}
+            styles={styles}
+            color={c}
+          />
+        )}
+
+        <FormTextField
+          label={TEXT.BOOKING_ROOM_TEACHER_LABEL}
+          required
+          value={teacher}
+          onChangeText={(next) => {
+            setTeacher(next);
+            clearError('teacher');
+          }}
+          placeholder={TEXT.BOOKING_ROOM_TEACHER_LABEL}
+          error={errors.teacher}
+          styles={styles}
+          color={c}
+        />
+      </SectionCard>
+
+      {!canSubmit ? (
+        <ThemedText style={styles.blockedHint}>
+          {noSubjects ? TEXT.BOOKING_ROOM_BLOCKED_NO_SUBJECT : TEXT.BOOKING_ROOM_BLOCKED_PICK_SUBJECT}
+        </ThemedText>
+      ) : null}
+    </>
+  );
+
+  const renderDaysStep = () => (
+    <SectionCard>
+      <FieldLabel label={TEXT.BOOKING_ROOM_TERM_STEP_DAYS} required styles={styles} />
+
+      {options.days.map((info) => {
+        const draft = drafts[info.day] ?? EMPTY_DAY;
+
+        return (
+          <View key={info.day} style={[styles.dayCard, draft.on && styles.dayCardOn]}>
+            <Pressable
+              accessibilityRole="switch"
+              accessibilityState={{ checked: draft.on }}
+              onPress={() => {
+                // Turning a day off drops what was chosen for it. Keeping
+                // it would let a stale room be re-submitted after the
+                // times that made it free had changed.
+                patchDay(info.day, draft.on ? { ...EMPTY_DAY } : { on: true });
+                clearError('days');
+              }}
+              style={styles.dayHead}>
+              <View style={[styles.checkbox, draft.on && styles.checkboxOn]}>
+                {draft.on ? <IconSymbol name="checkmark" size={13} color="#FFFFFF" /> : null}
+              </View>
+              <ThemedText style={[styles.dayName, draft.on && styles.dayNameOn]}>
+                {info.label}
+              </ThemedText>
+              <ThemedText style={styles.dayCount}>
+                {fill(TEXT.BOOKING_ROOM_TERM_DAY_COUNT, { count: info.date_count })}
+              </ThemedText>
+            </Pressable>
+
+            {draft.on ? (
+              <View style={styles.dayBody}>
+                <View style={styles.timeRow}>
+                  <View style={styles.timeCol}>
+                    <PickerField
+                      value={draft.startTime}
+                      placeholder={TEXT.BOOKING_ROOM_PICK_START_TIME}
+                      icon="clock.fill"
+                      onPress={() => void openDayPicker('start', info.day)}
+                      hasError={badTimes(draft)}
+                      styles={styles}
+                      color={c}
+                    />
+                  </View>
+                  <View style={styles.timeCol}>
+                    <PickerField
+                      value={draft.endTime}
+                      placeholder={TEXT.BOOKING_ROOM_PICK_END_TIME}
+                      icon="clock.fill"
+                      onPress={() => void openDayPicker('end', info.day)}
+                      locked={!draft.startTime}
+                      hasError={badTimes(draft)}
+                      styles={styles}
+                      color={c}
+                    />
+                  </View>
+                </View>
+
+                {badTimes(draft) ? (
+                  <ThemedText style={styles.fieldError}>{TEXT.BOOKING_ROOM_TIME_ORDER_ERROR}</ThemedText>
+                ) : null}
+
+                <PickerField
+                  value={draft.room?.name ?? ''}
+                  placeholder={TEXT.BOOKING_ROOM_ROOM_PLACEHOLDER}
+                  onPress={() => void openDayPicker('room', info.day)}
+                  locked={!draft.startTime || !draft.endTime || badTimes(draft)}
+                  styles={styles}
+                  color={c}
+                />
+
+                {draft.room ? <RoomSummary room={draft.room} styles={styles} color={c} /> : null}
+
+                {info.past_count > 0 ? (
+                  <ThemedText style={styles.hint}>
+                    {fill(TEXT.BOOKING_ROOM_TERM_PAST_NOTE, { count: info.past_count })}
+                  </ThemedText>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+        );
+      })}
+
+      {errors.days ? (
+        <ThemedText style={styles.fieldError}>{errors.days}</ThemedText>
+      ) : totalSlots > 0 ? (
+        <View style={styles.totalRow}>
+          <IconSymbol name="calendar" size={16} color={c.primary} />
+          <ThemedText style={styles.totalText}>
+            {fill(TEXT.BOOKING_ROOM_TERM_TOTAL, { count: totalSlots })}
+          </ThemedText>
+        </View>
+      ) : null}
+    </SectionCard>
+  );
+
+  const summaryRows: DetailRow[] = [
+    {
+      label: TEXT.BOOKING_ROOM_BOOKING_TYPE_LABEL,
+      value: extra ? TEXT.BOOKING_ROOM_EXTRA_TOGGLE : TEXT.BOOKING_ROOM_SUBJECT_BOOKING_LABEL,
+    },
+    {
+      label: extra ? TEXT.BOOKING_ROOM_EXTRA_SUBJECT_LABEL : TEXT.BOOKING_ROOM_SUBJECT_LABEL,
+      value: extra ? extraSubject.trim() : subjectLabel,
+    },
+    // Only for an activity, not a taught subject — subjectLabel already
+    // carries the subject's own name, so a second "what is this" line would
+    // repeat it for the ordinary case.
+    ...(extra && extraObjective.trim()
+      ? [{ label: TEXT.BOOKING_ROOM_EXTRA_OBJECTIVE_LABEL, value: extraObjective.trim() }]
+      : []),
+    { label: TEXT.BOOKING_ROOM_TEACHER_LABEL, value: teacher },
+  ];
+
+  const renderSummaryStep = () => (
+    <>
+      <DetailInfoCard title={TEXT.BOOKING_ROOM_WIZARD_STEP_SUMMARY} rows={summaryRows} />
+
+      {/* Every ticked weekday, with the room it was actually given and that
+          room's own facts — the flat cartWhen sentence only ever said "which
+          day, what hours, how many weeks"; the room and what it comes with
+          were left for the cart screen to reveal, which is one tap too late
+          to catch a wrong pick. */}
+      <SectionCard title={TEXT.BOOKING_ROOM_TERM_STEP_DAYS}>
+        {activeDays.map((info, index) => {
+          const draft = drafts[info.day];
+          if (!draft) return null;
+
+          return (
+            <View
+              key={info.day}
+              style={[styles.summaryDayRow, index === activeDays.length - 1 && styles.summaryDayRowLast]}>
+              <View style={styles.summaryDayHead}>
+                <ThemedText style={styles.summaryDayName}>{info.label}</ThemedText>
+                <ThemedText style={styles.summaryDayTime}>
+                  {draft.startTime}-{draft.endTime} ·{' '}
+                  {fill(TEXT.BOOKING_ROOM_TERM_DAY_COUNT, { count: info.date_count })}
+                </ThemedText>
+              </View>
+              {draft.room ? (
+                <>
+                  <View style={styles.summaryDayRoomRow}>
+                    <IconSymbol name="door.open" size={14} color={c.textMuted} />
+                    <ThemedText style={styles.hint}>{draft.room.name}</ThemedText>
+                  </View>
+                  <RoomSummary room={draft.room} styles={styles} color={c} />
+                </>
+              ) : null}
+            </View>
+          );
+        })}
+      </SectionCard>
+
+      {error ? (
+        <View style={styles.errorBox}>
+          <IconSymbol name="exclamationmark.triangle.fill" size={16} color={c.danger} />
+          <ThemedText style={styles.errorText}>{error}</ThemedText>
+        </View>
+      ) : null}
+    </>
+  );
+
+  const stepLabels: Record<FormStep, string> = {
+    details: TEXT.BOOKING_ROOM_WIZARD_STEP_DETAILS,
+    days: TEXT.BOOKING_ROOM_TERM_STEP_DAYS,
+    summary: TEXT.BOOKING_ROOM_WIZARD_STEP_SUMMARY,
+  };
+
+  const nextLabel: Record<Exclude<FormStep, 'summary'>, string> = {
+    details: TEXT.BOOKING_ROOM_WIZARD_NEXT_TO_DAYS,
+    days: TEXT.BOOKING_ROOM_WIZARD_NEXT_TO_SUMMARY,
+  };
+
+  const stepIndex = STEP_ORDER.indexOf(step);
+  const isLastStep = step === 'summary';
+
   return (
     <ThemedView style={styles.container}>
       <Header />
 
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: gutter }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        {/* The term is not chosen — the website posts whichever term is flagged
-            default — so it is stated, not offered. */}
-        <SectionCard>
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>{TEXT.BOOKING_ROOM_TERM_LABEL}</ThemedText>
-            <View style={styles.termRow}>
-              <IconSymbol name="calendar-range" size={18} color={c.primary} />
-              <View style={styles.termText}>
-                <ThemedText style={styles.termValue}>
-                  {fill(TEXT.BOOKING_ROOM_TERM_VALUE, options.term)}
-                </ThemedText>
-                <ThemedText style={styles.hint}>
-                  {fill(TEXT.BOOKING_ROOM_TERM_RANGE, {
-                    start: formatFullDate(options.term.startdate),
-                    end: formatFullDate(options.term.enddate),
-                  })}
-                </ThemedText>
-              </View>
-            </View>
-
-            {hasPastWeeks ? (
-              <View style={styles.notice}>
-                <IconSymbol name="info.circle.fill" size={16} color={c.warning} />
-                <ThemedText style={styles.noticeBody}>
-                  {TEXT.BOOKING_ROOM_TERM_PAST_WARNING}
-                </ThemedText>
-              </View>
-            ) : null}
-          </View>
-        </SectionCard>
-
-        <SectionCard>
-          <View style={styles.field}>
-            <View style={styles.toggleRow}>
-              <ThemedText style={[styles.fieldLabel, styles.toggleLabel]}>
-                {TEXT.BOOKING_ROOM_EXTRA_TOGGLE}
-              </ThemedText>
-              {/* Never disabled, even with no subjects to pick — that is
-                  precisely when someone needs to turn it on. termbook.php's
-                  showMe() re-enables its submit button the moment this is
-                  ticked, for the same reason. */}
-              <Toggle
-                value={extra}
-                onValueChange={(next) => {
-                  setExtra(next);
-                  setErrors({});
-                }}
-              />
-            </View>
-
-            {noSubjects ? (
-              <View style={styles.notice}>
-                <IconSymbol name="info.circle.fill" size={16} color={c.warning} />
-                <View style={styles.noticeText}>
-                  <ThemedText style={styles.noticeTitle}>
-                    {TEXT.BOOKING_ROOM_NO_SUBJECT}
-                  </ThemedText>
-                  <ThemedText style={styles.noticeBody}>
-                    {TEXT.BOOKING_ROOM_NO_SUBJECT_HINT}
-                  </ThemedText>
-                </View>
-              </View>
-            ) : null}
-          </View>
-        </SectionCard>
-
-        <SectionCard>
-          {extra ? (
-            <>
-              <FormTextField
-                label={TEXT.BOOKING_ROOM_EXTRA_SUBJECT_LABEL}
-                required
-                value={extraSubject}
-                onChangeText={(next) => {
-                  setExtraSubject(next);
-                  clearError('extraSubject');
-                }}
-                placeholder={TEXT.BOOKING_ROOM_EXTRA_SUBJECT_LABEL}
-                error={errors.extraSubject}
-                styles={styles}
-                color={c}
-              />
-              <FormTextField
-                label={TEXT.BOOKING_ROOM_EXTRA_SECTION_LABEL}
-                value={extraSection}
-                onChangeText={setExtraSection}
-                maxLength={2}
-                placeholder="-"
-                styles={styles}
-                color={c}
-              />
-              <FormTextField
-                label={TEXT.BOOKING_ROOM_EXTRA_OBJECTIVE_LABEL}
-                required
-                value={extraObjective}
-                onChangeText={(next) => {
-                  setExtraObjective(next);
-                  clearError('extraObjective');
-                }}
-                placeholder={TEXT.BOOKING_ROOM_EXTRA_OBJECTIVE_LABEL}
-                error={errors.extraObjective}
-                styles={styles}
-                color={c}
-              />
-            </>
-          ) : (
-            <PickerField
-              label={TEXT.BOOKING_ROOM_SUBJECT_PICK}
-              required
-              value={subjectLabel}
-              placeholder={TEXT.BOOKING_ROOM_SUBJECT_PICK}
-              onPress={() => setPicker({ kind: 'subject' })}
-              error={errors.subject}
-              styles={styles}
-              color={c}
-            />
-          )}
-
-          <FormTextField
-            label={TEXT.BOOKING_ROOM_TEACHER_LABEL}
-            required
-            value={teacher}
-            onChangeText={(next) => {
-              setTeacher(next);
-              clearError('teacher');
-            }}
-            placeholder={TEXT.BOOKING_ROOM_TEACHER_LABEL}
-            error={errors.teacher}
-            styles={styles}
-            color={c}
-          />
-        </SectionCard>
-
-        {/* The seven rows of the web form. Each expands only once ticked: an
-            untouched Sunday is one line, not a set of empty controls. */}
-        <SectionCard>
-          <FieldLabel label={TEXT.BOOKING_ROOM_TERM_STEP_DAYS} required styles={styles} />
-
-          {options.days.map((info) => {
-            const draft = drafts[info.day] ?? EMPTY_DAY;
-
+      <View style={[styles.stepperWrap, { paddingHorizontal: gutter }]}>
+        <View style={styles.stepper}>
+          {STEP_ORDER.map((s, i) => {
+            const isDone = i < stepIndex;
+            const isActive = i === stepIndex;
             return (
-              <View key={info.day} style={[styles.dayCard, draft.on && styles.dayCardOn]}>
-                <Pressable
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: draft.on }}
-                  onPress={() => {
-                    // Turning a day off drops what was chosen for it. Keeping
-                    // it would let a stale room be re-submitted after the
-                    // times that made it free had changed.
-                    patchDay(info.day, draft.on ? { ...EMPTY_DAY } : { on: true });
-                    clearError('days');
-                  }}
-                  style={styles.dayHead}>
-                  <View style={[styles.checkbox, draft.on && styles.checkboxOn]}>
-                    {draft.on ? <IconSymbol name="checkmark" size={13} color="#FFFFFF" /> : null}
-                  </View>
-                  <ThemedText style={[styles.dayName, draft.on && styles.dayNameOn]}>
-                    {info.label}
-                  </ThemedText>
-                  <ThemedText style={styles.dayCount}>
-                    {fill(TEXT.BOOKING_ROOM_TERM_DAY_COUNT, { count: info.date_count })}
-                  </ThemedText>
-                </Pressable>
-
-                {draft.on ? (
-                  <View style={styles.dayBody}>
-                    <View style={styles.timeRow}>
-                      <View style={styles.timeCol}>
-                        <PickerField
-                          value={draft.startTime}
-                          placeholder={TEXT.BOOKING_ROOM_PICK_START_TIME}
-                          icon="clock.fill"
-                          onPress={() => void openDayPicker('start', info.day)}
-                          hasError={badTimes(draft)}
-                          styles={styles}
-                          color={c}
-                        />
-                      </View>
-                      <View style={styles.timeCol}>
-                        <PickerField
-                          value={draft.endTime}
-                          placeholder={TEXT.BOOKING_ROOM_PICK_END_TIME}
-                          icon="clock.fill"
-                          onPress={() => void openDayPicker('end', info.day)}
-                          locked={!draft.startTime}
-                          hasError={badTimes(draft)}
-                          styles={styles}
-                          color={c}
-                        />
-                      </View>
-                    </View>
-
-                    {badTimes(draft) ? (
-                      <ThemedText style={styles.fieldError}>
-                        {TEXT.BOOKING_ROOM_TIME_ORDER_ERROR}
+              <View key={s} style={styles.stepCol}>
+                <View style={styles.stepCircleRow}>
+                  <View
+                    style={[
+                      styles.stepLine,
+                      i <= stepIndex ? styles.stepLineOn : styles.stepLineOff,
+                      i === 0 && styles.stepLineHidden,
+                    ]}
+                  />
+                  <View style={[styles.stepDot, (isDone || isActive) && styles.stepDotOn]}>
+                    {isDone ? (
+                      <IconSymbol name="checkmark" size={13} color={c.textOnPrimary} />
+                    ) : (
+                      <ThemedText style={[styles.stepDotNum, isActive && styles.stepDotNumOn]}>
+                        {i + 1}
                       </ThemedText>
-                    ) : null}
-
-                    <PickerField
-                      value={draft.room?.name ?? ''}
-                      placeholder={TEXT.BOOKING_ROOM_ROOM_PLACEHOLDER}
-                      onPress={() => void openDayPicker('room', info.day)}
-                      locked={!draft.startTime || !draft.endTime || badTimes(draft)}
-                      styles={styles}
-                      color={c}
-                    />
-
-                    {draft.room ? (
-                      <RoomSummary room={draft.room} styles={styles} color={c} />
-                    ) : null}
-
-                    {info.past_count > 0 ? (
-                      <ThemedText style={styles.hint}>
-                        {fill(TEXT.BOOKING_ROOM_TERM_PAST_NOTE, { count: info.past_count })}
-                      </ThemedText>
-                    ) : null}
+                    )}
                   </View>
-                ) : null}
+                  <View
+                    style={[
+                      styles.stepLine,
+                      i < stepIndex ? styles.stepLineOn : styles.stepLineOff,
+                      i === STEP_ORDER.length - 1 && styles.stepLineHidden,
+                    ]}
+                  />
+                </View>
+                <ThemedText
+                  style={[styles.stepColLabel, isActive && styles.stepColLabelActive]}
+                  numberOfLines={1}>
+                  {stepLabels[s]}
+                </ThemedText>
               </View>
             );
           })}
+        </View>
+      </View>
 
-          {errors.days ? (
-            <ThemedText style={styles.fieldError}>{errors.days}</ThemedText>
-          ) : totalSlots > 0 ? (
-            <View style={styles.totalRow}>
-              <IconSymbol name="calendar" size={16} color={c.primary} />
-              <ThemedText style={styles.totalText}>
-                {fill(TEXT.BOOKING_ROOM_TERM_TOTAL, { count: totalSlots })}
-              </ThemedText>
-            </View>
-          ) : null}
-        </SectionCard>
-
-        <SectionCard>
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>{TEXT.BOOKING_ROOM_COLOR_LABEL}</ThemedText>
-            <View style={styles.swatchRow}>
-              {COLORS.map((swatch) => (
-                <Pressable
-                  key={swatch}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: color === swatch }}
-                  onPress={() => setColor(swatch)}
-                  style={[
-                    styles.swatch,
-                    { backgroundColor: swatch },
-                    color === swatch && styles.swatchActive,
-                  ]}>
-                  {color === swatch ? (
-                    <IconSymbol name="checkmark" size={14} color="#FFFFFF" />
-                  ) : null}
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        </SectionCard>
-
-        <View style={styles.bottomSpacer} />
+      <ScrollView
+        style={styles.scrollFlex}
+        contentContainerStyle={[styles.scroll, { paddingHorizontal: gutter }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        {step === 'details' ? renderDetailsStep() : null}
+        {step === 'days' ? renderDaysStep() : null}
+        {step === 'summary' ? renderSummaryStep() : null}
       </ScrollView>
 
       <View style={[styles.bottomBar, { paddingHorizontal: gutter }]}>
-        {error ? (
-          <View style={styles.errorBox}>
-            <IconSymbol name="exclamationmark.triangle.fill" size={16} color={c.danger} />
-            <ThemedText style={styles.errorText}>{error}</ThemedText>
-          </View>
-        ) : null}
-
-        {/* A disabled button with no explanation is a dead end. This says what
-            to do about it — the red "ไม่สามารถจองห้องได้" the web form prints
-            beside its own disabled submit, turned into an instruction. */}
-        {!canSubmit ? (
-          <ThemedText style={styles.blockedHint}>
-            {noSubjects
-              ? TEXT.BOOKING_ROOM_BLOCKED_NO_SUBJECT
-              : TEXT.BOOKING_ROOM_BLOCKED_PICK_SUBJECT}
-          </ThemedText>
-        ) : null}
-
+        <Button title={TEXT.SHARED_BACK_THAI} variant="secondary" onPress={goBack} />
         <Button
-          title={TEXT.BOOKING_ROOM_CART_ADD_ACTION}
-          onPress={requestSubmit}
-          loading={submitting}
-          disabled={!canSubmit}
-          size="lg"
-          fullWidth
+          title={isLastStep ? TEXT.BOOKING_ROOM_CART_ADD_ACTION : nextLabel[step]}
+          onPress={isLastStep ? requestSubmit : goNext}
+          loading={isLastStep && submitting}
+          style={styles.ctaButton}
         />
       </View>
 
@@ -1066,10 +1196,10 @@ function PickerField({
 const makeStyles = (c: AppColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: c.background },
-    scroll: { paddingTop: 16, paddingBottom: 40, gap: 14 },
+    scrollFlex: { flex: 1 },
+    scroll: { paddingTop: 16, paddingBottom: 32, gap: 14 },
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-    // The absence forms' field shape, shared with general-booking.
     field: { paddingVertical: 12, gap: 10 },
     fieldLabel: {
       fontSize: 15,
@@ -1109,18 +1239,11 @@ const makeStyles = (c: AppColors) =>
     fieldPressed: { opacity: 0.7 },
     fieldError: { fontSize: 12, lineHeight: 17, color: c.danger },
     hint: { fontSize: 12, lineHeight: 17, color: c.textMuted },
-
-    // The label wraps and the switch keeps its size: without flex on the text,
-    // a long Thai label lays out at its full intrinsic width and pushes the
-    // switch past the right edge of the card — off the screen on a phone,
-    // where there is no spare width to absorb it.
-    toggleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
-    },
-    toggleLabel: { flex: 1 },
+    // Plain icon + text, no box — a fact about the term's data isn't a
+    // warning that needs to be shouted, so this reads the same weight as any
+    // other field hint.
+    hintRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+    hintText: { flex: 1 },
 
     termRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     termText: { flex: 1, gap: 2 },
@@ -1162,17 +1285,6 @@ const makeStyles = (c: AppColors) =>
     totalRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 4 },
     totalText: { fontSize: 14, color: c.primary, fontFamily: AppFonts.psuBold },
 
-    notice: {
-      flexDirection: 'row',
-      gap: 10,
-      padding: 12,
-      borderRadius: 12,
-      backgroundColor: c.warningSoft,
-    },
-    noticeText: { flex: 1, gap: 2 },
-    noticeTitle: { fontSize: 13, color: c.text, fontFamily: AppFonts.psuBold },
-    noticeBody: { flex: 1, fontSize: 12, lineHeight: 18, color: c.textMuted },
-
     equipmentRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     equipmentCapacity: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     equipmentCapacityText: { fontSize: 13, lineHeight: 18, color: c.textMuted },
@@ -1181,34 +1293,68 @@ const makeStyles = (c: AppColors) =>
     roomFacts: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14 },
     roomFact: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     roomFactText: { fontSize: 13, lineHeight: 18, color: c.textMuted },
+
+    // The summary step's read-only recap of each ticked weekday — same
+    // "day/time on top, room + facts below" shape as the picker, minus the
+    // controls, since there is nothing left to change here.
+    summaryDayRow: {
+      paddingVertical: 12,
+      gap: 6,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    summaryDayRowLast: { borderBottomWidth: 0 },
+    summaryDayHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    summaryDayName: { fontSize: 15, color: c.text, fontFamily: AppFonts.psuBold },
+    summaryDayTime: { fontSize: 13, color: c.textMuted },
+    summaryDayRoomRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     sharedRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     sharedText: { flex: 1, fontSize: 12, lineHeight: 17, color: c.warning },
 
-    swatchRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
-    swatch: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+    // ── Stepper (mirrors meeting-room-form.tsx) ─────────────────────────────
+    stepperWrap: {
+      paddingTop: 12,
+      paddingBottom: 4,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    stepper: { flexDirection: 'row' },
+    stepCol: { flex: 1, alignItems: 'center', gap: 6 },
+    stepCircleRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' },
+    stepLine: { flex: 1, height: 2 },
+    stepLineOn: { backgroundColor: c.primary },
+    stepLineOff: { backgroundColor: c.surfaceMuted },
+    stepLineHidden: { backgroundColor: 'transparent' },
+    stepDot: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: c.surfaceMuted,
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.border,
     },
-    swatchActive: { borderWidth: 2, borderColor: c.text },
+    stepDotOn: { backgroundColor: c.primary },
+    stepDotNum: { fontSize: 11, fontFamily: AppFonts.psuBold, color: c.textMuted },
+    stepDotNumOn: { color: c.textOnPrimary },
+    stepColLabel: { fontSize: 10, lineHeight: 14, color: c.textMuted, textAlign: 'center' },
+    stepColLabelActive: { color: c.primary, fontFamily: AppFonts.psuBold },
 
-    bottomSpacer: { height: 100 },
+    // ── Fixed bottom bar ─────────────────────────────────────────────────────
     bottomBar: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
+      flexDirection: 'row',
       gap: 10,
       paddingTop: 12,
-      paddingBottom: 28,
+      paddingBottom: 16,
       backgroundColor: c.surface,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: c.border,
     },
+    ctaButton: { flex: 1 },
 
     errorBox: {
       flexDirection: 'row',
