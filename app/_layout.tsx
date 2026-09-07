@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { BiometricGate } from '@/components/biometric-gate';
+import { ColdStartSplash } from '@/components/cold-start-splash';
 import { ConnectionGate } from '@/components/connection-gate';
 import { ToastProvider } from '@/components/toast-provider';
 import { UpdateGate } from '@/components/update-gate';
@@ -126,6 +127,13 @@ export default function RootLayout() {
                   </BiometricGate>
                 </ConnectionGate>
               </UpdateGate>
+
+              {/* The cold-start splash. A sibling rather than a wrapper around
+                  the gate stack above, and declared after it, so it paints on
+                  top of whatever any gate is doing underneath — including
+                  BiometricGate's own plain cover for this exact window — for
+                  as long as the session is still restoring. */}
+              <ColdStartSplash />
             </ToastProvider>
           </ThemeProvider>
         </AuthProvider>

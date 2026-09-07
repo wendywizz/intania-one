@@ -209,7 +209,7 @@ export default function PeriodBookingScreen() {
   // its counts. Computing them here would be a second implementation of the
   // expansion that writes the rows, free to disagree with it.
   useEffect(() => {
-    if (!fromISO || !toISO) {
+    if (!fromISO || !toISO || toISO < fromISO) {
       setRange(null);
       return;
     }
@@ -410,6 +410,11 @@ export default function PeriodBookingScreen() {
 
     if (!fromISO || !toISO) {
       found.range = TEXT.BOOKING_ROOM_FIELD_SELECT_REQUIRED;
+    } else if (toISO < fromISO) {
+      // The "to" picker's own `minimumDate` already keeps this unreachable
+      // through the UI, but this is the explicit rule rather than an
+      // accident of what the calendar happens to let you tap.
+      found.range = TEXT.BOOKING_ROOM_PERIOD_RANGE_INVALID;
     } else if (range && !range.ok) {
       found.range = range.message;
     }

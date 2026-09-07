@@ -148,6 +148,11 @@ export const TEXT = {
   SERVICE_UNAVAILABLE_RETRY: 'ลองเชื่อมต่ออีกครั้ง',
   SERVICE_UNAVAILABLE_RETRYING: 'กำลังเชื่อมต่อ…',
 
+  // Cold-start splash (shown while the session restores, right after the
+  // native launch screen hands off to JS)
+  SPLASH_TAGLINE: 'แอพเดียวสำหรับบุคลากรวิศวะฯ',
+  SPLASH_FOOTER: 'FACULTY OF ENGINEERING · PSU',
+
   // App update (EAS Update, checked on every launch)
   APP_UPDATE_TITLE: 'กำลังอัปเดตแอป',
   APP_UPDATE_DOWNLOADING: 'กำลังดาวน์โหลดเวอร์ชันล่าสุด',
@@ -998,6 +1003,7 @@ export const TEXT = {
   BOOKING_ROOM_PERIOD_TO: 'วันที่สิ้นสุด',
   BOOKING_ROOM_PERIOD_SPAN: 'ครอบคลุม {count} วัน',
   BOOKING_ROOM_PERIOD_NEED_RANGE: 'เลือกช่วงวันที่ก่อนจึงจะเลือกวันและเวลาได้',
+  BOOKING_ROOM_PERIOD_RANGE_INVALID: 'วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม',
   // --- Booking detail: the slot list ---
   // A term booking is dozens of rows that are really two or three repeating
   // rules, so the detail screen shows the rules and keeps the dates behind a
