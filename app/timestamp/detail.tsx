@@ -27,6 +27,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { UserAvatar } from "@/components/user-avatar";
 import { SelectSheet } from "@/components/ui/select-sheet";
+import { Sheet } from "@/components/ui/sheet";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
@@ -718,30 +719,6 @@ export default function TimestampDetailScreen() {
                   {validationErrors.time}
                 </ThemedText>
               ) : null}
-              {isTimePickerVisible ? (
-                <DateTimePicker
-                  value={selectedTime ?? new Date()}
-                  mode="time"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  is24Hour
-                  onChange={handleTimeChange}
-                />
-              ) : null}
-              {isTimePickerVisible && Platform.OS === "ios" ? (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setIsTimePickerVisible(false)}
-                  style={styles.timeDoneButton}
-                >
-                  <ThemedText
-                    lightColor="#FFFFFF"
-                    darkColor="#FFFFFF"
-                    type="defaultSemiBold"
-                  >
-                    {TEXT.TIMESTAMP_DONE}
-                  </ThemedText>
-                </Pressable>
-              ) : null}
               {timestampHint ? (
                 <ThemedText style={styles.fieldHint}>{timestampHint}</ThemedText>
               ) : null}
@@ -990,6 +967,37 @@ export default function TimestampDetailScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+      {/* Full width, docked to the bottom edge — the old inline placement
+          squeezed the iOS spinner into the 150pt-wide time field it sat
+          under, which is too narrow for a UIPickerView to lay out cleanly. */}
+      <Sheet
+        visible={isTimePickerVisible}
+        onClose={() => setIsTimePickerVisible(false)}
+        title={TEXT.TIMESTAMP_FIELD_CORRECTED_TIME}
+        scroll={false}
+      >
+        <DateTimePicker
+          value={selectedTime ?? new Date()}
+          mode="time"
+          display="spinner"
+          is24Hour
+          onChange={handleTimeChange}
+          style={styles.timeSheetPicker}
+        />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setIsTimePickerVisible(false)}
+          style={styles.timeDoneButton}
+        >
+          <ThemedText
+            lightColor="#FFFFFF"
+            darkColor="#FFFFFF"
+            type="defaultSemiBold"
+          >
+            {TEXT.TIMESTAMP_DONE}
+          </ThemedText>
+        </Pressable>
+      </Sheet>
       <AppToast
         message={toastMessage}
         type={toastType === "error" ? "error" : "success"}
@@ -1189,8 +1197,14 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
+  // Full sheet width, so the spinner's wheel columns lay out at their normal
+  // size instead of the 150pt field they used to be squeezed under.
+  timeSheetPicker: {
+    alignSelf: "stretch",
+  },
   timeDoneButton: {
     minHeight: 40,
+    marginTop: 12,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,

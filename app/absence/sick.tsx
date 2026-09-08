@@ -2032,6 +2032,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   confirmActionButton: {
     flex: 1,
+    // Overrides secondaryButton's own minWidth (132) below — without this,
+    // Cancel keeps that floor while Confirm has none, so on a narrow modal
+    // the 50/50 flex split loses to Cancel's floor and Confirm renders
+    // narrower than it. Matches the other three leave forms.
+    minWidth: 0,
     minHeight: 48,
     paddingHorizontal: 16,
   },
