@@ -16,7 +16,7 @@ import { scaleFont } from "@/utils/font-scale";
 
 export default function TimestampTabLayout() {
   const c = useColors();
-  const { user: authUser, isLecturer } = useAuth();
+  const { user: authUser, isLecturer, stampRole } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
 
   // Whether the user may approve others' miss-timestamp requests (holds an active
@@ -66,6 +66,19 @@ export default function TimestampTabLayout() {
         },
       }}
     >
+      <Tabs.Screen
+        name="staff-stamp"
+        options={{
+          // General staff only. Declared first, like the lecturers' tab, so
+          // whichever of the two a person gets is the one their eye lands on —
+          // the two are mutually exclusive and never both present.
+          href: stampRole === 'staff' ? undefined : null,
+          title: TEXT.STAFF_TIMESTAMP_TAB,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="log-in" color={color} />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="stamp"
         options={{

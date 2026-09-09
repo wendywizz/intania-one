@@ -1238,6 +1238,24 @@ export const TEXT = {
   // TIMESTAMP_CALENDAR_TAB is used — two names holding the same string is two
   // things to keep in step for no gain.
   LECT_TIMESTAMP_TAB: 'ลงเวลา',
+
+  // Timestamp - ลงเวลาบุคลากรทั่วไป (general staff)
+  //
+  // คนละหน้ากับของอาจารย์ เพราะวันทำงานคนละแบบ: ลงเข้าและลงออกแยกกัน ด้วยเวลาจริง
+  // ข้อความที่ขึ้นกับสถานะ (ลงได้ไหม เพราะอะไร) มาจาก gateway เสมอ ที่นี่เก็บเฉพาะ
+  // ป้ายที่ตายตัว
+  STAFF_TIMESTAMP_TAB: 'ลงเวลา',
+  STAFF_TIMESTAMP_IN_LABEL: 'เข้างาน',
+  STAFF_TIMESTAMP_OUT_LABEL: 'ออกงาน',
+  STAFF_TIMESTAMP_NO_IN: 'ยังไม่ได้ลงเวลาเข้า',
+  STAFF_TIMESTAMP_NO_OUT: 'ยังไม่ได้ลงเวลาออก',
+  STAFF_TIMESTAMP_LATE: 'สาย',
+  STAFF_TIMESTAMP_BUTTON_IN: 'ลงเวลาเข้างาน',
+  STAFF_TIMESTAMP_BUTTON_OUT: 'ลงเวลาออกงาน',
+  // เฟสแรกยังไม่เปิดให้ลงเวลาผ่านแอป ปุ่มจึงยังกดไม่ได้ — บอกไปตรงๆ ดีกว่าปล่อยให้
+  // กดแล้วเงียบ
+  STAFF_TIMESTAMP_COMING_SOON: 'ยังไม่เปิดให้ลงเวลาผ่านแอป กรุณาใช้เครื่องสแกนที่คณะฯ',
+  STAFF_TIMESTAMP_LOAD_ERROR: 'ไม่สามารถโหลดสถานะการลงเวลาได้',
   LECT_TIMESTAMP_BUTTON: 'ลงเวลาวันนี้',
   LECT_TIMESTAMP_STAMPED_HEADLINE: 'วันนี้ลงเวลาแล้ว',
   LECT_TIMESTAMP_NOT_STAMPED_HEADLINE: 'วันนี้ยังไม่ได้ลงเวลา',
@@ -1251,6 +1269,22 @@ export const TEXT = {
   // headline so the two can be laid out separately.
   LECT_TIMESTAMP_STAMPED_AT: 'เมื่อ',
   LECT_TIMESTAMP_LOAD_ERROR: 'ไม่สามารถโหลดสถานะการลงเวลาได้',
+
+  // Timestamp - ตำแหน่ง (geofence)
+  //
+  // การลงเวลาผ่านแอปต้องอยู่ในบริเวณคณะฯ เซิร์ฟเวอร์เป็นคนตัดสินว่าอยู่ในรัศมีไหม
+  // แต่ถ้าเครื่องไม่ยอมบอกตำแหน่ง เซิร์ฟเวอร์จะรู้แค่ว่า "ไม่มีพิกัด" ข้อความชุดนี้
+  // จึงอยู่ฝั่งแอป เพราะมีแต่แอปที่รู้ว่าไม่มีพิกัดเพราะอะไร และต้องทำอะไรต่อ
+  LECT_TIMESTAMP_LOCATION_LOADING: 'กำลังตรวจสอบตำแหน่ง...',
+  LECT_TIMESTAMP_LOCATION_TITLE: 'ต้องเปิดการเข้าถึงตำแหน่ง',
+  // ยังกดอนุญาตซ้ำได้ — ปุ่มจะเป็น "อนุญาตตำแหน่ง" ที่เรียก prompt ของระบบ
+  LECT_TIMESTAMP_LOCATION_DENIED: 'การลงเวลาผ่านแอปต้องยืนยันว่าคุณอยู่ในบริเวณคณะฯ กรุณาอนุญาตให้แอปเข้าถึงตำแหน่ง',
+  // ระบบไม่ถามซ้ำแล้ว ทางเดียวคือไปเปิดในตั้งค่าของเครื่อง
+  LECT_TIMESTAMP_LOCATION_BLOCKED: 'คุณได้ปิดการเข้าถึงตำแหน่งไว้ กรุณาเปิดในตั้งค่าของเครื่อง แล้วกลับมาที่หน้านี้อีกครั้ง',
+  LECT_TIMESTAMP_LOCATION_SERVICES_OFF: 'ตำแหน่ง (Location) ของเครื่องปิดอยู่ กรุณาเปิดแล้วลองใหม่อีกครั้ง',
+  LECT_TIMESTAMP_LOCATION_UNAVAILABLE: 'ไม่สามารถระบุตำแหน่งได้ กรุณาลองใหม่อีกครั้ง หรือขยับไปบริเวณที่สัญญาณดีขึ้น',
+  LECT_TIMESTAMP_LOCATION_ALLOW: 'อนุญาตตำแหน่ง',
+  LECT_TIMESTAMP_LOCATION_RETRY: 'ลองใหม่อีกครั้ง',
 
   // Timestamp - approval (boss inbox)
   TIMESTAMP_APPROVE_TAB: 'รับรอง',
@@ -1312,6 +1346,10 @@ export const TEXT = {
   // see timestampService.ts) says the window to file has closed — the button
   // stays visible but disabled rather than disappearing without explanation.
   TIMESTAMP_CALENDAR_REQUEST_CLOSED: 'หมดเขตยื่นเรื่องลืมลงเวลาสำหรับวันนี้แล้ว',
+  // Shown instead of the request button when a forgot-timestamp request for
+  // this day has already been filed and is waiting on an approver — offering
+  // the button again would invite a second, duplicate request for the same day.
+  TIMESTAMP_CALENDAR_REQUEST_IN_PROGRESS: 'อยู่ระหว่างดำเนินการ',
   TIMESTAMP_CALENDAR_LATE: 'มาสาย',
   TIMESTAMP_CALENDAR_LATE_SHORT: 'สาย',
   TIMESTAMP_CALENDAR_LATE_DESC: 'เข้างานสาย',

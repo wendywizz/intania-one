@@ -60,7 +60,15 @@ function createUrl(
   path: string,
   query?: Record<string, string | number | undefined | null>,
 ) {
-  const url = new URL(path, baseUrl);
+  // `new URL(path, base)` treats a leading "/" in `path` as absolute from the
+  // origin, silently dropping any path segment already on `base` (e.g. the
+  // production gateway's `/scooba`). Force base+path to join as a relative
+  // path instead — this is a no-op for an already-absolute `path` (one of our
+  // ENDPOINTS.* strings, which has no leading "/" to strip) and for a `base`
+  // with no path of its own, so it doesn't change behavior anywhere else.
+  const base = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  const relativePath = path.replace(/^\/+/, '');
+  const url = new URL(relativePath, base);
 
   Object.entries(query ?? {}).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {

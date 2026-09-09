@@ -245,6 +245,24 @@ function getStampType(item: Timestamp) {
   return getFirstItemValue(item, Array.from(stampTypeFields)).toLowerCase();
 }
 
+// A sensible starting point rather than an empty field — most people who
+// forgot to stamp in or out did so around the usual time, so this is a guess
+// worth pre-filling and easy to change, not a value being asserted as fact.
+// Overwritten the moment an existing time loads (fillEditableFields), so an
+// edit of an already-recorded stamp never keeps this as if it were the saved
+// value.
+function getDefaultTimeForType(stampType: string) {
+  if (stampType === "in") {
+    return getDateWithTimeParts("08", "30");
+  }
+
+  if (stampType === "out") {
+    return getDateWithTimeParts("16", "30");
+  }
+
+  return null;
+}
+
 function getTimestampHint(stampType: string) {
   if (stampType === "in") {
     return TEXT.TIMESTAMP_IN_HINT;
@@ -296,7 +314,12 @@ export default function TimestampDetailScreen() {
   const [error, setError] = useState("");
   const [approver, setApprover] = useState("");
   const [isApproverOpen, setIsApproverOpen] = useState(false);
-  const [selectedTime, setSelectedTime] = useState<Date | null>(null);
+  // Lazy initializer: runs once, off the type the nav params already carry —
+  // 08:30 for a forgotten check-in, 16:30 for a forgotten check-out. An
+  // existing time (edit mode) overwrites this once loadDetail resolves.
+  const [selectedTime, setSelectedTime] = useState<Date | null>(() =>
+    getDefaultTimeForType(getStampType(initialItem)),
+  );
   const [isTimePickerVisible, setIsTimePickerVisible] = useState(false);
   const [reason, setReason] = useState("");
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -719,11 +742,14 @@ export default function TimestampDetailScreen() {
                   {validationErrors.time}
                 </ThemedText>
               ) : null}
-              {timestampHint ? (
-                <ThemedText style={styles.fieldHint}>{timestampHint}</ThemedText>
-              ) : null}
             </View>
           </View>
+          {/* Full section width, not squeezed into the 150pt time column it
+              used to sit under — this is a note about the whole field, not
+              the picker specifically. */}
+          {timestampHint ? (
+            <ThemedText style={styles.timestampHint}>{timestampHint}</ThemedText>
+          ) : null}
         </SectionCard>
 
         {/* Reason section */}
@@ -1192,6 +1218,14 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
+  // Sibling of dateTimeRow inside the section card, not nested in the time
+  // field, so it reads at the card's full width — the card's own `gap`
+  // handles the spacing above it.
+  timestampHint: {
+    color: c.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+  },
   fieldError: {
     color: c.danger,
     fontSize: 12,
@@ -1208,7 +1242,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.info,
+    backgroundColor: c.primary,
   },
   chevron: {
     color: c.textMuted,
@@ -1370,7 +1404,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.info,
+    backgroundColor: c.primary,
     paddingHorizontal: 16,
   },
   removeConfirmButton: {

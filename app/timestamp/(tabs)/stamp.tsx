@@ -1,6 +1,14 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  AppState,
+  Linking,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -17,6 +25,7 @@ import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { useHolidays } from '@/hooks/use-holidays';
 import { MESSAGE_CANNOT_CONNECT_TO_SERVER } from '@/services/api';
+import { readDevicePosition, type LocationReading } from '@/services/deviceLocation';
 import {
   getLectTimestampStatus,
   stampToday,
@@ -39,6 +48,58 @@ function thaiDateLabel(date: string) {
   const full = formatFullDate(date);
 
   return weekday ? `วัน${weekday} ${full}` : full;
+}
+
+/** What to tell the user, and what button will actually fix it. */
+type LocationNotice = {
+  message: string;
+  action: 'ask' | 'settings' | 'retry';
+};
+
+/**
+ * The banner for a missing fix — or nothing at all when there is one.
+ *
+ * Each outcome gets the one button that can resolve it. A "เปิดการตั้งค่า"
+ * button shown to someone who has simply not been asked yet sends them on a
+ * pointless trip through the Settings app, and an "อนุญาต" button shown to
+ * someone the OS will never prompt again does nothing at all when tapped —
+ * which is the specific failure that makes permission walls feel broken.
+ */
+function locationNotice(reading: LocationReading | null): LocationNotice | null {
+  if (!reading || reading.outcome === 'ok') return null;
+
+  switch (reading.outcome) {
+    case 'denied':
+      return reading.canAskAgain
+        ? { message: TEXT.LECT_TIMESTAMP_LOCATION_DENIED, action: 'ask' }
+        : { message: TEXT.LECT_TIMESTAMP_LOCATION_BLOCKED, action: 'settings' };
+    case 'services_off':
+      return { message: TEXT.LECT_TIMESTAMP_LOCATION_SERVICES_OFF, action: 'settings' };
+    default:
+      return { message: TEXT.LECT_TIMESTAMP_LOCATION_UNAVAILABLE, action: 'retry' };
+  }
+}
+
+/**
+ * Open the place the user can actually change the setting.
+ *
+ * Android can be sent straight to the location switch, which is where
+ * `services_off` needs them; the app's own settings page has no such switch on
+ * it and would be a dead end. iOS has no public deep link to Location
+ * Services, so the app's settings page — which does carry this app's location
+ * permission — is the closest thing there is.
+ */
+function openLocationSettings(action: 'ask' | 'settings' | 'retry') {
+  if (Platform.OS === 'web') return;
+
+  if (Platform.OS === 'android' && action === 'settings') {
+    Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(() => {
+      void Linking.openSettings();
+    });
+    return;
+  }
+
+  void Linking.openSettings();
 }
 
 /**
@@ -68,6 +129,9 @@ export default function LectTimestampScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [stamping, setStamping] = useState(false);
   const [error, setError] = useState('');
+  // Why the phone did or didn't give us a fix. The server decides whether the
+  // fix is close enough; only this knows why there wasn't one.
+  const [location, setLocation] = useState<LocationReading | null>(null);
 
   // The upstream only refuses a stamp for a weekend (reason === 'weekend'); a
   // public holiday is not one of its refusal codes at all, so canStamp stays
@@ -89,7 +153,13 @@ export default function LectTimestampScreen() {
       if (mode === 'refresh') setRefreshing(true);
 
       try {
-        const next = await getLectTimestampStatus(staffId);
+        // Read the position first and send it with the status request, so the
+        // card shows the same verdict the button would get. Asking afterwards
+        // would mean a card that says "ลงเวลาได้" and then refuses on tap.
+        const reading = await readDevicePosition();
+        setLocation(reading);
+
+        const next = await getLectTimestampStatus(staffId, reading.position);
         setStatus(next);
         setError('');
       } catch (err) {
@@ -110,6 +180,16 @@ export default function LectTimestampScreen() {
   useFocusEffect(
     useCallback(() => {
       void load('initial');
+
+      // Granting the permission happens in another app, and returning from it
+      // is not a focus change as far as the navigator is concerned — without
+      // this, the user does exactly what the banner told them to and comes
+      // back to the same banner. Only while this tab is the focused one.
+      const subscription = AppState.addEventListener('change', (next) => {
+        if (next === 'active') void load('refresh');
+      });
+
+      return () => subscription.remove();
     }, [load]),
   );
 
@@ -118,7 +198,23 @@ export default function LectTimestampScreen() {
     setStamping(true);
 
     try {
-      const next = await stampToday(staffId);
+      // Read again rather than reuse the fix from the status call: minutes can
+      // pass between the screen loading and the tap, and the position that
+      // matters is the one at the moment the row is written.
+      const reading = await readDevicePosition();
+      setLocation(reading);
+
+      if (reading.outcome !== 'ok') {
+        // Nothing to gain from a round trip that can only come back
+        // `no_location` — and the server's wording for it cannot say which of
+        // the four reasons this was, or what to do about it. The banner that
+        // just appeared says both.
+        const notice = locationNotice(reading);
+        showToast(notice?.message ?? TEXT.LECT_TIMESTAMP_LOCATION_UNAVAILABLE, 'error');
+        return;
+      }
+
+      const next = await stampToday(staffId, reading.position);
       setStatus(next);
       setError('');
       // `message` is the server's wording for what actually happened —
@@ -163,6 +259,13 @@ export default function LectTimestampScreen() {
     const isPublicHoliday = Boolean(serverDate) && holidays.holidaySet.has(serverDate);
     const holidayName = serverDate ? holidays.holidayNames.get(serverDate) : undefined;
     const isDayOff = isWeekend || isPublicHoliday;
+
+    // Sits above the card rather than in place of it: the day's status is
+    // still worth showing to somebody who has location switched off, and a
+    // screen replaced wholesale by a permission wall hides whether they have
+    // already stamped today.
+    const notice = locationNotice(location);
+
     // A named holiday wins over the generic weekend label when a holiday
     // lands on one — it says more. Falls back to the plain prefix on the
     // rare day flagged a holiday with no name attached.
@@ -188,6 +291,50 @@ export default function LectTimestampScreen() {
           />
         }
       >
+        {notice ? (
+          <View style={styles.notice}>
+            <View style={styles.noticeHeader}>
+              <IconSymbol size={20} name="mappin" color={c.warningOnSoft} />
+              <ThemedText style={styles.noticeTitle}>
+                {TEXT.LECT_TIMESTAMP_LOCATION_TITLE}
+              </ThemedText>
+            </View>
+
+            <ThemedText style={styles.noticeMessage}>{notice.message}</ThemedText>
+
+            <Button
+              // 'retry' and 'ask' both come back through the same reload: the
+              // permission prompt is raised by readDevicePosition() itself, so
+              // asking again and trying again are one code path.
+              title={
+                notice.action === 'settings'
+                  ? TEXT.SETTINGS_OPEN_OS_SETTINGS
+                  : notice.action === 'ask'
+                    ? TEXT.LECT_TIMESTAMP_LOCATION_ALLOW
+                    : TEXT.LECT_TIMESTAMP_LOCATION_RETRY
+              }
+              icon={
+                notice.action === 'settings'
+                  ? 'gearshape.fill'
+                  : notice.action === 'ask'
+                    ? 'mappin'
+                    : 'arrow.triangle.2.circlepath'
+              }
+              variant="primaryOutline"
+              size="md"
+              fullWidth
+              loading={refreshing}
+              onPress={() => {
+                if (notice.action === 'settings') {
+                  openLocationSettings(notice.action);
+                  return;
+                }
+                void load('refresh');
+              }}
+            />
+          </View>
+        ) : null}
+
         <View style={styles.card}>
           <View
             style={[
@@ -268,8 +415,37 @@ const makeStyles = (c: AppColors) =>
     },
     scrollContent: {
       flexGrow: 1,
+      gap: 12,
       justifyContent: 'center',
       padding: 16,
+    },
+    // Warning-tinted, not danger: nothing has gone wrong, a setting is simply
+    // switched off — and it is the same soft/on-soft pair every other advisory
+    // in the app uses, so it stays legible in both themes.
+    notice: {
+      alignSelf: 'stretch',
+      backgroundColor: c.warningSoft,
+      borderColor: c.border,
+      borderRadius: 12,
+      borderWidth: StyleSheet.hairlineWidth,
+      gap: 10,
+      padding: 16,
+    },
+    noticeHeader: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: 8,
+    },
+    noticeTitle: {
+      color: c.warningOnSoft,
+      fontFamily: AppFonts.psuBold,
+      fontSize: scaleFont(15),
+    },
+    noticeMessage: {
+      color: c.text,
+      fontFamily: AppFonts.psuRegular,
+      fontSize: scaleFont(14),
+      lineHeight: scaleFont(20),
     },
     card: {
       alignItems: 'center',

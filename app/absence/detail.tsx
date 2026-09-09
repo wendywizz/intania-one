@@ -187,6 +187,53 @@ function getRequesterInfo(item: absence): StaffEntry {
   };
 }
 
+// Candidate approvers the submission form (sick.tsx etc.) picked from —
+// present on a still-pending request. Same field this codebase already reads
+// to build the approver <SelectSheet> options.
+function getApproverListEntries(item: absence): Record<string, unknown>[] {
+  const rawValue = item.approverList;
+  if (Array.isArray(rawValue)) return rawValue as Record<string, unknown>[];
+  if (rawValue && typeof rawValue === 'object') {
+    const nested = (rawValue as Record<string, unknown>).item;
+    if (Array.isArray(nested)) return nested as Record<string, unknown>[];
+  }
+  return [];
+}
+
+// The approver actually assigned to this request. Two shapes cover it: a
+// nested `approver` object (mirroring `requester`, if the backend ever sends
+// one), or — what every submission form already relies on — the chosen
+// approver's position id matched against `approverList`, the same candidate
+// list sick.tsx/business.tsx/etc. use to build their picker.
+function getApproverInfo(item: absence): StaffEntry | null {
+  const record = item as Record<string, unknown>;
+  const nested = record.approver;
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+    const name = getStaffName(nested);
+    if (name) return { name, position: getStaffPosition(nested), staffId: getStaffId(nested) };
+  }
+
+  const approverPositionId = getText(item, [
+    'approverPosition',
+    'approver_position',
+    'approver_id',
+    'positionId',
+    'position_id',
+  ]);
+  const approverList = getApproverListEntries(item);
+  if (approverPositionId && approverList.length) {
+    const match = approverList.find(
+      (a) => getText(a as absence, ['positionId', 'position_id']) === approverPositionId,
+    );
+    if (match) {
+      const name = getStaffName(match);
+      if (name) return { name, position: getStaffPosition(match), staffId: getStaffId(match) };
+    }
+  }
+
+  return null;
+}
+
 function getAgentEntries(item: absence): StaffEntry[] {
   const rawValue =
     item.selectedAgents ??
@@ -297,6 +344,7 @@ export default function absenceDetailScreen() {
   const dateText = formatDateRange(startDate, endDate);
   const leaveDay = getText(item, ['numDays', 'num_days', 'absentDays', 'absent_days', 'absenceDays', 'ABSENCE_days', 'leaveDay', 'leave_day', 'days', 'day']);
   const requester = getRequesterInfo(item);
+  const approver = getApproverInfo(item);
   const agentEntries = getAgentEntries(item);
   const reason = getText(item, ['reason', 'detail', 'description']);
   const halfDay = getDisplayHalfDay(getText(item, ['partFlag', 'part_flag', 'startpart', 'half_day', 'halfDay']));
@@ -407,6 +455,13 @@ export default function absenceDetailScreen() {
         {requester.name ? (
           <SectionCard title={TEXT.ABSENCE_REQUESTER_LABEL}>
             <PersonRow name={requester.name} position={requester.position} staffId={requester.staffId} />
+          </SectionCard>
+        ) : null}
+
+        {/* Approver card */}
+        {approver ? (
+          <SectionCard title={TEXT.ABSENCE_APPROVER_LABEL}>
+            <PersonRow name={approver.name} position={approver.position} staffId={approver.staffId} />
           </SectionCard>
         ) : null}
 

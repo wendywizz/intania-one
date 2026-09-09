@@ -658,6 +658,7 @@ export default function BirthScreen() {
                 style={[
                   styles.submitButton,
                   isEditMode ? styles.actionButton : undefined,
+                  isEditMode ? styles.updateButton : undefined,
                   isSubmitting || isRemoving ? styles.disabledButton : undefined,
                 ]}
               >
@@ -684,13 +685,9 @@ export default function BirthScreen() {
                   ]}
                 >
                   {isRemoving ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <ActivityIndicator color={c.textMuted} size="small" />
                   ) : null}
-                  <ThemedText
-                    lightColor="#FFFFFF"
-                    darkColor="#FFFFFF"
-                    type="defaultSemiBold"
-                  >
+                  <ThemedText type="defaultSemiBold">
                     {TEXT.SHARED_DELETE_THAI}
                   </ThemedText>
                 </Pressable>
@@ -1052,6 +1049,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: c.pomegranate,
     marginTop: 6,
   },
+  // Edit mode's Update button only — the lone-submit button above keeps
+  // submitButton's own color. Merged on top of it, so only the fill changes.
+  updateButton: {
+    backgroundColor: c.primary,
+  },
+  // The edit-mode "ลบ" button only opens the remove-confirm dialog — the
+  // actual destructive action (and its red fill) lives inside that dialog.
+  // A filled danger button here read as equally weighted to Update, when
+  // it's really the lesser, reversible-until-confirmed choice next to it —
+  // same white/outline treatment as that dialog's own Cancel button.
   removeRequestButton: {
     minHeight: 48,
     minWidth: 132,
@@ -1061,7 +1068,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: c.danger,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
   removeConfirmButton: {
     minHeight: 48,

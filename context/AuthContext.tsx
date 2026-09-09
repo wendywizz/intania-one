@@ -7,9 +7,12 @@ import {
   fetchStaffEligibility,
   readCachedEligibility,
   readCachedIsLecturer,
+  readCachedStampRole,
   writeCachedEligibility,
   writeCachedIsLecturer,
+  writeCachedStampRole,
 } from '../services/staffInfoService';
+import type {StaffStampRole} from '../services/timestampService';
 import {DEV_STAFF_ID} from '../constants/devConfig';
 
 /**
@@ -48,6 +51,8 @@ type AuthContextValue = {
    * Passport carries no claim about position, so it cannot come from the token.
    */
   isLecturer: boolean;
+  /** `lecturer` | `guard` | `staff` — which stamping screen this account uses. */
+  stampRole: StaffStampRole;
   completeWebSignIn: (params: Parameters<typeof authService.completeWebLogin>[0]) => Promise<void>;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -88,6 +93,9 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   // Resolved by the same call as `eligibility` — one request answers both, so
   // they can never disagree about which account they describe.
   const [isLecturer, setIsLecturer] = useState(false);
+  // Which stamping screen this account belongs on. Resolved by the same call,
+  // so it can never disagree with `isLecturer` about the same person.
+  const [stampRole, setStampRole] = useState<StaffStampRole>('staff');
   const signInPromiseRef = useRef<Promise<void> | null>(null);
   const userRef = useRef<AuthUser | null>(null);
   // Guards against a stale check overwriting a newer one — a slow reply for the
@@ -113,9 +121,10 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       return;
     }
 
-    const [cached, cachedLecturer] = await Promise.all([
+    const [cached, cachedLecturer, cachedRole] = await Promise.all([
       readCachedEligibility(staffId),
       readCachedIsLecturer(staffId),
+      readCachedStampRole(staffId),
     ]);
     if (!isCurrent()) return;
     setEligibility(cached === null ? 'checking' : cached ? 'allowed' : 'denied');
@@ -123,16 +132,21 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     // there yet, and the re-check below adds it a moment later. The opposite
     // default would flash a tab at everyone on their first launch.
     setIsLecturer(cachedLecturer === true);
+    // 'staff' is the majority and the safe first guess: it shows a read-only
+    // screen, so a wrong guess costs a redraw rather than a wrong action.
+    setStampRole(cachedRole ?? 'staff');
 
     try {
       const result = await fetchStaffEligibility(staffId);
       await Promise.all([
         writeCachedEligibility(staffId, result.eligible),
         writeCachedIsLecturer(staffId, result.isLecturer),
+        writeCachedStampRole(staffId, result.stampRole),
       ]);
       if (isCurrent()) {
         setEligibility(result.eligible ? 'allowed' : 'denied');
         setIsLecturer(result.isLecturer);
+        setStampRole(result.stampRole);
       }
     } catch (error) {
       // Could not reach the gateway. Keep whatever the cache said; with no cached
@@ -193,6 +207,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       signedIn: Boolean(effectiveUser),
       eligibility,
       isLecturer,
+      stampRole,
       completeWebSignIn: async (params) => {
         setLoading(true);
         try {
@@ -236,7 +251,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         setEligibility('unknown');
       },
     }),
-    [loading, initializing, effectiveUser, eligibility, isLecturer, verifyEligibility],
+    [loading, initializing, effectiveUser, eligibility, isLecturer, stampRole, verifyEligibility],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -12,6 +12,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MonthCalendar } from '@/components/ui';
+import { getItemDateValue, hasSubmittedRequest } from '@/components/timestamp/timestamp-forgot-list';
 import { getDayStatusStyle, type DayStatus } from '@/constants/calendar-status';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
@@ -20,6 +21,7 @@ import { useAuth } from '@/context/AuthContext';
 import { statsData } from '@/services/absenceService';
 import {
   getTimestampCalendar,
+  getTimestampData,
   type TimestampCalendarDay,
 } from '@/services/timestampService';
 import { boxShadow } from '@/constants/shadows';
@@ -178,6 +180,12 @@ export default function TimestampCalendarScreen() {
   // Fiscal-year late-arrival tally, from the same source as /absence/stats
   // (ABSENCE.timestamp flag_in = 2). Independent of the shown month.
   const [lateInfo, setLateInfo] = useState<{ used: number; limit: number } | null>(null);
+  // Dates (YYYY-MM-DD) that already have a submitted forgot-timestamp request
+  // sitting in the /timestamp/forgot-timestamp list, awaiting an approver —
+  // the same source that list's own "pending" badge reads. A day here shows
+  // "in progress" instead of the request button, so the button never invites
+  // a second request for a day that already has one open.
+  const [pendingDates, setPendingDates] = useState<Set<string>>(new Set());
 
   const loadLateCount = useCallback(async () => {
     try {
@@ -194,6 +202,23 @@ export default function TimestampCalendarScreen() {
       setLateInfo(null);
     }
   }, [staffId]);
+
+  const loadPendingRequests = useCallback(async () => {
+    try {
+      const result = await getTimestampData(staffId, year);
+      const dates = new Set<string>();
+      result.data.forEach((item) => {
+        if (!hasSubmittedRequest(item)) return;
+        const raw = getItemDateValue(item);
+        if (!raw) return;
+        const parsed = moment(raw, ['YYYY-MM-DD', 'DD/MM/YYYY', moment.ISO_8601], true);
+        if (parsed.isValid()) dates.add(parsed.format('YYYY-MM-DD'));
+      });
+      setPendingDates(dates);
+    } catch {
+      setPendingDates(new Set());
+    }
+  }, [staffId, year]);
 
   const loadCalendar = useCallback(
     async (showRefreshing = false) => {
@@ -220,7 +245,8 @@ export default function TimestampCalendarScreen() {
     useCallback(() => {
       loadCalendar();
       loadLateCount();
-    }, [loadCalendar, loadLateCount]),
+      loadPendingRequests();
+    }, [loadCalendar, loadLateCount, loadPendingRequests]),
   );
 
   const byDay = useMemo(() => {
@@ -356,6 +382,14 @@ export default function TimestampCalendarScreen() {
     const isForgetDay = Boolean(selectedData) && status === 'incomplete';
     const isAbsentDay = Boolean(selectedData) && status === 'absent';
     const canRequest = Boolean(selectedData?.canRequest);
+    // A half-day leave can still carry one real stamp (clocked in, then left
+    // on approved leave), which lands it in 'incomplete' above — but there is
+    // nothing to correct there, and a request already filed for the day means
+    // one is already waiting on an approver. Either way the button would only
+    // invite a request that doesn't apply, so it's swapped for a status line.
+    const isOnLeave = Boolean(selectedData?.isLeave);
+    const isRequestPending = pendingDates.has(selectedKey);
+    const hasBlockingActivity = isOnLeave || isRequestPending;
 
     return (
       <View style={styles.detailCard}>
@@ -437,38 +471,51 @@ export default function TimestampCalendarScreen() {
         )}
 
         {isForgetDay && selectedData ? (
-          // The button itself never disappears once a day qualifies as a forget
-          // day — only its enabled state changes. Hiding it entirely when
-          // `canRequest` is false left no way to tell "nothing to do here" apart
-          // from "the window to ask has closed"; the disabled button plus the
-          // hint below says which one it is.
-          <View style={styles.requestSection}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !canRequest }}
-              disabled={!canRequest}
-              onPress={() => openRequestForm(selectedData)}
-              style={({ pressed }) => [
-                styles.requestButton,
-                !canRequest && styles.requestButtonDisabled,
-                pressed && canRequest && styles.requestButtonPressed,
-              ]}
-            >
-              <ThemedText
-                lightColor={canRequest ? '#FFFFFF' : c.textFaint}
-                darkColor={canRequest ? '#FFFFFF' : c.textFaint}
-                style={styles.requestButtonText}
+          hasBlockingActivity ? (
+            // Something is already in motion for this day — a request awaiting
+            // an approver, or an approved leave covering it — so there is
+            // nothing left to ask for. A status line says that instead of the
+            // button, rather than inviting a second, redundant request.
+            <View style={styles.inProgressPill}>
+              <Clock size={14} color={c.textMuted} />
+              <ThemedText style={styles.inProgressText}>
+                {isOnLeave ? getLeaveLabel(selectedData) : TEXT.TIMESTAMP_CALENDAR_REQUEST_IN_PROGRESS}
+              </ThemedText>
+            </View>
+          ) : (
+            // The button itself never disappears once a day qualifies as a forget
+            // day — only its enabled state changes. Hiding it entirely when
+            // `canRequest` is false left no way to tell "nothing to do here" apart
+            // from "the window to ask has closed"; the disabled button plus the
+            // hint below says which one it is.
+            <View style={styles.requestSection}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !canRequest }}
+                disabled={!canRequest}
+                onPress={() => openRequestForm(selectedData)}
+                style={({ pressed }) => [
+                  styles.requestButton,
+                  !canRequest && styles.requestButtonDisabled,
+                  pressed && canRequest && styles.requestButtonPressed,
+                ]}
               >
-                {TEXT.TIMESTAMP_CALENDAR_MAKE_REQUEST}
-              </ThemedText>
-              <ArrowRight size={18} color={canRequest ? '#FFFFFF' : c.textFaint} />
-            </Pressable>
-            {!canRequest ? (
-              <ThemedText style={styles.requestDisabledHint}>
-                {TEXT.TIMESTAMP_CALENDAR_REQUEST_CLOSED}
-              </ThemedText>
-            ) : null}
-          </View>
+                <ThemedText
+                  lightColor={canRequest ? '#FFFFFF' : c.textFaint}
+                  darkColor={canRequest ? '#FFFFFF' : c.textFaint}
+                  style={styles.requestButtonText}
+                >
+                  {TEXT.TIMESTAMP_CALENDAR_MAKE_REQUEST}
+                </ThemedText>
+                <ArrowRight size={18} color={canRequest ? '#FFFFFF' : c.textFaint} />
+              </Pressable>
+              {!canRequest ? (
+                <ThemedText style={styles.requestDisabledHint}>
+                  {TEXT.TIMESTAMP_CALENDAR_REQUEST_CLOSED}
+                </ThemedText>
+              ) : null}
+            </View>
+          )
         ) : null}
         </View>
       </View>
@@ -524,6 +571,7 @@ export default function TimestampCalendarScreen() {
             onRefresh={() => {
               loadCalendar(true);
               loadLateCount();
+              loadPendingRequests();
             }}
           />
         }
@@ -875,6 +923,25 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     textAlign: 'center',
     color: c.textFaint,
     fontFamily: AppFonts.psuRegular,
+  },
+  // Stands in for the request button when a request is already open or the
+  // day is on leave — a neutral status line, not a call to action, so it
+  // deliberately doesn't borrow the button's shape or brand-red fill.
+  inProgressPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: c.surfaceMuted,
+    paddingHorizontal: 16,
+  },
+  inProgressText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: c.textMuted,
+    fontFamily: AppFonts.psuBold,
   },
   detailNote: {
     fontSize: 13,

@@ -61,7 +61,7 @@ function getItemId(item: Timestamp, index: number) {
   return `${String(id ?? "timestamp")}-${index}`;
 }
 
-function getItemDateValue(item: Timestamp) {
+export function getItemDateValue(item: Timestamp) {
   for (const field of dateFields) {
     const value = item[field];
     if (value !== undefined && value !== null && String(value).trim()) {
@@ -134,7 +134,7 @@ function isEditableItem(item: Timestamp) {
 // keys its edit mode on).
 const requestIdFields = ["forgetId", "forget_id", "timestampId", "timestamp_id", "id"];
 
-function hasSubmittedRequest(item: Timestamp) {
+export function hasSubmittedRequest(item: Timestamp) {
   for (const field of requestIdFields) {
     const value = item[field];
     if (value !== undefined && value !== null && String(value).trim()) {

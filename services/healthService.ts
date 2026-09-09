@@ -21,7 +21,7 @@ type HealthResponse = {
  * gateway itself answers with its own health payload — anything else (no
  * network, DNS failure, refused connection, timeout, 5xx) is `false`.
  *
- * A 200 is deliberately not enough. `saas.eng.psu.ac.th` sits behind a proxy
+ * A 200 is deliberately not enough. Some production hosts sit behind a proxy
  * that answers 200 with a placeholder body for paths it does not know, so
  * status-only checking would report the gateway up while it is down. Reading
  * the body is what tells the two apart.

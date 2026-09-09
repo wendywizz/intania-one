@@ -435,7 +435,7 @@ helpers.
 
 - Every module request goes to **scooba-service**, never to a PSU web application. The
   app knows one host: `API_BASE_URL` in `constants/endpoints.ts`
-  (`EXPO_PUBLIC_MODE` → dev gateway or `https://saas.eng.psu.ac.th`). Which upstream
+  (`EXPO_PUBLIC_MODE` → dev gateway or `https://apis.eng.psu.ac.th/scooba`). Which upstream
   system and database a module reaches behind it is the **gateway's** decision — the app
   deliberately has no per-module dev/prod table, because a table baked into a shipped
   build could not be changed without a rebuild.

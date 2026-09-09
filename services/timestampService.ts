@@ -551,16 +551,48 @@ function toLectStatus(json: JsonMap): LectTimestampStatus {
   };
 }
 
+/** Where the phone is, for the geofence check. See services/deviceLocation.ts. */
+export type LectPosition = { lat: number; lon: number };
+
+/**
+ * `lat`/`lon` for the request, or nothing at all when there is no usable fix.
+ *
+ * Omitted rather than sent empty or as 0,0 — the gateway and the upstream both
+ * read an absent pair as "the device did not say" and answer `no_location`,
+ * which is a different refusal from "you are too far away" and carries
+ * different advice. Sending 0,0 would instead be measured against the faculty
+ * and refused as `off_site`: the wrong reason, and the wrong instruction.
+ */
+function positionQuery(position?: LectPosition | null) {
+  if (!position) return {};
+
+  const lat = Number(position.lat);
+  const lon = Number(position.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || (lat === 0 && lon === 0)) {
+    return {};
+  }
+
+  return { lat: String(lat), lon: String(lon) };
+}
+
 /**
  * What today looks like for this lecturer.
  *
  * Safe to call on every screen focus: it writes nothing and changes nothing
  * about what a later stamp will do.
+ *
+ * The position is passed on every read, not just on the stamp, so the screen
+ * can show the true answer before the button is pressed — a card that says
+ * "ลงเวลาได้" and then refuses on tap would be worse than no card.
  */
 export async function getLectTimestampStatus(
   staffId: string,
+  position?: LectPosition | null,
 ): Promise<LectTimestampStatus> {
-  const url = createTimestampUrl("/lecturer", { staff_id: staffId });
+  const url = createTimestampUrl("/lecturer", {
+    staff_id: staffId,
+    ...positionQuery(position),
+  });
   const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
   ensureSuccess(jsonData);
 
@@ -577,15 +609,118 @@ export async function getLectTimestampStatus(
  *
  * Which network the phone is on is decided by the gateway, which can see the
  * connection — deliberately not sent from here, where it could be typed.
+ *
+ * The position is the exception, and only because there is no alternative: the
+ * server cannot observe where the phone is, so it has to be told. It is
+ * therefore the weakest of the three anti-fraud checks and is treated as one
+ * more input to a server-side rule, never as a decision made here.
  */
-export async function stampToday(staffId: string): Promise<LectTimestampStatus> {
+export async function stampToday(
+  staffId: string,
+  position?: LectPosition | null,
+): Promise<LectTimestampStatus> {
   const url = createTimestampUrl("/lecturer/stamp");
   const jsonData = await requestJson<JsonMap>(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ staff_id: staffId }),
+    body: JSON.stringify({ staff_id: staffId, ...positionQuery(position) }),
   });
   ensureSuccess(jsonData);
 
   return toLectStatus(jsonData);
+}
+
+/* -------------------------------------------------------------------------- */
+/* ลงเวลาบุคลากรทั่วไป (general staff) — READ ONLY                              */
+/*                                                                            */
+/* คนละวันทำงานกับอาจารย์: ลงเข้าและลงออกแยกกัน ด้วยเวลาจริง และมีช่วงห้าม        */
+/* ลงเวลาตาม ABSENCE.time_period                                              */
+/*                                                                            */
+/* เฟสนี้ยังไม่มีการเขียน — การลงเวลายังเป็นของเครื่องสแกนที่ประตู หน้าจอในแอป      */
+/* ใช้ดูสถานะและรู้ว่าตอนนี้ลงได้หรือยังเท่านั้น                                    */
+/* -------------------------------------------------------------------------- */
+
+export type StaffStampRole = 'lecturer' | 'guard' | 'staff' | 'unknown';
+
+export type StaffTimestampStamp = {
+  /** 'YYYY-MM-DD' */
+  date: string;
+  /** เวลาเข้าจริง 'HH:MM:SS' */
+  inTime: string;
+  /** เวลาออกจริง — ว่างเมื่อยังไม่ได้ลงออก (ไม่ใช่ 00:00:00) */
+  outTime: string;
+  /** เครื่องบันทึกว่ามาสาย (flag_in = 2) */
+  isLate: boolean;
+};
+
+export type StaffTimestampStatus = {
+  staffId: string;
+  role: StaffStampRole;
+  isStaff: boolean;
+  stamp: StaffTimestampStamp | null;
+  /** '' | 'in' | 'out' — ถ้าลงเวลาตอนนี้จะเป็นการลงอะไร */
+  nextStamp: string;
+  canStamp: boolean;
+  /** '' | 'not_staff' | 'guard' | 'already_complete' | 'on_travel' | 'weekend' | 'outside_hours' | 'off_network' | 'vpn' */
+  reason: string;
+  /** ประโยคที่จะแสดง มาจาก gateway เสมอ ไม่ว่างแน่นอน */
+  message: string;
+  serverDate: string;
+  serverTime: string;
+};
+
+/**
+ * Whether a stamp time means "this did not happen" rather than a real time.
+ *
+ * ABSENCE.timestamp spells both halves of a missing pair as 00:00:00 — the
+ * readers write it for a day with no departure yet, and `f_out_stamp_not_in()`
+ * writes it as the ARRIVAL for somebody who left without one on record. Either
+ * way the screen wants a dash, and 00:00 would put a specific, wrong time on it.
+ */
+function isMissingTime(value: unknown): boolean {
+  const text = value == null ? "" : String(value).trim();
+
+  return text === "" || text === "00:00:00" || text === "00:00";
+}
+
+function toStaffStatus(json: JsonMap): StaffTimestampStatus {
+  const data = (json?.data ?? {}) as Record<string, unknown>;
+  const stamp = data.stamp as Record<string, unknown> | null | undefined;
+  const str = (value: unknown) => (value == null ? "" : String(value));
+
+  return {
+    staffId: str(data.staffId),
+    role: (str(data.role) || 'unknown') as StaffStampRole,
+    isStaff: data.isStaff === true,
+    stamp: stamp
+      ? {
+          date: str(stamp.date),
+          inTime: isMissingTime(stamp.inTime) ? '' : str(stamp.inTime),
+          outTime: isMissingTime(stamp.outTime) ? '' : str(stamp.outTime),
+          isLate: stamp.isLate === true,
+        }
+      : null,
+    nextStamp: str(data.nextStamp),
+    canStamp: data.canStamp === true,
+    reason: str(data.reason),
+    message: str(data.message),
+    serverDate: str(data.serverDate),
+    serverTime: str(data.serverTime),
+  };
+}
+
+/**
+ * สถานะการลงเวลาวันนี้ของบุคลากรทั่วไป
+ *
+ * เรียกได้ทุกครั้งที่เข้าหน้าจอ — ไม่เขียนอะไรทั้งสิ้น กฎทั้งหมด (ช่วงเวลา สาย
+ * เครือข่าย VPN) ตัดสินที่ server ฝั่งนี้แค่แสดงผล
+ */
+export async function getStaffTimestampStatus(
+  staffId: string,
+): Promise<StaffTimestampStatus> {
+  const url = createTimestampUrl("/staff", { staff_id: staffId });
+  const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
+  ensureSuccess(jsonData);
+
+  return toStaffStatus(jsonData);
 }

@@ -444,60 +444,65 @@ export default function BookingRoomScheduleScreen() {
         showHomeButton={false}
       />
 
-      <View style={styles.toolbar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={TEXT.BOOKING_ROOM_SCHEDULE_PICK_ROOM}
-          onPress={openPicker}
-          style={styles.roomButton}>
-          <ThemedText
-            style={[styles.roomText, !schedule?.room && styles.roomPlaceholder]}
-            numberOfLines={1}>
-            {roomLabel(schedule?.room) ?? TEXT.BOOKING_ROOM_SCHEDULE_PICK_ROOM}
-          </ThemedText>
-          <IconSymbol name="chevron.down" size={24} color={c.primary} />
-        </Pressable>
-
-        <View style={styles.weekNav}>
+      {/* Both controls drive a re-fetch (picking a room, changing the week) —
+          pointless and confusing to offer while the server can't be reached,
+          so the toolbar hides along with the rest of the screen's data. */}
+      {!error ? (
+        <View style={styles.toolbar}>
           <Pressable
-            style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}
-            onPress={() => setAnchorDate((d) => shiftDays(d, -7))}
-            accessibilityLabel={TEXT.BOOKING_ROOM_SCHEDULE_PREV_WEEK}>
-            <IconSymbol name="chevron.left" size={18} color={c.primary} />
+            accessibilityRole="button"
+            accessibilityLabel={TEXT.BOOKING_ROOM_SCHEDULE_PICK_ROOM}
+            onPress={openPicker}
+            style={styles.roomButton}>
+            <ThemedText
+              style={[styles.roomText, !schedule?.room && styles.roomPlaceholder]}
+              numberOfLines={1}>
+              {roomLabel(schedule?.room) ?? TEXT.BOOKING_ROOM_SCHEDULE_PICK_ROOM}
+            </ThemedText>
+            <IconSymbol name="chevron.down" size={24} color={c.primary} />
           </Pressable>
 
-          <View style={styles.weekLabelWrap}>
-            <DatePickerField
-              label={TEXT.BOOKING_ROOM_SCHEDULE_PICK_DATE}
-              hideLabel
-              value={parseDate(anchorDate)}
-              displayValue={
-                schedule
-                  ? weekLabel(schedule.week.start, schedule.week.end)
-                  : TEXT.BOOKING_ROOM_SCHEDULE_PICK_DATE
-              }
-              allowWeekends
-              caption={
-                schedule
-                  ? `${TEXT.BOOKING_ROOM_SCHEDULE_WEEK_SHOWN} ${weekLabel(schedule.week.start, schedule.week.end)}`
-                  : undefined
-              }
-              onChange={(date) => setAnchorDate(toISODate(date))}
-              buttonStyle={styles.weekField}
-              textStyle={styles.weekFieldText}
-              iconColor={c.textMuted}
-              iconSize={19}
-            />
+          <View style={styles.weekNav}>
+            <Pressable
+              style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}
+              onPress={() => setAnchorDate((d) => shiftDays(d, -7))}
+              accessibilityLabel={TEXT.BOOKING_ROOM_SCHEDULE_PREV_WEEK}>
+              <IconSymbol name="chevron.left" size={18} color={c.primary} />
+            </Pressable>
+
+            <View style={styles.weekLabelWrap}>
+              <DatePickerField
+                label={TEXT.BOOKING_ROOM_SCHEDULE_PICK_DATE}
+                hideLabel
+                value={parseDate(anchorDate)}
+                displayValue={
+                  schedule
+                    ? weekLabel(schedule.week.start, schedule.week.end)
+                    : TEXT.BOOKING_ROOM_SCHEDULE_PICK_DATE
+                }
+                allowWeekends
+                caption={
+                  schedule
+                    ? `${TEXT.BOOKING_ROOM_SCHEDULE_WEEK_SHOWN} ${weekLabel(schedule.week.start, schedule.week.end)}`
+                    : undefined
+                }
+                onChange={(date) => setAnchorDate(toISODate(date))}
+                buttonStyle={styles.weekField}
+                textStyle={styles.weekFieldText}
+                iconColor={c.textMuted}
+                iconSize={19}
+              />
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}
+              onPress={() => setAnchorDate((d) => shiftDays(d, 7))}
+              accessibilityLabel={TEXT.BOOKING_ROOM_SCHEDULE_NEXT_WEEK}>
+              <IconSymbol name="chevron.right" size={18} color={c.primary} />
+            </Pressable>
           </View>
-
-          <Pressable
-            style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}
-            onPress={() => setAnchorDate((d) => shiftDays(d, 7))}
-            accessibilityLabel={TEXT.BOOKING_ROOM_SCHEDULE_NEXT_WEEK}>
-            <IconSymbol name="chevron.right" size={18} color={c.primary} />
-          </Pressable>
         </View>
-      </View>
+      ) : null}
 
       <ScrollView
         contentContainerStyle={styles.scroll}

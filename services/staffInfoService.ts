@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { ENDPOINTS } from '../constants/endpoints';
 import { createApiUrl, requestJson } from './api';
+import type { StaffStampRole } from './timestampService';
 
 /**
  * Whether the person who just signed in with PSU Passport is Faculty of
@@ -29,6 +30,15 @@ export type StaffEligibility = {
    * the app can learn it.
    */
   isLecturer: boolean;
+  /**
+   * Which stamping screen this person belongs on.
+   *
+   * Decided by the gateway from POSITION_ID, like `isLecturer` — the app holds
+   * no copy of the position lists, so they can change without a new build.
+   * `isLecturer` is kept for the callers that already read it; anything new
+   * should switch on this.
+   */
+  stampRole: StaffStampRole;
   eligible: boolean;
   /** 'eligible' | 'other_faculty' | 'not_found' — for logs and support. */
   reason: string;
@@ -36,6 +46,7 @@ export type StaffEligibility = {
 
 const CACHE_KEY_PREFIX = 'staffEligibility:';
 const LECTURER_CACHE_KEY_PREFIX = 'staffIsLecturer:';
+const ROLE_CACHE_KEY_PREFIX = 'staffStampRole:';
 
 function cacheKey(staffId: string) {
   return `${CACHE_KEY_PREFIX}${staffId}`;
@@ -43,6 +54,38 @@ function cacheKey(staffId: string) {
 
 function lecturerCacheKey(staffId: string) {
   return `${LECTURER_CACHE_KEY_PREFIX}${staffId}`;
+}
+
+function roleCacheKey(staffId: string) {
+  return `${ROLE_CACHE_KEY_PREFIX}${staffId}`;
+}
+
+/**
+ * Which stamping screen this person was on last time we asked, or null.
+ *
+ * Cached for the same reason `isLecturer` is: the timestamp tab bar has to draw
+ * the right tab on its very first frame, and entering the module has to land on
+ * the right screen, neither of which can wait for a network round trip that has
+ * already been made once.
+ */
+export async function readCachedStampRole(staffId: string): Promise<StaffStampRole | null> {
+  try {
+    const stored = await AsyncStorage.getItem(roleCacheKey(staffId));
+    if (stored === 'lecturer' || stored === 'guard' || stored === 'staff') {
+      return stored;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function writeCachedStampRole(staffId: string, role: StaffStampRole): Promise<void> {
+  try {
+    await AsyncStorage.setItem(roleCacheKey(staffId), role);
+  } catch {
+    // A cache that will not persist costs a re-check, nothing more.
+  }
 }
 
 /**
@@ -60,7 +103,19 @@ export async function fetchStaffEligibility(staffId: string): Promise<StaffEligi
     throw new Error('Malformed staff-info response');
   }
 
-  return json.data;
+  // `stampRole` is newer than some deployed gateways, and an older one simply
+  // leaves it out. Left as `undefined` it would travel all the way to
+  // `stampRole === 'staff'` in the tab bar, which is false — so a gateway one
+  // release behind would silently hide the stamping tab from every member of
+  // general staff. Defaulting here rather than at each reader means there is
+  // one place that can be wrong instead of several.
+  return { ...json.data, stampRole: normalizeStampRole(json.data.stampRole) };
+}
+
+/** Anything that is not a role we know becomes 'staff' — the majority, and the
+ *  one whose screen is read-only, so a wrong guess costs a redraw. */
+function normalizeStampRole(value: unknown): StaffStampRole {
+  return value === 'lecturer' || value === 'guard' || value === 'staff' ? value : 'staff';
 }
 
 /**

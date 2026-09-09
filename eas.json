@@ -19,8 +19,7 @@
       "autoIncrement": true,
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_MODE": "production",
-        "EXPO_PUBLIC_API_BASE_URL": "http://172.31.133.131:1337"
+        "EXPO_PUBLIC_MODE": "production"
       }
     },
     "development-ios-simulator": {

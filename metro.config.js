@@ -9,7 +9,7 @@ const APP_MODE = process.env.EXPO_PUBLIC_MODE ?? 'development';
 
 const API_DOMAINS = {
   development: 'http://localhost:1337',
-  production: 'https://saas.eng.psu.ac.th',
+  production: 'https://apis.eng.psu.ac.th/scooba',
 };
 
 const AUTH_REDIRECT_DOMAINS = {

@@ -3,9 +3,8 @@ import { ENV } from './config';
 const EXPO_OS = process.env.EXPO_OS ?? '';
 
 export const API_DOMAINS = {
-  //development: 'http://localhost:1337',
   development: 'http://172.31.133.131:1337',
-  production: 'https://saas.eng.psu.ac.th',
+  production: 'https://apis.eng.psu.ac.th/scooba',
 };
 
 export const AUTH_REDIRECT_DOMAINS = {
