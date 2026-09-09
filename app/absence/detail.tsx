@@ -15,6 +15,7 @@ import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 import { getApprovalStatusBadge } from '@/constants/approval-status';
 import { TEXT } from '@/constants/text';
+import { USER_ID } from '@/constants/user';
 import {
   TYPE_ABSENCE_BIRTH,
   TYPE_ABSENCE_BUSINESS,
@@ -23,6 +24,7 @@ import {
   TYPE_ABSENCE_RELAX,
   TYPE_ABSENCE_SICK,
 } from '@/constants/types';
+import { useAuth } from '@/context/AuthContext';
 import type { absence } from '@/models/types';
 import { getabsenceData } from '@/services/absenceService';
 import { formatDateRange } from '@/utils/date-format';
@@ -321,6 +323,8 @@ export default function absenceDetailScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
+  const { user: authUser } = useAuth();
+  const viewerStaffId = authUser?.staffId || USER_ID;
   const params = useLocalSearchParams<{ id?: string; item?: string; type?: string; backHref?: string }>();
   const initialItem = useMemo(() => parseItem(params.item), [params.item]);
   const [item, setItem] = useState<absence>(initialItem);
@@ -344,6 +348,12 @@ export default function absenceDetailScreen() {
   const dateText = formatDateRange(startDate, endDate);
   const leaveDay = getText(item, ['numDays', 'num_days', 'absentDays', 'absent_days', 'absenceDays', 'ABSENCE_days', 'leaveDay', 'leave_day', 'days', 'day']);
   const requester = getRequesterInfo(item);
+  // Only worth a card when the requester is someone other than the person
+  // looking at the screen — reached this way via a boss's approve-leave
+  // history tab. Viewing your own request, the card would just be your own
+  // name and photo staring back. Ambiguous cases (no staffId to compare) show
+  // the card rather than risk hiding a real name.
+  const isOwnRequest = Boolean(requester.staffId) && requester.staffId === viewerStaffId;
   const approver = getApproverInfo(item);
   const agentEntries = getAgentEntries(item);
   const reason = getText(item, ['reason', 'detail', 'description']);
@@ -452,7 +462,7 @@ export default function absenceDetailScreen() {
         />
 
         {/* Requester card */}
-        {requester.name ? (
+        {requester.name && !isOwnRequest ? (
           <SectionCard title={TEXT.ABSENCE_REQUESTER_LABEL}>
             <PersonRow name={requester.name} position={requester.position} staffId={requester.staffId} />
           </SectionCard>
