@@ -450,6 +450,19 @@ export const TEXT = {
   MEETING_NO_AGENDA: 'ไม่มีวาระการประชุม',
   MEETING_UNABLE_TO_LOAD_AGENDA: 'ไม่สามารถโหลดวาระการประชุมได้',
 
+  // Repair Hub — the merged "แจ้งซ่อม" home tile (app/repair.tsx). It only ever
+  // hands off to one of the two fully standalone modules below (notice-repair
+  // and repair-computer); nothing about either module's own management screens
+  // is merged, same shape as booking-room's select-room-type.tsx hub.
+  REPAIR_MENU_TITLE: 'แจ้งซ่อม',
+  REPAIR_HUB_NAV_TITLE: 'แจ้งซ่อม',
+  REPAIR_HUB_TITLE: 'เลือกประเภทงานแจ้งซ่อม',
+  REPAIR_HUB_DESCRIPTION: 'เลือกว่าต้องการแจ้งซ่อมสาธารณูปการหรือแจ้งซ่อมคอมพิวเตอร์',
+  REPAIR_HUB_NOTICE_REPAIR_TITLE: 'แจ้งซ่อมสาธารณูปการ',
+  REPAIR_HUB_NOTICE_REPAIR_DESCRIPTION: 'แจ้งซ่อมไฟฟ้า ประปา อาคารสถานที่ และงานสาธารณูปการอื่นๆ',
+  REPAIR_HUB_COMPUTER_TITLE: 'แจ้งซ่อมคอมพิวเตอร์',
+  REPAIR_HUB_COMPUTER_DESCRIPTION: 'แจ้งซ่อมคอมพิวเตอร์และอุปกรณ์ไอที',
+
   // Notice Repair
   NOTICE_REPAIR__MENU_TITLE: 'แจ้งซ่อมทั่วไป',
   NOTICE_REPAIR__TITLE: 'แจ้งซ่อมทั่วไป',
@@ -1252,9 +1265,41 @@ export const TEXT = {
   STAFF_TIMESTAMP_LATE: 'สาย',
   STAFF_TIMESTAMP_BUTTON_IN: 'ลงเวลาเข้างาน',
   STAFF_TIMESTAMP_BUTTON_OUT: 'ลงเวลาออกงาน',
-  // เฟสแรกยังไม่เปิดให้ลงเวลาผ่านแอป ปุ่มจึงยังกดไม่ได้ — บอกไปตรงๆ ดีกว่าปล่อยให้
-  // กดแล้วเงียบ
-  STAFF_TIMESTAMP_COMING_SOON: 'ยังไม่เปิดให้ลงเวลาผ่านแอป กรุณาใช้เครื่องสแกนที่คณะฯ',
+  // หัวข้อ Modal ที่แจ้งสถานะของวันตอนเปิดหน้า (ลงเข้าแล้ว, ครบแล้ว, นอกช่วงเวลา ...)
+  STAFF_TIMESTAMP_NOTICE_TITLE: 'แจ้งเตือนการลงเวลา',
+
+  // Timestamp - สแกนใบหน้าลงเวลา (บุคลากรทั่วไป)
+  //
+  // คำแนะนำใต้กรอบวงรี เปลี่ยนตามตำแหน่งใบหน้าที่กล้องเห็น — ไม่ได้ตัดสินว่าเป็นใคร
+  STAFF_FACE_HINT_NONE: 'วางใบหน้าให้อยู่ในกรอบ',
+  STAFF_FACE_HINT_MANY: 'ให้มีใบหน้าเดียวในกรอบ',
+  STAFF_FACE_HINT_OFF_CENTER: 'ขยับใบหน้าให้อยู่กลางกรอบ',
+  STAFF_FACE_HINT_TOO_FAR: 'ขยับเข้ามาใกล้อีกนิด',
+  STAFF_FACE_HINT_TOO_CLOSE: 'ถอยออกไปอีกนิด',
+  // ตรวจความมีชีวิตด้วยการกะพริบตา — รูปถ่ายกะพริบตาไม่ได้
+  STAFF_FACE_HINT_BLINK: 'กะพริบตาเพื่อสแกนใบหน้า',
+  STAFF_FACE_CHECKING: 'กำลังตรวจสอบใบหน้า...',
+  // ตัวเลขเล็กๆ ที่มุมกรอบ: % ตามสูตรเครื่องสแกนที่ประตู (ผ่านที่ 90%) คำนวณที่ scooba
+  STAFF_FACE_SIMILARITY: 'ความเหมือน',
+  // สแกนไม่ผ่านติดกัน 30 วินาที กล้องหยุดรอจนกว่าจะกดสแกนอีกครั้ง
+  STAFF_FACE_PAUSED: 'หยุดสแกนชั่วคราว',
+  STAFF_FACE_SCAN_AGAIN: 'สแกนอีกครั้ง',
+  STAFF_FACE_START: 'สแกนใบหน้าเพื่อลงเวลา',
+  STAFF_FACE_NOT_REGISTERED_TITLE: 'ยังไม่ได้ลงทะเบียนใบหน้า',
+  STAFF_FACE_NOT_REGISTERED: 'กรุณาติดต่อลงทะเบียนใบหน้าที่ กลุ่มงานคอมพิวเตอร์ฯ ก่อนลงเวลาผ่านแอป',
+  STAFF_FACE_WEB_ONLY: 'การลงเวลาด้วยการสแกนใบหน้าใช้ได้เฉพาะในแอปบนมือถือ',
+  STAFF_FACE_CAMERA_TITLE: 'ต้องเปิดการใช้งานกล้อง',
+  STAFF_FACE_CAMERA_DENIED: 'การลงเวลาต้องสแกนใบหน้าด้วยกล้องหน้า กรุณาอนุญาตให้แอปใช้กล้อง',
+  // ระบบไม่ถามซ้ำแล้ว ทางเดียวคือไปเปิดในตั้งค่าของเครื่อง
+  STAFF_FACE_CAMERA_BLOCKED: 'คุณได้ปิดการใช้งานกล้องไว้ กรุณาเปิดในตั้งค่าของเครื่อง แล้วกลับมาที่หน้านี้อีกครั้ง',
+  STAFF_FACE_CAMERA_ALLOW: 'อนุญาตกล้อง',
+  // ถามก่อนเปิดกล้อง สำหรับการลงเวลาที่ผิดปกติ (ข้อความคำถามมาจาก gateway)
+  STAFF_FACE_CONFIRM_TITLE: 'ยืนยันการลงเวลา',
+  STAFF_FACE_CONFIRM_SCAN: 'สแกนใบหน้า',
+  // หัวข้อ Modal ผลการสแกนที่หน้าตรงแล้ว (ข้อความมาจาก gateway)
+  STAFF_FACE_RESULT_STAMPED: 'ลงเวลาสำเร็จ',
+  STAFF_FACE_RESULT_REFUSED: 'ยังลงเวลาไม่ได้',
+  STAFF_FACE_RESULT_DRY_RUN: 'ทดสอบระบบ',
   STAFF_TIMESTAMP_LOAD_ERROR: 'ไม่สามารถโหลดสถานะการลงเวลาได้',
   LECT_TIMESTAMP_BUTTON: 'ลงเวลาวันนี้',
   LECT_TIMESTAMP_STAMPED_HEADLINE: 'วันนี้ลงเวลาแล้ว',
@@ -1424,6 +1469,38 @@ export const TEXT = {
   TIMESTAMP_APPEAL_DATE: 'วันที่ยื่น',
   TIMESTAMP_TIMESTAMP_DATETIME: 'วันและเวลาลงเวลา',
   TIMESTAMP_TIMESTAMP_TYPE: 'ประเภทการลงเวลา',
+
+  // Computer-lab OT (เวรห้องคอมพิวเตอร์, scooba-comp-ot — dept 209 only)
+  COMP_OT_MENU_TITLE: 'เวรห้องคอมพิวเตอร์',
+  COMP_OT_HEADER_TITLE: 'ตารางเวรห้องคอมพิวเตอร์',
+  COMP_OT_HEADER_SUBTITLE: 'ดูตารางเวรและลงเวลาเข้า-ออกเวร',
+  COMP_OT_SCOPE_MINE: 'เวรของฉัน',
+  COMP_OT_SCOPE_DEPT: 'เพื่อนร่วมแผนก',
+  COMP_OT_SHIFT_AFTER_HOURS: 'เวรหลังเลิกงาน',
+  COMP_OT_SHIFT_LUNCH: 'เวรเที่ยง',
+  COMP_OT_SHIFT_HOLIDAY: 'เวรวันเสาร์-อาทิตย์/วันหยุดนักขัตฤกษ์',
+  COMP_OT_DAY_NO_SHIFT: 'ไม่มีเวรในวันนี้',
+  COMP_OT_LOAD_ERROR: 'โหลดตารางเวรไม่สำเร็จ',
+  COMP_OT_MINE_BADGE: 'เวรของฉัน',
+  COMP_OT_LEGEND_STAMPED_IN: 'ลงเวลาเข้าแล้ว',
+  COMP_OT_LEGEND_STAMPED_OUT: 'ลงเวลาออกแล้ว',
+  COMP_OT_LEGEND_NOT_STAMPED: 'ยังไม่ลงเวลา',
+  COMP_OT_STAMP_IN_BUTTON: 'ลงเวลาเข้าเวร',
+  COMP_OT_STAMP_OUT_BUTTON: 'ลงเวลาออกเวร',
+  COMP_OT_STAMP_MODAL_TITLE_IN: 'ลงเวลาเข้าเวร',
+  COMP_OT_STAMP_MODAL_TITLE_OUT: 'ลงเวลาออกเวร',
+  COMP_OT_STAMP_AMOUNT_LABEL: 'จำนวนเงิน (บาท)',
+  COMP_OT_STAMP_AMOUNT_PLACEHOLDER: 'กรอกจำนวนเงิน',
+  COMP_OT_STAMP_AMOUNT_REQUIRED: 'กรุณากรอกจำนวนเงินให้ถูกต้อง',
+  COMP_OT_STAMP_SUBMIT: 'บันทึก',
+  COMP_OT_STAMP_CANCEL: 'ยกเลิก',
+  COMP_OT_STAMP_SUCCESS: 'บันทึกการลงเวลาแล้ว',
+  COMP_OT_STAMP_ERROR: 'บันทึกการลงเวลาไม่สำเร็จ',
+  COMP_OT_HISTORY_BUTTON: 'ประวัติการลงเวลา',
+  COMP_OT_HISTORY_TITLE: 'ประวัติการลงเวลาเวร',
+  COMP_OT_HISTORY_SUBTITLE: 'ดูประวัติการลงเวลาเข้า-ออกเวรของคุณ',
+  COMP_OT_HISTORY_EMPTY: 'ยังไม่มีประวัติการลงเวลา',
+  COMP_OT_HISTORY_LOAD_ERROR: 'โหลดประวัติการลงเวลาไม่สำเร็จ',
 
   // Modal
 } as const;

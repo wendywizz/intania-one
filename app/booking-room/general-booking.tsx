@@ -28,7 +28,7 @@
  *   3. สรุป        — a pure read-only recap of everything above, then the
  *      real "ใส่ตะกร้า" button
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { InfinityLoader } from '@/components/infinity-loader';
 import { router } from 'expo-router';
 import {
@@ -153,35 +153,43 @@ export default function GeneralBookingScreen() {
 
   const [picker, setPicker] = useState<'subject' | 'start' | 'end' | 'room' | null>(null);
 
+  // A ref rather than a plain closure flag so the same load can be re-run from
+  // the retry button below, not just from the mount effect.
+  const loadCancelledRef = useRef(false);
+
+  const loadOptions = useCallback(async () => {
+    if (!staffId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setLoadError(null);
+
+    try {
+      const data = await getBookFormOptions(staffId);
+      if (loadCancelledRef.current) return;
+
+      setOptions(data);
+      setTeacher(data.teacher);
+      setColor(data.default_color || randomColor());
+    } catch (err) {
+      if (!loadCancelledRef.current) {
+        setLoadError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_FORM_LOAD_ERROR);
+      }
+    } finally {
+      if (!loadCancelledRef.current) setLoading(false);
+    }
+  }, [staffId]);
+
   useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      if (!staffId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const data = await getBookFormOptions(staffId);
-        if (cancelled) return;
-
-        setOptions(data);
-        setTeacher(data.teacher);
-        setColor(data.default_color || randomColor());
-      } catch (err) {
-        if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_FORM_LOAD_ERROR);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+    loadCancelledRef.current = false;
+    loadOptions();
 
     return () => {
-      cancelled = true;
+      loadCancelledRef.current = true;
     };
-  }, [staffId]);
+  }, [loadOptions]);
 
   const isoDate = date ? toISODate(date) : '';
 
@@ -543,7 +551,7 @@ export default function GeneralBookingScreen() {
         <ErrorState
           title={TEXT.BOOKING_ROOM_FORM_LOAD_ERROR}
           message={loadError ?? ''}
-          onRetry={() => router.replace('/booking-room/general-booking')}
+          onRetry={loadOptions}
         />
       </ThemedView>
     );

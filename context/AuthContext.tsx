@@ -6,9 +6,11 @@ import {registerLoggedInDevice, subscribeToLoggedInDevicePushTokenChanges} from 
 import {
   fetchStaffEligibility,
   readCachedEligibility,
+  readCachedIsCompOtEligible,
   readCachedIsLecturer,
   readCachedStampRole,
   writeCachedEligibility,
+  writeCachedIsCompOtEligible,
   writeCachedIsLecturer,
   writeCachedStampRole,
 } from '../services/staffInfoService';
@@ -53,6 +55,14 @@ type AuthContextValue = {
   isLecturer: boolean;
   /** `lecturer` | `guard` | `staff` — which stamping screen this account uses. */
   stampRole: StaffStampRole;
+  /**
+   * Whether `user` may use the "เวรห้องคอมพิวเตอร์" (scooba-comp-ot) home tile.
+   *
+   * Same shape as `isLecturer`: answered by the gateway from
+   * CENTRAL.STAFF_INFO.DEPT_ID (dept 209), so the app holds no copy of which
+   * department qualifies.
+   */
+  isCompOtEligible: boolean;
   completeWebSignIn: (params: Parameters<typeof authService.completeWebLogin>[0]) => Promise<void>;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -96,6 +106,8 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   // Which stamping screen this account belongs on. Resolved by the same call,
   // so it can never disagree with `isLecturer` about the same person.
   const [stampRole, setStampRole] = useState<StaffStampRole>('staff');
+  // Resolved by the same call too — see isLecturer above.
+  const [isCompOtEligible, setIsCompOtEligible] = useState(false);
   const signInPromiseRef = useRef<Promise<void> | null>(null);
   const userRef = useRef<AuthUser | null>(null);
   // Guards against a stale check overwriting a newer one — a slow reply for the
@@ -117,14 +129,16 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       if (isCurrent()) {
         setEligibility('unknown');
         setIsLecturer(false);
+        setIsCompOtEligible(false);
       }
       return;
     }
 
-    const [cached, cachedLecturer, cachedRole] = await Promise.all([
+    const [cached, cachedLecturer, cachedRole, cachedCompOt] = await Promise.all([
       readCachedEligibility(staffId),
       readCachedIsLecturer(staffId),
       readCachedStampRole(staffId),
+      readCachedIsCompOtEligible(staffId),
     ]);
     if (!isCurrent()) return;
     setEligibility(cached === null ? 'checking' : cached ? 'allowed' : 'denied');
@@ -135,6 +149,8 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     // 'staff' is the majority and the safe first guess: it shows a read-only
     // screen, so a wrong guess costs a redraw rather than a wrong action.
     setStampRole(cachedRole ?? 'staff');
+    // Same reasoning as isLecturer: null (never asked) means "no tile yet".
+    setIsCompOtEligible(cachedCompOt === true);
 
     try {
       const result = await fetchStaffEligibility(staffId);
@@ -142,11 +158,13 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         writeCachedEligibility(staffId, result.eligible),
         writeCachedIsLecturer(staffId, result.isLecturer),
         writeCachedStampRole(staffId, result.stampRole),
+        writeCachedIsCompOtEligible(staffId, result.isCompOtEligible),
       ]);
       if (isCurrent()) {
         setEligibility(result.eligible ? 'allowed' : 'denied');
         setIsLecturer(result.isLecturer);
         setStampRole(result.stampRole);
+        setIsCompOtEligible(result.isCompOtEligible);
       }
     } catch (error) {
       // Could not reach the gateway. Keep whatever the cache said; with no cached
@@ -208,6 +226,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       eligibility,
       isLecturer,
       stampRole,
+      isCompOtEligible,
       completeWebSignIn: async (params) => {
         setLoading(true);
         try {
@@ -251,7 +270,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         setEligibility('unknown');
       },
     }),
-    [loading, initializing, effectiveUser, eligibility, isLecturer, stampRole, verifyEligibility],
+    [loading, initializing, effectiveUser, eligibility, isLecturer, stampRole, isCompOtEligible, verifyEligibility],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

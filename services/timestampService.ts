@@ -1,6 +1,6 @@
 import { ENDPOINTS } from "../constants/endpoints";
 import type { JsonMap } from "./api";
-import { ensureSuccess, requestJson } from "./api";
+import { ensureSuccess, fetchWithTimeout, MESSAGE_SERVER_ERROR, requestJson } from "./api";
 
 export type Timestamp = {
   id?: string;
@@ -631,16 +631,22 @@ export async function stampToday(
 }
 
 /* -------------------------------------------------------------------------- */
-/* ลงเวลาบุคลากรทั่วไป (general staff) — READ ONLY                              */
+/* ลงเวลาบุคลากรทั่วไป (general staff)                                          */
 /*                                                                            */
 /* คนละวันทำงานกับอาจารย์: ลงเข้าและลงออกแยกกัน ด้วยเวลาจริง และมีช่วงห้าม        */
 /* ลงเวลาตาม ABSENCE.time_period                                              */
 /*                                                                            */
-/* เฟสนี้ยังไม่มีการเขียน — การลงเวลายังเป็นของเครื่องสแกนที่ประตู หน้าจอในแอป      */
-/* ใช้ดูสถานะและรู้ว่าตอนนี้ลงได้หรือยังเท่านั้น                                    */
+/* ลงเวลาด้วยการสแกนใบหน้า: แอปส่งภาพเมื่อผู้ใช้กะพริบตา gateway ตรวจว่าเป็นหน้า   */
+/* ของผู้ที่ล็อกอิน แล้วลงเวลาผ่านระบบเดียวกับเครื่องสแกนที่ประตู กฎทุกข้อตัดสินที่ */
+/* server ฝั่งนี้แค่แสดงผล                                                     */
 /* -------------------------------------------------------------------------- */
 
 export type StaffStampRole = 'lecturer' | 'guard' | 'staff' | 'unknown';
+
+/** What a stamp now would record; '' when none would be accepted. */
+export type StaffStampKind = '' | 'in' | 'out' | 'noon_in' | 'noon_out' | 'out_without_in';
+
+const STAFF_STAMP_KINDS: readonly StaffStampKind[] = ['in', 'out', 'noon_in', 'noon_out', 'out_without_in'];
 
 export type StaffTimestampStamp = {
   /** 'YYYY-MM-DD' */
@@ -658,15 +664,47 @@ export type StaffTimestampStatus = {
   role: StaffStampRole;
   isStaff: boolean;
   stamp: StaffTimestampStamp | null;
-  /** '' | 'in' | 'out' — ถ้าลงเวลาตอนนี้จะเป็นการลงอะไร */
+  /** '' | 'in' | 'out' — ถ้าลงเวลาตอนนี้จะเป็นเข้าหรือออก */
   nextStamp: string;
+  /** ถ้าสแกนตอนนี้จะบันทึกเป็นอะไร ตัดสินที่ server จากช่วงเวลาและข้อมูลวันนี้รวมกัน */
+  stampKind: StaffStampKind;
+  /** ต้องถามยืนยันก่อนเปิดกล้อง — ออกช่วงเที่ยง, เข้าช่วงเที่ยง, ออกโดยไม่มีเวลาเข้า */
+  needsConfirm: boolean;
+  /** ข้อความถามยืนยัน มาจาก gateway */
+  confirmMessage: string;
+  /** 'HH:MM' เวลาเริ่มช่วงลงเวลาออก; '' เมื่อไม่ทราบ */
+  outFrom: string;
   canStamp: boolean;
-  /** '' | 'not_staff' | 'guard' | 'already_complete' | 'on_travel' | 'weekend' | 'outside_hours' | 'off_network' | 'vpn' */
+  /**
+   * '' | 'not_staff' | 'guard' | 'already_in' | 'already_complete' | 'on_travel'
+   * | 'weekend' | 'outside_hours' | 'irregular_record' | 'off_network' | 'vpn'
+   * | 'off_site' | 'no_location' | 'kind_changed' | 'upstream_error'
+   */
   reason: string;
   /** ประโยคที่จะแสดง มาจาก gateway เสมอ ไม่ว่างแน่นอน */
   message: string;
+  /** ลงทะเบียนใบหน้าแล้วหรือยัง; null = ตรวจไม่ได้ในตอนนี้ ให้การสแกนเป็นตัวตัดสิน */
+  faceRegistered: boolean | null;
+  /** เฉพาะผลการลงเวลา: ครั้งนี้บันทึกจริง */
+  created: boolean;
   serverDate: string;
   serverTime: string;
+};
+
+/** ผลของการสแกนใบหน้าหนึ่งครั้ง */
+export type StaffFaceStampResult = {
+  /** หน้าตรงกับผู้ที่ล็อกอิน — false = ให้สแกนต่อ */
+  passed: boolean;
+  /** 'no_face' | 'face_mismatch' | 'too_fast' เมื่อ passed เป็น false, หรือเหตุผลของ status */
+  reason: string;
+  message: string;
+  /** % ความเหมือนของผู้ที่ล็อกอิน ตามสูตรเครื่องสแกนที่ประตู (ผ่านที่ 90%); null เมื่อไม่อยู่ในรายการที่ใกล้เคียง */
+  similarity: number | null;
+  /** ผลการลงเวลาหลังหน้าตรง — null เมื่อการตรวจหน้าหยุดไว้ก่อน */
+  status: StaffTimestampStatus | null;
+  created: boolean;
+  /** gateway อยู่ในโหมดทดสอบ — ไม่มีการบันทึกจริง */
+  dryRun: boolean;
 };
 
 /**
@@ -683,10 +721,10 @@ function isMissingTime(value: unknown): boolean {
   return text === "" || text === "00:00:00" || text === "00:00";
 }
 
-function toStaffStatus(json: JsonMap): StaffTimestampStatus {
-  const data = (json?.data ?? {}) as Record<string, unknown>;
+function staffStatusFrom(data: Record<string, unknown>): StaffTimestampStatus {
   const stamp = data.stamp as Record<string, unknown> | null | undefined;
   const str = (value: unknown) => (value == null ? "" : String(value));
+  const kind = str(data.stampKind) as StaffStampKind;
 
   return {
     staffId: str(data.staffId),
@@ -701,26 +739,120 @@ function toStaffStatus(json: JsonMap): StaffTimestampStatus {
         }
       : null,
     nextStamp: str(data.nextStamp),
+    // Only a kind this app knows how to label and confirm; anything else is
+    // treated as "nothing to stamp" rather than guessed at.
+    stampKind: STAFF_STAMP_KINDS.includes(kind) ? kind : '',
+    needsConfirm: data.needsConfirm === true,
+    confirmMessage: str(data.confirmMessage),
+    outFrom: str(data.outFrom),
     canStamp: data.canStamp === true,
     reason: str(data.reason),
     message: str(data.message),
+    faceRegistered: typeof data.faceRegistered === 'boolean' ? data.faceRegistered : null,
+    created: data.created === true,
     serverDate: str(data.serverDate),
     serverTime: str(data.serverTime),
   };
+}
+
+function toStaffStatus(json: JsonMap): StaffTimestampStatus {
+  return staffStatusFrom((json?.data ?? {}) as Record<string, unknown>);
 }
 
 /**
  * สถานะการลงเวลาวันนี้ของบุคลากรทั่วไป
  *
  * เรียกได้ทุกครั้งที่เข้าหน้าจอ — ไม่เขียนอะไรทั้งสิ้น กฎทั้งหมด (ช่วงเวลา สาย
- * เครือข่าย VPN) ตัดสินที่ server ฝั่งนี้แค่แสดงผล
+ * เครือข่าย VPN พิกัด) ตัดสินที่ server ฝั่งนี้แค่แสดงผล ส่งพิกัดไปด้วยทุกครั้ง
+ * เพื่อให้หน้าจอแสดงผลเดียวกับที่การสแกนจะได้รับ
  */
 export async function getStaffTimestampStatus(
   staffId: string,
+  position?: LectPosition | null,
 ): Promise<StaffTimestampStatus> {
-  const url = createTimestampUrl("/staff", { staff_id: staffId });
+  const url = createTimestampUrl("/staff", {
+    staff_id: staffId,
+    ...positionQuery(position),
+  });
   const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
   ensureSuccess(jsonData);
 
   return toStaffStatus(jsonData);
+}
+
+/**
+ * ส่งภาพใบหน้าหนึ่งภาพเพื่อลงเวลา
+ *
+ * A face that does not match resolves `passed: false` — the screen scans again.
+ * A matched face resolves with the attendance verdict in `status`, which may be
+ * the stamp, a refusal, or a dry run. Only a broken request or an unreachable
+ * gateway rejects.
+ *
+ * `expectKind` is the stamp the screen showed (and confirmed, when unusual); the
+ * server refuses if the window has moved on since.
+ */
+export async function submitStaffFaceStamp({
+  staffId,
+  photoUri,
+  expectKind,
+  position,
+}: {
+  staffId: string;
+  photoUri: string;
+  expectKind: StaffStampKind;
+  position?: LectPosition | null;
+}): Promise<StaffFaceStampResult> {
+  const form = new FormData();
+  form.append('staff_id', staffId);
+  form.append('expect_kind', expectKind);
+
+  const coords = positionQuery(position);
+  if (coords.lat && coords.lon) {
+    form.append('lat', coords.lat);
+    form.append('lon', coords.lon);
+  }
+
+  // React Native's FormData sends a file part when given { uri, name, type };
+  // the DOM typings do not know that shape, hence the cast.
+  form.append('file', { uri: photoUri, name: 'face.jpg', type: 'image/jpeg' } as unknown as Blob);
+
+  // fetchWithTimeout rather than requestJson: requestJson forces a JSON
+  // Content-Type, and a multipart body needs the boundary fetch sets itself.
+  const response = await fetchWithTimeout(createTimestampUrl('/staff/stamp'), {
+    method: 'POST',
+    body: form,
+  });
+  const text = await response.text();
+
+  let json: JsonMap | null = null;
+  try {
+    json = text ? (JSON.parse(text) as JsonMap) : null;
+  } catch {
+    json = null;
+  }
+
+  if (!response.ok || !json) {
+    const serverMessage = ((json?.error ?? {}) as { message?: unknown }).message;
+    throw new Error(
+      response.status < 500 && typeof serverMessage === 'string' && serverMessage
+        ? serverMessage
+        : MESSAGE_SERVER_ERROR,
+    );
+  }
+  ensureSuccess(json);
+
+  const data = (json.data ?? {}) as Record<string, unknown>;
+  const similarity = typeof data.similarity === 'number' && Number.isFinite(data.similarity) ? data.similarity : null;
+
+  return {
+    passed: data.passed === true,
+    reason: String(data.reason ?? ''),
+    message: String(data.message ?? ''),
+    similarity,
+    status: data.status && typeof data.status === 'object'
+      ? staffStatusFrom(data.status as Record<string, unknown>)
+      : null,
+    created: data.created === true,
+    dryRun: data.dryRun === true,
+  };
 }

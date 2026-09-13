@@ -27,6 +27,8 @@ type ConfirmDialogProps = {
   /** Disables buttons and spins the confirm action. */
   loading?: boolean;
   icon?: IconSymbolName;
+  /** One button only — for a notice to acknowledge rather than a choice to make. */
+  hideCancel?: boolean;
 };
 
 export function ConfirmDialog({
@@ -40,6 +42,7 @@ export function ConfirmDialog({
   destructive = false,
   loading = false,
   icon,
+  hideCancel = false,
 }: ConfirmDialogProps) {
   const c = useColors();
 
@@ -57,7 +60,9 @@ export function ConfirmDialog({
           {message ? <Text style={[styles.message, { color: c.textMuted }]}>{message}</Text> : null}
 
           <View style={styles.actions}>
-            <Button title={cancelLabel} variant="secondary" onPress={onCancel} disabled={loading} style={styles.action} />
+            {hideCancel ? null : (
+              <Button title={cancelLabel} variant="secondary" onPress={onCancel} disabled={loading} style={styles.action} />
+            )}
             <Button
               title={confirmLabel}
               variant={destructive ? 'danger' : 'primary'}

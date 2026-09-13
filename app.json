@@ -30,6 +30,7 @@
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "POST_NOTIFICATIONS",
+        "CAMERA",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
       ],
@@ -67,7 +68,7 @@
         "expo-image-picker",
         {
           "photosPermission": "Allow Intania One to access your photos so you can attach a medical certificate image.",
-          "cameraPermission": "Allow Intania One to use the camera so you can photograph a medical certificate."
+          "cameraPermission": "Allow Intania One to use the camera to photograph a medical certificate and to scan your face when you clock in."
         }
       ],
       "@react-native-community/datetimepicker",
@@ -85,6 +86,14 @@
           "locationWhenInUsePermission": "แอปใช้ตำแหน่งของคุณเพื่อยืนยันว่าคุณอยู่ในบริเวณคณะวิศวกรรมศาสตร์ขณะลงเวลาปฏิบัติราชการ",
           "isIosBackgroundLocationEnabled": false,
           "isAndroidBackgroundLocationEnabled": false
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
         }
       ]
     ],

@@ -39,6 +39,13 @@ export type StaffEligibility = {
    * should switch on this.
    */
   stampRole: StaffStampRole;
+  /**
+   * Whether this person may use the "เวรห้องคอมพิวเตอร์" (scooba-comp-ot) home
+   * tile — decided by the gateway from CENTRAL.STAFF_INFO.DEPT_ID (dept 209),
+   * the same way `isLecturer` is decided from POSITION_ID. The app never
+   * compares the department id itself.
+   */
+  isCompOtEligible: boolean;
   eligible: boolean;
   /** 'eligible' | 'other_faculty' | 'not_found' — for logs and support. */
   reason: string;
@@ -47,6 +54,7 @@ export type StaffEligibility = {
 const CACHE_KEY_PREFIX = 'staffEligibility:';
 const LECTURER_CACHE_KEY_PREFIX = 'staffIsLecturer:';
 const ROLE_CACHE_KEY_PREFIX = 'staffStampRole:';
+const COMP_OT_CACHE_KEY_PREFIX = 'staffIsCompOtEligible:';
 
 function cacheKey(staffId: string) {
   return `${CACHE_KEY_PREFIX}${staffId}`;
@@ -58,6 +66,10 @@ function lecturerCacheKey(staffId: string) {
 
 function roleCacheKey(staffId: string) {
   return `${ROLE_CACHE_KEY_PREFIX}${staffId}`;
+}
+
+function compOtCacheKey(staffId: string) {
+  return `${COMP_OT_CACHE_KEY_PREFIX}${staffId}`;
 }
 
 /**
@@ -109,7 +121,13 @@ export async function fetchStaffEligibility(staffId: string): Promise<StaffEligi
   // release behind would silently hide the stamping tab from every member of
   // general staff. Defaulting here rather than at each reader means there is
   // one place that can be wrong instead of several.
-  return { ...json.data, stampRole: normalizeStampRole(json.data.stampRole) };
+  return {
+    ...json.data,
+    stampRole: normalizeStampRole(json.data.stampRole),
+    // Same reasoning as stampRole: an older gateway simply omits this field,
+    // and the safe default is "no tile" rather than a crash on `undefined`.
+    isCompOtEligible: json.data.isCompOtEligible === true,
+  };
 }
 
 /** Anything that is not a role we know becomes 'staff' — the majority, and the
@@ -169,6 +187,32 @@ export async function readCachedIsLecturer(staffId: string): Promise<boolean | n
 export async function writeCachedIsLecturer(staffId: string, isLecturer: boolean): Promise<void> {
   try {
     await AsyncStorage.setItem(lecturerCacheKey(staffId), isLecturer ? 'true' : 'false');
+  } catch {
+    // Same as above: a cache that will not persist costs a re-check.
+  }
+}
+
+/**
+ * Whether this person was comp-ot-eligible last time we asked, or null if
+ * nobody has. Same shape and reasoning as readCachedIsLecturer: the home
+ * screen has to draw (or not draw) the "เวรห้องคอมพิวเตอร์" tile on its very
+ * first frame, without waiting on a network round trip that has already been
+ * made once.
+ */
+export async function readCachedIsCompOtEligible(staffId: string): Promise<boolean | null> {
+  try {
+    const stored = await AsyncStorage.getItem(compOtCacheKey(staffId));
+    if (stored === 'true') return true;
+    if (stored === 'false') return false;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function writeCachedIsCompOtEligible(staffId: string, isCompOtEligible: boolean): Promise<void> {
+  try {
+    await AsyncStorage.setItem(compOtCacheKey(staffId), isCompOtEligible ? 'true' : 'false');
   } catch {
     // Same as above: a cache that will not persist costs a re-check.
   }

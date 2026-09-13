@@ -1,5 +1,7 @@
 import * as Location from 'expo-location';
 
+import { DEV_LOCATION } from '../constants/devConfig';
+
 /**
  * Where the phone says it is — for the anti-fraud checks on ลงเวลา.
  *
@@ -84,6 +86,14 @@ function fail(outcome: LocationOutcome, canAskAgain = true): LocationReading {
  * Never throws. Every failure is an outcome the caller can render.
  */
 export async function readDevicePosition(): Promise<LocationReading> {
+  if (__DEV__ && DEV_LOCATION) {
+    return {
+      outcome: 'ok',
+      position: { ...DEV_LOCATION, accuracyM: 0 },
+      canAskAgain: true,
+    };
+  }
+
   try {
     const permission = await Location.requestForegroundPermissionsAsync();
     if (permission.status !== 'granted') {

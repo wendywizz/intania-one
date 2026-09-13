@@ -180,12 +180,17 @@ const MODULE_HREF = {
   timestamp: '/timestamp',
   absence: '/absence/pending',
   meeting: '/meeting',
-  repair: '/repair-computer',
-  noticeRepair: '/notice-repair',
+  // One tile for two fully standalone modules (repair-computer and
+  // notice-repair) — see app/repair.tsx. Any shift item from either module
+  // must key its `module` off this, not a path into the module itself, or its
+  // red dot would land on a grid square that doesn't exist.
+  repairHub: '/repair',
   booking: '/booking-room',
   exam: '/examiner',
   calendar: '/calendar',
   person: '/person-search',
+  // Only ever added to the grid for dept-209 staff — see isCompOtEligible below.
+  compOt: '/comp-ot',
 } as const;
 
 // The order the grid draws them in, and the only thing that decides it. Daily
@@ -200,8 +205,9 @@ const MENU_ITEMS: readonly { title: string; href: string; icon: IconName }[] = [
   // only carry so many calendar glyphs before they stop telling each other apart.
   { title: TEXT.ABSENCE_TITLE, href: MODULE_HREF.absence, icon: 'doc.text.fill' },
   { title: TEXT.MEETING_MENU_TITLE, href: MODULE_HREF.meeting, icon: 'person.2.fill' },
-  { title: TEXT.REPAIR_COMPUTER_MENU_TITLE, href: MODULE_HREF.repair, icon: 'laptop' },
-  { title: TEXT.NOTICE_REPAIR__MENU_TITLE, href: MODULE_HREF.noticeRepair, icon: 'wrench.fill' },
+  // Opens the hub in app/repair.tsx, which hands off to whichever of the two
+  // standalone modules (repair-computer / notice-repair) the person picks.
+  { title: TEXT.REPAIR_MENU_TITLE, href: MODULE_HREF.repairHub, icon: 'wrench.fill' },
   { title: TEXT.BOOKING_ROOM_MENU_TITLE, href: MODULE_HREF.booking, icon: 'door.open' },
   // A clipboard, not a checkmark: a tick reads as "approved/done", and this is a
   // roster of duty to turn up for.
@@ -269,10 +275,14 @@ type ShiftItem = {
 };
 
 // Icon per module, so the tile is identifiable before any of its text is read.
-// Same glyph the module carries in MENU_ITEMS — a module that looked like one
-// thing in the grid and another in this list would be two modules to the reader.
+// Same glyph the module carries in MENU_ITEMS, with one pair of exceptions:
+// repair and noticeRepair share a single generic tile there (see
+// MODULE_HREF.repairHub) but keep their own glyphs here, since two band tiles
+// captioned "แจ้งซ่อมคอม" and "แจ้งซ่อมสาธารณูปการ" still need to read as
+// different things at a glance.
 const SHIFT_ICONS = {
   repair: 'laptop',
+  noticeRepair: 'wrench.fill',
   absence: 'doc.text.fill',
   meeting: 'person.2.fill',
   timestamp: 'calendar-clock',
@@ -310,7 +320,10 @@ function buildShiftItems({ data, upcomingExams, absenceApproval, timestampApprov
   const to = (path: string) => () => navPush(path as Parameters<typeof navPush>[0]);
 
   // ── Repair computer: one tile per role-specific queue ──────────────────────
-  if (data?.repairComputer.success) {
+  // Double-optional-chained on the field itself, same reasoning as
+  // noticeRepair/bookingRoom below: a gateway that omits this key must not
+  // take the whole home screen down over a missing section.
+  if (data?.repairComputer?.success) {
     const repairTasks = data.repairComputer.tasks ?? [];
     const countOf = (key: string) =>
       repairTasks.find((task) => task.key === key)?.count ?? 0;
@@ -322,7 +335,7 @@ function buildShiftItems({ data, upcomingExams, absenceApproval, timestampApprov
         key,
         label,
         caption: TEXT.REPAIR_COMPUTER_MENU_TITLE,
-        module: MODULE_HREF.repair,
+        module: MODULE_HREF.repairHub,
         count,
         icon: SHIFT_ICONS.repair,
         onPress: to(path),
@@ -345,8 +358,51 @@ function buildShiftItems({ data, upcomingExams, absenceApproval, timestampApprov
       '/repair-computer/worker-current-job');
   }
 
+  // ── Notice repair (สาธารณูปการ): informer tile + one role-specific queue ───
+  //
+  // Unlike repair computer's single exclusive role, holding any notice-repair
+  // role keeps informer access too (see buildNoticeRepairSummary on the
+  // gateway) — so up to two tiles can appear together: your own current job,
+  // and whichever queue your role owns.
+  //
+  // Double-optional-chained on the field itself, unlike repairComputer above:
+  // this section was added after the app shipped, so a build talking to a
+  // gateway that hasn't picked up buildNoticeRepairSummary yet gets
+  // `undefined` here rather than a section, and reading `.success` off it
+  // would take the whole home screen down (same reasoning as bookingRoom's
+  // `data?.bookingRoom?.success` below).
+  if (data?.noticeRepair?.success) {
+    const noticeRepairTasks = data.noticeRepair.tasks ?? [];
+    const countOf = (key: string) =>
+      noticeRepairTasks.find((task) => task.key === key)?.count ?? 0;
+    const noticeRepair = (key: string, label: string, count: number, path: string) =>
+      add({
+        key,
+        label,
+        caption: TEXT.REPAIR_HUB_NOTICE_REPAIR_TITLE,
+        module: MODULE_HREF.repairHub,
+        count,
+        icon: SHIFT_ICONS.noticeRepair,
+        onPress: to(path),
+      });
+
+    noticeRepair('notice-repair-informer', TEXT.HOME_SHIFT_CURRENT_JOB,
+      countOf('informer-current'), '/notice-repair/informer-current');
+    noticeRepair('notice-repair-approve', TEXT.NOTICE_REPAIR_TAB_PENDING,
+      countOf('approve-pending'), '/notice-repair/approve-pending');
+    noticeRepair('notice-repair-admin', TEXT.NOTICE_REPAIR_TAB_PENDING_RECEIPT,
+      countOf('admin-pending-receipt'), '/notice-repair/admin-pending-receipt');
+    noticeRepair('notice-repair-header', TEXT.NOTICE_REPAIR_TAB_PENDING_RECEIPT,
+      countOf('header-pending'), '/notice-repair/header-pending');
+    // Always 0 today — the gateway has no route for it yet (see
+    // buildNoticeRepairSummary's comment); wired up here so the tile appears
+    // the moment that count starts arriving, with nothing else to change.
+    noticeRepair('notice-repair-tech', TEXT.NOTICE_REPAIR_TAB_ASSIGNED,
+      countOf('tech-assigned'), '/notice-repair/tech-assigned');
+  }
+
   // ── Absence: own requests (all roles) + approvals (boss only) ───────────────
-  if (data?.absence.success) {
+  if (data?.absence?.success) {
     add({
       key: 'absence-mine',
       label: TEXT.HOME_SHIFT_MY_LEAVE,
@@ -370,7 +426,7 @@ function buildShiftItems({ data, upcomingExams, absenceApproval, timestampApprov
   }
 
   // ── Meeting ────────────────────────────────────────────────────────────────
-  if (data?.meeting.success) {
+  if (data?.meeting?.success) {
     add({
       key: 'meeting-today',
       label: TEXT.HOME_SHIFT_MEETINGS_TODAY,
@@ -404,7 +460,7 @@ function buildShiftItems({ data, upcomingExams, absenceApproval, timestampApprov
   // Counted 1/0 rather than by a list: there is one stamp a day, so `add()`
   // dropping a zero-count tile is exactly the behaviour wanted — the card is
   // there until they stamp and then it is gone.
-  if (data?.lectTimestamp.success && data.lectTimestamp.isLecturer) {
+  if (data?.lectTimestamp?.success && data.lectTimestamp.isLecturer) {
     add({
       key: 'lect-timestamp',
       label: TEXT.HOME_SHIFT_LECT_TIMESTAMP,
@@ -417,7 +473,7 @@ function buildShiftItems({ data, upcomingExams, absenceApproval, timestampApprov
   }
 
   // ── Timestamp: own forgot-timestamp requests + approvals (boss only) ────────
-  if (data?.timestamp.success) {
+  if (data?.timestamp?.success) {
     add({
       key: 'timestamp-mine',
       label: TEXT.HOME_SHIFT_TIMESTAMP,
@@ -721,7 +777,7 @@ export default function HomeScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const processedCallbackRef = useRef('');
-  const { completeWebSignIn, eligibility, loading: isAuthLoading, signIn, signOut, user: authUser } = useAuth();
+  const { completeWebSignIn, eligibility, isCompOtEligible, loading: isAuthLoading, signIn, signOut, user: authUser } = useAuth();
   const completeWebSignInRef = useRef(completeWebSignIn);
 
   useEffect(() => {
@@ -866,6 +922,18 @@ export default function HomeScreen() {
   const shiftTiles = useMemo(
     () => buildShiftItems({ data: activeSummary, upcomingExams, absenceApproval, timestampApproval }),
     [activeSummary, upcomingExams, absenceApproval, timestampApproval],
+  );
+
+  // The one tile shown/hidden per-user, rather than always drawn like every
+  // other module: dept-209 staff only, decided server-side (see AuthContext's
+  // isCompOtEligible, resolved from CENTRAL.STAFF_INFO.DEPT_ID). Appended
+  // rather than spliced into MENU_ITEMS's fixed order so a department that
+  // loses/regains the flag never reshuffles the tiles everyone else sees.
+  const visibleMenuItems = useMemo(
+    () => (isCompOtEligible
+      ? [...MENU_ITEMS, { title: TEXT.COMP_OT_MENU_TITLE, href: MODULE_HREF.compOt, icon: 'display' as IconName }]
+      : MENU_ITEMS),
+    [isCompOtEligible],
   );
 
   // Which module hrefs carry a dot. A set, not a count: the dot says only that
@@ -1211,7 +1279,7 @@ export default function HomeScreen() {
                   sits flush beneath it. */}
               <View style={styles.menuSection}>
                 <View style={styles.menuGrid}>
-                  {MENU_ITEMS.map((item) => {
+                  {visibleMenuItems.map((item) => {
                     // Same dot the bell wears, in the same place, for the same
                     // reason — so it reads as "unattended" on sight rather than
                     // as a decoration this grid invented. Keyed on MODULE_HREF.absence

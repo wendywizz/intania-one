@@ -87,6 +87,10 @@ export const ENDPOINTS = {
   examinar: `${API_BASE_URL}/api/examinar`,
   examinarDetail: `${API_BASE_URL}/api/examinar/detail`,
 
+  // --- comp-ot (เวรห้องคอมพิวเตอร์, dept 209 only) --------------------------
+  compOt: `${API_BASE_URL}/api/comp-ot`,
+  compOtStamp: `${API_BASE_URL}/api/comp-ot/stamp`,
+
   // --- executive-calendar --------------------------------------------------
   // A Strapi content type, so this one is a base plus a path joined at call
   // time rather than a full URL.

@@ -87,6 +87,13 @@ const ROUTE_BY_TYPE: Readonly<Record<string, string>> = {
   notice_repair_finished: '/notice-repair/informer-current',
   notice_repair_cannot_repair: '/notice-repair/informer-current',
   notice_repair_not_repair_update: '/notice-repair/informer-current',
+
+  // ── Computer-lab OT (เวรห้องคอมพิวเตอร์) ────────────────────────────────────
+  // The gateway's 4 cron sweeps only — no client sends any of these.
+  comp_ot_after_hours_reminder: '/comp-ot',
+  comp_ot_lunch_reminder: '/comp-ot',
+  comp_ot_holiday_reminder_day_before: '/comp-ot',
+  comp_ot_holiday_reminder_hour_before: '/comp-ot',
 };
 
 function textValue(value: unknown) {

@@ -15,6 +15,20 @@ export type ActiveSummaryRepairComputer = {
   error?: string;
 };
 
+/**
+ * Same shape as ActiveSummaryRepairComputer, no `role` field — a notice-repair
+ * account can hold an elevated role (approve/administration/header/technician)
+ * *and* always keeps informer access, so `tasks` can carry both an
+ * `informer-current` entry and a role-specific one at once (see
+ * buildNoticeRepairSummary on the gateway). index.tsx's buildShiftItems() maps
+ * each task key to its own label + route, same as it does for repair computer.
+ */
+export type ActiveSummaryNoticeRepair = {
+  success: boolean;
+  tasks: ActiveSummaryRepairTask[];
+  error?: string;
+};
+
 export type ActiveSummaryAbsence = {
   success: boolean;
   pending: Record<string, unknown>[];
@@ -65,6 +79,7 @@ export type ActiveSummaryLectTimestamp = {
 
 export type ActiveSummaryData = {
   repairComputer: ActiveSummaryRepairComputer;
+  noticeRepair: ActiveSummaryNoticeRepair;
   absence: ActiveSummaryAbsence;
   meeting: ActiveSummaryMeeting;
   timestamp: ActiveSummaryTimestamp;

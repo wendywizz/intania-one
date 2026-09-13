@@ -27,7 +27,7 @@
  *      left to decide once it is valid
  *   3. สรุป       — the full recap, then the real "ใส่ตะกร้า" button
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { InfinityLoader } from '@/components/infinity-loader';
 import { router } from 'expo-router';
 import {
@@ -175,35 +175,43 @@ export default function PeriodBookingScreen() {
   const fromISO = fromDate ? toISODate(fromDate) : '';
   const toISO = toDate ? toISODate(toDate) : '';
 
+  // A ref rather than a plain closure flag so the same load can be re-run from
+  // the retry button below, not just from the mount effect.
+  const loadCancelledRef = useRef(false);
+
+  const loadOptions = useCallback(async () => {
+    if (!staffId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setLoadError(null);
+
+    try {
+      const data = await getPeriodFormOptions(staffId);
+      if (loadCancelledRef.current) return;
+
+      setOptions(data);
+      setTeacher(data.teacher);
+      setColor(data.default_color || randomColor());
+    } catch (err) {
+      if (!loadCancelledRef.current) {
+        setLoadError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_FORM_LOAD_ERROR);
+      }
+    } finally {
+      if (!loadCancelledRef.current) setLoading(false);
+    }
+  }, [staffId]);
+
   useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      if (!staffId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const data = await getPeriodFormOptions(staffId);
-        if (cancelled) return;
-
-        setOptions(data);
-        setTeacher(data.teacher);
-        setColor(data.default_color || randomColor());
-      } catch (err) {
-        if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_FORM_LOAD_ERROR);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+    loadCancelledRef.current = false;
+    loadOptions();
 
     return () => {
-      cancelled = true;
+      loadCancelledRef.current = true;
     };
-  }, [staffId]);
+  }, [loadOptions]);
 
   // Ask the server what the range works out to, the way the term form is told
   // its counts. Computing them here would be a second implementation of the
@@ -573,7 +581,7 @@ export default function PeriodBookingScreen() {
         <ErrorState
           title={TEXT.BOOKING_ROOM_FORM_LOAD_ERROR}
           message={loadError ?? ''}
-          onRetry={() => router.replace('/booking-room/period-booking')}
+          onRetry={loadOptions}
         />
       </ThemedView>
     );

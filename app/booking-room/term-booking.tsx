@@ -29,7 +29,7 @@
  *      time+room pickers once ticked
  *   3. สีและสรุป  — colour, then the real "ใส่ตะกร้า" button
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { InfinityLoader } from '@/components/infinity-loader';
 import { router } from 'expo-router';
 import {
@@ -151,42 +151,50 @@ export default function TermBookingScreen() {
    */
   const [freeRoomsOnly, setFreeRoomsOnly] = useState(false);
 
+  // A ref rather than a plain closure flag so the same load can be re-run from
+  // the retry button below, not just from the mount effect.
+  const loadCancelledRef = useRef(false);
+
+  const loadOptions = useCallback(async () => {
+    if (!staffId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setLoadError(null);
+
+    try {
+      const data = await getTermFormOptions(staffId);
+      if (loadCancelledRef.current) return;
+
+      setOptions(data);
+      setTeacher(data.teacher);
+      setColor(data.default_color || randomColor());
+      setDrafts(
+        Object.fromEntries(data.days.map((d) => [d.day, { ...EMPTY_DAY }])),
+      );
+      // The toggle starts off, whatever the subject list holds — the same
+      // state termbook.php's checkbox loads in. Booking against a subject you
+      // teach is the ordinary case; "อื่นๆ" is the exception, and an
+      // exception should be chosen rather than arrived in.
+    } catch (err) {
+      if (!loadCancelledRef.current) {
+        setLoadError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_FORM_LOAD_ERROR);
+      }
+    } finally {
+      if (!loadCancelledRef.current) setLoading(false);
+    }
+  }, [staffId]);
+
   useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      if (!staffId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const data = await getTermFormOptions(staffId);
-        if (cancelled) return;
-
-        setOptions(data);
-        setTeacher(data.teacher);
-        setColor(data.default_color || randomColor());
-        setDrafts(
-          Object.fromEntries(data.days.map((d) => [d.day, { ...EMPTY_DAY }])),
-        );
-        // The toggle starts off, whatever the subject list holds — the same
-        // state termbook.php's checkbox loads in. Booking against a subject you
-        // teach is the ordinary case; "อื่นๆ" is the exception, and an
-        // exception should be chosen rather than arrived in.
-      } catch (err) {
-        if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : TEXT.BOOKING_ROOM_FORM_LOAD_ERROR);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+    loadCancelledRef.current = false;
+    loadOptions();
 
     return () => {
-      cancelled = true;
+      loadCancelledRef.current = true;
     };
-  }, [staffId]);
+  }, [loadOptions]);
 
   const clearError = useCallback((field: FieldKey) => {
     setErrors((current) => {
@@ -507,7 +515,7 @@ export default function TermBookingScreen() {
         <ErrorState
           title={TEXT.BOOKING_ROOM_FORM_LOAD_ERROR}
           message={loadError ?? ''}
-          onRetry={() => router.replace('/booking-room/term-booking')}
+          onRetry={loadOptions}
         />
       </ThemedView>
     );

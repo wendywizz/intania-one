@@ -161,6 +161,21 @@ There are eleven, listed in the order they appear on the home grid.
     - The gateway's cron pushes a reminder an hour before a meeting starts; the app only
       receives it
 
+- Repair Hub — `app/repair.tsx`. Not its own service or gateway namespace: one home
+  tile ("แจ้งซ่อม") shared by the two fully standalone modules below, the same way
+  Booking Room's tile is shared with meeting-room. Picking a card hands off entirely
+  to Repair Computer or Notice Repair — no shared list, roles, or API past this
+  screen. A `ShiftItem`'s `module` for either one must be `MODULE_HREF.repairHub`
+  (`/repair`), not a path into the module itself, or its red dot has no tile to land on.
+  The hub screen itself also shows a per-card dot, fetching `/api/active-summary`
+  directly (same call Home makes) rather than reading Home's state, since it's a
+  separate route. `/api/active-summary`'s `noticeRepair` section
+  (`buildNoticeRepairSummary` in scooba-service) reports one task per role a
+  person holds — an informer's own current job always, plus whichever queue
+  their elevated role owns (approve/administration/header) — except technician,
+  whose queue (`technician_assigned`) has no gateway route yet and always
+  reports 0; see that function's comment before changing it.
+
 - Repair Computer — `app/repair-computer/`, `services/repairComputerService.ts`, gateway `/api/repair-computer`:
     # Module Context
     Report a broken computer or device and have a worker (ช่าง) repair it. Has its own
@@ -388,6 +403,41 @@ Consequences worth knowing before starting:
 - The app must not decide any of this for itself. It collects the facts and sends them;
   the verdict is the gateway's and the upstream's, exactly as `canStamp` already works.
   A rule copied into the client is a rule that will drift from the one being enforced.
+
+# Staff stamping by face scan (บุคลากรทั่วไป)
+
+For general staff (`stampRole === 'staff'`) the first tab of the timestamp module is `app/timestamp/(tabs)/staff-stamp.tsx`. Opening it reads the phone's position and `GET /api/timestamp/staff` together. When a stamp would be accepted, the front camera starts on its own, and every blink of a well-placed face sends one picture to `POST /api/timestamp/staff/stamp`.
+
+## Who decides what
+
+| Question | Decided by |
+|---|---|
+| Is the face in the oval, did it blink (liveness) | the phone: `utils/face-framing.ts`, `utils/blink-detector.ts` |
+| Whose face is it | scooba via FaceValid. Must be the signed-in person, `dist <= maxDist` (scooba `config/face-stamp.js`, 0.3667 — the door kiosks' own cutoff) |
+| May they stamp now, and what would it record | LINK_personnel `apis/timestamp/staff.php` (window × today's row, VPN, faculty WiFi, fence) |
+| The write | the door kiosks' own endpoint on ophoenix, called by scooba |
+
+## Rules the screen follows
+
+- **Unusual stamps are confirmed before the camera opens.** `needsConfirm` is true for noon in, noon out, and out without an arrival. The scan carries `expect_kind`; if the window has moved on since, the server refuses with `kind_changed`.
+- At most one scan per 1.5 s. After 30 s without a stamp the camera pauses until the person taps "สแกนอีกครั้ง".
+- **Refusals about the day** (already in, complete, outside hours, weekend, travel, irregular record) open a modal once per visit to the tab. Network and location refusals stay in the card and the location banner, because they are fixed by doing something.
+- Not in the face registry (`faceRegistered === false`) → no camera; the screen says "ติดต่อลงทะเบียนใบหน้าที่ กลุ่มงานคอมพิวเตอร์ฯ".
+- The similarity shown in the corner is the door kiosks' percentage for the signed-in person's own match, min(100, 126.67 − 100 × dist), computed by scooba — or "—". 90% is the pass mark.
+- `components/timestamp/face-scan-camera.native.tsx` is the real camera (react-native-vision-camera 5 + react-native-vision-camera-face-detector 2). `face-scan-camera.tsx` is the web stand-in: the scan is phone-only.
+- **The camera pipeline is a memoised child on purpose.** `useFaceDetectorOutput` rebuilds its output, and so the camera session, every time the component that calls it renders. Keep per-frame state out of it and pass it stable callbacks.
+- The still is flipped back from the selfie mirror and sent as a ~480 px JPEG.
+- The location banner is shared with the lecturer screen: `components/timestamp/location-notice.tsx`.
+
+## Native requirements
+
+- `expo-build-properties`: Android `minSdkVersion 26` (face detector). iOS needs no override: Expo SDK 57 already targets iOS 16.4, above GoogleMLKit/FaceDetection's 15.5, and the plugin refuses a lower value.
+- Camera permission: Android `CAMERA`. iOS has one camera string for the whole app, shared with the medical-certificate photo (`expo-image-picker` plugin `cameraPermission`).
+- These are native modules: a new build is needed, an EAS Update is not enough.
+
+## Photo
+
+Stored like the door kiosks' photos, but by scooba, not the app: on a real stamp the gateway copies the matched frame to the kiosks' photo store (PhotoStamp v2) and passes its id to the kiosk endpoint as `photo=`. The app only sends the frame. Dry runs store nothing. See scooba-service CONTEXT.md.
 
 # Build Environment
 
