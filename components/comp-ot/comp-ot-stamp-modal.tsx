@@ -27,14 +27,17 @@ type CompOtStampModalProps = {
  */
 export function CompOtStampModal({ visible, flag, loading = false, onCancel, onSubmit }: CompOtStampModalProps) {
   const c = useColors();
-  const [amount, setAmount] = useState('');
+  // Most shifts carry no payment, so 0 is the common case — defaulting to it
+  // means submitting without touching the field is the expected path, not an
+  // error to correct.
+  const [amount, setAmount] = useState('0');
   const [error, setError] = useState('');
 
   // Fresh field every time the modal opens, so a previous stamp's leftover
   // value (or error) never bleeds into the next one.
   useEffect(() => {
     if (visible) {
-      setAmount('');
+      setAmount('0');
       setError('');
     }
   }, [visible]);

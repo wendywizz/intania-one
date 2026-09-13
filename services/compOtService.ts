@@ -19,6 +19,9 @@ export type CompOtShiftConfig = {
   /** ISO weekday numbers, 1=จันทร์ .. 7=อาทิตย์. */
   on_day: number[];
   holiday: boolean;
+  /** Minutes on each side of start_time (stamp-in) / end_time (stamp-out) the
+   * shift may be stamped within — see Ot_Controller::stamp() on the PHP side. */
+  login_period: number;
 };
 
 export type CompOtEvent = {
@@ -107,6 +110,24 @@ export async function getCompOtSchedule(params: {
 }
 
 export type CompOtStampFlag = 'in' | 'out';
+
+/**
+ * The clock-time window a shift may be stamped within: start_time (flag "in")
+ * or end_time (flag "out") expanded by `loginPeriodMinutes` on each side —
+ * same formula the PHP side enforces (Ot_Controller::stamp()), so a client
+ * check here can only ever be stricter-or-equal to what the server allows,
+ * never looser.
+ */
+export function getCompOtStampWindow(
+  event: Pick<CompOtEvent, 'date' | 'start_time' | 'end_time'>,
+  loginPeriodMinutes: number,
+  flag: CompOtStampFlag,
+): { start: Date; end: Date } {
+  const anchorTime = flag === 'in' ? event.start_time : event.end_time;
+  const anchor = new Date(`${event.date}T${anchorTime}`);
+  const spanMs = Math.max(0, loginPeriodMinutes) * 60000;
+  return { start: new Date(anchor.getTime() - spanMs), end: new Date(anchor.getTime() + spanMs) };
+}
 
 export type CompOtStampResult = {
   event_id: string;

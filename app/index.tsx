@@ -926,15 +926,18 @@ export default function HomeScreen() {
 
   // The one tile shown/hidden per-user, rather than always drawn like every
   // other module: dept-209 staff only, decided server-side (see AuthContext's
-  // isCompOtEligible, resolved from CENTRAL.STAFF_INFO.DEPT_ID). Appended
-  // rather than spliced into MENU_ITEMS's fixed order so a department that
-  // loses/regains the flag never reshuffles the tiles everyone else sees.
-  const visibleMenuItems = useMemo(
-    () => (isCompOtEligible
-      ? [...MENU_ITEMS, { title: TEXT.COMP_OT_MENU_TITLE, href: MODULE_HREF.compOt, icon: 'display' as IconName }]
-      : MENU_ITEMS),
-    [isCompOtEligible],
-  );
+  // isCompOtEligible, resolved from CENTRAL.STAFF_INFO.DEPT_ID). Spliced in
+  // right after ตารางคุมสอบ rather than appended, so its position stays fixed
+  // even if MENU_ITEMS itself is reordered later.
+  const visibleMenuItems = useMemo(() => {
+    if (!isCompOtEligible) return MENU_ITEMS;
+    const compOtItem = { title: TEXT.COMP_OT_MENU_TITLE, href: MODULE_HREF.compOt, icon: 'display' as IconName };
+    const examinerIndex = MENU_ITEMS.findIndex((item) => item.title === TEXT.EXAMINER_MENU_TITLE);
+    if (examinerIndex === -1) return [...MENU_ITEMS, compOtItem];
+    const items = [...MENU_ITEMS];
+    items.splice(examinerIndex + 1, 0, compOtItem);
+    return items;
+  }, [isCompOtEligible]);
 
   // Which module hrefs carry a dot. A set, not a count: the dot says only that
   // there is something waiting, and the number is on the tile in the band.

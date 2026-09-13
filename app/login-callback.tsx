@@ -59,6 +59,13 @@ export default function LoginCallbackScreen() {
 
     if (callbackKey) {
       completeLogin();
+    } else {
+      // Landed here with no code/error/state to process at all — most often
+      // a stale tab: the browser's address bar was left on this URL after an
+      // earlier visit (or a dev-server reload replayed it), not a fresh OAuth
+      // redirect. There is nothing to do here but wait forever otherwise, so
+      // bounce home instead of leaving the "signing in" spinner up for good.
+      router.replace('/');
     }
 
     return () => {
