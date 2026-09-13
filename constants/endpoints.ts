@@ -1,11 +1,9 @@
 import { ENV } from './config';
+import API_DOMAINS from './apiDomains';
 
 const EXPO_OS = process.env.EXPO_OS ?? '';
 
-export const API_DOMAINS = {
-  development: 'http://172.31.133.131:1337',
-  production: 'https://apis.eng.psu.ac.th/scooba',
-};
+export { API_DOMAINS };
 
 export const AUTH_REDIRECT_DOMAINS = {
   development: 'http://localhost:8081',
@@ -19,6 +17,16 @@ export const LOCAL_URL_BASE = 'http://localhost';
 
 const APP_MODE = ENV.appMode;
 
+/**
+ * `EXPO_PUBLIC_API_BASE_URL` is not a setting to hand-edit into `.env` — it
+ * exists only as a hook `scripts/start-android.js` fills in at launch (ADB
+ * reverse / Genymotion / `10.0.2.2`, detected fresh each run, which nothing
+ * static in this file could know ahead of time). Reading it here is what lets
+ * that script's answer reach the app; leaving a value for it checked into
+ * `.env` is what previously made "development" mode ignore
+ * `API_DOMAINS.development` and silently keep hitting whatever host someone
+ * had typed in last.
+ */
 export const DEVELOPMENT_API_BASE_URL =
   ENV.apiBaseUrl ||
   (EXPO_OS === 'android' ? 'http://10.0.2.2:1337' : API_DOMAINS.development);
@@ -28,10 +36,14 @@ export const DEVELOPMENT_API_BASE_URL =
  * per-module development/production split lives on the gateway itself
  * (scooba-service config/module-modes.js), because what differs per module is
  * the upstream system and its database, which only the gateway can reach.
+ *
+ * `EXPO_PUBLIC_MODE` decides production vs. development first, full stop —
+ * `EXPO_PUBLIC_API_BASE_URL` only ever gets a say inside the development
+ * branch (see `DEVELOPMENT_API_BASE_URL` above). A "production" build can
+ * never be redirected by a leftover local override.
  */
 export const API_BASE_URL =
-  ENV.apiBaseUrl ||
-  (APP_MODE === 'production' ? API_DOMAINS.production : DEVELOPMENT_API_BASE_URL);
+  APP_MODE === 'production' ? API_DOMAINS.production : DEVELOPMENT_API_BASE_URL;
 export const AUTH_REDIRECT_DOMAIN =
   ENV.authRedirectDomain ||
   (EXPO_OS === 'web' ? AUTH_REDIRECT_DOMAINS.development : AUTH_REDIRECT_DOMAINS.native);

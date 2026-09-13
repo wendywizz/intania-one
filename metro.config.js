@@ -7,23 +7,23 @@ const https = require('node:https');
 const EXPO_OS = process.env.EXPO_OS ?? '';
 const APP_MODE = process.env.EXPO_PUBLIC_MODE ?? 'development';
 
-const API_DOMAINS = {
-  development: 'http://localhost:1337',
-  production: 'https://apis.eng.psu.ac.th/scooba',
-};
+// Single source of truth shared with constants/endpoints.ts — see that file.
+const API_DOMAINS = require('./constants/apiDomains');
 
 const AUTH_REDIRECT_DOMAINS = {
   development: 'http://localhost:8081',
   native: process.env.EXPO_PUBLIC_AUTH_NATIVE_REDIRECT_DOMAIN || 'th.ac.psu.eng.scooba',
 };
 
+// MODE decides production vs. development first, full stop.
+// EXPO_PUBLIC_API_BASE_URL (scripts/start-android.js's ADB/emulator-address
+// hook — not a value meant to live in .env) only gets a say inside
+// development, same split as constants/endpoints.ts's API_BASE_URL.
 const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ||
-  (APP_MODE === 'production'
+  APP_MODE === 'production'
     ? API_DOMAINS.production
-    : EXPO_OS === 'android'
-    ? 'http://10.0.2.2:1337'
-    : API_DOMAINS.development);
+    : process.env.EXPO_PUBLIC_API_BASE_URL ||
+      (EXPO_OS === 'android' ? 'http://10.0.2.2:1337' : API_DOMAINS.development);
 
 const LOCAL_URL_BASE = 'http://localhost';
 const OPENID_BASE_URL = 'https://psusso.psu.ac.th';
