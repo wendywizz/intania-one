@@ -1017,8 +1017,8 @@ const makeStyles = (c: AppColors) =>
     date: {
       color: c.text,
       fontFamily: AppFonts.psuBold,
-      fontSize: scaleFont(20),
-      lineHeight: scaleFont(28),
+      fontSize: scaleFont(15),
+      lineHeight: scaleFont(22),
     },
     sitePill: {
       alignItems: 'center',
