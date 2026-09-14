@@ -1,15 +1,19 @@
-import { useFocusEffect, useIsFocused } from 'expo-router';
+import { useFocusEffect, useIsFocused, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
+  BackHandler,
   Linking,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   View,
   type AppStateStatus,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { timestampTabBarStyle } from '@/app/timestamp/(tabs)/_layout';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
@@ -123,6 +127,8 @@ export default function StaffTimestampScreen() {
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
   const isFocused = useIsFocused();
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const { hasPermission, canRequestPermission, requestPermission } = useFaceScanPermission();
 
   const [status, setStatus] = useState<StaffTimestampStatus | null>(null);
@@ -342,7 +348,44 @@ export default function StaffTimestampScreen() {
 
   const cameraActive = isFocused && appActive && phase === 'scanning' && hasPermission;
 
-  const renderScanner = () => {
+  // While the camera is on it has the screen to itself: a face fills a whole
+  // phone the way it fills the kiosk at the door, and nothing else on this
+  // screen is worth reading mid-scan. The header, the tab bar and the day's
+  // card come back the moment scanning ends — for a face that matched, that is
+  // the stamp's own answer.
+  const fullScreenScan =
+    FACE_SCAN_SUPPORTED &&
+    hasPermission &&
+    status?.isStaff === true &&
+    status.faceRegistered !== false &&
+    (phase === 'scanning' || phase === 'paused');
+
+  useEffect(() => {
+    navigation.setOptions({
+      // Not `undefined` when the camera closes: clearing the option would leave
+      // the navigator's plain default bar instead of this tab bar's own look.
+      tabBarStyle: fullScreenScan ? { display: 'none' } : timestampTabBarStyle(c),
+    });
+  }, [navigation, fullScreenScan, c]);
+
+  // Android's back gesture closes the camera rather than the whole tab.
+  useEffect(() => {
+    if (!fullScreenScan) return;
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      setPhase('idle');
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [fullScreenScan]);
+
+  /**
+   * What stands in for the camera when it cannot run — the web notice, "register
+   * your face first", and the camera permission. These belong in the day's card,
+   * where there is a page to read them on.
+   */
+  const renderScanNotice = () => {
     if (!status?.isStaff) return null;
 
     if (!FACE_SCAN_SUPPORTED) {
@@ -383,6 +426,11 @@ export default function StaffTimestampScreen() {
       );
     }
 
+    return null;
+  };
+
+  /** The camera, filling the screen, with the scan's own controls over it. */
+  const renderFullScreenScanner = () => {
     const hint = checking
       ? TEXT.STAFF_FACE_CHECKING
       : framing === 'ok' && scanMessage
@@ -403,15 +451,7 @@ export default function StaffTimestampScreen() {
           onError={onCameraError}
         />
 
-        {/* Deliberately small and in a corner: a number to glance at, not the
-            thing to watch while scanning. */}
-        <View style={styles.similarityPill} pointerEvents="none">
-          <ThemedText style={styles.similarityText}>
-            {`${TEXT.STAFF_FACE_SIMILARITY} ${similarity == null ? '—' : `${similarity}%`}`}
-          </ThemedText>
-        </View>
-
-        <View style={styles.hintBar} pointerEvents="none">
+        <View style={[styles.hintBar, { bottom: insets.bottom + 28 }]} pointerEvents="none">
           <ThemedText style={styles.hintText}>{hint}</ThemedText>
         </View>
 
@@ -428,6 +468,26 @@ export default function StaffTimestampScreen() {
             />
           </View>
         ) : null}
+
+        <View style={[styles.scanTopBar, { paddingTop: insets.top + 8 }]}>
+          <Pressable
+            accessibilityLabel={TEXT.STAFF_FACE_CLOSE}
+            accessibilityRole="button"
+            hitSlop={12}
+            style={styles.scanClose}
+            onPress={() => setPhase('idle')}
+          >
+            <IconSymbol size={22} name="xmark" color={c.textOnPrimary} />
+          </Pressable>
+
+          {/* Deliberately small and off to one side: a number to glance at, not
+              the thing to watch while scanning. */}
+          <View style={styles.similarityPill} pointerEvents="none">
+            <ThemedText style={styles.similarityText}>
+              {`${TEXT.STAFF_FACE_SIMILARITY} ${similarity == null ? '—' : `${similarity}%`}`}
+            </ThemedText>
+          </View>
+        </View>
       </View>
     );
   };
@@ -473,7 +533,7 @@ export default function StaffTimestampScreen() {
       >
         <LocationNoticeBanner reading={location} retrying={refreshing} onRetry={() => void load('refresh')} />
 
-        {renderScanner()}
+        {renderScanNotice()}
 
         <View style={styles.card}>
           <View
@@ -533,8 +593,14 @@ export default function StaffTimestampScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScreenHeader title={TEXT.STAFF_TIMESTAMP_TAB} backHref="/" titleInNavBar showHomeButton={false} />
-      <View style={styles.content}>{renderBody()}</View>
+      {fullScreenScan ? (
+        renderFullScreenScanner()
+      ) : (
+        <>
+          <ScreenHeader title={TEXT.STAFF_TIMESTAMP_TAB} backHref="/" titleInNavBar showHomeButton={false} />
+          <View style={styles.content}>{renderBody()}</View>
+        </>
+      )}
 
       <ConfirmDialog
         visible={phase === 'confirm' && isFocused}
@@ -570,21 +636,30 @@ const makeStyles = (c: AppColors) =>
       justifyContent: 'center',
       padding: 16,
     },
-    scanner: {
-      alignSelf: 'stretch',
-      aspectRatio: 3 / 4,
-      backgroundColor: c.inverse,
-      borderRadius: 16,
-      overflow: 'hidden',
+    scanner: { backgroundColor: c.inverse, flex: 1 },
+    scanTopBar: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      left: 0,
+      paddingHorizontal: 16,
+      position: 'absolute',
+      right: 0,
+      top: 0,
+    },
+    scanClose: {
+      alignItems: 'center',
+      backgroundColor: c.overlay,
+      borderRadius: 20,
+      height: 40,
+      justifyContent: 'center',
+      width: 40,
     },
     similarityPill: {
       backgroundColor: c.overlay,
       borderRadius: 999,
       paddingHorizontal: 10,
       paddingVertical: 4,
-      position: 'absolute',
-      right: 10,
-      top: 10,
     },
     similarityText: {
       color: c.textOnPrimary,
@@ -593,7 +668,6 @@ const makeStyles = (c: AppColors) =>
     },
     hintBar: {
       alignItems: 'center',
-      bottom: 16,
       left: 16,
       position: 'absolute',
       right: 16,

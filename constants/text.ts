@@ -1284,6 +1284,7 @@ export const TEXT = {
   // สแกนไม่ผ่านติดกัน 30 วินาที กล้องหยุดรอจนกว่าจะกดสแกนอีกครั้ง
   STAFF_FACE_PAUSED: 'หยุดสแกนชั่วคราว',
   STAFF_FACE_SCAN_AGAIN: 'สแกนอีกครั้ง',
+  STAFF_FACE_CLOSE: 'ปิดกล้อง',
   STAFF_FACE_START: 'สแกนใบหน้าเพื่อลงเวลา',
   STAFF_FACE_NOT_REGISTERED_TITLE: 'ยังไม่ได้ลงทะเบียนใบหน้า',
   STAFF_FACE_NOT_REGISTERED: 'กรุณาติดต่อลงทะเบียนใบหน้าที่ กลุ่มงานคอมพิวเตอร์ฯ ก่อนลงเวลาผ่านแอป',

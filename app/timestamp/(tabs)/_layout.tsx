@@ -1,10 +1,11 @@
 import { Tabs } from "expo-router";
 import React, { useEffect, useState } from "react";
+import type { ViewStyle } from "react-native";
 
 import { tabBarButton } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { AppFonts } from "@/constants/fonts";
-import { useColors } from "@/constants/theme";
+import { type AppColors, useColors } from "@/constants/theme";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
@@ -13,6 +14,19 @@ import {
   peekForgetApprovalWaiting,
 } from "@/services/timestampService";
 import { scaleFont } from "@/utils/font-scale";
+
+/**
+ * The tab bar's own look, kept here and exported because the face-scan screen
+ * hides the bar while the camera is full screen: clearing the option instead of
+ * setting this back would leave the navigator's plain default bar behind.
+ */
+export const timestampTabBarStyle = (c: AppColors): ViewStyle => ({
+  backgroundColor: c.primary,
+  borderTopColor: c.primary,
+  height: 68,
+  paddingBottom: 10,
+  paddingTop: 6,
+});
 
 export default function TimestampTabLayout() {
   const c = useColors();
@@ -53,13 +67,7 @@ export default function TimestampTabLayout() {
         tabBarButton,
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
-        tabBarStyle: {
-          backgroundColor: c.primary,
-          borderTopColor: c.primary,
-          height: 68,
-          paddingBottom: 10,
-          paddingTop: 6,
-        },
+        tabBarStyle: timestampTabBarStyle(c),
         tabBarLabelStyle: {
           fontSize: scaleFont(11),
           fontFamily: AppFonts.psuRegular,

@@ -1,3 +1,5 @@
+import { File } from "expo-file-system";
+
 import { ENDPOINTS } from "../constants/endpoints";
 import type { JsonMap } from "./api";
 import { ensureSuccess, fetchWithTimeout, MESSAGE_SERVER_ERROR, requestJson } from "./api";
@@ -812,9 +814,14 @@ export async function submitStaffFaceStamp({
     form.append('lon', coords.lon);
   }
 
-  // React Native's FormData sends a file part when given { uri, name, type };
-  // the DOM typings do not know that shape, hence the cast.
-  form.append('file', { uri: photoUri, name: 'face.jpg', type: 'image/jpeg' } as unknown as Blob);
+  // Expo's fetch (the global one since SDK 54) builds the multipart body itself
+  // and reads every part through the Blob interface, so React Native's old
+  // { uri, name, type } part throws "Unsupported FormDataPart implementation".
+  // expo-file-system's File is that interface over a file on disk: bytes() reads
+  // it, and its name and mime type fill in the part's headers. The picture is a
+  // JPEG written by ImageManipulator, so the part lands as face-scan.jpg,
+  // image/jpeg. The DOM typings do not know the class, hence the cast.
+  form.append('file', new File(photoUri) as unknown as Blob);
 
   // fetchWithTimeout rather than requestJson: requestJson forces a JSON
   // Content-Type, and a multipart body needs the boundary fetch sets itself.

@@ -17,6 +17,32 @@ jest.mock('@/services/api', () => ({
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const api = require('@/services/api') as { requestJson: jest.Mock; fetchWithTimeout: jest.Mock };
 
+// Expo's fetch reads a file part through the Blob interface, so the picture
+// travels as an expo-file-system File. The real one talks to the native module;
+// this stand-in only records which file was handed over.
+jest.mock('expo-file-system', () => ({
+  File: class {
+    uri: string;
+    constructor(uri: string) {
+      this.uri = uri;
+    }
+    async bytes() {
+      return new Uint8Array();
+    }
+  },
+}));
+
+/**
+ * What was appended as `file`, read off FormData.append rather than out of the
+ * form: a FormData that is not React Native's turns an unknown object into a
+ * string, which would hide the very shape under test.
+ */
+function filePartOf(): { uri?: string; bytes?: unknown } {
+  const call = appendSpy.mock.calls.find(([name]) => name === 'file');
+
+  return (call ? call[1] : undefined) as never;
+}
+
 function gatewayAnswers(status: number, body: unknown) {
   api.fetchWithTimeout.mockResolvedValueOnce({
     ok: status >= 200 && status < 300,
@@ -27,9 +53,12 @@ function gatewayAnswers(status: number, body: unknown) {
 
 const SCAN = { staffId: '0042764', photoUri: 'file:///cache/face.jpg', expectKind: 'in' as const };
 
+const appendSpy = jest.spyOn(FormData.prototype, 'append');
+
 beforeEach(() => {
   api.requestJson.mockReset();
   api.fetchWithTimeout.mockReset();
+  appendSpy.mockClear();
 });
 
 describe('getStaffTimestampStatus', () => {
@@ -111,6 +140,11 @@ describe('submitStaffFaceStamp', () => {
     // No Content-Type of our own: fetch has to set the multipart boundary.
     expect(init.headers).toBeUndefined();
     expect(typeof init.body.append).toBe('function');
+    // A { uri } part is what React Native's fetch understood; Expo's fetch
+    // throws "Unsupported FormDataPart implementation" on it.
+    const file = filePartOf();
+    expect(typeof file.bytes).toBe('function');
+    expect(file.uri).toBe(SCAN.photoUri);
   });
 
   it('shows the generic server message for a gateway fault, not its internals', async () => {
