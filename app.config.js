@@ -30,6 +30,8 @@ const publicKeys = [
   'EXPO_PUBLIC_OPENID_CLIENT_SECRET',
   'EXPO_PUBLIC_OPENID_CONFIGURATION_URL',
   'EXPO_PUBLIC_OPENID_ISSUER',
+  'EXPO_PUBLIC_GRAPH_CLIENT_ID',
+  'EXPO_PUBLIC_GRAPH_TENANT_ID',
 ];
 
 const extra = publicKeys.reduce((acc, key) => {

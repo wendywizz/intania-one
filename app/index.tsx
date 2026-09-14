@@ -187,6 +187,7 @@ const MODULE_HREF = {
   repairHub: '/repair',
   booking: '/booking-room',
   exam: '/examiner',
+  mail: '/mail',
   calendar: '/calendar',
   person: '/person-search',
   // Only ever added to the grid for dept-209 staff — see isCompOtEligible below.
@@ -212,6 +213,7 @@ const MENU_ITEMS: readonly { title: string; href: string; icon: IconName }[] = [
   // A clipboard, not a checkmark: a tick reads as "approved/done", and this is a
   // roster of duty to turn up for.
   { title: TEXT.EXAMINER_MENU_TITLE, href: MODULE_HREF.exam, icon: 'clipboard-list' },
+  { title: TEXT.MAIL_MENU_TITLE, href: MODULE_HREF.mail, icon: 'envelope.fill' },
   { title: TEXT.CALENDAR_TITLE, href: MODULE_HREF.calendar, icon: 'calendar-range' },
   { title: TEXT.PERSON_SEARCH_TITLE, href: MODULE_HREF.person, icon: 'user-round-search' },
 ];

@@ -52,6 +52,15 @@ const MIN_SCAN_GAP_MS = 1500;
 /** Scanning pauses after this long without a stamp, until the person asks again. */
 const SCAN_WINDOW_MS = 30000;
 
+/**
+ * What the screen is waiting on, named under the loader. Nothing is rendered
+ * until every one of these is in: the card is a single verdict — whether a
+ * stamp can be made, from where, how far away — and half of one, shown early
+ * and corrected a moment later, reads as a glitch. A wait is only tolerable
+ * when it says what it is for, which is what these are.
+ */
+type LoadStep = 'location' | 'status';
+
 /** A position older than this is read again before a scan is sent. */
 const POSITION_MAX_AGE_MS = 60000;
 
@@ -243,6 +252,7 @@ export default function StaffTimestampScreen() {
   // True while the first fix is still coming. The card is already on screen by
   // then, so it says so rather than showing the server's "no location yet".
   const [locating, setLocating] = useState(true);
+  const [loadStep, setLoadStep] = useState<LoadStep>('location');
   // The camera surface's size, so the hint can sit right under the oval rather
   // than at the foot of the screen, where eyes on their own face never go.
   const [scanSize, setScanSize] = useState({ width: 0, height: 0 });
@@ -316,32 +326,20 @@ export default function StaffTimestampScreen() {
       if (mode === 'refresh') setRefreshing(true);
 
       setLocating(true);
-      // Started here, waited for below: a first GPS fix indoors takes seconds,
-      // and the day's times do not depend on it. Where the phone is only
-      // decides whether the camera may open.
-      const positionPromise = readDevicePosition();
+      setLoadStep('location');
 
       try {
-        try {
-          const early = await getStaffTimestampStatus(staffId);
-          setStatus(early);
-          setError('');
-          setLoading(false);
-
-          // Nothing here can start the camera: without coordinates the gateway
-          // always refuses. Announcing now means "you already stamped in" shows
-          // at once instead of after the fix.
-          decide(early, !announcedRef.current);
-          announcedRef.current = true;
-        } catch {
-          // Left to the position-aware read below, which reports the failure.
-        }
-
-        const reading = await positionPromise;
+        // A real fix, waited for. Indoors this is the slow part — seconds while
+        // the OS falls back from GPS to WiFi and cell — and it is the reason
+        // the step is named on screen rather than left as a bare spinner.
+        const reading = await readDevicePosition();
         positionRef.current = { reading, at: Date.now() };
         setLocation(reading);
         setLocating(false);
 
+        // One request, two answers: the gateway reads the IP this call arrives
+        // on, so the network checks are settled here alongside the day's times.
+        setLoadStep('status');
         const next = await getStaffTimestampStatus(staffId, reading.position);
         setStatus(next);
         setError('');
@@ -643,7 +641,14 @@ export default function StaffTimestampScreen() {
 
   const renderBody = () => {
     if (loading) {
-      return <LoadingAnimate />;
+      return (
+        <View style={styles.loadingBlock}>
+          <LoadingAnimate fill={false} />
+          <ThemedText style={styles.loadingStep}>
+            {loadStep === 'location' ? TEXT.TIMESTAMP_STEP_LOCATION : TEXT.TIMESTAMP_STEP_STATUS}
+          </ThemedText>
+        </View>
+      );
     }
 
     if (error) {
@@ -987,6 +992,20 @@ const makeStyles = (c: AppColors) =>
       fontFamily: AppFonts.psuRegular,
       fontSize: scaleFont(14),
       lineHeight: scaleFont(20),
+    },
+    // The wait, with its reason under it.
+    loadingBlock: {
+      alignItems: 'center',
+      alignSelf: 'stretch',
+      flex: 1,
+      justifyContent: 'center',
+    },
+    loadingStep: {
+      color: c.textMuted,
+      fontFamily: AppFonts.psuRegular,
+      fontSize: scaleFont(14),
+      lineHeight: scaleFont(20),
+      textAlign: 'center',
     },
     card: {
       alignSelf: 'stretch',

@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { AppState, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, AppState, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -73,6 +73,9 @@ export default function LectTimestampScreen() {
   // Why the phone did or didn't give us a fix. The server decides whether the
   // fix is close enough; only this knows why there wasn't one.
   const [location, setLocation] = useState<LocationReading | null>(null);
+  // What the screen is waiting on, named under the loader: a bare spinner and
+  // a hung screen look the same, and the fix is the slow part here.
+  const [loadStep, setLoadStep] = useState<'location' | 'status'>('location');
 
   // The upstream only refuses a stamp for a weekend (reason === 'weekend'); a
   // public holiday is not one of its refusal codes at all, so canStamp stays
@@ -89,9 +92,26 @@ export default function LectTimestampScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status?.serverDate]);
 
+  // The medallion settles into place when the answer arrives. One short spring,
+  // not a loop: it marks the moment the card became true and then stops asking
+  // for attention. Reset first, so a pull-to-refresh plays it again.
+  const medallionScale = useRef(new Animated.Value(0.85)).current;
+  useEffect(() => {
+    if (loading) return;
+
+    medallionScale.setValue(0.85);
+    Animated.spring(medallionScale, {
+      toValue: 1,
+      friction: 6,
+      tension: 90,
+      useNativeDriver: true,
+    }).start();
+  }, [loading, status?.stamped, medallionScale]);
+
   const load = useCallback(
     async (mode: 'initial' | 'refresh') => {
       if (mode === 'refresh') setRefreshing(true);
+      setLoadStep('location');
 
       try {
         // Read the position first and send it with the status request, so the
@@ -100,6 +120,9 @@ export default function LectTimestampScreen() {
         const reading = await readDevicePosition();
         setLocation(reading);
 
+        // The gateway reads the IP this call arrives on, so the network checks
+        // are settled here alongside the day's times.
+        setLoadStep('status');
         const next = await getLectTimestampStatus(staffId, reading.position);
         setStatus(next);
         setError('');
@@ -174,7 +197,14 @@ export default function LectTimestampScreen() {
 
   const renderBody = () => {
     if (loading) {
-      return <LoadingAnimate />;
+      return (
+        <View style={styles.loadingBlock}>
+          <LoadingAnimate fill={false} />
+          <ThemedText style={styles.loadingStep}>
+            {loadStep === 'location' ? TEXT.TIMESTAMP_STEP_LOCATION : TEXT.TIMESTAMP_STEP_STATUS}
+          </ThemedText>
+        </View>
+      );
     }
 
     if (error) {
@@ -233,56 +263,82 @@ export default function LectTimestampScreen() {
         />
 
         <View style={styles.card}>
-          <View
+          <Animated.View
             style={[
               styles.medallion,
-              { backgroundColor: stamped ? `${c.success}1A` : `${c.textMuted}1A` },
+              {
+                backgroundColor: stamped ? `${c.success}1A` : `${c.textMuted}14`,
+                transform: [{ scale: medallionScale }],
+              },
             ]}
           >
             <IconSymbol
-              size={44}
+              size={34}
               name={stamped ? 'checkmark.circle.fill' : 'clock.fill'}
               color={stamped ? c.success : c.textMuted}
             />
+          </Animated.View>
+
+          <View style={styles.headBlock}>
+            <ThemedText style={styles.headline}>{headline}</ThemedText>
+            <ThemedText style={styles.date}>{thaiDateLabel(status?.serverDate ?? '')}</ThemedText>
           </View>
 
-          <ThemedText style={styles.headline}>{headline}</ThemedText>
-
-          {/* The time they actually tapped. Not in_time, which is the constant
-              08:00 every lecturer stamp carries. Absent on older rows, so it
-              is allowed to be missing. */}
+          {/* The time they actually tapped, at the size of the fact it is. Not
+              in_time, which is the constant 08:00 every lecturer stamp carries.
+              Absent on older rows, so it is allowed to be missing. */}
           {stamped && status?.stamp?.stampedAt ? (
-            <ThemedText style={styles.stampedAt}>
-              {`${TEXT.LECT_TIMESTAMP_STAMPED_AT} ${status.stamp.stampedAt.slice(0, 5)} น.`}
-            </ThemedText>
+            <View style={styles.clockRow}>
+              <ThemedText style={styles.clock}>{status.stamp.stampedAt.slice(0, 5)}</ThemedText>
+              <ThemedText style={styles.clockUnit}>{TEXT.LECT_TIMESTAMP_HOUR_SUFFIX}</ThemedText>
+            </View>
           ) : null}
 
-          <ThemedText style={styles.date}>{thaiDateLabel(status?.serverDate ?? '')}</ThemedText>
-
-          {/* The server's own sentence, and the only thing that explains a dead
-              button — "อยู่นอกเครือข่ายคณะ", "ยังไม่ถึง 06:00". Left out once
-              stamped: the refusal is then just "you already did", which the
-              headline and the tick above have already said twice over. */}
-          {!canStamp && !stamped && status?.message ? (
-            <ThemedText style={styles.reason}>{status.message}</ThemedText>
+          {/* Where, shown only once it has happened. The server refuses a stamp
+              from outside the faculty, so on a stamped day this is a fact about
+              the row rather than a claim about where the phone is now. */}
+          {stamped ? (
+            <View style={styles.sitePill}>
+              <IconSymbol size={13} name="mappin" color={c.textMuted} />
+              <ThemedText style={styles.sitePillText}>{TEXT.LECT_TIMESTAMP_SITE}</ThemedText>
+            </View>
           ) : null}
 
           <View style={styles.divider} />
 
-          <Button
-            title={TEXT.LECT_TIMESTAMP_BUTTON}
-            icon="log-in"
-            size="lg"
-            fullWidth
-            loading={stamping}
-            // Disabled on the server's verdict, not on a rule worked out here.
-            // Two of those verdicts go stale in a pocket — `off_network` changes
-            // as the lecturer walks into the building, `outside_hours` at six in
-            // the morning — so the screen re-reads on every focus and offers
-            // pull-to-refresh, and the reason above always says which it is.
-            disabled={!canStamp}
-            onPress={onStamp}
-          />
+          {/* One place for the action, whatever the day's answer is. Once the
+              stamp is in, the red button would be a lie in a colour that asks
+              to be pressed — the plate says the same thing and stays quiet. */}
+          {stamped ? (
+            <View style={styles.donePlate}>
+              <IconSymbol size={18} name="checkmark.circle.fill" color={c.success} />
+              <ThemedText style={styles.donePlateText}>{TEXT.LECT_TIMESTAMP_DONE}</ThemedText>
+            </View>
+          ) : (
+            <Button
+              title={TEXT.LECT_TIMESTAMP_BUTTON}
+              icon="log-in"
+              size="lg"
+              fullWidth
+              style={styles.action}
+              loading={stamping}
+              // Disabled on the server's verdict, not on a rule worked out here.
+              // Two of those verdicts go stale in a pocket — `off_network`
+              // changes as the lecturer walks into the building,
+              // `outside_hours` at six in the morning — so the screen re-reads
+              // on every focus and offers pull-to-refresh, and the note below
+              // always says which it is.
+              disabled={!canStamp}
+              onPress={onStamp}
+            />
+          )}
+
+          {/* The server's own sentence, directly under the button it explains —
+              "อยู่นอกเครือข่ายคณะ", "ยังไม่ถึง 06:00". A dead button with
+              nothing saying why is the thing this screen exists to avoid. */}
+          {!canStamp && !stamped && status?.message ? (
+            <ThemedText style={styles.footNote}>{status.message}</ThemedText>
+          ) : null}
         </View>
       </ScrollView>
     );
@@ -316,15 +372,89 @@ const makeStyles = (c: AppColors) =>
       justifyContent: 'center',
       padding: 16,
     },
+    // The wait, with its reason under it.
+    loadingBlock: {
+      alignItems: 'center',
+      alignSelf: 'stretch',
+      flex: 1,
+      justifyContent: 'center',
+    },
+    loadingStep: {
+      color: c.textMuted,
+      fontFamily: AppFonts.psuRegular,
+      fontSize: scaleFont(14),
+      lineHeight: scaleFont(20),
+      textAlign: 'center',
+    },
+    // One column down the middle. The spacing is set per block rather than by
+    // a single `gap`, because the rhythm is deliberately uneven: the date sits
+    // close under its headline, the divider stands well clear of both.
     card: {
       alignItems: 'center',
       alignSelf: 'stretch',
       backgroundColor: c.surface,
-      borderRadius: 16,
-      gap: 8,
+      borderRadius: 26,
       paddingHorizontal: 20,
-      paddingVertical: 32,
-      boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
+      paddingTop: 26,
+      paddingBottom: 20,
+      boxShadow: boxShadow(c.shadow, { y: 12, blur: 28, opacity: 0.12 }),
+    },
+    medallion: {
+      alignItems: 'center',
+      borderRadius: 999,
+      height: 76,
+      justifyContent: 'center',
+      width: 76,
+    },
+    headBlock: { alignItems: 'center', gap: 5, marginTop: 18 },
+    headline: {
+      color: c.text,
+      fontFamily: AppFonts.psuBold,
+      fontSize: scaleFont(20),
+      lineHeight: scaleFont(28),
+      textAlign: 'center',
+    },
+    date: {
+      color: c.textMuted,
+      fontFamily: AppFonts.psuRegular,
+      fontSize: scaleFont(13),
+      lineHeight: scaleFont(19),
+      textAlign: 'center',
+    },
+    // The time, at the size of the thing the whole card is about. Tabular
+    // figures so it cannot jitter, and a lineHeight of its own: the PSU faces
+    // are taller than the default box and a numeral this big loses its top.
+    clockRow: { alignItems: 'flex-end', flexDirection: 'row', gap: 7, marginTop: 16 },
+    clock: {
+      color: c.success,
+      fontFamily: AppFonts.psuBold,
+      fontSize: scaleFont(52),
+      fontVariant: ['tabular-nums'],
+      letterSpacing: -1.5,
+      lineHeight: scaleFont(58),
+    },
+    clockUnit: {
+      color: c.textMuted,
+      fontFamily: AppFonts.psuBold,
+      fontSize: scaleFont(14),
+      lineHeight: scaleFont(20),
+      paddingBottom: scaleFont(9),
+    },
+    sitePill: {
+      alignItems: 'center',
+      backgroundColor: c.background,
+      borderRadius: 999,
+      flexDirection: 'row',
+      gap: 7,
+      marginTop: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+    sitePillText: {
+      color: c.textMuted,
+      fontFamily: AppFonts.psuRegular,
+      fontSize: scaleFont(12.5),
+      lineHeight: scaleFont(18),
     },
     // Separates the day's status from the one thing to do about it, so the
     // button reads as an action rather than as another line of the summary.
@@ -332,40 +462,35 @@ const makeStyles = (c: AppColors) =>
       alignSelf: 'stretch',
       backgroundColor: c.border,
       height: StyleSheet.hairlineWidth,
-      marginBottom: 8,
-      marginTop: 16,
+      marginBottom: 16,
+      marginTop: 20,
     },
-    medallion: {
+    // A rounded plate rather than the pill the shared button draws by default:
+    // the same shape the staff card's action carries, so the two screens' one
+    // button looks like one button.
+    action: { borderRadius: 18, minHeight: 54 },
+    donePlate: {
       alignItems: 'center',
-      borderRadius: 44,
-      height: 88,
+      alignSelf: 'stretch',
+      backgroundColor: c.background,
+      borderRadius: 18,
+      flexDirection: 'row',
+      gap: 8,
+      height: 54,
       justifyContent: 'center',
-      marginBottom: 8,
-      width: 88,
     },
-    headline: {
-      color: c.text,
-      fontFamily: AppFonts.psuBold,
-      fontSize: scaleFont(20),
-      textAlign: 'center',
-    },
-    stampedAt: {
+    donePlateText: {
       color: c.success,
       fontFamily: AppFonts.psuBold,
       fontSize: scaleFont(16),
-      textAlign: 'center',
+      lineHeight: scaleFont(22),
     },
-    date: {
+    footNote: {
       color: c.textMuted,
       fontFamily: AppFonts.psuRegular,
-      fontSize: scaleFont(14),
-      textAlign: 'center',
-    },
-    reason: {
-      color: c.textMuted,
-      fontFamily: AppFonts.psuRegular,
-      fontSize: scaleFont(14),
-      marginTop: 8,
+      fontSize: scaleFont(12.5),
+      lineHeight: scaleFont(18),
+      marginTop: 12,
       paddingHorizontal: 8,
       textAlign: 'center',
     },

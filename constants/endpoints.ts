@@ -54,6 +54,13 @@ export const OPENID_AUTHORIZE_URL = `${OPENID_BASE_URL}/application/o/authorize/
 export const OPENID_TOKEN_URL = `${OPENID_BASE_URL}/application/o/token/`;
 export const OPENID_USERINFO_URL = `${OPENID_BASE_URL}/application/o/userinfo/`;
 
+// Microsoft Entra ID (mail module) — a wholly separate identity provider from
+// PSU SSO above. Standard v2.0 endpoints, scoped to PSU's own tenant so only
+// @psu.ac.th accounts can complete the flow. See constants/mailAuth.ts.
+export const GRAPH_API_BASE_URL = 'https://graph.microsoft.com/v1.0';
+export const ENTRA_AUTHORIZE_URL = `https://login.microsoftonline.com/${ENV.graphTenantId}/oauth2/v2.0/authorize`;
+export const ENTRA_TOKEN_URL = `https://login.microsoftonline.com/${ENV.graphTenantId}/oauth2/v2.0/token`;
+
 /**
  * Full URLs, grouped by the module that owns them. Every group hangs off the
  * same gateway — which upstream and database a module reaches behind it is the

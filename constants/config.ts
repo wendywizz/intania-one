@@ -35,4 +35,9 @@ export const ENV = {
   scoobaApiToken: getEnvValue('EXPO_PUBLIC_SCOOBA_API_TOKEN', getEnvValue('EXPO_PUBLIC_SCOOBA_API_KEY', '')),
   googleApiKey: getEnvValue('EXPO_PUBLIC_GOOGLE_API_KEY', ''),
   deviceRegisterApiKey: getEnvValue('EXPO_PUBLIC_DEVICE_REGISTER_API_KEY', getEnvValue('EXPO_PUBLIC_SCOOBA_API_KEY', getEnvValue('EXPO_PUBLIC_SCOOBA_API_TOKEN', ''))),
+  // Microsoft Entra ID app registration for the mail module — a wholly
+  // separate identity system from PSU SSO above. Not secrets (public client,
+  // no client secret): safe to read the same way as openIdClientId.
+  graphClientId: getEnvValue('EXPO_PUBLIC_GRAPH_CLIENT_ID', ''),
+  graphTenantId: getEnvValue('EXPO_PUBLIC_GRAPH_TENANT_ID', ''),
 };

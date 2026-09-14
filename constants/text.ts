@@ -1294,6 +1294,9 @@ export const TEXT = {
   STAFF_TIMESTAMP_WORKED: 'ทำงานแล้ว {h} ชม. {m} น.',
   STAFF_TIMESTAMP_NOT_IN_YET: 'ยังไม่ได้ลงเวลาเข้า',
   STAFF_TIMESTAMP_LOCATING: 'กำลังตรวจสอบตำแหน่งของคุณ...',
+  // ข้อความใต้ตัวโหลดตอนเปิดหน้าลงเวลา บอกว่ากำลังรออะไรอยู่
+  TIMESTAMP_STEP_LOCATION: 'กำลังตรวจสอบตำแหน่งที่ตั้ง...',
+  TIMESTAMP_STEP_STATUS: 'กำลังตรวจสอบเครือข่ายและข้อมูลการลงเวลา...',
   STAFF_TIMESTAMP_BUTTON_IN: 'ลงเวลาเข้างาน',
   STAFF_TIMESTAMP_BUTTON_OUT: 'ลงเวลาออกงาน',
   // หัวข้อ Modal ที่แจ้งสถานะของวันตอนเปิดหน้า (ลงเข้าแล้ว, ครบแล้ว, นอกช่วงเวลา ...)
@@ -1345,6 +1348,11 @@ export const TEXT = {
   // Prefixes the time dug out of the stamp's remark. Kept apart from the
   // headline so the two can be laid out separately.
   LECT_TIMESTAMP_STAMPED_AT: 'เมื่อ',
+  // หน่วยท้ายเวลาที่ลงไว้ แยกจากตัวเลขเพราะคนละขนาด
+  LECT_TIMESTAMP_HOUR_SUFFIX: 'น.',
+  // สถานที่ที่ลงเวลาได้ ตายตัวเพราะ server ยอมให้ลงเฉพาะในรัศมีคณะเท่านั้น
+  LECT_TIMESTAMP_SITE: 'คณะวิศวกรรมศาสตร์',
+  LECT_TIMESTAMP_DONE: 'ลงเวลาแล้ว',
   LECT_TIMESTAMP_LOAD_ERROR: 'ไม่สามารถโหลดสถานะการลงเวลาได้',
 
   // Timestamp - ตำแหน่ง (geofence)
@@ -1546,6 +1554,27 @@ export const TEXT = {
   COMP_OT_STAMP_COMPLETE: 'ลงเวลาแล้ว',
   COMP_OT_STAMP_MISSED_IN: 'ลืมลงเวลาเข้าเวร',
   COMP_OT_STAMP_MISSED_OUT: 'ลืมลงเวลาออกเวร',
+
+  // Mail
+  MAIL_MENU_TITLE: 'อีเมล',
+  MAIL_HEADER_TITLE: 'อีเมล',
+  MAIL_DETAIL_HEADER_TITLE: 'รายละเอียดอีเมล',
+  MAIL_NO_SUBJECT: '(ไม่มีหัวข้อ)',
+  MAIL_UNKNOWN_SENDER: 'ไม่ทราบผู้ส่ง',
+  MAIL_INBOX_EMPTY: 'กล่องจดหมายไม่มีอีเมล',
+  MAIL_LOADING: 'กำลังโหลดอีเมล',
+  MAIL_UNABLE_TO_LOAD: 'ไม่สามารถโหลดอีเมลได้',
+  MAIL_CONNECT_TITLE: 'เชื่อมต่ออีเมลของคุณ',
+  MAIL_CONNECT_DESCRIPTION:
+    'เชื่อมต่อกล่องจดหมาย PSU (@psu.ac.th) ของคุณเพื่อดูอีเมลในแอปนี้ แอปจะขอสิทธิ์อ่านอีเมลอย่างเดียว (Inbox) ไม่สามารถส่ง แก้ไข หรือลบอีเมลแทนคุณได้',
+  MAIL_CONNECT_BUTTON: 'เชื่อมต่ออีเมล',
+  MAIL_CONNECT_CONNECTING: 'กำลังเชื่อมต่อ...',
+  MAIL_CONNECT_WEB_UNSUPPORTED: 'การเชื่อมต่ออีเมลยังไม่รองรับบนเว็บ กรุณาใช้แอปบนมือถือ',
+  MAIL_CONNECT_FAILED: 'เชื่อมต่ออีเมลไม่สำเร็จ',
+  MAIL_DISCONNECT_BUTTON: 'ยกเลิกการเชื่อมต่อ',
+  MAIL_CONNECT_HEADER_TITLE: 'เชื่อมต่ออีเมล',
+  MAIL_CONNECT_PAGE_TIMEOUT: 'โหลดหน้าเชื่อมต่ออีเมลไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่อีกครั้ง',
+  MAIL_CONNECT_CANCELLED_MESSAGE: 'การเชื่อมต่อถูกยกเลิก',
 
   // Modal
 } as const;

@@ -24,6 +24,7 @@ import {
   setNotificationEnabled,
 } from '@/services/notificationService';
 import { registerLoggedInDevice } from '@/services/deviceService';
+import { disconnect as disconnectMail } from '@/services/mailAuthService';
 import {
   getPasswordUnlockEnabled,
   hasAppPassword,
@@ -315,7 +316,11 @@ export default function SettingsScreen() {
   async function handleConfirmLogout() {
     setIsLoggingOut(true);
     try {
-      await signOut();
+      // Mail is a second, independent identity system (see mailAuthService) —
+      // its connection has no idea which psusso account is signed in. Without
+      // clearing it here too, a handed-down device would let the next person
+      // to sign in land on the previous person's inbox at /mail.
+      await Promise.all([signOut(), disconnectMail()]);
       navReplace('/');
     } finally {
       setIsLoggingOut(false);

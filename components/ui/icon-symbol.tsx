@@ -72,6 +72,7 @@ import Trash from 'lucide-react-native/dist/cjs/icons/trash-2';
 import Pencil from 'lucide-react-native/dist/cjs/icons/pencil';
 import Check from 'lucide-react-native/dist/cjs/icons/check';
 import X from 'lucide-react-native/dist/cjs/icons/x';
+import Mail from 'lucide-react-native/dist/cjs/icons/mail';
 import LogOut from 'lucide-react-native/dist/cjs/icons/log-out';
 import LockOpen from 'lucide-react-native/dist/cjs/icons/lock-open';
 import ShoppingCart from 'lucide-react-native/dist/cjs/icons/shopping-cart';
@@ -101,6 +102,7 @@ const MAPPING = {
   'bell.fill': Bell,
   'gearshape.fill': Settings,
   'paperplane.fill': Send,
+  'envelope.fill': Mail,
   // People
   'person.fill': User,
   'person.2.fill': Users,
