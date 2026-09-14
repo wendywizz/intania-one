@@ -7,6 +7,7 @@ import { LoadingAnimate } from '@/components/loading-animate';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { SitePill } from '@/components/timestamp/site-pill';
 import { LocationNoticeBanner, locationNotice } from '@/components/timestamp/location-notice';
 import { useToast } from '@/components/toast-provider';
 import { Button, IconSymbol } from '@/components/ui';
@@ -288,21 +289,27 @@ export default function LectTimestampScreen() {
               in_time, which is the constant 08:00 every lecturer stamp carries.
               Absent on older rows, so it is allowed to be missing. */}
           {stamped && status?.stamp?.stampedAt ? (
-            <View style={styles.clockRow}>
-              <ThemedText style={styles.clock}>{status.stamp.stampedAt.slice(0, 5)}</ThemedText>
-              <ThemedText style={styles.clockUnit}>{TEXT.LECT_TIMESTAMP_HOUR_SUFFIX}</ThemedText>
+            <View style={styles.clockBlock}>
+              <ThemedText style={styles.clockLabel}>{TEXT.LECT_TIMESTAMP_STAMPED_AT}</ThemedText>
+              <View style={styles.clockRow}>
+                <ThemedText style={styles.clock}>{status.stamp.stampedAt.slice(0, 5)}</ThemedText>
+                <ThemedText style={styles.clockUnit}>{TEXT.LECT_TIMESTAMP_HOUR_SUFFIX}</ThemedText>
+              </View>
             </View>
           ) : null}
 
-          {/* Where, shown only once it has happened. The server refuses a stamp
-              from outside the faculty, so on a stamped day this is a fact about
-              the row rather than a claim about where the phone is now. */}
-          {stamped ? (
-            <View style={styles.sitePill}>
-              <IconSymbol size={13} name="mappin" color={c.textMuted} />
-              <ThemedText style={styles.sitePillText}>{TEXT.LECT_TIMESTAMP_SITE}</ThemedText>
-            </View>
-          ) : null}
+          {/* Where the phone is now, and how far from the fence centre — the
+              same badge as the staff card. Shown whether or not today is
+              stamped: before, it says whether the button can work; after, it
+              is simply where the phone is. */}
+          <View style={styles.sitePillSlot}>
+            <SitePill
+              atSite={status?.atSite}
+              distanceM={status?.distanceM}
+              reason={status?.reason}
+              location={location}
+            />
+          </View>
 
           <View style={styles.divider} />
 
@@ -424,7 +431,14 @@ const makeStyles = (c: AppColors) =>
     // The time, at the size of the thing the whole card is about. Tabular
     // figures so it cannot jitter, and a lineHeight of its own: the PSU faces
     // are taller than the default box and a numeral this big loses its top.
-    clockRow: { alignItems: 'flex-end', flexDirection: 'row', gap: 7, marginTop: 16 },
+    clockBlock: { alignItems: 'center', marginTop: 16 },
+    clockLabel: {
+      color: c.textMuted,
+      fontFamily: AppFonts.psuRegular,
+      fontSize: scaleFont(13),
+      lineHeight: scaleFont(19),
+    },
+    clockRow: { alignItems: 'flex-end', flexDirection: 'row', gap: 7 },
     clock: {
       color: c.success,
       fontFamily: AppFonts.psuBold,
@@ -440,22 +454,7 @@ const makeStyles = (c: AppColors) =>
       lineHeight: scaleFont(20),
       paddingBottom: scaleFont(9),
     },
-    sitePill: {
-      alignItems: 'center',
-      backgroundColor: c.background,
-      borderRadius: 999,
-      flexDirection: 'row',
-      gap: 7,
-      marginTop: 14,
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-    },
-    sitePillText: {
-      color: c.textMuted,
-      fontFamily: AppFonts.psuRegular,
-      fontSize: scaleFont(12.5),
-      lineHeight: scaleFont(18),
-    },
+    sitePillSlot: { marginTop: 14 },
     // Separates the day's status from the one thing to do about it, so the
     // button reads as an action rather than as another line of the summary.
     divider: {

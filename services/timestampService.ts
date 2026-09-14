@@ -505,6 +505,10 @@ export type LectTimestampStamp = {
 };
 
 export type LectTimestampStatus = {
+  /** ระยะห่างจากใจกลางคณะเป็นเมตร ตามที่ gateway คำนวณ; null = ไม่ได้ส่งพิกัดไป */
+  distanceM: number | null;
+  /** อยู่ในรัศมีหรือไม่ ตัดสินที่ server; null = ไม่มีพิกัด */
+  atSite: boolean | null;
   staffId: string;
   isLecturer: boolean;
   /** Whether a row exists for today. */
@@ -535,6 +539,9 @@ function toLectStatus(json: JsonMap): LectTimestampStatus {
   return {
     staffId: str(data.staffId),
     isLecturer: data.isLecturer === true,
+    distanceM:
+      typeof data.distanceM === 'number' && Number.isFinite(data.distanceM) ? data.distanceM : null,
+    atSite: typeof data.atSite === 'boolean' ? data.atSite : null,
     stamped: data.stamped === true,
     canStamp: data.canStamp === true,
     reason: str(data.reason),

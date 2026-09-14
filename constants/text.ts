@@ -1345,13 +1345,10 @@ export const TEXT = {
   // วันสงกรานต์"), or LECT_TIMESTAMP_WEEKEND_LABEL on a plain weekend.
   LECT_TIMESTAMP_HOLIDAY_HEADLINE_PREFIX: 'วันนี้วันหยุด',
   LECT_TIMESTAMP_WEEKEND_LABEL: 'เสาร์-อาทิตย์',
-  // Prefixes the time dug out of the stamp's remark. Kept apart from the
-  // headline so the two can be laid out separately.
-  LECT_TIMESTAMP_STAMPED_AT: 'เมื่อ',
+  // ป้ายเหนือเวลาที่กดลงเวลาจริง (ไม่ใช่ in_time ที่เป็น 08:00 ตายตัว)
+  LECT_TIMESTAMP_STAMPED_AT: 'ลงเวลาเมื่อ',
   // หน่วยท้ายเวลาที่ลงไว้ แยกจากตัวเลขเพราะคนละขนาด
   LECT_TIMESTAMP_HOUR_SUFFIX: 'น.',
-  // สถานที่ที่ลงเวลาได้ ตายตัวเพราะ server ยอมให้ลงเฉพาะในรัศมีคณะเท่านั้น
-  LECT_TIMESTAMP_SITE: 'คณะวิศวกรรมศาสตร์',
   LECT_TIMESTAMP_DONE: 'ลงเวลาแล้ว',
   LECT_TIMESTAMP_LOAD_ERROR: 'ไม่สามารถโหลดสถานะการลงเวลาได้',
 

@@ -25,6 +25,7 @@ import {
   useFaceScanPermission,
   type FaceScanCameraHandle,
 } from '@/components/timestamp/face-scan-camera';
+import { SitePill, distanceLabel } from '@/components/timestamp/site-pill';
 import { LocationNoticeBanner } from '@/components/timestamp/location-notice';
 import { useToast } from '@/components/toast-provider';
 import { Button, ConfirmDialog, IconSymbol, type IconSymbolName } from '@/components/ui';
@@ -45,6 +46,7 @@ import {
 import { formatFullDate, formatWeekday } from '@/utils/date-format';
 import { guideOval, type FramingVerdict } from '@/utils/face-framing';
 import { scaleFont } from '@/utils/font-scale';
+import { minutesOf, minutesOfDay, workdayProgress, workedLabel, workedMinutes } from '@/utils/workday';
 
 /** At most one scan sent per this many ms. The gateway has its own floor too. */
 const MIN_SCAN_GAP_MS = 1500;
@@ -121,51 +123,9 @@ function hhmm(time: string) {
   return time ? time.slice(0, 5) : '';
 }
 
-/**
- * How far away, in the unit that suits the number: metres while it is small
- * enough to mean something on foot, kilometres past 100 m, to two decimals at
- * most (4864 m -> '4.86 กม.'). Empty when the gateway sent no distance.
- */
-function distanceLabel(metres: number | null | undefined) {
-  if (metres == null) return '';
-
-  if (metres < 100) {
-    return TEXT.STAFF_TIMESTAMP_METRES.replace('{m}', String(Math.round(metres)));
-  }
-
-  // Rounded to the nearest 10 m before the divide, so the two decimals are all
-  // the precision there is — String() then drops a trailing zero by itself.
-  return TEXT.STAFF_TIMESTAMP_KILOMETRES.replace('{km}', String(Math.round(metres / 10) / 100));
-}
-
 /** 7 -> '07'. The clock and the worked-time label both want two digits. */
 function pad2(value: number) {
   return String(value).padStart(2, '0');
-}
-
-/** A full working day, for the progress bar. The readers' windows are wider. */
-const SHIFT_MINUTES = 8 * 60;
-
-/** 'HH:MM:SS' -> minutes since midnight. -1 when there is no time. */
-function minutesOfDay(time: string) {
-  if (!time) return -1;
-
-  const [h, m] = time.split(':').map(Number);
-
-  return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : -1;
-}
-
-/**
- * How long the person has been at work: from the arrival stamp to the departure
- * one, or to now while the day is still open. Null until there is an arrival.
- */
-function workedMinutes(inTime: string, outTime: string, now: Date) {
-  const start = minutesOfDay(inTime);
-  if (start < 0) return null;
-
-  const end = outTime ? minutesOfDay(outTime) : now.getHours() * 60 + now.getMinutes();
-
-  return Math.max(0, end - start);
 }
 
 /**
@@ -669,28 +629,14 @@ export default function StaffTimestampScreen() {
     const outTime = hhmm(stamp?.outTime ?? '');
     const isLate = stamp?.isLate === true;
 
-    const worked = workedMinutes(stamp?.inTime ?? '', stamp?.outTime ?? '', now);
+    const worked = workedMinutes(stamp?.inTime ?? '', stamp?.outTime ?? '', minutesOf(now));
+    // Where the day stands against 08:30-16:30: now while it is open, or the
+    // departure stamp once there is one, so a finished day stops moving.
+    const departed = minutesOfDay(stamp?.outTime ?? '');
+    const dayFill = worked == null ? 0 : workdayProgress(departed >= 0 ? departed : minutesOf(now));
 
-    // The pill is about the phone's position only, and it follows the
-    // gateway's own measurement: `reason` reports the first thing that stops a
-    // stamp, so somebody who already stamped in is never fence-checked and
-    // their reason says nothing at all about where they are.
-    const offSite = status?.atSite === false || status?.reason === 'off_site';
-    const noFix = (location != null && location.outcome !== 'ok') || status?.distanceM == null;
     const accuracyM = location?.position?.accuracyM ?? 0;
     const coarseFix = !locating && accuracyM > COARSE_FIX_M;
-    const siteColor = locating || noFix ? c.textMuted : offSite ? c.warning ?? c.danger : c.success;
-    const siteState = locating
-      ? TEXT.STAFF_TIMESTAMP_BADGE_LOCATING
-      : noFix
-        ? TEXT.STAFF_TIMESTAMP_NO_POSITION
-        : offSite
-          ? TEXT.STAFF_TIMESTAMP_OFF_SITE
-          : TEXT.STAFF_TIMESTAMP_IN_AREA;
-
-    // The distance comes from the gateway, which owns the faculty's centre; the
-    // phone is never told where that is. Absent until a position has been sent.
-    const siteDistance = locating ? '' : distanceLabel(status?.distanceM);
 
     const badge = dayBadge(status, locating);
     const badgeColor =
@@ -731,13 +677,13 @@ export default function StaffTimestampScreen() {
 
               {/* Where the phone is, live: the one precondition a person can do
                   something about while standing there. */}
-              <View style={[styles.sitePill, { backgroundColor: `${siteColor}1A` }]}>
-                <View style={[styles.siteDot, { backgroundColor: siteColor }]} />
-                <ThemedText style={[styles.sitePillText, { color: siteColor }]}>{siteState}</ThemedText>
-                {siteDistance ? (
-                  <ThemedText style={[styles.sitePillText, { color: siteColor }]}>{siteDistance}</ThemedText>
-                ) : null}
-              </View>
+              <SitePill
+                atSite={status?.atSite}
+                distanceM={status?.distanceM}
+                reason={status?.reason}
+                location={location}
+                locating={locating}
+              />
             </View>
 
             <ThemedText style={styles.date} numberOfLines={1}>
@@ -754,21 +700,17 @@ export default function StaffTimestampScreen() {
             <ThemedText style={styles.clockSeconds}>{pad2(now.getSeconds())}</ThemedText>
           </View>
 
-          {/* The day so far, against a full one. Empty track until the arrival
-              stamp exists — there is nothing to measure from before that. */}
+          {/* The working day, 08:30 to 16:30: full when it is time to go home,
+              whenever the person arrived. Empty track until the arrival stamp
+              exists — there is nothing of theirs to measure before that. */}
           <View style={styles.progressRow}>
             <View style={styles.progressTrack}>
               <View
-                style={[
-                  styles.progressFill,
-                  { backgroundColor: c.primary, width: `${Math.min(100, Math.round(((worked ?? 0) / SHIFT_MINUTES) * 100))}%` },
-                ]}
+                style={[styles.progressFill, { backgroundColor: c.primary, width: `${Math.round(dayFill * 100)}%` }]}
               />
             </View>
             <ThemedText style={styles.progressLabel}>
-              {worked == null
-                ? TEXT.STAFF_TIMESTAMP_NOT_IN_YET
-                : TEXT.STAFF_TIMESTAMP_WORKED.replace('{h}', String(Math.floor(worked / 60))).replace('{m}', pad2(worked % 60))}
+              {worked == null ? TEXT.STAFF_TIMESTAMP_NOT_IN_YET : workedLabel(worked)}
             </ThemedText>
           </View>
 
@@ -1036,20 +978,6 @@ const makeStyles = (c: AppColors) =>
       fontFamily: AppFonts.psuBold,
       fontSize: scaleFont(14),
       lineHeight: scaleFont(20),
-    },
-    sitePill: {
-      alignItems: 'center',
-      borderRadius: 999,
-      flexDirection: 'row',
-      gap: 6,
-      paddingHorizontal: 12,
-      paddingVertical: 7,
-    },
-    siteDot: { borderRadius: 999, height: 7, width: 7 },
-    sitePillText: {
-      fontFamily: AppFonts.psuBold,
-      fontSize: scaleFont(12),
-      lineHeight: scaleFont(18),
     },
     // The clock: the biggest thing on the screen, and the only one that moves.
     clock: {
