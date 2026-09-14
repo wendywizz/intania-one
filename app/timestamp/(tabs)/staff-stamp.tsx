@@ -787,8 +787,6 @@ export default function StaffTimestampScreen() {
               <ThemedText
                 style={[styles.timeValue, inTime ? null : styles.timeEmpty, isLate ? styles.timeLate : null]}
                 numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}
               >
                 {inTime || '—'}
               </ThemedText>
@@ -806,8 +804,6 @@ export default function StaffTimestampScreen() {
               <ThemedText
                 style={[styles.timeValue, outTime ? null : styles.timeEmpty]}
                 numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}
               >
                 {outTime || '—'}
               </ThemedText>
@@ -997,7 +993,9 @@ const makeStyles = (c: AppColors) =>
       backgroundColor: c.surface,
       borderRadius: 26,
       gap: 14,
-      padding: 20,
+      paddingHorizontal: 20,
+      paddingTop: 13,
+      paddingBottom: 20,
       boxShadow: boxShadow(c.shadow, { y: 10, blur: 24, opacity: 0.1 }),
     },
     cardHead: {
@@ -1006,19 +1004,19 @@ const makeStyles = (c: AppColors) =>
       gap: 10,
       justifyContent: 'space-between',
     },
-    cardHeadText: { alignSelf: 'stretch', gap: 2 },
+    cardHeadText: { alignSelf: 'stretch' },
     // The weekday sets the scene; the date is the fact, so it carries the weight.
     weekday: {
       color: c.textMuted,
       fontFamily: AppFonts.psuRegular,
       fontSize: scaleFont(13),
-      lineHeight: scaleFont(19),
+      lineHeight: scaleFont(17),
     },
     date: {
       color: c.text,
       fontFamily: AppFonts.psuBold,
-      fontSize: scaleFont(15),
-      lineHeight: scaleFont(22),
+      fontSize: scaleFont(14),
+      lineHeight: scaleFont(20),
     },
     sitePill: {
       alignItems: 'center',
