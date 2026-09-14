@@ -33,4 +33,11 @@ export let DEV_STAFF_ID: string = '';
 // stamp screen (ลงเวลาอาจารย์, ลงเวลาบุคลากรทั่วไป) this position instead —
 // useful on web, where each reload re-asks for the location permission, and
 // indoors, where a real fix can be slow or unavailable.
-export const DEV_LOCATION: { lat: number; lon: number } | null = { lat: 7.002, lon: 100.4573 }; // คณะวิศวะ
+// The fence centre itself, copied from the upstream's own constants (staff.php
+// and lecturer.php). The pair that used to sit here was labelled คณะวิศวะ but
+// measured 4.86 km from that centre, so every dev build reported itself far
+// outside the faculty. Set to null to test against a real fix instead.
+export const DEV_LOCATION: { lat: number; lon: number } | null = {
+  lat: 7.006754432048102,
+  lon: 100.50110828545463,
+}; // คณะวิศวะ - จุดศูนย์กลางรั้ว geofence ของ staff.php/lecturer.php

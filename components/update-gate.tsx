@@ -2,11 +2,12 @@ import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import * as Updates from 'expo-updates';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Platform, StyleSheet, View } from 'react-native';
+import { Animated, AppState, type AppStateStatus, Platform, StyleSheet, View } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
 import { ErrorState } from '@/components/error-state';
 import { ThemedText } from '@/components/themed-text';
+import { useToast } from '@/components/toast-provider';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useThemedStyles } from '@/constants/theme';
@@ -15,6 +16,16 @@ import { useTheme } from '@/context/ThemeContext';
 // Resolved from package.json by app.config.js — same source settings.tsx
 // reads, so the two never disagree about what version is running.
 const APP_VERSION = Constants.expoConfig?.version ?? '—';
+
+/**
+ * How long a background trip has to be before coming back to the foreground
+ * re-checks for an update. A user who never force-quits the app otherwise
+ * never gets a fresh check past the one at cold start — this is what catches
+ * that case. Kept well above a quick app-switcher glance, and well below "a
+ * whole day", so a session left open over lunch still picks up a same-day
+ * release.
+ */
+const RESUME_CHECK_AFTER_MS = 30 * 60 * 1000;
 
 /**
  * Checks EAS Update on every launch, before anything else mounts.
@@ -32,6 +43,7 @@ const APP_VERSION = Constants.expoConfig?.version ?? '—';
 export function UpdateGate({ children }: { children: React.ReactNode }) {
   const styles = useThemedStyles(makeStyles);
   const { isDarkMode } = useTheme();
+  const { showToast } = useToast();
   const { isUpdateAvailable, isUpdatePending, isDownloading, downloadProgress, downloadError } =
     Updates.useUpdates();
 
@@ -39,10 +51,27 @@ export function UpdateGate({ children }: { children: React.ReactNode }) {
   const [retryToken, setRetryToken] = useState(0);
   const startedCheckRef = useRef(false);
   const startedFetchRef = useRef(false);
+  // Which check is currently in flight — decides how a found/downloaded
+  // update is handled below. 'initial' is the cold-start check, and behaves
+  // as before: take over the screen, then reload straight into it, since
+  // nothing has rendered for the user to lose yet. 'resume' is a check fired
+  // after the app was reopened from the background with `children` already on
+  // screen — taking the screen over or reloading out from under the user
+  // there would interrupt whatever they're doing, so that case is handled by
+  // the toast branch further down instead.
+  const checkSourceRef = useRef<'initial' | 'resume'>('initial');
+  const toastShownRef = useRef(false);
+  const backgroundedAtRef = useRef<number | null>(null);
 
   // Disabled in dev/Expo Go/web — expo-updates only does anything in a real
   // EAS-built binary, and calling it outside that just rejects.
   const skippable = Platform.OS === 'web' || !Updates.isEnabled;
+
+  const runCheck = useCallback((source: 'initial' | 'resume') => {
+    checkSourceRef.current = source;
+    toastShownRef.current = false;
+    Updates.checkForUpdateAsync().catch(() => {});
+  }, []);
 
   // The startup check. Failure here (offline, update server unreachable, no
   // update published) should never block the app — it just means nothing
@@ -50,27 +79,75 @@ export function UpdateGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (skippable || startedCheckRef.current) return;
     startedCheckRef.current = true;
-    Updates.checkForUpdateAsync().catch(() => {});
+    runCheck('initial');
     // retryToken re-runs this after a failed download, in case the earlier
     // failure was the check itself rather than the fetch.
-  }, [skippable, retryToken]);
+  }, [skippable, retryToken, runCheck]);
 
-  // Once an update is confirmed, download it — once per check.
+  // Re-checks when the app comes back from a real background spell (not the
+  // brief 'inactive' blip a notification shade or the app switcher causes).
+  // Without this, an app that's never force-quit only ever gets the one check
+  // above, at whatever cold start last happened — which can be days before
+  // whatever the user is running now. Throttled by RESUME_CHECK_AFTER_MS so
+  // quick app-switching doesn't hammer the update server, and skipped
+  // outright while a check/download is already in flight.
+  useEffect(() => {
+    if (skippable) return;
+
+    const handleChange = (next: AppStateStatus) => {
+      if (next === 'background') {
+        backgroundedAtRef.current = Date.now();
+        return;
+      }
+      if (next !== 'active') return;
+
+      const since = backgroundedAtRef.current;
+      backgroundedAtRef.current = null;
+      if (since === null || Date.now() - since < RESUME_CHECK_AFTER_MS) return;
+      if (isDownloading || isUpdateAvailable) return;
+
+      startedFetchRef.current = false;
+      runCheck('resume');
+    };
+
+    const subscription = AppState.addEventListener('change', handleChange);
+    return () => subscription.remove();
+  }, [skippable, isDownloading, isUpdateAvailable, runCheck]);
+
+  // Once an update is confirmed, download it — once per check, whichever
+  // triggered it.
   useEffect(() => {
     if (!isUpdateAvailable || isDownloading || startedFetchRef.current) return;
     startedFetchRef.current = true;
     Updates.fetchUpdateAsync().catch(() => {
-      // Surfaced via `downloadError` from useUpdates(); handled in render below.
+      // Surfaced via `downloadError` from useUpdates(); handled in render below
+      // for the 'initial' source. A 'resume' failure is silent on purpose —
+      // there's nothing on screen for it to report into, and the next resume
+      // past the throttle window tries again.
     });
   }, [isUpdateAvailable, isDownloading]);
 
-  // Once downloaded, reload straight into it. Nothing meaningful runs after
-  // this — the app restarts on the new bundle.
+  // Once downloaded: 'initial' reloads straight into it, same as before,
+  // since the gate is already covering the screen and nothing is lost.
+  // 'resume' instead offers a toast — reloading here would restart the app
+  // out from under whatever the user is doing, mid-session.
   useEffect(() => {
-    if (isUpdatePending) {
+    if (!isUpdatePending) return;
+
+    if (checkSourceRef.current === 'initial') {
       Updates.reloadAsync();
+      return;
     }
-  }, [isUpdatePending]);
+
+    if (toastShownRef.current) return;
+    toastShownRef.current = true;
+    showToast(TEXT.APP_UPDATE_READY_TOAST, 'info', {
+      actionLabel: TEXT.APP_UPDATE_RESTART_ACTION,
+      onAction: () => {
+        Updates.reloadAsync();
+      },
+    });
+  }, [isUpdatePending, showToast]);
 
   const handleRetry = useCallback(() => {
     startedCheckRef.current = false;
@@ -78,7 +155,9 @@ export function UpdateGate({ children }: { children: React.ReactNode }) {
     setRetryToken((t) => t + 1);
   }, []);
 
-  if (skippable || dismissed || !isUpdateAvailable) {
+  // A 'resume' check never takes the screen over, however far it gets — that
+  // full-screen takeover is 'initial'-only, handled above and by the toast.
+  if (skippable || dismissed || !isUpdateAvailable || checkSourceRef.current !== 'initial') {
     return <>{children}</>;
   }
 

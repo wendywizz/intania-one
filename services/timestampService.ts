@@ -677,6 +677,14 @@ export type StaffTimestampStatus = {
   /** 'HH:MM' เวลาเริ่มช่วงลงเวลาออก; '' เมื่อไม่ทราบ */
   outFrom: string;
   canStamp: boolean;
+  /** ระยะห่างจากใจกลางคณะเป็นเมตร ตามที่ gateway คำนวณ; null = ไม่ได้ส่งพิกัดไป */
+  distanceM: number | null;
+  /**
+   * อยู่ในรัศมีที่กำหนดหรือไม่ ตัดสินที่ server จากระยะข้างบน; null = ไม่มีพิกัด
+   * ต่างจาก reason ตรงที่ reason บอกแค่เหตุผลแรกที่ลงเวลาไม่ได้ คนที่ลงเวลาเข้าไปแล้ว
+   * จะไม่ถูกตรวจพิกัดเลย reason จึงไม่ได้บอกว่าอยู่ในพื้นที่หรือเปล่า
+   */
+  atSite: boolean | null;
   /**
    * '' | 'not_staff' | 'guard' | 'already_in' | 'already_complete' | 'on_travel'
    * | 'weekend' | 'outside_hours' | 'irregular_record' | 'off_network' | 'vpn'
@@ -748,6 +756,9 @@ function staffStatusFrom(data: Record<string, unknown>): StaffTimestampStatus {
     confirmMessage: str(data.confirmMessage),
     outFrom: str(data.outFrom),
     canStamp: data.canStamp === true,
+    distanceM:
+      typeof data.distanceM === 'number' && Number.isFinite(data.distanceM) ? data.distanceM : null,
+    atSite: typeof data.atSite === 'boolean' ? data.atSite : null,
     reason: str(data.reason),
     message: str(data.message),
     faceRegistered: typeof data.faceRegistered === 'boolean' ? data.faceRegistered : null,

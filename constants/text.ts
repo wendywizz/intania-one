@@ -162,6 +162,11 @@ export const TEXT = {
   APP_UPDATE_ERROR_MESSAGE: 'ไม่สามารถดาวน์โหลดอัปเดตได้ กรุณาลองใหม่ หรือใช้งานเวอร์ชันปัจจุบันไปก่อน',
   APP_UPDATE_RETRY: 'ลองอีกครั้ง',
   APP_UPDATE_SKIP: 'ใช้งานเวอร์ชันปัจจุบัน',
+  // Found while the app was already open (resumed from background) — surfaced
+  // as a toast instead of the full-screen flow above, so it doesn't interrupt
+  // whatever the user is doing.
+  APP_UPDATE_READY_TOAST: 'มีอัปเดตใหม่พร้อมใช้งานแล้ว',
+  APP_UPDATE_RESTART_ACTION: 'รีสตาร์ทตอนนี้',
 
   // Biometric app lock
   BIOMETRIC_LOCK_TITLE: 'ปลดล็อกแอปพลิเคชัน',
@@ -1277,12 +1282,16 @@ export const TEXT = {
   STAFF_TIMESTAMP_BADGE_TRAVEL: 'ไปราชการ',
   STAFF_TIMESTAMP_BADGE_IRREGULAR: 'ข้อมูลไม่ปกติ',
   STAFF_TIMESTAMP_BADGE_LOCATING: 'กำลังหาตำแหน่ง',
-  STAFF_TIMESTAMP_TODAY: 'วันนี้',
   STAFF_TIMESTAMP_IN_AREA: 'อยู่ในพื้นที่',
   STAFF_TIMESTAMP_OFF_SITE: 'นอกพื้นที่คณะ',
   STAFF_TIMESTAMP_NO_POSITION: 'ไม่ทราบตำแหน่ง',
+  // ระยะห่างจากใจกลางคณะ ต่อท้ายป้ายตำแหน่ง
+  STAFF_TIMESTAMP_METRES: '{m} ม.',
+  STAFF_TIMESTAMP_KILOMETRES: '{km} กม.',
+  // เมื่อ iOS/Android ให้ตำแหน่งแบบหยาบ (ปิด "ตำแหน่งที่แม่นยำ") ระยะจะเพี้ยนเป็นกิโลเมตร
+  STAFF_TIMESTAMP_COARSE_FIX: 'ตำแหน่งที่ได้คลาดเคลื่อนถึง {r} เปิด "ตำแหน่งที่แม่นยำ" ให้แอปในตั้งค่าของเครื่อง แล้วดึงหน้าจอลงเพื่อลองใหม่',
   // {h} ชั่วโมง {m} นาที นับจากเวลาเข้างาน
-  STAFF_TIMESTAMP_WORKED: 'ทำงาน {h} ชม. {m} น.',
+  STAFF_TIMESTAMP_WORKED: 'ทำงานแล้ว {h} ชม. {m} น.',
   STAFF_TIMESTAMP_NOT_IN_YET: 'ยังไม่ได้ลงเวลาเข้า',
   STAFF_TIMESTAMP_LOCATING: 'กำลังตรวจสอบตำแหน่งของคุณ...',
   STAFF_TIMESTAMP_BUTTON_IN: 'ลงเวลาเข้างาน',

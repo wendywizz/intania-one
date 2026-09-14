@@ -56,6 +56,14 @@ const SCAN_WINDOW_MS = 30000;
 const POSITION_MAX_AGE_MS = 60000;
 
 /**
+ * Above this radius of uncertainty the fix cannot answer a 200 m fence at all.
+ * The usual cause is "Precise Location" being off for the app, which hands out
+ * a position fuzzed by kilometres — the distance then looks absurd and the
+ * person has no way to know why.
+ */
+const COARSE_FIX_M = 150;
+
+/**
  * Refusals that are facts about the day. Shown as a modal when the screen opens
  * — "not a stamping window", "today is a holiday" — so opening the tab answers
  * the question straight away.
@@ -92,19 +100,33 @@ type Phase = 'idle' | 'confirm' | 'scanning' | 'paused' | 'done';
 
 type Notice = { title: string; message: string; icon: IconSymbolName };
 
-/** 'วันศุกร์ 04 กันยายน 2569' — the shared helpers, which put the year in B.E. */
-function thaiDateLabel(date: string) {
-  if (!date) return '';
+/** 'วันศุกร์' — the shared helper, which returns the bare weekday name. */
+function thaiWeekdayLabel(date: string) {
+  const weekday = date ? formatWeekday(date) : '';
 
-  const weekday = formatWeekday(date);
-  const full = formatFullDate(date);
-
-  return weekday ? `วัน${weekday} ${full}` : full;
+  return weekday ? `วัน${weekday}` : '';
 }
 
 /** '07:01:12' -> '07:01'. Empty stays empty. */
 function hhmm(time: string) {
   return time ? time.slice(0, 5) : '';
+}
+
+/**
+ * How far away, in the unit that suits the number: metres while it is small
+ * enough to mean something on foot, kilometres past 100 m, to two decimals at
+ * most (4864 m -> '4.86 กม.'). Empty when the gateway sent no distance.
+ */
+function distanceLabel(metres: number | null | undefined) {
+  if (metres == null) return '';
+
+  if (metres < 100) {
+    return TEXT.STAFF_TIMESTAMP_METRES.replace('{m}', String(Math.round(metres)));
+  }
+
+  // Rounded to the nearest 10 m before the divide, so the two decimals are all
+  // the precision there is — String() then drops a trailing zero by itself.
+  return TEXT.STAFF_TIMESTAMP_KILOMETRES.replace('{km}', String(Math.round(metres / 10) / 100));
 }
 
 /** 7 -> '07'. The clock and the worked-time label both want two digits. */
@@ -644,18 +666,26 @@ export default function StaffTimestampScreen() {
 
     const worked = workedMinutes(stamp?.inTime ?? '', stamp?.outTime ?? '', now);
 
-    // The pill is about the phone's position only: green once there is a fix
-    // the gateway accepted, amber when it answered "not at the faculty".
-    const offSite = status?.reason === 'off_site';
-    const noFix = location != null && location.outcome !== 'ok';
+    // The pill is about the phone's position only, and it follows the
+    // gateway's own measurement: `reason` reports the first thing that stops a
+    // stamp, so somebody who already stamped in is never fence-checked and
+    // their reason says nothing at all about where they are.
+    const offSite = status?.atSite === false || status?.reason === 'off_site';
+    const noFix = (location != null && location.outcome !== 'ok') || status?.distanceM == null;
+    const accuracyM = location?.position?.accuracyM ?? 0;
+    const coarseFix = !locating && accuracyM > COARSE_FIX_M;
     const siteColor = locating || noFix ? c.textMuted : offSite ? c.warning ?? c.danger : c.success;
-    const siteLabel = locating
+    const siteState = locating
       ? TEXT.STAFF_TIMESTAMP_BADGE_LOCATING
       : noFix
         ? TEXT.STAFF_TIMESTAMP_NO_POSITION
         : offSite
           ? TEXT.STAFF_TIMESTAMP_OFF_SITE
           : TEXT.STAFF_TIMESTAMP_IN_AREA;
+
+    // The distance comes from the gateway, which owns the faculty's centre; the
+    // phone is never told where that is. Absent until a position has been sent.
+    const siteDistance = locating ? '' : distanceLabel(status?.distanceM);
 
     const badge = dayBadge(status, locating);
     const badgeColor =
@@ -689,15 +719,20 @@ export default function StaffTimestampScreen() {
         <View style={styles.card}>
           <View style={styles.cardHead}>
             <View style={styles.cardHeadText}>
-              <ThemedText style={styles.todayLabel}>{TEXT.STAFF_TIMESTAMP_TODAY}</ThemedText>
-              <ThemedText style={styles.date}>{thaiDateLabel(status?.serverDate ?? '')}</ThemedText>
+              <ThemedText style={styles.weekday}>{thaiWeekdayLabel(status?.serverDate ?? '')}</ThemedText>
+              <ThemedText style={styles.date} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                {formatFullDate(status?.serverDate ?? '')}
+              </ThemedText>
             </View>
 
             {/* Where the phone is, live: the one precondition a person can do
                 something about while standing there. */}
             <View style={[styles.sitePill, { backgroundColor: `${siteColor}1A` }]}>
               <View style={[styles.siteDot, { backgroundColor: siteColor }]} />
-              <ThemedText style={[styles.sitePillText, { color: siteColor }]}>{siteLabel}</ThemedText>
+              <ThemedText style={[styles.sitePillText, { color: siteColor }]}>{siteState}</ThemedText>
+              {siteDistance ? (
+                <ThemedText style={[styles.sitePillText, { color: siteColor }]}>{siteDistance}</ThemedText>
+              ) : null}
             </View>
           </View>
 
@@ -793,12 +828,28 @@ export default function StaffTimestampScreen() {
             </View>
           )}
 
+          {/* A fix too coarse to place anyone inside a 200 m fence. Said here
+              rather than left to be puzzled over: the distance above is then
+              wrong by kilometres and nothing else on screen explains it. */}
+          {coarseFix ? (
+            <View style={styles.statusRow}>
+              <View style={styles.statusIcon}>
+                <IconSymbol size={15} name="exclamationmark.triangle.fill" color={c.warning ?? c.danger} />
+              </View>
+              <ThemedText style={[styles.statusText, { color: c.warning ?? c.danger }]}>
+                {TEXT.STAFF_TIMESTAMP_COARSE_FIX.replace('{r}', distanceLabel(accuracyM))}
+              </ThemedText>
+            </View>
+          ) : null}
+
           {/* The gateway's own sentence — what a scan would record, or why
               stamping is refused right now. While the first fix is still
               coming, that wait is the more honest thing to say. */}
           {locating || status?.message ? (
             <View style={styles.statusRow}>
-              <IconSymbol size={15} name={locating ? 'mappin' : 'info.circle.fill'} color={c.textMuted} />
+              <View style={styles.statusIcon}>
+                <IconSymbol size={15} name={locating ? 'mappin' : 'info.circle.fill'} color={c.textMuted} />
+              </View>
               <ThemedText style={styles.statusText}>
                 {locating ? TEXT.STAFF_TIMESTAMP_LOCATING : status?.message}
               </ThemedText>
@@ -951,25 +1002,25 @@ const makeStyles = (c: AppColors) =>
       gap: 10,
       justifyContent: 'space-between',
     },
-    cardHeadText: { flexShrink: 1, gap: 2 },
-    todayLabel: {
+    cardHeadText: { flexShrink: 1, gap: 1 },
+    // The weekday sets the scene; the date is the fact, so it carries the weight.
+    weekday: {
       color: c.textMuted,
       fontFamily: AppFonts.psuRegular,
-      fontSize: scaleFont(12),
-      letterSpacing: 0.6,
-      lineHeight: scaleFont(18),
+      fontSize: scaleFont(13),
+      lineHeight: scaleFont(19),
     },
     date: {
       color: c.text,
       fontFamily: AppFonts.psuBold,
-      fontSize: scaleFont(15),
-      lineHeight: scaleFont(23),
+      fontSize: scaleFont(14),
+      lineHeight: scaleFont(21),
     },
     sitePill: {
       alignItems: 'center',
       borderRadius: 999,
       flexDirection: 'row',
-      gap: 7,
+      gap: 6,
       paddingHorizontal: 12,
       paddingVertical: 7,
     },
@@ -1064,7 +1115,7 @@ const makeStyles = (c: AppColors) =>
       lineHeight: scaleFont(36),
     },
     // A half of the day that has not happened is a placeholder, not a value.
-    timeEmpty: { color: c.borderStrong },
+    timeEmpty: { color: c.borderStrong, paddingLeft: 6 },
     // Late is the readers' own verdict (flag_in = 2), shown as a fact.
     timeLate: { color: c.warning ?? c.danger },
     lateChip: {
@@ -1088,6 +1139,7 @@ const makeStyles = (c: AppColors) =>
       gap: 7,
       paddingTop: 14,
     },
+    statusIcon: { paddingTop: scaleFont(5) },
     statusText: {
       color: c.textMuted,
       flex: 1,
