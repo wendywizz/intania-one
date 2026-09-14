@@ -107,6 +107,36 @@ function hhmm(time: string) {
   return time ? time.slice(0, 5) : '';
 }
 
+/** 7 -> '07'. The clock and the worked-time label both want two digits. */
+function pad2(value: number) {
+  return String(value).padStart(2, '0');
+}
+
+/** A full working day, for the progress bar. The readers' windows are wider. */
+const SHIFT_MINUTES = 8 * 60;
+
+/** 'HH:MM:SS' -> minutes since midnight. -1 when there is no time. */
+function minutesOfDay(time: string) {
+  if (!time) return -1;
+
+  const [h, m] = time.split(':').map(Number);
+
+  return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : -1;
+}
+
+/**
+ * How long the person has been at work: from the arrival stamp to the departure
+ * one, or to now while the day is still open. Null until there is an arrival.
+ */
+function workedMinutes(inTime: string, outTime: string, now: Date) {
+  const start = minutesOfDay(inTime);
+  if (start < 0) return null;
+
+  const end = outTime ? minutesOfDay(outTime) : now.getHours() * 60 + now.getMinutes();
+
+  return Math.max(0, end - start);
+}
+
 /**
  * The day in two or three words, for the badge on the card.
  *
@@ -194,6 +224,17 @@ export default function StaffTimestampScreen() {
   // The camera surface's size, so the hint can sit right under the oval rather
   // than at the foot of the screen, where eyes on their own face never go.
   const [scanSize, setScanSize] = useState({ width: 0, height: 0 });
+  // The clock on the card ticks; the phone's own time is close enough to the
+  // server's, and a stopped clock on a stamping screen reads as a frozen app.
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    if (!isFocused) return;
+
+    const timer = setInterval(() => setNow(new Date()), 1000);
+
+    return () => clearInterval(timer);
+  }, [isFocused]);
 
   const cameraRef = useRef<FaceScanCameraHandle>(null);
   // Read by the blink handler, which must stay stable so the camera pipeline is
@@ -601,6 +642,21 @@ export default function StaffTimestampScreen() {
     const outTime = hhmm(stamp?.outTime ?? '');
     const isLate = stamp?.isLate === true;
 
+    const worked = workedMinutes(stamp?.inTime ?? '', stamp?.outTime ?? '', now);
+
+    // The pill is about the phone's position only: green once there is a fix
+    // the gateway accepted, amber when it answered "not at the faculty".
+    const offSite = status?.reason === 'off_site';
+    const noFix = location != null && location.outcome !== 'ok';
+    const siteColor = locating || noFix ? c.textMuted : offSite ? c.warning ?? c.danger : c.success;
+    const siteLabel = locating
+      ? TEXT.STAFF_TIMESTAMP_BADGE_LOCATING
+      : noFix
+        ? TEXT.STAFF_TIMESTAMP_NO_POSITION
+        : offSite
+          ? TEXT.STAFF_TIMESTAMP_OFF_SITE
+          : TEXT.STAFF_TIMESTAMP_IN_AREA;
+
     const badge = dayBadge(status, locating);
     const badgeColor =
       badge.tone === 'success'
@@ -632,58 +688,96 @@ export default function StaffTimestampScreen() {
 
         <View style={styles.card}>
           <View style={styles.cardHead}>
-            <ThemedText style={styles.date}>{thaiDateLabel(status?.serverDate ?? '')}</ThemedText>
-            <View style={[styles.dayChip, { backgroundColor: `${badgeColor}1A` }]}>
-              <IconSymbol size={14} name={badge.icon} color={badgeColor} />
-              <ThemedText style={[styles.dayChipText, { color: badgeColor }]}>{badge.label}</ThemedText>
+            <View style={styles.cardHeadText}>
+              <ThemedText style={styles.todayLabel}>{TEXT.STAFF_TIMESTAMP_TODAY}</ThemedText>
+              <ThemedText style={styles.date}>{thaiDateLabel(status?.serverDate ?? '')}</ThemedText>
+            </View>
+
+            {/* Where the phone is, live: the one precondition a person can do
+                something about while standing there. */}
+            <View style={[styles.sitePill, { backgroundColor: `${siteColor}1A` }]}>
+              <View style={[styles.siteDot, { backgroundColor: siteColor }]} />
+              <ThemedText style={[styles.sitePillText, { color: siteColor }]}>{siteLabel}</ThemedText>
             </View>
           </View>
 
+          {/* The clock is the anchor of the screen: what a stamp made now would
+              record. Seconds are there to show it is live, not to be read. */}
+          <View style={styles.clock}>
+            <ThemedText style={styles.clockTime}>
+              {`${pad2(now.getHours())}:${pad2(now.getMinutes())}`}
+            </ThemedText>
+            <ThemedText style={styles.clockSeconds}>{pad2(now.getSeconds())}</ThemedText>
+          </View>
+
+          {/* The day so far, against a full one. Empty track until the arrival
+              stamp exists — there is nothing to measure from before that. */}
+          <View style={styles.progressRow}>
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { backgroundColor: c.primary, width: `${Math.min(100, Math.round(((worked ?? 0) / SHIFT_MINUTES) * 100))}%` },
+                ]}
+              />
+            </View>
+            <ThemedText style={styles.progressLabel}>
+              {worked == null
+                ? TEXT.STAFF_TIMESTAMP_NOT_IN_YET
+                : TEXT.STAFF_TIMESTAMP_WORKED.replace('{h}', String(Math.floor(worked / 60))).replace('{m}', pad2(worked % 60))}
+            </ThemedText>
+          </View>
+
           {/* Arrival and departure side by side: the pair is one fact — the
-              shape of the day. A dash for a half that has not happened. Each
-              half is a tile of its own so a long number has room of its own. */}
+              shape of the day. A dash for a half that has not happened. */}
           <View style={styles.times}>
             <View style={styles.timeTile}>
-              <ThemedText style={styles.timeLabel}>{TEXT.STAFF_TIMESTAMP_IN_LABEL}</ThemedText>
+              <View style={styles.tileHead}>
+                <IconSymbol
+                  size={13}
+                  name={inTime ? 'checkmark.circle.fill' : 'clock.fill'}
+                  color={inTime ? c.success : c.textMuted}
+                />
+                <ThemedText style={styles.timeLabel}>{TEXT.STAFF_TIMESTAMP_IN_LABEL}</ThemedText>
+                {isLate ? (
+                  <View style={styles.lateChip}>
+                    <ThemedText style={styles.lateChipText}>{TEXT.STAFF_TIMESTAMP_LATE}</ThemedText>
+                  </View>
+                ) : null}
+              </View>
               <ThemedText
-                style={[styles.timeValue, isLate ? styles.timeLate : null]}
+                style={[styles.timeValue, inTime ? null : styles.timeEmpty, isLate ? styles.timeLate : null]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.7}
               >
                 {inTime || '—'}
               </ThemedText>
-              {isLate ? (
-                <View style={styles.lateChip}>
-                  <ThemedText style={styles.lateChipText}>{TEXT.STAFF_TIMESTAMP_LATE}</ThemedText>
-                </View>
-              ) : null}
             </View>
 
             <View style={styles.timeTile}>
-              <ThemedText style={styles.timeLabel}>{TEXT.STAFF_TIMESTAMP_OUT_LABEL}</ThemedText>
-              <ThemedText style={styles.timeValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+              <View style={styles.tileHead}>
+                <IconSymbol
+                  size={13}
+                  name={outTime ? 'checkmark.circle.fill' : 'clock.fill'}
+                  color={outTime ? c.success : c.textMuted}
+                />
+                <ThemedText style={styles.timeLabel}>{TEXT.STAFF_TIMESTAMP_OUT_LABEL}</ThemedText>
+              </View>
+              <ThemedText
+                style={[styles.timeValue, outTime ? null : styles.timeEmpty]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
                 {outTime || '—'}
               </ThemedText>
             </View>
           </View>
 
-          {/* The gateway's own sentence — what a scan would record, or why
-              stamping is refused right now. While the first fix is still
-              coming, that wait is the more honest thing to say. */}
-          {locating || status?.message ? (
-            <View style={styles.statusRow}>
-              <IconSymbol
-                size={17}
-                name={locating ? 'mappin' : 'info.circle.fill'}
-                color={c.textMuted}
-              />
-              <ThemedText style={styles.statusText}>
-                {locating ? TEXT.STAFF_TIMESTAMP_LOCATING : status?.message}
-              </ThemedText>
-            </View>
-          ) : null}
-
+          {/* One action, always in the same place. When a stamp is not on
+              offer it stays as a flat plate carrying the day's state, so the
+              card never changes shape under the reader. */}
           {canStartScan ? (
             <Button
               title={TEXT.STAFF_FACE_START}
@@ -692,6 +786,23 @@ export default function StaffTimestampScreen() {
               fullWidth
               onPress={() => (status?.needsConfirm ? setPhase('confirm') : startScanning())}
             />
+          ) : (
+            <View style={styles.actionPlate}>
+              <IconSymbol size={18} name={badge.icon} color={badgeColor} />
+              <ThemedText style={[styles.actionPlateText, { color: badgeColor }]}>{badge.label}</ThemedText>
+            </View>
+          )}
+
+          {/* The gateway's own sentence — what a scan would record, or why
+              stamping is refused right now. While the first fix is still
+              coming, that wait is the more honest thing to say. */}
+          {locating || status?.message ? (
+            <View style={styles.statusRow}>
+              <IconSymbol size={15} name={locating ? 'mappin' : 'info.circle.fill'} color={c.textMuted} />
+              <ThemedText style={styles.statusText}>
+                {locating ? TEXT.STAFF_TIMESTAMP_LOCATING : status?.message}
+              </ThemedText>
+            </View>
           ) : null}
         </View>
       </ScrollView>
@@ -829,68 +940,131 @@ const makeStyles = (c: AppColors) =>
     card: {
       alignSelf: 'stretch',
       backgroundColor: c.surface,
-      borderRadius: 20,
-      gap: 16,
+      borderRadius: 26,
+      gap: 14,
       padding: 20,
-      boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
+      boxShadow: boxShadow(c.shadow, { y: 10, blur: 24, opacity: 0.1 }),
     },
     cardHead: {
-      alignItems: 'center',
+      alignItems: 'flex-start',
       flexDirection: 'row',
       gap: 10,
       justifyContent: 'space-between',
     },
+    cardHeadText: { flexShrink: 1, gap: 2 },
+    todayLabel: {
+      color: c.textMuted,
+      fontFamily: AppFonts.psuRegular,
+      fontSize: scaleFont(12),
+      letterSpacing: 0.6,
+      lineHeight: scaleFont(18),
+    },
     date: {
       color: c.text,
-      flexShrink: 1,
       fontFamily: AppFonts.psuBold,
-      fontSize: scaleFont(16),
-      lineHeight: scaleFont(24),
+      fontSize: scaleFont(15),
+      lineHeight: scaleFont(23),
     },
-    dayChip: {
+    sitePill: {
       alignItems: 'center',
       borderRadius: 999,
       flexDirection: 'row',
-      gap: 5,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
+      gap: 7,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
     },
-    dayChipText: {
+    siteDot: { borderRadius: 999, height: 7, width: 7 },
+    sitePillText: {
       fontFamily: AppFonts.psuBold,
       fontSize: scaleFont(12),
       lineHeight: scaleFont(18),
     },
+    // The clock: the biggest thing on the screen, and the only one that moves.
+    clock: {
+      alignItems: 'flex-end',
+      alignSelf: 'center',
+      flexDirection: 'row',
+      gap: 4,
+      paddingTop: 6,
+    },
+    clockTime: {
+      color: c.text,
+      fontFamily: AppFonts.psuBold,
+      fontSize: scaleFont(56),
+      fontVariant: ['tabular-nums'],
+      letterSpacing: -1,
+      lineHeight: scaleFont(64),
+    },
+    clockSeconds: {
+      color: c.textMuted,
+      fontFamily: AppFonts.psuRegular,
+      fontSize: scaleFont(20),
+      fontVariant: ['tabular-nums'],
+      lineHeight: scaleFont(34),
+    },
+    progressRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
+    progressTrack: {
+      backgroundColor: c.background,
+      borderRadius: 999,
+      flex: 1,
+      height: 6,
+      overflow: 'hidden',
+    },
+    progressFill: { borderRadius: 999, height: '100%' },
+    progressLabel: {
+      color: c.textMuted,
+      fontFamily: AppFonts.psuRegular,
+      fontSize: scaleFont(12),
+      fontVariant: ['tabular-nums'],
+      lineHeight: scaleFont(18),
+    },
+    actionPlate: {
+      alignItems: 'center',
+      backgroundColor: c.background,
+      borderRadius: 18,
+      flexDirection: 'row',
+      gap: 8,
+      height: 54,
+      justifyContent: 'center',
+    },
+    actionPlateText: {
+      fontFamily: AppFonts.psuBold,
+      fontSize: scaleFont(15),
+      lineHeight: scaleFont(22),
+    },
     times: {
       alignSelf: 'stretch',
       flexDirection: 'row',
-      gap: 12,
+      gap: 10,
     },
+    tileHead: { alignItems: 'center', flexDirection: 'row', gap: 6 },
     // A tile per half of the day. Every line carries its own lineHeight: the
     // PSU faces are taller than the default box, and a big numeral inside a
     // default line box loses its top and bottom.
     timeTile: {
-      alignItems: 'center',
       backgroundColor: c.background,
-      borderRadius: 16,
+      borderRadius: 18,
       flex: 1,
-      gap: 4,
-      paddingHorizontal: 12,
+      gap: 6,
+      paddingHorizontal: 16,
       paddingVertical: 14,
     },
     timeLabel: {
       color: c.textMuted,
-      fontFamily: AppFonts.psuRegular,
-      fontSize: scaleFont(13),
-      lineHeight: scaleFont(20),
+      fontFamily: AppFonts.psuBold,
+      fontSize: scaleFont(12),
+      lineHeight: scaleFont(18),
     },
     timeValue: {
       alignSelf: 'stretch',
       color: c.text,
       fontFamily: AppFonts.psuBold,
-      fontSize: scaleFont(30),
-      lineHeight: scaleFont(42),
-      textAlign: 'center',
+      fontSize: scaleFont(26),
+      fontVariant: ['tabular-nums'],
+      lineHeight: scaleFont(36),
     },
+    // A half of the day that has not happened is a placeholder, not a value.
+    timeEmpty: { color: c.borderStrong },
     // Late is the readers' own verdict (flag_in = 2), shown as a fact.
     timeLate: { color: c.warning ?? c.danger },
     lateChip: {
@@ -908,14 +1082,17 @@ const makeStyles = (c: AppColors) =>
     statusRow: {
       alignItems: 'flex-start',
       alignSelf: 'stretch',
+      borderTopColor: c.border,
+      borderTopWidth: StyleSheet.hairlineWidth,
       flexDirection: 'row',
-      gap: 8,
+      gap: 7,
+      paddingTop: 14,
     },
     statusText: {
       color: c.textMuted,
       flex: 1,
       fontFamily: AppFonts.psuRegular,
-      fontSize: scaleFont(14),
-      lineHeight: scaleFont(22),
+      fontSize: scaleFont(13),
+      lineHeight: scaleFont(21),
     },
   });

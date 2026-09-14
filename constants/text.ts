@@ -1277,6 +1277,13 @@ export const TEXT = {
   STAFF_TIMESTAMP_BADGE_TRAVEL: 'ไปราชการ',
   STAFF_TIMESTAMP_BADGE_IRREGULAR: 'ข้อมูลไม่ปกติ',
   STAFF_TIMESTAMP_BADGE_LOCATING: 'กำลังหาตำแหน่ง',
+  STAFF_TIMESTAMP_TODAY: 'วันนี้',
+  STAFF_TIMESTAMP_IN_AREA: 'อยู่ในพื้นที่',
+  STAFF_TIMESTAMP_OFF_SITE: 'นอกพื้นที่คณะ',
+  STAFF_TIMESTAMP_NO_POSITION: 'ไม่ทราบตำแหน่ง',
+  // {h} ชั่วโมง {m} นาที นับจากเวลาเข้างาน
+  STAFF_TIMESTAMP_WORKED: 'ทำงาน {h} ชม. {m} น.',
+  STAFF_TIMESTAMP_NOT_IN_YET: 'ยังไม่ได้ลงเวลาเข้า',
   STAFF_TIMESTAMP_LOCATING: 'กำลังตรวจสอบตำแหน่งของคุณ...',
   STAFF_TIMESTAMP_BUTTON_IN: 'ลงเวลาเข้างาน',
   STAFF_TIMESTAMP_BUTTON_OUT: 'ลงเวลาออกงาน',
