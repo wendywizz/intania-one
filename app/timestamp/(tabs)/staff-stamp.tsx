@@ -43,7 +43,7 @@ import {
   type StaffTimestampStatus,
 } from '@/services/timestampService';
 import { formatFullDate, formatWeekday } from '@/utils/date-format';
-import type { FramingVerdict } from '@/utils/face-framing';
+import { guideOval, type FramingVerdict } from '@/utils/face-framing';
 import { scaleFont } from '@/utils/font-scale';
 
 /** At most one scan sent per this many ms. The gateway has its own floor too. */
@@ -143,6 +143,9 @@ export default function StaffTimestampScreen() {
   const [similarity, setSimilarity] = useState<number | null>(null);
   const [scanMessage, setScanMessage] = useState('');
   const [notice, setNotice] = useState<Notice | null>(null);
+  // The camera surface's size, so the hint can sit right under the oval rather
+  // than at the foot of the screen, where eyes on their own face never go.
+  const [scanSize, setScanSize] = useState({ width: 0, height: 0 });
 
   const cameraRef = useRef<FaceScanCameraHandle>(null);
   // Read by the blink handler, which must stay stable so the camera pipeline is
@@ -439,8 +442,22 @@ export default function StaffTimestampScreen() {
 
     const ringColor = checking ? c.primary : framing === 'ok' ? c.success : c.textOnPrimary;
 
+    // Just under the oval — the same oval the mask draws, so the two can never
+    // drift apart. Until the surface has been measured the hint waits at the
+    // foot of the screen, which is one frame.
+    const oval = scanSize.height > 0 ? guideOval(scanSize) : null;
+    const hintPlacement = oval
+      ? { top: Math.min(oval.cy + oval.ry + 20, scanSize.height - 96) }
+      : { bottom: insets.bottom + 28 };
+
     return (
-      <View style={styles.scanner}>
+      <View
+        style={styles.scanner}
+        onLayout={(event) => {
+          const { width, height } = event.nativeEvent.layout;
+          setScanSize((size) => (size.width === width && size.height === height ? size : { width, height }));
+        }}
+      >
         <FaceScanCamera
           ref={cameraRef}
           active={cameraActive}
@@ -451,7 +468,7 @@ export default function StaffTimestampScreen() {
           onError={onCameraError}
         />
 
-        <View style={[styles.hintBar, { bottom: insets.bottom + 28 }]} pointerEvents="none">
+        <View style={[styles.hintBar, hintPlacement]} pointerEvents="none">
           <ThemedText style={styles.hintText}>{hint}</ThemedText>
         </View>
 
