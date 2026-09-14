@@ -57,14 +57,15 @@ const POSITION_MAX_AGE_MS = 60000;
 
 /**
  * Refusals that are facts about the day. Shown as a modal when the screen opens
- * — "you already stamped in", "not a stamping window" — so opening the tab
- * answers the question straight away. The network and location refusals are
- * not here: they are fixed by doing something, and the card and the location
- * banner say what.
+ * — "not a stamping window", "today is a holiday" — so opening the tab answers
+ * the question straight away.
+ *
+ * Already stamped is deliberately not here: the times on the card say it plainly
+ * and a modal over them only adds a tap. The network and location refusals are
+ * out for a different reason — they are fixed by doing something, and the card
+ * and the location banner say what.
  */
 const DAY_NOTICE_REASONS = new Set([
-  'already_in',
-  'already_complete',
   'outside_hours',
   'weekend',
   'on_travel',
@@ -107,6 +108,50 @@ function hhmm(time: string) {
 }
 
 /**
+ * The day in two or three words, for the badge on the card.
+ *
+ * This is what used to be a modal on opening the tab. The card already carries
+ * the times and the gateway's own sentence; the badge is there to be read at a
+ * glance, not to be dismissed.
+ */
+function dayBadge(
+  status: StaffTimestampStatus | null,
+  locating: boolean,
+): { label: string; icon: IconSymbolName; tone: 'success' | 'warning' | 'primary' | 'muted' } {
+  if (locating) {
+    return { label: TEXT.STAFF_TIMESTAMP_BADGE_LOCATING, icon: 'mappin', tone: 'muted' };
+  }
+
+  const stamp = status?.stamp;
+  if (stamp?.inTime && stamp?.outTime) {
+    return { label: TEXT.STAFF_TIMESTAMP_DAY_COMPLETE, icon: 'checkmark.circle.fill', tone: 'success' };
+  }
+
+  switch (status?.reason) {
+    case 'already_in':
+      return { label: TEXT.STAFF_TIMESTAMP_BADGE_IN_DONE, icon: 'checkmark.circle.fill', tone: 'success' };
+    case 'already_complete':
+      return { label: TEXT.STAFF_TIMESTAMP_DAY_COMPLETE, icon: 'checkmark.circle.fill', tone: 'success' };
+    case 'weekend':
+      return { label: TEXT.STAFF_TIMESTAMP_BADGE_WEEKEND, icon: 'calendar', tone: 'muted' };
+    case 'on_travel':
+      return { label: TEXT.STAFF_TIMESTAMP_BADGE_TRAVEL, icon: 'info.circle.fill', tone: 'muted' };
+    case 'outside_hours':
+      return { label: TEXT.STAFF_TIMESTAMP_BADGE_OUTSIDE, icon: 'clock.fill', tone: 'muted' };
+    case 'irregular_record':
+      return { label: TEXT.STAFF_TIMESTAMP_BADGE_IRREGULAR, icon: 'exclamationmark.triangle.fill', tone: 'warning' };
+    default:
+      break;
+  }
+
+  if (status?.canStamp) {
+    return { label: TEXT.STAFF_TIMESTAMP_BADGE_READY, icon: 'log-in', tone: 'primary' };
+  }
+
+  return { label: TEXT.STAFF_TIMESTAMP_DAY_OPEN, icon: 'clock.fill', tone: 'muted' };
+}
+
+/**
  * ลงเวลาบุคลากรทั่วไป — today's arrival and departure, and a face scan to stamp.
  *
  * A different screen from the lecturers' because it is a different working day:
@@ -143,6 +188,9 @@ export default function StaffTimestampScreen() {
   const [similarity, setSimilarity] = useState<number | null>(null);
   const [scanMessage, setScanMessage] = useState('');
   const [notice, setNotice] = useState<Notice | null>(null);
+  // True while the first fix is still coming. The card is already on screen by
+  // then, so it says so rather than showing the server's "no location yet".
+  const [locating, setLocating] = useState(true);
   // The camera surface's size, so the hint can sit right under the oval rather
   // than at the foot of the screen, where eyes on their own face never go.
   const [scanSize, setScanSize] = useState({ width: 0, height: 0 });
@@ -204,12 +252,32 @@ export default function StaffTimestampScreen() {
     async (mode: 'initial' | 'refresh') => {
       if (mode === 'refresh') setRefreshing(true);
 
+      setLocating(true);
+      // Started here, waited for below: a first GPS fix indoors takes seconds,
+      // and the day's times do not depend on it. Where the phone is only
+      // decides whether the camera may open.
+      const positionPromise = readDevicePosition();
+
       try {
-        // Position first and sent with the status, so the screen shows the same
-        // verdict a scan would get.
-        const reading = await readDevicePosition();
+        try {
+          const early = await getStaffTimestampStatus(staffId);
+          setStatus(early);
+          setError('');
+          setLoading(false);
+
+          // Nothing here can start the camera: without coordinates the gateway
+          // always refuses. Announcing now means "you already stamped in" shows
+          // at once instead of after the fix.
+          decide(early, !announcedRef.current);
+          announcedRef.current = true;
+        } catch {
+          // Left to the position-aware read below, which reports the failure.
+        }
+
+        const reading = await positionPromise;
         positionRef.current = { reading, at: Date.now() };
         setLocation(reading);
+        setLocating(false);
 
         const next = await getStaffTimestampStatus(staffId, reading.position);
         setStatus(next);
@@ -223,6 +291,7 @@ export default function StaffTimestampScreen() {
         setError(err instanceof Error ? err.message : MESSAGE_CANNOT_CONNECT_TO_SERVER);
         setPhase('idle');
       } finally {
+        setLocating(false);
         setLoading(false);
         setRefreshing(false);
       }
@@ -531,7 +600,16 @@ export default function StaffTimestampScreen() {
     const inTime = hhmm(stamp?.inTime ?? '');
     const outTime = hhmm(stamp?.outTime ?? '');
     const isLate = stamp?.isLate === true;
-    const complete = Boolean(inTime) && Boolean(outTime);
+
+    const badge = dayBadge(status, locating);
+    const badgeColor =
+      badge.tone === 'success'
+        ? c.success
+        : badge.tone === 'warning'
+          ? c.warning ?? c.danger
+          : badge.tone === 'primary'
+            ? c.primary
+            : c.textMuted;
 
     // A stamp is possible but the camera is not running — the person declined
     // the confirmation, or the scan finished without stamping. Offer to start.
@@ -553,55 +631,67 @@ export default function StaffTimestampScreen() {
         {renderScanNotice()}
 
         <View style={styles.card}>
-          <View
-            style={[
-              styles.medallion,
-              { backgroundColor: complete ? `${c.success}1A` : `${c.textMuted}1A` },
-            ]}
-          >
-            <IconSymbol
-              size={44}
-              name={complete ? 'checkmark.circle.fill' : 'clock.fill'}
-              color={complete ? c.success : c.textMuted}
-            />
+          <View style={styles.cardHead}>
+            <ThemedText style={styles.date}>{thaiDateLabel(status?.serverDate ?? '')}</ThemedText>
+            <View style={[styles.dayChip, { backgroundColor: `${badgeColor}1A` }]}>
+              <IconSymbol size={14} name={badge.icon} color={badgeColor} />
+              <ThemedText style={[styles.dayChipText, { color: badgeColor }]}>{badge.label}</ThemedText>
+            </View>
           </View>
 
-          <ThemedText style={styles.date}>{thaiDateLabel(status?.serverDate ?? '')}</ThemedText>
-
           {/* Arrival and departure side by side: the pair is one fact — the
-              shape of the day. A dash for a half that has not happened. */}
+              shape of the day. A dash for a half that has not happened. Each
+              half is a tile of its own so a long number has room of its own. */}
           <View style={styles.times}>
-            <View style={styles.timeCol}>
+            <View style={styles.timeTile}>
               <ThemedText style={styles.timeLabel}>{TEXT.STAFF_TIMESTAMP_IN_LABEL}</ThemedText>
-              <ThemedText style={[styles.timeValue, isLate ? styles.timeLate : null]}>
+              <ThemedText
+                style={[styles.timeValue, isLate ? styles.timeLate : null]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
                 {inTime || '—'}
               </ThemedText>
-              {isLate ? <ThemedText style={styles.lateBadge}>{TEXT.STAFF_TIMESTAMP_LATE}</ThemedText> : null}
+              {isLate ? (
+                <View style={styles.lateChip}>
+                  <ThemedText style={styles.lateChipText}>{TEXT.STAFF_TIMESTAMP_LATE}</ThemedText>
+                </View>
+              ) : null}
             </View>
 
-            <View style={styles.timeDivider} />
-
-            <View style={styles.timeCol}>
+            <View style={styles.timeTile}>
               <ThemedText style={styles.timeLabel}>{TEXT.STAFF_TIMESTAMP_OUT_LABEL}</ThemedText>
-              <ThemedText style={styles.timeValue}>{outTime || '—'}</ThemedText>
+              <ThemedText style={styles.timeValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                {outTime || '—'}
+              </ThemedText>
             </View>
           </View>
 
           {/* The gateway's own sentence — what a scan would record, or why
-              stamping is refused right now. */}
-          {status?.message ? <ThemedText style={styles.reason}>{status.message}</ThemedText> : null}
+              stamping is refused right now. While the first fix is still
+              coming, that wait is the more honest thing to say. */}
+          {locating || status?.message ? (
+            <View style={styles.statusRow}>
+              <IconSymbol
+                size={17}
+                name={locating ? 'mappin' : 'info.circle.fill'}
+                color={c.textMuted}
+              />
+              <ThemedText style={styles.statusText}>
+                {locating ? TEXT.STAFF_TIMESTAMP_LOCATING : status?.message}
+              </ThemedText>
+            </View>
+          ) : null}
 
           {canStartScan ? (
-            <>
-              <View style={styles.divider} />
-              <Button
-                title={TEXT.STAFF_FACE_START}
-                icon="log-in"
-                size="lg"
-                fullWidth
-                onPress={() => (status?.needsConfirm ? setPhase('confirm') : startScanning())}
-              />
-            </>
+            <Button
+              title={TEXT.STAFF_FACE_START}
+              icon="log-in"
+              size="lg"
+              fullWidth
+              onPress={() => (status?.needsConfirm ? setPhase('confirm') : startScanning())}
+            />
           ) : null}
         </View>
       </ScrollView>
@@ -737,72 +827,95 @@ const makeStyles = (c: AppColors) =>
       lineHeight: scaleFont(20),
     },
     card: {
-      alignItems: 'center',
       alignSelf: 'stretch',
       backgroundColor: c.surface,
-      borderRadius: 16,
-      gap: 8,
-      paddingHorizontal: 20,
-      paddingVertical: 28,
+      borderRadius: 20,
+      gap: 16,
+      padding: 20,
       boxShadow: boxShadow(c.shadow, { y: 3, blur: 10, opacity: 0.06 }),
     },
-    medallion: {
+    cardHead: {
       alignItems: 'center',
-      borderRadius: 44,
-      height: 88,
-      justifyContent: 'center',
-      marginBottom: 8,
-      width: 88,
+      flexDirection: 'row',
+      gap: 10,
+      justifyContent: 'space-between',
     },
     date: {
-      color: c.textMuted,
-      fontFamily: AppFonts.psuRegular,
-      fontSize: scaleFont(14),
-      textAlign: 'center',
+      color: c.text,
+      flexShrink: 1,
+      fontFamily: AppFonts.psuBold,
+      fontSize: scaleFont(16),
+      lineHeight: scaleFont(24),
+    },
+    dayChip: {
+      alignItems: 'center',
+      borderRadius: 999,
+      flexDirection: 'row',
+      gap: 5,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    dayChipText: {
+      fontFamily: AppFonts.psuBold,
+      fontSize: scaleFont(12),
+      lineHeight: scaleFont(18),
     },
     times: {
-      alignItems: 'flex-start',
       alignSelf: 'stretch',
       flexDirection: 'row',
-      justifyContent: 'center',
-      marginTop: 8,
+      gap: 12,
     },
-    timeCol: { alignItems: 'center', flex: 1, gap: 2 },
-    timeDivider: {
-      alignSelf: 'stretch',
-      backgroundColor: c.border,
-      width: StyleSheet.hairlineWidth,
+    // A tile per half of the day. Every line carries its own lineHeight: the
+    // PSU faces are taller than the default box, and a big numeral inside a
+    // default line box loses its top and bottom.
+    timeTile: {
+      alignItems: 'center',
+      backgroundColor: c.background,
+      borderRadius: 16,
+      flex: 1,
+      gap: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 14,
     },
     timeLabel: {
       color: c.textMuted,
       fontFamily: AppFonts.psuRegular,
       fontSize: scaleFont(13),
+      lineHeight: scaleFont(20),
     },
     timeValue: {
+      alignSelf: 'stretch',
       color: c.text,
       fontFamily: AppFonts.psuBold,
-      fontSize: scaleFont(26),
+      fontSize: scaleFont(30),
+      lineHeight: scaleFont(42),
+      textAlign: 'center',
     },
     // Late is the readers' own verdict (flag_in = 2), shown as a fact.
     timeLate: { color: c.warning ?? c.danger },
-    lateBadge: {
+    lateChip: {
+      backgroundColor: `${c.warning ?? c.danger}1F`,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 2,
+    },
+    lateChipText: {
       color: c.warning ?? c.danger,
       fontFamily: AppFonts.psuBold,
       fontSize: scaleFont(12),
+      lineHeight: scaleFont(18),
     },
-    reason: {
+    statusRow: {
+      alignItems: 'flex-start',
+      alignSelf: 'stretch',
+      flexDirection: 'row',
+      gap: 8,
+    },
+    statusText: {
       color: c.textMuted,
+      flex: 1,
       fontFamily: AppFonts.psuRegular,
       fontSize: scaleFont(14),
-      marginTop: 8,
-      paddingHorizontal: 8,
-      textAlign: 'center',
-    },
-    divider: {
-      alignSelf: 'stretch',
-      backgroundColor: c.border,
-      height: StyleSheet.hairlineWidth,
-      marginBottom: 8,
-      marginTop: 16,
+      lineHeight: scaleFont(22),
     },
   });

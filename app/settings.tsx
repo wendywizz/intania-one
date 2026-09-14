@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
-import { Bell, ChevronRight, KeyRound, LockKeyhole, ScanFace, Moon, SunMoon } from 'lucide-react-native';
+import * as Location from 'expo-location';
+import { Bell, ChevronRight, KeyRound, LockKeyhole, MapPin, ScanFace, Moon, SunMoon } from 'lucide-react-native';
 import { Alert, AppState, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -47,6 +48,7 @@ const APP_VERSION = Constants.expoConfig?.version ?? '—';
 
 const ICON_MAP: Record<string, React.ComponentType<{ size: number; color: string }>> = {
   notifications: Bell,
+  location: MapPin,
   fingerprint: ScanFace,
   password: KeyRound,
   // Distinct from `password`: the two sit next to each other in the password
@@ -76,6 +78,10 @@ export default function SettingsScreen() {
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
+  // Location has no preference of our own behind it: the OS permission is the
+  // whole setting, so this switch only ever mirrors what the OS says.
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(true);
   // Tracks the last synced value so registration only fires on the off→on edge.
   const wasNotificationsEnabledRef = useRef(false);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
@@ -108,14 +114,28 @@ export default function SettingsScreen() {
     }
   }, [authUser]);
 
+  const syncLocationState = useCallback(async () => {
+    try {
+      const permission = await Location.getForegroundPermissionsAsync();
+      setLocationEnabled(permission.status === 'granted');
+    } catch {
+      setLocationEnabled(false);
+    } finally {
+      setLocationLoading(false);
+    }
+  }, []);
+
   // Coming back from the OS Settings app is the case that matters: the trip out
   // backgrounds us, so 'active' is when the permission may have just changed.
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (next) => {
-      if (next === 'active') void syncNotificationState();
+      if (next === 'active') {
+        void syncNotificationState();
+        void syncLocationState();
+      }
     });
     return () => subscription.remove();
-  }, [syncNotificationState]);
+  }, [syncNotificationState, syncLocationState]);
 
   // Covers mount and any return to this screen from elsewhere in the app —
   // including coming back from the create-password screen, which is why the
@@ -123,6 +143,7 @@ export default function SettingsScreen() {
   useFocusEffect(
     useCallback(() => {
       void syncNotificationState();
+      void syncLocationState();
       void Promise.all([getPasswordUnlockEnabled(), hasAppPassword()]).then(
         ([enabled, exists]) => {
           setPasswordExists(exists);
@@ -220,6 +241,35 @@ export default function SettingsScreen() {
     setPasswordEnabledState(true);
   }
 
+  /**
+   * Turning it on is a permission prompt; turning it off is not ours to do —
+   * neither iOS nor Android lets an app withdraw its own permission, so the
+   * switch stays where the OS has it and points at Settings instead.
+   */
+  async function handleLocationToggle(next: boolean) {
+    if (!next) {
+      Alert.alert(TEXT.SETTINGS_LOCATION_OFF_TITLE, TEXT.SETTINGS_LOCATION_OFF_MESSAGE, [
+        { text: TEXT.CANCEL, style: 'cancel' },
+        { text: TEXT.SETTINGS_OPEN_OS_SETTINGS, onPress: () => Linking.openSettings() },
+      ]);
+      return;
+    }
+
+    const permission = await Location.requestForegroundPermissionsAsync();
+    if (permission.status === 'granted') {
+      setLocationEnabled(true);
+      return;
+    }
+
+    // Refused for good: the OS will not ask again, so Settings is the only way.
+    if (permission.canAskAgain === false) {
+      Alert.alert(TEXT.SETTINGS_PERMISSION_REQUIRED_TITLE, TEXT.SETTINGS_LOCATION_BLOCKED_MESSAGE, [
+        { text: TEXT.CANCEL, style: 'cancel' },
+        { text: TEXT.SETTINGS_OPEN_OS_SETTINGS, onPress: () => Linking.openSettings() },
+      ]);
+    }
+  }
+
   async function handleNotificationsToggle(next: boolean) {
     if (next) {
       const granted = await requestNotificationPermission();
@@ -295,6 +345,19 @@ export default function SettingsScreen() {
                 value={notificationsEnabled}
                 onValueChange={handleNotificationsToggle}
                 disabled={notificationsLoading}
+              />
+            </View>
+
+            <View style={styles.row}>
+              <IconCircle name="location" />
+              <View style={styles.rowBody}>
+                <ThemedText style={styles.rowTitle}>{TEXT.SETTINGS_LOCATION_TITLE}</ThemedText>
+                <ThemedText style={styles.rowSub}>{TEXT.SETTINGS_LOCATION_SUB}</ThemedText>
+              </View>
+              <Toggle
+                value={locationEnabled}
+                onValueChange={handleLocationToggle}
+                disabled={locationLoading}
               />
             </View>
           </View>
