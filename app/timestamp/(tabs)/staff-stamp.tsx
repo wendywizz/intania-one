@@ -717,23 +717,27 @@ export default function StaffTimestampScreen() {
         {renderScanNotice()}
 
         <View style={styles.card}>
-          <View style={styles.cardHead}>
-            <View style={styles.cardHeadText}>
+          <View style={styles.cardHeadText}>
+            {/* The weekday shares its line with the pill, which can be long
+                once it carries a distance; the date then has the full width to
+                itself and never has to shrink to fit beside it. */}
+            <View style={styles.cardHead}>
               <ThemedText style={styles.weekday}>{thaiWeekdayLabel(status?.serverDate ?? '')}</ThemedText>
-              <ThemedText style={styles.date} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
-                {formatFullDate(status?.serverDate ?? '')}
-              </ThemedText>
+
+              {/* Where the phone is, live: the one precondition a person can do
+                  something about while standing there. */}
+              <View style={[styles.sitePill, { backgroundColor: `${siteColor}1A` }]}>
+                <View style={[styles.siteDot, { backgroundColor: siteColor }]} />
+                <ThemedText style={[styles.sitePillText, { color: siteColor }]}>{siteState}</ThemedText>
+                {siteDistance ? (
+                  <ThemedText style={[styles.sitePillText, { color: siteColor }]}>{siteDistance}</ThemedText>
+                ) : null}
+              </View>
             </View>
 
-            {/* Where the phone is, live: the one precondition a person can do
-                something about while standing there. */}
-            <View style={[styles.sitePill, { backgroundColor: `${siteColor}1A` }]}>
-              <View style={[styles.siteDot, { backgroundColor: siteColor }]} />
-              <ThemedText style={[styles.sitePillText, { color: siteColor }]}>{siteState}</ThemedText>
-              {siteDistance ? (
-                <ThemedText style={[styles.sitePillText, { color: siteColor }]}>{siteDistance}</ThemedText>
-              ) : null}
-            </View>
+            <ThemedText style={styles.date} numberOfLines={1}>
+              {formatFullDate(status?.serverDate ?? '')}
+            </ThemedText>
           </View>
 
           {/* The clock is the anchor of the screen: what a stamp made now would
@@ -997,12 +1001,12 @@ const makeStyles = (c: AppColors) =>
       boxShadow: boxShadow(c.shadow, { y: 10, blur: 24, opacity: 0.1 }),
     },
     cardHead: {
-      alignItems: 'flex-start',
+      alignItems: 'center',
       flexDirection: 'row',
       gap: 10,
       justifyContent: 'space-between',
     },
-    cardHeadText: { flexShrink: 1, gap: 1 },
+    cardHeadText: { alignSelf: 'stretch', gap: 2 },
     // The weekday sets the scene; the date is the fact, so it carries the weight.
     weekday: {
       color: c.textMuted,
@@ -1013,8 +1017,8 @@ const makeStyles = (c: AppColors) =>
     date: {
       color: c.text,
       fontFamily: AppFonts.psuBold,
-      fontSize: scaleFont(14),
-      lineHeight: scaleFont(21),
+      fontSize: scaleFont(20),
+      lineHeight: scaleFont(28),
     },
     sitePill: {
       alignItems: 'center',
