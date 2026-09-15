@@ -354,6 +354,11 @@ export async function clearNotificationHistory() {
   await AsyncStorage.removeItem(NOTIFICATION_HISTORY_STORAGE_KEY);
 }
 
+export async function deleteNotificationHistoryItem(id: string) {
+  const items = await readStoredHistory();
+  await writeStoredHistory(items.filter((item) => item.id !== id));
+}
+
 export function registerForegroundNotificationHandler() {
   void loadNotifications().then((Notifications) => {
     if (!Notifications) {

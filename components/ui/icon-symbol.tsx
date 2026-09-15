@@ -4,6 +4,7 @@ import ArrowLeft from 'lucide-react-native/dist/cjs/icons/arrow-left';
 import Armchair from 'lucide-react-native/dist/cjs/icons/armchair';
 import Baby from 'lucide-react-native/dist/cjs/icons/baby';
 import Bell from 'lucide-react-native/dist/cjs/icons/bell';
+import BellOff from 'lucide-react-native/dist/cjs/icons/bell-off';
 import Briefcase from 'lucide-react-native/dist/cjs/icons/briefcase';
 import Cpu from 'lucide-react-native/dist/cjs/icons/cpu';
 import DoorOpen from 'lucide-react-native/dist/cjs/icons/door-open';
@@ -100,6 +101,7 @@ const MAPPING = {
   'cart': ShoppingCart,
   // Communication
   'bell.fill': Bell,
+  'bell.slash.fill': BellOff,
   'gearshape.fill': Settings,
   'paperplane.fill': Send,
   'envelope.fill': Mail,

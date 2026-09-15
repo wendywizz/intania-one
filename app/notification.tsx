@@ -3,11 +3,13 @@ import { StatusBar } from 'expo-status-bar';
 import moment from 'moment';
 import { useCallback, useState } from 'react';
 import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { NavTopBar } from '@/components/nav-top-bar';
-import { Bell, BellOff, ChevronRight } from 'lucide-react-native';
+import { Bell, ChevronRight } from 'lucide-react-native';
 import { EmptyState } from '@/components/empty-state';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
@@ -15,6 +17,7 @@ import { TEXT } from '@/constants/text';
 import { useTheme } from '@/context/ThemeContext';
 import {
   clearNotificationHistory,
+  deleteNotificationHistoryItem,
   getNotificationHistory,
   markNotificationRead,
   type PushNotificationHistoryItem,
@@ -29,7 +32,15 @@ function formatRelativeTime(value: string) {
   return m.fromNow();
 }
 
-function NotificationItem({ item, onPress }: { item: PushNotificationHistoryItem; onPress: () => void }) {
+function NotificationItem({
+  item,
+  onPress,
+  onDelete,
+}: {
+  item: PushNotificationHistoryItem;
+  onPress: () => void;
+  onDelete: () => void;
+}) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const isUnread = item.status === 'unread';
@@ -37,38 +48,54 @@ function NotificationItem({ item, onPress }: { item: PushNotificationHistoryItem
   // actually goes somewhere, so the row does not promise a screen it has none of.
   const isActionable = getNotificationRoute(item) !== null;
 
-  return (
+  const renderRightActions = () => (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.itemPressable, pressed && styles.itemPressed]}
+      accessibilityLabel={TEXT.DELETE}
+      onPress={onDelete}
+      style={({ pressed }) => [styles.deleteAction, pressed && styles.deleteActionPressed]}
     >
-      <View style={[styles.itemCard, isUnread && styles.itemCardUnread]}>
-        <View style={[styles.iconCircle, isUnread && styles.iconCircleUnread]}>
-          <Bell size={18} color={isUnread ? c.textOnPrimary : c.primary} />
-        </View>
-        <View style={styles.itemContent}>
-          <View style={styles.itemTitleRow}>
-            <ThemedText style={[styles.itemTitle, isUnread && styles.itemTitleUnread]} numberOfLines={2}>
-              {item.title}
-            </ThemedText>
-            <ThemedText style={styles.itemTimestamp}>
-              {formatRelativeTime(item.receivedAt)}
-            </ThemedText>
+      <IconSymbol name="trash.fill" size={20} color="#FFFFFF" />
+      <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" style={styles.deleteActionText}>
+        {TEXT.DELETE}
+      </ThemedText>
+    </Pressable>
+  );
+
+  return (
+    <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed }) => [styles.itemPressable, pressed && styles.itemPressed]}
+      >
+        <View style={[styles.itemCard, isUnread && styles.itemCardUnread]}>
+          <View style={[styles.iconCircle, isUnread && styles.iconCircleUnread]}>
+            <Bell size={18} color={isUnread ? c.textOnPrimary : c.primary} />
           </View>
-          {item.body ? (
-            <ThemedText style={styles.itemBody} numberOfLines={2}>
-              {item.body}
-            </ThemedText>
+          <View style={styles.itemContent}>
+            <View style={styles.itemTitleRow}>
+              <ThemedText style={[styles.itemTitle, isUnread && styles.itemTitleUnread]} numberOfLines={2}>
+                {item.title}
+              </ThemedText>
+              <ThemedText style={styles.itemTimestamp}>
+                {formatRelativeTime(item.receivedAt)}
+              </ThemedText>
+            </View>
+            {item.body ? (
+              <ThemedText style={styles.itemBody} numberOfLines={2}>
+                {item.body}
+              </ThemedText>
+            ) : null}
+          </View>
+          {isActionable ? (
+            <View style={styles.itemChevron}>
+              <ChevronRight size={18} color={c.textMuted} />
+            </View>
           ) : null}
         </View>
-        {isActionable ? (
-          <View style={styles.itemChevron}>
-            <ChevronRight size={18} color={c.textMuted} />
-          </View>
-        ) : null}
-      </View>
-    </Pressable>
+      </Pressable>
+    </Swipeable>
   );
 }
 
@@ -108,6 +135,13 @@ export default function NotificationScreen() {
     // the person acknowledging it, and that is all this one had to offer.
     const route = getNotificationRoute(item);
     if (route) navPush(route);
+  };
+
+  const handleDelete = async (item: PushNotificationHistoryItem) => {
+    // No confirm dialog — a swipe already IS the deliberate action, and one
+    // row is cheap to be wrong about.
+    setItems((current) => current.filter((n) => n.id !== item.id));
+    await deleteNotificationHistoryItem(item.id);
   };
 
   const handleClearAll = () => {
@@ -154,9 +188,13 @@ export default function NotificationScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={c.primary} />}
-        ListEmptyComponent={<EmptyState icon={BellOff} message={TEXT.NOTIFICATION_EMPTY} />}
+        ListEmptyComponent={<EmptyState preset="notification" message={TEXT.NOTIFICATION_EMPTY} />}
         renderItem={({ item }) => (
-          <NotificationItem item={item} onPress={() => openNotification(item)} />
+          <NotificationItem
+            item={item}
+            onPress={() => openNotification(item)}
+            onDelete={() => handleDelete(item)}
+          />
         )}
       />
     </ThemedView>
@@ -245,22 +283,25 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textMuted,
   },
 
-  emptyWrap: {
+  deleteAction: {
+    width: 96,
     alignItems: 'center',
-    paddingTop: 80,
-    gap: 8,
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 12,
+    backgroundColor: c.pomegranate,
+    marginLeft: 8,
+    // Repeats itemCard's own bottom margin, same reasoning as
+    // repair-computer-job-list-item.tsx: the swipe row is as tall as the card
+    // plus its margin, so the action has to match or it hangs below the card.
+    marginBottom: 12,
   },
-  emptyTitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: AppFonts.psuBold,
-    color: c.text,
+  deleteActionPressed: {
+    opacity: 0.85,
   },
-  emptySubtitle: {
+  deleteActionText: {
     fontSize: 13,
     lineHeight: 18,
-    fontFamily: AppFonts.psuRegular,
-    color: c.textMuted,
-    textAlign: 'center',
+    fontFamily: AppFonts.psuBold,
   },
 });
