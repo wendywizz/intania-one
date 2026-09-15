@@ -74,23 +74,6 @@ const POSITION_MAX_AGE_MS = 60000;
  */
 const COARSE_FIX_M = 150;
 
-/**
- * Refusals that are facts about the day. Shown as a modal when the screen opens
- * — "not a stamping window", "today is a holiday" — so opening the tab answers
- * the question straight away.
- *
- * Already stamped is deliberately not here: the times on the card say it plainly
- * and a modal over them only adds a tap. The network and location refusals are
- * out for a different reason — they are fixed by doing something, and the card
- * and the location banner say what.
- */
-const DAY_NOTICE_REASONS = new Set([
-  'outside_hours',
-  'weekend',
-  'on_travel',
-  'irregular_record',
-]);
-
 const FRAMING_HINT: Record<FramingVerdict, string> = {
   ok: TEXT.STAFF_FACE_HINT_BLINK,
   none: TEXT.STAFF_FACE_HINT_NONE,
@@ -109,7 +92,11 @@ const FRAMING_HINT: Record<FramingVerdict, string> = {
  */
 type Phase = 'idle' | 'confirm' | 'scanning' | 'paused' | 'done';
 
-type Notice = { title: string; message: string; icon: IconSymbolName };
+/**
+ * What the last scan came to, said on the card rather than in a modal. Kept
+ * until the next load, when the gateway's own sentence for the day takes over.
+ */
+type ScanResult = { message: string; tone: 'success' | 'warning' | 'muted' };
 
 /** 'วันศุกร์' — the shared helper, which returns the bare weekday name. */
 function thaiWeekdayLabel(date: string) {
@@ -208,7 +195,7 @@ export default function StaffTimestampScreen() {
   const [checking, setChecking] = useState(false);
   const [similarity, setSimilarity] = useState<number | null>(null);
   const [scanMessage, setScanMessage] = useState('');
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   // True while the first fix is still coming. The card is already on screen by
   // then, so it says so rather than showing the server's "no location yet".
   const [locating, setLocating] = useState(true);
@@ -239,7 +226,6 @@ export default function StaffTimestampScreen() {
   const busyRef = useRef(false);
   const lastSubmitAtRef = useRef(0);
   const scanStartedAtRef = useRef(0);
-  const announcedRef = useRef(false);
   const permissionAskedRef = useRef(false);
 
   const startScanning = useCallback(() => {
@@ -253,21 +239,16 @@ export default function StaffTimestampScreen() {
 
   /** What the screen does with a fresh status. */
   const decide = useCallback(
-    (next: StaffTimestampStatus, announce: boolean) => {
+    (next: StaffTimestampStatus) => {
       if (!FACE_SCAN_SUPPORTED || !next.isStaff || next.faceRegistered === false) {
         setPhase('idle');
         return;
       }
 
+      // A refusal is said on the card - the badge and the gateway's sentence
+      // under the button - never in a modal over it.
       if (!next.canStamp) {
         setPhase('idle');
-        if (announce && DAY_NOTICE_REASONS.has(next.reason)) {
-          setNotice({
-            title: TEXT.STAFF_TIMESTAMP_NOTICE_TITLE,
-            message: next.message,
-            icon: next.reason === 'already_complete' ? 'checkmark.circle.fill' : 'info.circle.fill',
-          });
-        }
         return;
       }
 
@@ -287,6 +268,9 @@ export default function StaffTimestampScreen() {
 
       setLocating(true);
       setLoadStep('location');
+      // A fresh status speaks for itself; the last scan's line would now be
+      // about a different moment.
+      setScanResult(null);
 
       try {
         // A real fix, waited for. Indoors this is the slow part — seconds while
@@ -304,10 +288,7 @@ export default function StaffTimestampScreen() {
         setStatus(next);
         setError('');
 
-        // The day's state is announced once per visit to the tab; a refresh
-        // shows it in the card instead of raising the modal again.
-        decide(next, !announcedRef.current);
-        announcedRef.current = true;
+        decide(next);
       } catch (err) {
         setError(err instanceof Error ? err.message : MESSAGE_CANNOT_CONNECT_TO_SERVER);
         setPhase('idle');
@@ -322,7 +303,6 @@ export default function StaffTimestampScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      announcedRef.current = false;
       void load('initial');
 
       // Returning from Settings (camera or location) is not a focus change, so
@@ -418,12 +398,16 @@ export default function StaffTimestampScreen() {
           setStatus({ ...result.status, faceRegistered: current.faceRegistered });
         }
 
+        // Said on the card, under the button. A stamp that landed also gets the
+        // app's usual toast - it is the one outcome somebody wants confirmed
+        // without having to read.
         if (result.created) {
-          setNotice({ title: TEXT.STAFF_FACE_RESULT_STAMPED, message: result.message, icon: 'checkmark.circle.fill' });
+          setScanResult({ message: result.message, tone: 'success' });
+          showToast(result.message, 'success');
         } else if (result.dryRun && result.status?.canStamp) {
-          setNotice({ title: TEXT.STAFF_FACE_RESULT_DRY_RUN, message: result.message, icon: 'info.circle.fill' });
+          setScanResult({ message: result.message, tone: 'muted' });
         } else {
-          setNotice({ title: TEXT.STAFF_FACE_RESULT_REFUSED, message: result.message, icon: 'exclamationmark.triangle.fill' });
+          setScanResult({ message: result.message, tone: 'warning' });
         }
       } catch (err) {
         settled = true;
@@ -638,6 +622,20 @@ export default function StaffTimestampScreen() {
     const accuracyM = location?.position?.accuracyM ?? 0;
     const coarseFix = !locating && accuracyM > COARSE_FIX_M;
 
+    // The line under the button: the wait for a fix, then this visit's scan
+    // result if there was one, otherwise the gateway's own sentence for the day.
+    const footTone = locating ? 'muted' : scanResult?.tone ?? 'muted';
+    const footColor =
+      footTone === 'success' ? c.success : footTone === 'warning' ? c.warning ?? c.danger : c.textMuted;
+    const footIcon: IconSymbolName = locating
+      ? 'mappin'
+      : footTone === 'success'
+        ? 'checkmark.circle.fill'
+        : footTone === 'warning'
+          ? 'exclamationmark.triangle.fill'
+          : 'info.circle.fill';
+    const footText = locating ? TEXT.STAFF_TIMESTAMP_LOCATING : scanResult?.message || status?.message || '';
+
     const badge = dayBadge(status, locating);
     const badgeColor =
       badge.tone === 'success'
@@ -789,17 +787,15 @@ export default function StaffTimestampScreen() {
             </View>
           ) : null}
 
-          {/* The gateway's own sentence — what a scan would record, or why
-              stamping is refused right now. While the first fix is still
-              coming, that wait is the more honest thing to say. */}
-          {locating || status?.message ? (
+          {/* Every notice this screen has, in one place on the card: why a
+              stamp is refused right now ("นอกช่วงเวลา", "อยู่นอกพื้นที่"), what a
+              scan just came to, or the wait for a fix. No modal over any of it. */}
+          {footText ? (
             <View style={styles.statusRow}>
               <View style={styles.statusIcon}>
-                <IconSymbol size={15} name={locating ? 'mappin' : 'info.circle.fill'} color={c.textMuted} />
+                <IconSymbol size={15} name={footIcon} color={footColor} />
               </View>
-              <ThemedText style={styles.statusText}>
-                {locating ? TEXT.STAFF_TIMESTAMP_LOCATING : status?.message}
-              </ThemedText>
+              <ThemedText style={[styles.statusText, { color: footColor }]}>{footText}</ThemedText>
             </View>
           ) : null}
         </View>
@@ -828,16 +824,6 @@ export default function StaffTimestampScreen() {
         onCancel={() => setPhase('idle')}
       />
 
-      <ConfirmDialog
-        visible={notice !== null && isFocused}
-        title={notice?.title ?? ''}
-        message={notice?.message}
-        confirmLabel={TEXT.SHARED_OK}
-        icon={notice?.icon}
-        hideCancel
-        onConfirm={() => setNotice(null)}
-        onCancel={() => setNotice(null)}
-      />
     </ThemedView>
   );
 }

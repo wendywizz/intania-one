@@ -1299,8 +1299,6 @@ export const TEXT = {
   TIMESTAMP_STEP_STATUS: 'กำลังตรวจสอบเครือข่ายและข้อมูลการลงเวลา...',
   STAFF_TIMESTAMP_BUTTON_IN: 'ลงเวลาเข้างาน',
   STAFF_TIMESTAMP_BUTTON_OUT: 'ลงเวลาออกงาน',
-  // หัวข้อ Modal ที่แจ้งสถานะของวันตอนเปิดหน้า (ลงเข้าแล้ว, ครบแล้ว, นอกช่วงเวลา ...)
-  STAFF_TIMESTAMP_NOTICE_TITLE: 'แจ้งเตือนการลงเวลา',
 
   // Timestamp - สแกนใบหน้าลงเวลา (บุคลากรทั่วไป)
   //
@@ -1331,10 +1329,6 @@ export const TEXT = {
   // ถามก่อนเปิดกล้อง สำหรับการลงเวลาที่ผิดปกติ (ข้อความคำถามมาจาก gateway)
   STAFF_FACE_CONFIRM_TITLE: 'ยืนยันการลงเวลา',
   STAFF_FACE_CONFIRM_SCAN: 'สแกนใบหน้า',
-  // หัวข้อ Modal ผลการสแกนที่หน้าตรงแล้ว (ข้อความมาจาก gateway)
-  STAFF_FACE_RESULT_STAMPED: 'ลงเวลาสำเร็จ',
-  STAFF_FACE_RESULT_REFUSED: 'ยังลงเวลาไม่ได้',
-  STAFF_FACE_RESULT_DRY_RUN: 'ทดสอบระบบ',
   STAFF_TIMESTAMP_LOAD_ERROR: 'ไม่สามารถโหลดสถานะการลงเวลาได้',
   LECT_TIMESTAMP_BUTTON: 'ลงเวลาวันนี้',
   LECT_TIMESTAMP_STAMPED_HEADLINE: 'วันนี้ลงเวลาแล้ว',

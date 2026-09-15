@@ -54,10 +54,13 @@ export const EMPTY_PRESETS = {
   exam: { iconName: 'list.bullet', tone: 'neutral', art: 'exam' },
   /** Nothing was missed: no forgotten stamp to file. */
   timestamp: { iconName: 'clock.fill', tone: 'neutral', art: 'timestamp' },
-  /** No notifications waiting. Shares `positive`'s tray-with-a-tick rather
-   *  than a bespoke drawing — there is nothing module-specific about an empty
-   *  inbox, so it gets the same generic "nothing here, and that's fine" art
-   *  as `list`, just with a bell glyph. */
+  /**
+   * No notifications waiting. `art` is set to satisfy the preset type but the
+   * notification screen overrides it with `art={null}` at the call site — a
+   * crossed-out bell reads as "no notifications" on its own, more plainly
+   * than any tray-and-tick drawing would, so the glyph is the point here
+   * rather than a fallback for tight spaces the way `art={null}` usually is.
+   */
   notification: { iconName: 'bell.slash.fill', tone: 'neutral', art: 'positive' },
   /** The list could not be reached at all. Not empty — unreachable. */
   offline: { iconName: 'wifi', tone: 'neutral', art: 'offline' },

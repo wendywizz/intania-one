@@ -188,7 +188,9 @@ export default function NotificationScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={c.primary} />}
-        ListEmptyComponent={<EmptyState preset="notification" message={TEXT.NOTIFICATION_EMPTY} />}
+        ListEmptyComponent={
+          <EmptyState preset="notification" art={null} message={TEXT.NOTIFICATION_EMPTY} />
+        }
         renderItem={({ item }) => (
           <NotificationItem
             item={item}
