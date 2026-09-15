@@ -162,11 +162,6 @@ export const TEXT = {
   APP_UPDATE_ERROR_MESSAGE: 'ไม่สามารถดาวน์โหลดอัปเดตได้ กรุณาลองใหม่ หรือใช้งานเวอร์ชันปัจจุบันไปก่อน',
   APP_UPDATE_RETRY: 'ลองอีกครั้ง',
   APP_UPDATE_SKIP: 'ใช้งานเวอร์ชันปัจจุบัน',
-  // Found while the app was already open (resumed from background) — surfaced
-  // as a toast instead of the full-screen flow above, so it doesn't interrupt
-  // whatever the user is doing.
-  APP_UPDATE_READY_TOAST: 'มีอัปเดตใหม่พร้อมใช้งานแล้ว',
-  APP_UPDATE_RESTART_ACTION: 'รีสตาร์ทตอนนี้',
 
   // Biometric app lock
   BIOMETRIC_LOCK_TITLE: 'ปลดล็อกแอปพลิเคชัน',

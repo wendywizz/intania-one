@@ -6,23 +6,16 @@ import {
 import { Animated, Platform, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export type ToastType = 'success' | 'error' | 'info';
-
-type ToastOptions = {
-  /** Label for the tappable action, e.g. "รีสตาร์ทตอนนี้". Renders only with `onAction`. */
-  actionLabel?: string;
-  /** Replaces the default tap-to-dismiss behaviour. Still dismisses the toast afterwards. */
-  onAction?: () => void;
-};
+export type ToastType = 'success' | 'error';
 
 type ToastContextValue = {
   /** Show a toast that slides down from the top of the screen. */
-  showToast: (message: string, type?: ToastType, options?: ToastOptions) => void;
+  showToast: (message: string, type?: ToastType) => void;
 };
 
 const ToastContext = createContext<ToastContextValue>({ showToast: () => {} });
 
-/** Imperative toast API — call `showToast(message, 'success' | 'error' | 'info', options?)`. */
+/** Imperative toast API — call `showToast(message, 'success' | 'error')`. */
 export function useToast() {
   return useContext(ToastContext);
 }
@@ -30,9 +23,6 @@ export function useToast() {
 // react-native-web doesn't support the native animation driver.
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const VISIBLE_MS = 3000;
-// Actionable toasts (an update ready to install, say) need more time to
-// notice and tap than a plain result banner does.
-const ACTION_VISIBLE_MS = 6000;
 // Start below the screen and slide up. The bottom clearance keeps the toast
 // above a screen's bottom action button / submit bar.
 const HIDDEN_OFFSET = 200;
@@ -45,9 +35,7 @@ const ACTION_CLEARANCE = 96;
  */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
-  const [toast, setToast] = useState<
-    { message: string; type: ToastType; actionLabel?: string; onAction?: () => void } | null
-  >(null);
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const translateY = useRef(new Animated.Value(HIDDEN_OFFSET)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,9 +53,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     });
   }, [translateY, opacity]);
 
-  const showToast = useCallback((message: string, type: ToastType = 'success', options?: ToastOptions) => {
+  const showToast = useCallback((message: string, type: ToastType = 'success') => {
     if (!message) return;
-    setToast({ message, type, actionLabel: options?.actionLabel, onAction: options?.onAction });
+    setToast({ message, type });
     translateY.setValue(HIDDEN_OFFSET);
     opacity.setValue(0);
     Animated.parallel([
@@ -75,22 +63,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       Animated.timing(opacity, { toValue: 1, duration: 260, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start();
     if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(hide, options?.onAction ? ACTION_VISIBLE_MS : VISIBLE_MS);
+    hideTimer.current = setTimeout(hide, VISIBLE_MS);
   }, [translateY, opacity, hide]);
 
   useEffect(() => () => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
   }, []);
 
-  const handlePress = useCallback(() => {
-    toast?.onAction?.();
-    hide();
-  }, [toast, hide]);
-
-  const isError = toast?.type === 'error';
-  const isInfo = toast?.type === 'info';
-  const backgroundColor = isError ? '#B91C1C' : isInfo ? '#1D4ED8' : '#166534';
-  const iconName = isError ? 'cross.fill' : isInfo ? 'arrow.triangle.2.circlepath' : 'checkmark.circle.fill';
+  const isSuccess = toast?.type !== 'error';
 
   return (
     <ToastContext.Provider value={{ showToast }}>
@@ -102,18 +82,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         >
           <Pressable
             accessibilityRole="button"
-            onPress={handlePress}
-            style={[styles.toast, { backgroundColor }]}
+            onPress={hide}
+            style={[styles.toast, { backgroundColor: isSuccess ? '#166534' : '#B91C1C' }]}
           >
-            <IconSymbol name={iconName} size={20} color="#FFFFFF" />
+            <IconSymbol name={isSuccess ? 'checkmark.circle.fill' : 'cross.fill'} size={20} color="#FFFFFF" />
             <ThemedText style={styles.text} lightColor="#FFFFFF" darkColor="#FFFFFF" numberOfLines={3}>
               {toast.message}
             </ThemedText>
-            {toast.actionLabel ? (
-              <ThemedText style={styles.action} lightColor="#FFFFFF" darkColor="#FFFFFF">
-                {toast.actionLabel}
-              </ThemedText>
-            ) : null}
           </Pressable>
         </Animated.View>
       ) : null}
@@ -148,11 +123,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     lineHeight: 20,
-  },
-  action: {
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 20,
-    textDecorationLine: 'underline',
   },
 });

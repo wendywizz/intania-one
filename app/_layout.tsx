@@ -2,7 +2,8 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -24,6 +25,19 @@ SplashScreen.preventAutoHideAsync();
 export const unstable_settings = {
   anchor: 'index',
 };
+
+/**
+ * How long the app has to sit backgrounded before coming back counts as
+ * "away long enough to go stale" rather than a quick app-switcher trip.
+ *
+ * Nothing here is push-driven — a booking made elsewhere, a repair job
+ * reassigned, an EAS Update published — so a session that's never force-quit
+ * would otherwise keep showing whatever it last fetched, and keep running
+ * whatever JS bundle it launched with, indefinitely. Kept well above a quick
+ * glance at another app, and well below "a whole day", so a session left open
+ * over lunch still comes back current.
+ */
+const IDLE_RESET_AFTER_MS = 30 * 60 * 1000;
 
 function AppStack() {
   const { isDarkMode } = useTheme();
@@ -106,6 +120,36 @@ export default function RootLayout() {
     registerForegroundNotificationHandler();
   }, []);
 
+  // Bumped once per idle spell past IDLE_RESET_AFTER_MS; used as `key` below
+  // to remount everything from AuthProvider down. That's a deliberate reuse
+  // of each gate's own cold-start logic rather than a second, parallel set of
+  // "resume" branches bolted onto UpdateGate/ConnectionGate/BiometricGate/every
+  // screen's data fetch: a fresh mount already checks for an update, pings
+  // the gateway, decides whether to lock, and fetches every screen's data
+  // from scratch, because that's what a cold start already does. Living here
+  // rather than inside one of those gates because the key has to be set from
+  // outside the subtree it remounts.
+  const [remountKey, setRemountKey] = useState(0);
+  const backgroundedAtRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const handleChange = (next: AppStateStatus) => {
+      if (next === 'background') {
+        backgroundedAtRef.current = Date.now();
+        return;
+      }
+      if (next !== 'active') return;
+
+      const since = backgroundedAtRef.current;
+      backgroundedAtRef.current = null;
+      if (since === null || Date.now() - since < IDLE_RESET_AFTER_MS) return;
+      setRemountKey((k) => k + 1);
+    };
+
+    const subscription = AppState.addEventListener('change', handleChange);
+    return () => subscription.remove();
+  }, []);
+
   if (!loaded) {
     return null;
   }
@@ -113,7 +157,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AuthProvider>
+        <AuthProvider key={remountKey}>
           <ThemeProvider>
             <ToastProvider>
               {/* Checked before anything else — an EAS Update is unrelated to
@@ -133,7 +177,10 @@ export default function RootLayout() {
                   the gate stack above, and declared after it, so it paints on
                   top of whatever any gate is doing underneath — including
                   BiometricGate's own plain cover for this exact window — for
-                  as long as the session is still restoring. */}
+                  as long as the session is still restoring. Remounting along
+                  with everything else above means it reappears for an idle
+                  reset too, which is correct: that reset re-runs the same
+                  session restore this splash exists to cover. */}
               <ColdStartSplash />
             </ToastProvider>
           </ThemeProvider>
