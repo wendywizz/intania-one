@@ -21,21 +21,17 @@ export const STACK_SCREEN_OPTIONS = {
 /**
  * For screens that behave like an action sheet floating over the screen
  * beneath them — edit/select/confirm/reason forms — rather than drilling
- * deeper into content. Slides up from the bottom instead of in from the
- * side, and rebinds the back-swipe gesture to that same vertical axis so a
- * swipe-down dismiss matches the direction the sheet arrived from (the
- * default horizontal swipe would otherwise fight the animation). Web keeps
- * the shared no-animation behavior from `STACK_SCREEN_OPTIONS` for the same
- * reason documented there.
+ * deeper into content.
+ *
+ * Used to slide up from the bottom on native, with the back-swipe gesture
+ * rebound to that same vertical axis. Dropped in favor of the same push
+ * transition every other screen uses, so every navigation in the app now
+ * animates the same way — kept as its own export (identical to
+ * `STACK_SCREEN_OPTIONS`) so call sites don't need to change if this ever
+ * needs to diverge again.
  */
 export const ACTION_SHEET_SCREEN_OPTIONS = {
   ...STACK_SCREEN_OPTIONS,
-  ...(Platform.OS === 'web'
-    ? {}
-    : ({
-        animation: 'slide_from_bottom',
-        gestureDirection: 'vertical',
-      } as const)),
 };
 
 /**
