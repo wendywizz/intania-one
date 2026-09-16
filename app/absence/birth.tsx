@@ -933,7 +933,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   chevron: {
     color: c.textMuted,
     fontSize: 18,
-    lineHeight: 22,
+    lineHeight: 25,
   },
   backdrop: {
     flex: 1,

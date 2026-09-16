@@ -428,7 +428,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   pageTitle: {
     fontSize: 26,
-    lineHeight: 32,
+    lineHeight: 36,
     color: c.text,
     fontFamily: AppFonts.psuBold,
     marginBottom: 16,

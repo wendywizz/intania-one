@@ -445,7 +445,10 @@ const makeStyles = (c: AppColors) =>
       fontSize: scaleFont(52),
       fontVariant: ['tabular-nums'],
       letterSpacing: -1.5,
-      lineHeight: scaleFont(58),
+      // 1.35x the size, not 1.12x - see the same note on the staff card's
+      // clock. Tall PSU numerals need the headroom, and what is a hairline
+      // crop at the default text size is a visible one at large type.
+      lineHeight: scaleFont(70),
     },
     clockUnit: {
       color: c.textMuted,
@@ -475,8 +478,11 @@ const makeStyles = (c: AppColors) =>
       borderRadius: 18,
       flexDirection: 'row',
       gap: 8,
-      height: 54,
+      // minHeight, not height: the label grows with the phone's text size.
+      minHeight: 54,
       justifyContent: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
     },
     donePlateText: {
       color: c.success,

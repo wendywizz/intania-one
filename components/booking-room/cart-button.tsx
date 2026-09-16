@@ -114,7 +114,7 @@ const makeStyles = (c: AppColors) =>
     // centred by the flexbox above, which is where the centring belongs.
     badgeText: {
       fontSize: 11,
-      lineHeight: 12,
+      lineHeight: 15,
       textAlign: 'center',
       includeFontPadding: false,
       color: '#FFFFFF',

@@ -18,14 +18,19 @@ export const MAX_FONT_SCALE = 1.3;
 /**
  * The device font scale, clamped the same way the text itself is.
  *
- * For the layout half of the problem. React Native scales `fontSize` with the
- * device setting but leaves a `lineHeight` written in a stylesheet exactly where
- * it is, so enlarged glyphs collide inside a line box that never grew. Multiply
- * the stylesheet's lineHeight by this to keep the two in step:
+ * For the LAYOUT half of the problem — box sizes, not text metrics. React
+ * Native already scales a stylesheet's `lineHeight` in step with its
+ * `fontSize` (RCTTextAttributes.mm multiplies both by the same font
+ * multiplier), so there is no need to multiply lineHeight by this, and doing so
+ * scales it twice. A line box that crops its glyphs is too tight at every size;
+ * fix the ratio itself — 1.35x the font size clears the PSU faces.
  *
- *   <Text style={[styles.title, { lineHeight: 21 * fontScale }]}>
+ * What does NOT scale on its own is anything sized in raw pixels: a fixed
+ * `height` on a row or plate that holds text, a hard-coded width beside a
+ * label. Use this to grow those, or to decide when a horizontal row should
+ * become a column:
  *
- * Also useful for deciding when a horizontal row should become a column.
+ *   <View style={[styles.row, { minHeight: 44 * fontScale }]}>
  */
 export function useFontScale(): number {
   const { fontScale } = useWindowDimensions();

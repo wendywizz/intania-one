@@ -679,7 +679,7 @@ const makeShiftStyles = (m: M) => StyleSheet.create({
   tileCount: {
     fontFamily: F.semibold,
     fontSize: 22,
-    lineHeight: 26,
+    lineHeight: 30,
     letterSpacing: -0.4,
     color: m.accent,
   },

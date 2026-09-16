@@ -340,7 +340,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 16, paddingTop: 20 },
   pageTitle: {
     fontSize: 26,
-    lineHeight: 32,
+    lineHeight: 36,
     color: c.text,
     fontFamily: AppFonts.psuBold,
     marginBottom: 28,

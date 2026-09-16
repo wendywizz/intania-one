@@ -16,6 +16,16 @@ function formatClock(d: Date) {
   return `${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+/** Whether the current clock time falls inside the shift's own start/end —
+ * only meaningful when the card's date is also today, so callers gate on
+ * `isToday` first. HH:MM:SS strings compare correctly lexically. */
+function isWithinShiftNow(event: Pick<CompOtEvent, 'start_time' | 'end_time'>): boolean {
+  const now = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  const nowClock = `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+  return nowClock >= event.start_time && nowClock <= event.end_time;
+}
+
 /** One badge slot, priority-picked in the component: owning the shift beats
  * it merely being today, which beats it merely being in the past — the
  * staff name already in the title makes ownership the one fact worth a badge. */
@@ -48,6 +58,7 @@ export function CompOtDutyCard({ event, isToday, isPast, dateLabel, loginPeriodM
   const badge = getBadge(event, isToday, isPast);
   const iconColor = isPast ? c.textFaint : c.textMuted;
   const timeRange = `${event.start_time.slice(0, 5)} - ${event.end_time.slice(0, 5)}`;
+  const isHappeningNow = isToday && isWithinShiftNow(event);
 
   // Stamping is only ever possible on the shift's own day (the server rejects
   // anything else outright — Ot_Controller::stamp()). Three outcomes for
@@ -79,7 +90,7 @@ export function CompOtDutyCard({ event, isToday, isPast, dateLabel, loginPeriodM
   const missedText = missedFlag === 'in' ? TEXT.COMP_OT_STAMP_MISSED_IN : TEXT.COMP_OT_STAMP_MISSED_OUT;
 
   return (
-    <View style={[styles.card, isPast && styles.cardPast]}>
+    <View style={[styles.card, isPast && styles.cardPast, isHappeningNow && styles.cardNow]}>
       <UserAvatar staffId={event.staff_id} size={40} />
 
       <View style={styles.body}>
@@ -168,6 +179,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.04 }),
   },
   cardPast: { opacity: 0.7 },
+  // เวรที่กำลังเกิดขึ้นอยู่ตอนนี้ (วันนี้ + อยู่ในช่วงเวลาเวร) — เด่นกว่าเวรวันนี้ทั่วไป
+  cardNow: {
+    backgroundColor: c.warningSoft,
+    borderColor: c.warning,
+  },
   body: { flex: 1, gap: 3 },
   name: {
     fontFamily: AppFonts.psuBold,

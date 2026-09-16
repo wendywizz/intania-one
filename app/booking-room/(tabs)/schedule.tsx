@@ -639,7 +639,7 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
       borderColor: c.border,
     },
     dateBadgeActive: { backgroundColor: c.belizeHole, borderColor: c.belizeHole },
-    dateNum: { fontSize: 17, lineHeight: 20, fontFamily: AppFonts.psuBold, color: c.text },
+    dateNum: { fontSize: 17, lineHeight: 23, fontFamily: AppFonts.psuBold, color: c.text },
     dateMonth: { fontSize: 10, lineHeight: 13, color: c.textMuted },
     dateOnActive: { color: c.textOnPrimary },
 

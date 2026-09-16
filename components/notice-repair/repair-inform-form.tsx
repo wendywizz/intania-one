@@ -534,7 +534,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderBottomColor: c.inputBorder,
   },
   selectText: { flex: 1, color: c.text, fontSize: 16, fontFamily: AppFonts.psuRegular },
-  chevron: { color: c.textMuted, fontSize: 18, lineHeight: 22 },
+  chevron: { color: c.textMuted, fontSize: 18, lineHeight: 25 },
 
   // Radio row (no absence equivalent — kept, restyled to sit with the fields).
   radioRow: { flexDirection: 'row', gap: 12 },

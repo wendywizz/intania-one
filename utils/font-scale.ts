@@ -32,6 +32,21 @@ export function scaleFont(size: number): number {
  */
 const TEXT_METRICS = ['fontSize', 'lineHeight'] as const;
 
+/**
+ * The narrowest line box a font size may sit in.
+ *
+ * React Native scales `lineHeight` in step with `fontSize` (RCTTextAttributes
+ * multiplies both by the same font multiplier), so a ratio that crops its
+ * glyphs crops them at every text size - by a hairline at the default, by a
+ * dozen pixels on a phone set to large type, which is how this was found. The
+ * PSU faces stand taller than their em box and need about 1.35.
+ *
+ * Applied as a floor, never a ceiling: a sheet asking for more headroom keeps
+ * it. Only when a sheet sets BOTH metrics - with no lineHeight at all the font
+ * picks its own, which already clears its glyphs.
+ */
+const MIN_LINE_HEIGHT_RATIO = 1.35;
+
 type StyleObject = Record<string, unknown>;
 type StyleSheetInput = Record<string, StyleObject>;
 
@@ -61,6 +76,14 @@ function install(): void {
         if (typeof value !== 'number' || !Number.isFinite(value)) continue;
         if (!next) next = { ...style };
         next[metric] = scaleFont(value);
+      }
+
+      // The floor above, on the scaled values so it is the ratio that is
+      // checked rather than the raw numbers.
+      const size = (next ?? style).fontSize;
+      const line = (next ?? style).lineHeight;
+      if (typeof size === 'number' && typeof line === 'number' && line < size * MIN_LINE_HEIGHT_RATIO) {
+        next = { ...(next ?? style), lineHeight: Math.round(size * MIN_LINE_HEIGHT_RATIO) };
       }
 
       scaled[name] = next ?? style;

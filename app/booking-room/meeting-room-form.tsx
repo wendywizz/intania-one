@@ -978,7 +978,7 @@ const makeStyles = (c: AppColors) =>
     },
     selectText: { flex: 1, fontSize: 16, color: c.text, fontFamily: AppFonts.psuRegular },
     placeholder: { color: c.textFaint },
-    chevron: { fontSize: 18, lineHeight: 22, color: c.textMuted },
+    chevron: { fontSize: 18, lineHeight: 25, color: c.textMuted },
     inputError: { borderBottomWidth: 1.5, borderBottomColor: c.danger },
     fieldError: { fontSize: 12, lineHeight: 17, color: c.danger, fontFamily: AppFonts.psuRegular },
     hint: { fontSize: 12, lineHeight: 17, color: c.textMuted, fontFamily: AppFonts.psuRegular },

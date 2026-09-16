@@ -979,7 +979,11 @@ const makeStyles = (c: AppColors) =>
       fontSize: scaleFont(56),
       fontVariant: ['tabular-nums'],
       letterSpacing: -1,
-      lineHeight: scaleFont(64),
+      // 1.35x the size, not the 1.14x this used to be. The PSU numerals stand
+      // taller than their em box, so a line box that tight cuts their tops and
+      // bottoms - invisibly at the default text size, unmistakably on a phone
+      // set to large type, where the same proportion is worth a dozen pixels.
+      lineHeight: scaleFont(76),
     },
     clockSeconds: {
       color: c.textMuted,
@@ -1010,8 +1014,12 @@ const makeStyles = (c: AppColors) =>
       borderRadius: 18,
       flexDirection: 'row',
       gap: 8,
-      height: 54,
+      // minHeight, not height: at large type the label inside is taller than
+      // 54 and a fixed box would crop it.
+      minHeight: 54,
       justifyContent: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
     },
     actionPlateText: {
       fontFamily: AppFonts.psuBold,

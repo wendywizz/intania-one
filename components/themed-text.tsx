@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: AppFonts.psuBold,
     fontSize: 24,
-    lineHeight: 28,
+    lineHeight: 33,
   },
   subtitle: {
     fontFamily: AppFonts.psuBold,
