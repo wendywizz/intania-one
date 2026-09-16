@@ -238,7 +238,6 @@ export default function CompOtScheduleScreen() {
           <ThemedText style={styles.filterTitle}>{TEXT.COMP_OT_FILTER_TITLE}</ThemedText>
           <View style={styles.filterRow}>
             <View style={styles.filterItem}>
-              <ThemedText style={styles.filterLabel}>{TEXT.COMP_OT_FILTER_YEAR_LABEL}</ThemedText>
               <ModalSelectField
                 title={TEXT.COMP_OT_YEAR_FIELD_TITLE}
                 placeholder={TEXT.COMP_OT_FILTER_YEAR_LABEL}
@@ -248,7 +247,6 @@ export default function CompOtScheduleScreen() {
               />
             </View>
             <View style={styles.filterItem}>
-              <ThemedText style={styles.filterLabel}>{TEXT.COMP_OT_FILTER_MONTH_LABEL}</ThemedText>
               <ModalSelectField
                 title={TEXT.COMP_OT_MONTH_FIELD_TITLE}
                 placeholder={TEXT.COMP_OT_FILTER_MONTH_LABEL}
@@ -258,7 +256,6 @@ export default function CompOtScheduleScreen() {
               />
             </View>
             <View style={styles.filterItem}>
-              <ThemedText style={styles.filterLabel}>{TEXT.COMP_OT_FILTER_SHIFT_TYPE_LABEL}</ThemedText>
               <ModalSelectField
                 title={TEXT.COMP_OT_SHIFT_TYPE_FIELD_TITLE}
                 placeholder={TEXT.COMP_OT_FILTER_SHIFT_TYPE_LABEL}
@@ -343,12 +340,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   filterRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   filterItem: { flexGrow: 1, flexBasis: '30%', gap: 4 },
-  filterLabel: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontFamily: AppFonts.psuBold,
-    color: c.textMuted,
-  },
 
   toggleRow: {
     flexDirection: 'row',
