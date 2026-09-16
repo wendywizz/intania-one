@@ -106,6 +106,13 @@ export const ENDPOINTS = {
   examinar: `${API_BASE_URL}/api/examinar`,
   examinarDetail: `${API_BASE_URL}/api/examinar/detail`,
 
+  // --- mail ------------------------------------------------------------------
+  // No mail traffic actually runs through the gateway (OAuth and Inbox reads
+  // go straight to Microsoft — see services/mailAuthService.ts and
+  // services/mailService.ts). This is a reachability ping only, so the app can
+  // find out 'scooba-psu-mail' is switched off before it ever calls Microsoft.
+  mailStatus: `${API_BASE_URL}/api/mail/status`,
+
   // --- comp-ot (เวรห้องคอมพิวเตอร์, dept 209 only) --------------------------
   compOt: `${API_BASE_URL}/api/comp-ot`,
   compOtStamp: `${API_BASE_URL}/api/comp-ot/stamp`,

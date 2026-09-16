@@ -1,5 +1,6 @@
 import { MAIL_AUTH } from '@/constants/mailAuth';
-import { fetchWithTimeout } from '@/services/api';
+import { ENDPOINTS } from '@/constants/endpoints';
+import { fetchWithTimeout, isModuleDisabled, requestJson } from '@/services/api';
 import { getValidAccessToken } from '@/services/mailAuthService';
 
 /**
@@ -75,6 +76,33 @@ async function graphFetch<T>(url: string): Promise<T> {
   }
 
   return response.json() as Promise<T>;
+}
+
+/**
+ * Whether the mail module is switched on, via scooba-service's App-row switch
+ * ('scooba-psu-mail' — see scooba-service/config/app-registry.js).
+ *
+ * This is the one mail call that goes to scooba rather than Microsoft: the
+ * module's real traffic (OAuth, Graph reads) never touches the gateway, so
+ * there is nothing else for that switch to gate. `requestJson` already turns
+ * the gateway's 503 ModuleDisabled into a MODULE_DISABLED-marked Error the
+ * same way every other module's screens get for free — see
+ * constants/module-status.ts — so callers here just need to let it propagate
+ * into an `ErrorState`.
+ *
+ * Resolves silently (does not throw) on anything that isn't the gateway
+ * explicitly saying the module is off — a network hiccup here must not block
+ * the connect screen or the inbox when the module is in fact on.
+ */
+export async function assertMailModuleEnabled(): Promise<void> {
+  try {
+    await requestJson(ENDPOINTS.mailStatus);
+  } catch (error) {
+    if (isModuleDisabled(error)) {
+      throw error;
+    }
+    // Gateway unreachable, timed out, etc. — not our call to make here.
+  }
 }
 
 const LIST_SELECT = 'id,subject,from,receivedDateTime,isRead,bodyPreview';

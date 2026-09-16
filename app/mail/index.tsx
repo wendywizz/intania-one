@@ -14,7 +14,7 @@ import { ListCard } from '@/components/ui/list-card';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import * as mailAuthService from '@/services/mailAuthService';
-import { listInboxMessages, type MailMessage } from '@/services/mailService';
+import { assertMailModuleEnabled, listInboxMessages, type MailMessage } from '@/services/mailService';
 import { formatNewsDateTime } from '@/utils/date-format';
 
 function MailCard({ message }: { message: MailMessage }) {
@@ -68,6 +68,32 @@ export default function MailInboxScreen() {
     }
   }, []);
 
+  // The module-switch check runs before anything else, connected or not: a
+  // switched-off module has to show up even for someone already connected,
+  // since their stored tokens are still fine — it is the module scooba says is
+  // off, not their session. Pulled out on its own so the ErrorState's retry
+  // button re-runs this whole sequence rather than skipping straight to
+  // `loadMessages`, which would ignore the module still being off.
+  const checkAndLoad = useCallback(async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      await assertMailModuleEnabled();
+    } catch (err) {
+      setIsLoading(false);
+      setMessages([]);
+      setError(err instanceof Error ? err.message : TEXT.MAIL_UNABLE_TO_LOAD);
+      return;
+    }
+
+    const connected = await mailAuthService.isConnected();
+    if (!connected) {
+      router.replace('/mail/connect');
+      return;
+    }
+    loadMessages();
+  }, [loadMessages]);
+
   // Checked on every focus, not just on mount: this is what sends a first-time
   // visitor to /mail/connect and lets a later disconnect (e.g. sign-out) take
   // a returning visitor back there too, rather than only gating the initial
@@ -77,19 +103,13 @@ export default function MailInboxScreen() {
       let cancelled = false;
 
       (async () => {
-        const connected = await mailAuthService.isConnected();
-        if (cancelled) return;
-        if (!connected) {
-          router.replace('/mail/connect');
-          return;
-        }
-        loadMessages();
+        if (!cancelled) await checkAndLoad();
       })();
 
       return () => {
         cancelled = true;
       };
-    }, [loadMessages]),
+    }, [checkAndLoad]),
   );
 
   const handleLoadMore = useCallback(async () => {
@@ -122,7 +142,7 @@ export default function MailInboxScreen() {
           <ErrorState
             title={TEXT.SHARED_SOMETHING_WENT_WRONG}
             message={error}
-            onRetry={() => loadMessages()}
+            onRetry={() => checkAndLoad()}
           />
         ) : (
           <FlatList

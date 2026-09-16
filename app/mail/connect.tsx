@@ -3,6 +3,8 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { ErrorState } from '@/components/error-state';
+import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -11,6 +13,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import * as mailAuthService from '@/services/mailAuthService';
+import { assertMailModuleEnabled } from '@/services/mailService';
 
 /**
  * The explicit "connect your email" step. Mail is a second, independent
@@ -25,19 +28,40 @@ export default function MailConnectScreen() {
   const styles = useThemedStyles(makeStyles);
   const [isConnecting, setIsConnecting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isChecking, setIsChecking] = useState(true);
+  const [moduleError, setModuleError] = useState('');
 
-  // Landing here while already connected (a stale link, or racing the list
-  // screen's own redirect) — skip straight to the inbox instead of asking
-  // to connect again.
+  const checkModule = useCallback(async () => {
+    setIsChecking(true);
+    setModuleError('');
+    try {
+      await assertMailModuleEnabled();
+    } catch (error) {
+      setIsChecking(false);
+      setModuleError(error instanceof Error ? error.message : TEXT.MAIL_CONNECT_FAILED);
+      return;
+    }
+
+    // Landing here while already connected (a stale link, or racing the list
+    // screen's own redirect) — skip straight to the inbox instead of asking
+    // to connect again.
+    const connected = await mailAuthService.isConnected();
+    if (connected) {
+      router.replace('/mail');
+      return;
+    }
+    setIsChecking(false);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-    mailAuthService.isConnected().then((connected) => {
-      if (connected && !cancelled) router.replace('/mail');
-    });
+    (async () => {
+      if (!cancelled) await checkModule();
+    })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [checkModule]);
 
   const handleConnect = useCallback(async () => {
     setErrorMessage('');
@@ -57,27 +81,35 @@ export default function MailConnectScreen() {
       <StatusBar style="light" />
       <NavTopBar title={TEXT.MAIL_HEADER_TITLE} backHref="/" tone="primary" />
       <View style={styles.content}>
-        <View style={styles.iconCircle}>
-          <IconSymbol name="envelope.fill" size={40} color={c.primary} />
-        </View>
-        <ThemedText type="subtitle" style={styles.title}>
-          {TEXT.MAIL_CONNECT_TITLE}
-        </ThemedText>
-        <ThemedText style={styles.description}>{TEXT.MAIL_CONNECT_DESCRIPTION}</ThemedText>
-
-        {errorMessage ? <ThemedText style={styles.errorText}>{errorMessage}</ThemedText> : null}
-
-        {mailAuthService.MAIL_SUPPORTED_ON_PLATFORM ? (
-          <Button
-            title={isConnecting ? TEXT.MAIL_CONNECT_CONNECTING : TEXT.MAIL_CONNECT_BUTTON}
-            onPress={handleConnect}
-            loading={isConnecting}
-            icon="envelope.fill"
-            size="lg"
-            style={styles.button}
-          />
+        {isChecking ? (
+          <LoadingAnimate title={TEXT.MAIL_LOADING} desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT} />
+        ) : moduleError ? (
+          <ErrorState message={moduleError} onRetry={() => checkModule()} />
         ) : (
-          <ThemedText style={styles.webNotice}>{TEXT.MAIL_CONNECT_WEB_UNSUPPORTED}</ThemedText>
+          <>
+            <View style={styles.iconCircle}>
+              <IconSymbol name="envelope.fill" size={40} color={c.primary} />
+            </View>
+            <ThemedText type="subtitle" style={styles.title}>
+              {TEXT.MAIL_CONNECT_TITLE}
+            </ThemedText>
+            <ThemedText style={styles.description}>{TEXT.MAIL_CONNECT_DESCRIPTION}</ThemedText>
+
+            {errorMessage ? <ThemedText style={styles.errorText}>{errorMessage}</ThemedText> : null}
+
+            {mailAuthService.MAIL_SUPPORTED_ON_PLATFORM ? (
+              <Button
+                title={isConnecting ? TEXT.MAIL_CONNECT_CONNECTING : TEXT.MAIL_CONNECT_BUTTON}
+                onPress={handleConnect}
+                loading={isConnecting}
+                icon="envelope.fill"
+                size="lg"
+                style={styles.button}
+              />
+            ) : (
+              <ThemedText style={styles.webNotice}>{TEXT.MAIL_CONNECT_WEB_UNSUPPORTED}</ThemedText>
+            )}
+          </>
         )}
       </View>
     </ThemedView>
