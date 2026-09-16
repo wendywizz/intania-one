@@ -26,6 +26,7 @@ import {
   type FaceScanCameraHandle,
 } from '@/components/timestamp/face-scan-camera';
 import { SitePill, distanceLabel } from '@/components/timestamp/site-pill';
+import { LocatingPin } from '@/components/timestamp/locating-pin';
 import { LocationNoticeBanner } from '@/components/timestamp/location-notice';
 import { useToast } from '@/components/toast-provider';
 import { Button, ConfirmDialog, IconSymbol, type IconSymbolName } from '@/components/ui';
@@ -587,7 +588,10 @@ export default function StaffTimestampScreen() {
     if (loading) {
       return (
         <View style={styles.loadingBlock}>
-          <LoadingAnimate fill={false} />
+          {/* The picture says which wait this is: the pin while the phone is
+              still finding itself, the app's own mark once that is done and it
+              is the server being waited on. */}
+          {loadStep === 'location' ? <LocatingPin /> : <LoadingAnimate fill={false} />}
           <ThemedText style={styles.loadingStep}>
             {loadStep === 'location' ? TEXT.TIMESTAMP_STEP_LOCATION : TEXT.TIMESTAMP_STEP_STATUS}
           </ThemedText>
@@ -678,6 +682,7 @@ export default function StaffTimestampScreen() {
               <SitePill
                 atSite={status?.atSite}
                 distanceM={status?.distanceM}
+                radiusM={status?.radiusM}
                 reason={status?.reason}
                 location={location}
                 locating={locating}

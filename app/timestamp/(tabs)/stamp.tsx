@@ -8,6 +8,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SitePill } from '@/components/timestamp/site-pill';
+import { LocatingPin } from '@/components/timestamp/locating-pin';
 import { LocationNoticeBanner, locationNotice } from '@/components/timestamp/location-notice';
 import { useToast } from '@/components/toast-provider';
 import { Button, IconSymbol } from '@/components/ui';
@@ -200,7 +201,10 @@ export default function LectTimestampScreen() {
     if (loading) {
       return (
         <View style={styles.loadingBlock}>
-          <LoadingAnimate fill={false} />
+          {/* The picture says which wait this is: the pin while the phone is
+              still finding itself, the app's own mark once that is done and it
+              is the server being waited on. */}
+          {loadStep === 'location' ? <LocatingPin /> : <LoadingAnimate fill={false} />}
           <ThemedText style={styles.loadingStep}>
             {loadStep === 'location' ? TEXT.TIMESTAMP_STEP_LOCATION : TEXT.TIMESTAMP_STEP_STATUS}
           </ThemedText>
@@ -306,6 +310,7 @@ export default function LectTimestampScreen() {
             <SitePill
               atSite={status?.atSite}
               distanceM={status?.distanceM}
+              radiusM={status?.radiusM}
               reason={status?.reason}
               location={location}
             />

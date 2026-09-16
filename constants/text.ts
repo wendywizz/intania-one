@@ -1277,7 +1277,11 @@ export const TEXT = {
   STAFF_TIMESTAMP_BADGE_TRAVEL: 'ไปราชการ',
   STAFF_TIMESTAMP_BADGE_IRREGULAR: 'ข้อมูลไม่ปกติ',
   STAFF_TIMESTAMP_BADGE_LOCATING: 'กำลังหาตำแหน่ง',
-  STAFF_TIMESTAMP_IN_AREA: 'อยู่ในพื้นที่',
+  STAFF_TIMESTAMP_IN_AREA: 'อยู่ในจุดลงเวลา',
+  // ตามด้วยระยะที่ยังต้องเดิน = ระยะจากใจกลาง ลบ รัศมีที่ตั้งไว้ นับถอยหลังลงหา 0
+  STAFF_TIMESTAMP_WALK_LEFT: 'ต้องเข้าใกล้อีก',
+  STAFF_TIMESTAMP_TOO_FAR: 'ห่างจุดลงเวลา',
+  // ใช้เมื่อ gateway รุ่นเก่ายังไม่ส่งรัศมีมา จึงคำนวณระยะที่เหลือไม่ได้
   STAFF_TIMESTAMP_OFF_SITE: 'นอกพื้นที่คณะ',
   STAFF_TIMESTAMP_NO_POSITION: 'ไม่ทราบตำแหน่ง',
   // ระยะห่างจากใจกลางคณะ ต่อท้ายป้ายตำแหน่ง

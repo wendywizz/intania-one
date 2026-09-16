@@ -507,6 +507,8 @@ export type LectTimestampStamp = {
 export type LectTimestampStatus = {
   /** ระยะห่างจากใจกลางคณะเป็นเมตร ตามที่ gateway คำนวณ; null = ไม่ได้ส่งพิกัดไป */
   distanceM: number | null;
+  /** รัศมีของพื้นที่ลงเวลาเป็นเมตร ตามที่ server ตั้งไว้; null = gateway รุ่นเก่า */
+  radiusM: number | null;
   /** อยู่ในรัศมีหรือไม่ ตัดสินที่ server; null = ไม่มีพิกัด */
   atSite: boolean | null;
   staffId: string;
@@ -541,6 +543,7 @@ function toLectStatus(json: JsonMap): LectTimestampStatus {
     isLecturer: data.isLecturer === true,
     distanceM:
       typeof data.distanceM === 'number' && Number.isFinite(data.distanceM) ? data.distanceM : null,
+    radiusM: typeof data.radiusM === 'number' && Number.isFinite(data.radiusM) ? data.radiusM : null,
     atSite: typeof data.atSite === 'boolean' ? data.atSite : null,
     stamped: data.stamped === true,
     canStamp: data.canStamp === true,
@@ -686,6 +689,8 @@ export type StaffTimestampStatus = {
   canStamp: boolean;
   /** ระยะห่างจากใจกลางคณะเป็นเมตร ตามที่ gateway คำนวณ; null = ไม่ได้ส่งพิกัดไป */
   distanceM: number | null;
+  /** รัศมีของพื้นที่ลงเวลาเป็นเมตร ตามที่ server ตั้งไว้; null = gateway รุ่นเก่า */
+  radiusM: number | null;
   /**
    * อยู่ในรัศมีที่กำหนดหรือไม่ ตัดสินที่ server จากระยะข้างบน; null = ไม่มีพิกัด
    * ต่างจาก reason ตรงที่ reason บอกแค่เหตุผลแรกที่ลงเวลาไม่ได้ คนที่ลงเวลาเข้าไปแล้ว
@@ -765,6 +770,7 @@ function staffStatusFrom(data: Record<string, unknown>): StaffTimestampStatus {
     canStamp: data.canStamp === true,
     distanceM:
       typeof data.distanceM === 'number' && Number.isFinite(data.distanceM) ? data.distanceM : null,
+    radiusM: typeof data.radiusM === 'number' && Number.isFinite(data.radiusM) ? data.radiusM : null,
     atSite: typeof data.atSite === 'boolean' ? data.atSite : null,
     reason: str(data.reason),
     message: str(data.message),
