@@ -47,7 +47,7 @@ import {
 import { formatFullDate, formatWeekday } from '@/utils/date-format';
 import { guideOval, type FramingVerdict } from '@/utils/face-framing';
 import { scaleFont } from '@/utils/font-scale';
-import { minutesOf, minutesOfDay, workdayProgress, workedLabel, workedMinutes } from '@/utils/workday';
+import { minutesOf, workdayState, workedLabel } from '@/utils/workday';
 
 /** At most one scan sent per this many ms. The gateway has its own floor too. */
 const MIN_SCAN_GAP_MS = 1500;
@@ -617,11 +617,15 @@ export default function StaffTimestampScreen() {
     const outTime = hhmm(stamp?.outTime ?? '');
     const isLate = stamp?.isLate === true;
 
-    const worked = workedMinutes(stamp?.inTime ?? '', stamp?.outTime ?? '', minutesOf(now));
-    // Where the day stands against 08:30-16:30: now while it is open, or the
-    // departure stamp once there is one, so a finished day stops moving.
-    const departed = minutesOfDay(stamp?.outTime ?? '');
-    const dayFill = worked == null ? 0 : workdayProgress(departed >= 0 ? departed : minutesOf(now));
+    // The working day against the clock, not against the stamps — see
+    // utils/workday.ts for the rules it follows.
+    const day = workdayState(stamp?.inTime ?? '', stamp?.outTime ?? '', minutesOf(now));
+    const dayLabel =
+      day.worked != null
+        ? workedLabel(day.worked)
+        : stamp?.inTime
+          ? TEXT.STAFF_TIMESTAMP_DAY_OVER
+          : TEXT.STAFF_TIMESTAMP_NOT_IN_YET;
 
     const accuracyM = location?.position?.accuracyM ?? 0;
     const coarseFix = !locating && accuracyM > COARSE_FIX_M;
@@ -704,17 +708,22 @@ export default function StaffTimestampScreen() {
           </View>
 
           {/* The working day, 08:30 to 16:30: full when it is time to go home,
-              whenever the person arrived. Empty track until the arrival stamp
-              exists — there is nothing of theirs to measure before that. */}
+              whenever the person arrived. Grey whenever nothing is running —
+              before the arrival stamp, and once the day has closed — so a
+              finished bar never reads as one still filling. */}
           <View style={styles.progressRow}>
             <View style={styles.progressTrack}>
               <View
-                style={[styles.progressFill, { backgroundColor: c.primary, width: `${Math.round(dayFill * 100)}%` }]}
+                style={[
+                  styles.progressFill,
+                  {
+                    backgroundColor: day.spent ? c.borderStrong : c.primary,
+                    width: `${Math.round(day.fill * 100)}%`,
+                  },
+                ]}
               />
             </View>
-            <ThemedText style={styles.progressLabel}>
-              {worked == null ? TEXT.STAFF_TIMESTAMP_NOT_IN_YET : workedLabel(worked)}
-            </ThemedText>
+            <ThemedText style={styles.progressLabel}>{dayLabel}</ThemedText>
           </View>
 
           {/* Arrival and departure side by side: the pair is one fact — the

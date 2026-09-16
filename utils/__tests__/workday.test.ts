@@ -1,7 +1,8 @@
 /**
- * The working-day bar on both ลงเวลา screens. The day is 08:30-16:30.
+ * The working-day bar on the staff ลงเวลา screen. The day is 08:30-16:30, and
+ * it is the day that drives the bar, not the person's stamps.
  */
-import { minutesOfDay, workdayProgress, workedLabel, workedMinutes } from '@/utils/workday';
+import { minutesOfDay, workdayProgress, workdayState, workedLabel } from '@/utils/workday';
 
 const at = (hhmm: string) => minutesOfDay(hhmm);
 
@@ -21,17 +22,42 @@ describe('workdayProgress', () => {
   });
 });
 
-describe('workedMinutes', () => {
-  it('counts from the arrival stamp to now while the day is open', () => {
-    expect(workedMinutes('08:44:00', '', at('14:22'))).toBe(338);
+describe('workdayState', () => {
+  it('counts from the arrival stamp while the day is open', () => {
+    const day = workdayState('08:44:00', '', at('14:22'));
+
+    expect(day.worked).toBe(338);
+    expect(day.spent).toBe(false);
   });
 
-  it('stops at the departure stamp once there is one', () => {
-    expect(workedMinutes('08:44:00', '16:40:00', at('18:00'))).toBe(476);
+  it('credits an early arrival from 08:30, not from the stamp', () => {
+    // In at 07:50, so 08:30 to 10:00 is the hour and a half that counts.
+    expect(workdayState('07:50:00', '', at('10:00')).worked).toBe(90);
   });
 
-  it('has nothing to measure before an arrival', () => {
-    expect(workedMinutes('', '', at('10:00'))).toBeNull();
+  it('has worked nothing yet while an early arrival waits for 08:30', () => {
+    expect(workdayState('07:50:00', '', at('08:10')).worked).toBe(0);
+  });
+
+  it('stops at the departure stamp, however long ago that was', () => {
+    const day = workdayState('08:44:00', '15:00:00', at('15:47'));
+
+    expect(day.worked).toBe(376);
+    expect(day.fill).toBe(workdayProgress(at('15:00')));
+    expect(day.spent).toBe(true);
+  });
+
+  it('closes the day at 16:30 with a full grey bar and no running total', () => {
+    const day = workdayState('08:44:00', '', at('17:20'));
+
+    expect(day.fill).toBe(1);
+    expect(day.worked).toBeNull();
+    expect(day.spent).toBe(true);
+  });
+
+  it('shows nothing at all without an arrival stamp, at any hour', () => {
+    expect(workdayState('', '', at('10:00'))).toEqual({ fill: 0, worked: null, spent: true });
+    expect(workdayState('', '', at('17:20'))).toEqual({ fill: 0, worked: null, spent: true });
   });
 });
 
