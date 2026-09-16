@@ -790,7 +790,7 @@ export const TEXT = {
 
   // Calendar
   CALENDAR_DESCRIPTION: 'หน้านี้คือหน้าปฏิทิน',
-  CALENDAR_TITLE: 'ปฏิทิน',
+  CALENDAR_TITLE: 'ผู้บริหาร',
   CALENDAR_HEADER_TITLE: 'ปฏิทินผู้บริหาร',
   CALENDAR_SUBTITLE: 'แสดงกำหนดการต่างๆ ของผู้บริหาร',
   CALENDAR_ALL_DAY: 'ทั้งวัน',
