@@ -96,7 +96,8 @@
             "minSdkVersion": 26
           }
         }
-      ]
+      ],
+      "./plugins/with-android-scooba-network-security"
     ],
     "experiments": {
       "typedRoutes": true
