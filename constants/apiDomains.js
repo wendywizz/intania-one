@@ -12,5 +12,7 @@
 // scooba-service/CONTEXT.md and the [Scooba-service local dev] note.
 module.exports = {
   development: 'http://172.31.133.131:1337',
-  production: 'https://apis.eng.psu.ac.th/scooba',
+  // Public Kong Ingress for scooba-service. Keep this aligned with
+  // scooba-service/k8s/base/ingress.yaml and its Let's Encrypt certificate.
+  production: 'https://create.eng.psu.ac.th/scooba',
 };
