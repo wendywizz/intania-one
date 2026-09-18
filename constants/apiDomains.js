@@ -12,7 +12,8 @@
 // scooba-service/CONTEXT.md and the [Scooba-service local dev] note.
 module.exports = {
   development: 'http://172.31.133.131:1337',
-  // Public Kong Ingress for scooba-service. Keep this aligned with
-  // scooba-service/k8s/base/ingress.yaml and its Let's Encrypt certificate.
-  production: 'https://create.eng.psu.ac.th/scooba',
+    // Existing production Kong endpoint used by the released mobile app.
+  // Keep this until the create.eng.psu.ac.th route and certificate are
+  // verified on Android and iOS devices.
+  production: 'https://apis.eng.psu.ac.th/scooba',
 };
