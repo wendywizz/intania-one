@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import React, { useEffect, useState } from "react";
 import type { ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { tabBarButton } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -19,17 +20,21 @@ import { scaleFont } from "@/utils/font-scale";
  * The tab bar's own look, kept here and exported because the face-scan screen
  * hides the bar while the camera is full screen: clearing the option instead of
  * setting this back would leave the navigator's plain default bar behind.
+ *
+ * @param c - Colors for the current theme
+ * @param bottom - Safe area bottom inset (Android navigation bar height)
  */
-export const timestampTabBarStyle = (c: AppColors): ViewStyle => ({
+export const timestampTabBarStyle = (c: AppColors, bottom: number = 0): ViewStyle => ({
   backgroundColor: c.primary,
   borderTopColor: c.primary,
-  height: 68,
-  paddingBottom: 10,
+  height: 68 + bottom,
+  paddingBottom: 10 + bottom,
   paddingTop: 6,
 });
 
 export default function TimestampTabLayout() {
   const c = useColors();
+  const insets = useSafeAreaInsets();
   const { user: authUser, isLecturer, stampRole } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
 
@@ -67,7 +72,7 @@ export default function TimestampTabLayout() {
         tabBarButton,
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
-        tabBarStyle: timestampTabBarStyle(c),
+        tabBarStyle: timestampTabBarStyle(c, insets.bottom),
         tabBarLabelStyle: {
           fontSize: scaleFont(11),
           fontFamily: AppFonts.psuRegular,

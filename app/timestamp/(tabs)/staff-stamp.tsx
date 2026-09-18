@@ -263,14 +263,15 @@ export default function StaffTimestampScreen() {
     [startScanning],
   );
 
-  const load = useCallback(
+    const load = useCallback(
     async (mode: 'initial' | 'refresh') => {
       if (mode === 'refresh') setRefreshing(true);
+      if (mode === 'initial') setLoading(true);
 
+      // Reset status to avoid showing stale data while waiting for location
+      setStatus(null);
       setLocating(true);
       setLoadStep('location');
-      // A fresh status speaks for itself; the last scan's line would now be
-      // about a different moment.
       setScanResult(null);
 
       try {
@@ -442,7 +443,7 @@ export default function StaffTimestampScreen() {
     navigation.setOptions({
       // Not `undefined` when the camera closes: clearing the option would leave
       // the navigator's plain default bar instead of this tab bar's own look.
-      tabBarStyle: fullScreenScan ? { display: 'none' } : timestampTabBarStyle(c),
+      tabBarStyle: fullScreenScan ? { display: 'none' } : timestampTabBarStyle(c, insets.bottom),
     });
   }, [navigation, fullScreenScan, c]);
 

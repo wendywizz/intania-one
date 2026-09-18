@@ -28,6 +28,7 @@ export let DEV_STAFF_ID: string = '';
 //DEV_STAFF_ID = '0000301'; // พี่อ้อ
 //DEV_STAFF_ID = '0011688'; // พี่คมเนต
 //DEV_STAFF_ID = '0039506'; // ปาย
+//DEV_STAFF_ID = '0024056'; // เอียด
 
 // Set DEV_LOCATION to skip the real GPS/browser-permission fix and feed every
 // stamp screen (ลงเวลาอาจารย์, ลงเวลาบุคลากรทั่วไป) this position instead —

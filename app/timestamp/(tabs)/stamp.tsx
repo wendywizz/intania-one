@@ -110,9 +110,13 @@ export default function LectTimestampScreen() {
     }).start();
   }, [loading, status?.stamped, medallionScale]);
 
-  const load = useCallback(
+    const load = useCallback(
     async (mode: 'initial' | 'refresh') => {
       if (mode === 'refresh') setRefreshing(true);
+      if (mode === 'initial') setLoading(true);
+
+      // Reset status to avoid showing stale data while waiting for location
+      setStatus(null);
       setLoadStep('location');
 
       try {
