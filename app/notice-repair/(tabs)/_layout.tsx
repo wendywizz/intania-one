@@ -1,4 +1,7 @@
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { tabBarButton } from '@/components/haptic-tab';
+import { moduleTabBarStyle } from '@/constants/tab-bar';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -34,6 +37,7 @@ function getRoleRoute(pathname: string): NoticeRepairRole | null {
 
 export default function NoticeRepairTabLayout() {
   const c = useColors();
+  const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const staffId = useNoticeRepairStaffId();
 
@@ -120,7 +124,7 @@ export default function NoticeRepairTabLayout() {
           tabBarButton,
           tabBarActiveTintColor: '#FFFFFF',
           tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
-          tabBarStyle: { backgroundColor: c.primary, borderTopColor: c.primary, height: 68, paddingBottom: 10, paddingTop: 6 },
+          tabBarStyle: moduleTabBarStyle(c, insets.bottom),
           tabBarLabelStyle: { fontSize: scaleFont(11), fontFamily: AppFonts.psuRegular },
         }}>
           {/* ── Informer ── */}

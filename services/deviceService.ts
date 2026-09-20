@@ -250,12 +250,21 @@ async function getPushRegistrationToken(): Promise<PushRegistrationToken> {
   }
 }
 
-async function registerDevice(user: AuthUser, staffId: string, deviceId: string, pushToken: PushRegistrationToken) {
+async function registerDevice(
+  user: AuthUser,
+  staffId: string,
+  deviceId: string,
+  pushToken: PushRegistrationToken,
+  pushEnabled?: boolean,
+) {
   const deviceName = getDeviceName();
   const payload = {
     owner: staffId,
     staff_id: staffId,
     device_id: deviceId,
+    // Only sent when the caller has something to say about the switch, so an
+    // ordinary sign-in never flips it back on behind the user's back.
+    ...(pushEnabled === undefined ? {} : { push_enabled: pushEnabled }),
     ...(pushToken.expoPushToken ? { expo_push_token: pushToken.expoPushToken } : {}),
     ...(pushToken.fcmToken ? { fcm_token: pushToken.fcmToken } : {}),
     device_name: deviceName,
@@ -308,6 +317,29 @@ export async function registerLoggedInDevice(user: AuthUser) {
   if (Platform.OS === "web") return;
   const pushToken = await getPushRegistrationToken();
   await registerLoggedInDeviceWithToken(user, pushToken);
+}
+
+/**
+ * Tell the gateway whether this device still wants notifications.
+ *
+ * The Settings switch used to write a flag into the phone's own storage and
+ * nothing else, so the server kept sending and turning it off changed nothing
+ * a user could see. This is the half that was missing: the gateway skips a
+ * device whose `push_enabled` is false when it resolves recipients.
+ *
+ * Deliberately not silent on failure — the caller decides what to tell the
+ * user, and a switch that claims to be off while the server still has it on is
+ * exactly the situation this exists to prevent.
+ */
+export async function setDevicePushEnabled(user: AuthUser, enabled: boolean) {
+  if (Platform.OS === "web") return;
+
+  const staffId = getStaffId(user);
+  if (!staffId || !DEVICE_REGISTER_API_KEY) return;
+
+  const deviceId = await getDeviceId();
+  const pushToken = await getPushRegistrationToken();
+  await registerDevice(user, staffId, deviceId, pushToken, enabled);
 }
 
 export async function registerLoggedInDeviceOnce(user: AuthUser) {

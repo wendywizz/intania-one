@@ -52,6 +52,15 @@ import { minutesOf, workdayState, workedLabel } from '@/utils/workday';
 /** At most one scan sent per this many ms. The gateway has its own floor too. */
 const MIN_SCAN_GAP_MS = 1500;
 
+/**
+ * A resume within this long of the last load does not reload the screen.
+ *
+ * Long enough to swallow the pause-and-resume an OS permission check causes on
+ * Android, short enough that coming back after a real trip away — to Settings,
+ * to grant location — still refreshes what the card says.
+ */
+const MIN_RELOAD_GAP_MS = 2000;
+
 /** Scanning pauses after this long without a stamp, until the person asks again. */
 const SCAN_WINDOW_MS = 30000;
 
@@ -228,6 +237,9 @@ export default function StaffTimestampScreen() {
   const lastSubmitAtRef = useRef(0);
   const scanStartedAtRef = useRef(0);
   const permissionAskedRef = useRef(false);
+  // A load in flight, and when the last one finished. See MIN_RELOAD_GAP_MS.
+  const loadingRef = useRef(false);
+  const lastLoadAtRef = useRef(0);
 
   const startScanning = useCallback(() => {
     scanStartedAtRef.current = Date.now();
@@ -263,13 +275,26 @@ export default function StaffTimestampScreen() {
     [startScanning],
   );
 
-    const load = useCallback(
+  const load = useCallback(
     async (mode: 'initial' | 'refresh') => {
-      if (mode === 'refresh') setRefreshing(true);
-      if (mode === 'initial') setLoading(true);
+      // One load at a time, and no refresh straight after the last one. A
+      // resume can arrive while the read that caused it is still running: two
+      // loads then race, and because each walks the same two steps the loader
+      // flips between them for as long as the screen is open.
+      if (loadingRef.current) return;
+      if (mode === 'refresh' && Date.now() - lastLoadAtRef.current < MIN_RELOAD_GAP_MS) return;
+      loadingRef.current = true;
 
-      // Reset status to avoid showing stale data while waiting for location
-      setStatus(null);
+      if (mode === 'refresh') setRefreshing(true);
+      if (mode === 'initial') {
+        setLoading(true);
+        // Yesterday's times under this load's own spinner read as its answer.
+        // Only the initial load clears them: the loader is over the card by
+        // then anyway, whereas blanking it on a refresh takes the camera down
+        // with it — `fullScreenScan` needs a status — mid-scan.
+        setStatus(null);
+      }
+
       setLocating(true);
       setLoadStep('location');
       setScanResult(null);
@@ -295,6 +320,8 @@ export default function StaffTimestampScreen() {
         setError(err instanceof Error ? err.message : MESSAGE_CANNOT_CONNECT_TO_SERVER);
         setPhase('idle');
       } finally {
+        loadingRef.current = false;
+        lastLoadAtRef.current = Date.now();
         setLocating(false);
         setLoading(false);
         setRefreshing(false);
@@ -309,9 +336,27 @@ export default function StaffTimestampScreen() {
 
       // Returning from Settings (camera or location) is not a focus change, so
       // it is watched for here; leaving the app also turns the camera off.
+      //
+      // Only a real trip away earns the reload. 'inactive' fires for transients
+      // like the notification shade, and on Android every permission request
+      // pauses and resumes the app — including the ones the OS answers itself,
+      // without drawing anything, because the permission is already granted.
+      // Reloading on any 'active' therefore reloads on the permission check the
+      // reload itself performs, which is a loop with no way out. Same shape as
+      // the guard in app/_layout.tsx and components/biometric-gate.tsx.
+      let leftTheApp = false;
+
       const subscription = AppState.addEventListener('change', (next: AppStateStatus) => {
         setAppActive(next === 'active');
-        if (next === 'active') void load('refresh');
+
+        if (next === 'background') {
+          leftTheApp = true;
+          return;
+        }
+
+        if (next !== 'active' || !leftTheApp) return;
+        leftTheApp = false;
+        void load('refresh');
       });
 
       return () => {
@@ -605,10 +650,9 @@ export default function StaffTimestampScreen() {
         <ErrorState
           title={TEXT.STAFF_TIMESTAMP_LOAD_ERROR}
           message={error}
-          onRetry={() => {
-            setLoading(true);
-            void load('initial');
-          }}
+          // `load` raises its own loader; setting one here as well would leave
+          // it up for good on the call the re-entrancy guard declines.
+          onRetry={() => void load('initial')}
         />
       );
     }

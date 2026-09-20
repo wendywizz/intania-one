@@ -23,7 +23,7 @@ import {
   requestNotificationPermission,
   setNotificationEnabled,
 } from '@/services/notificationService';
-import { registerLoggedInDevice } from '@/services/deviceService';
+import { setDevicePushEnabled } from '@/services/deviceService';
 import { disconnect as disconnectMail } from '@/services/mailAuthService';
 import {
   getPasswordUnlockEnabled,
@@ -107,7 +107,7 @@ export default function SettingsScreen() {
       // unregistered — the in-app toggle is not the only way notifications
       // can come on.
       if (enabled && !wasNotificationsEnabledRef.current && authUser) {
-        void registerLoggedInDevice(authUser).catch(() => null);
+        void setDevicePushEnabled(authUser, true).catch(() => null);
       }
       wasNotificationsEnabledRef.current = enabled;
     } finally {
@@ -295,18 +295,15 @@ export default function SettingsScreen() {
       }
       await setNotificationEnabled(true);
       setNotificationsEnabled(true);
-      if (authUser) void registerLoggedInDevice(authUser).catch(() => null);
+      // Registers the device *and* clears push_enabled on the server, so a
+      // device switched off earlier starts receiving again.
+      if (authUser) void setDevicePushEnabled(authUser, true).catch(() => null);
     } else {
       await setNotificationEnabled(false);
       setNotificationsEnabled(false);
-      Alert.alert(
-        TEXT.SETTINGS_NOTIFICATIONS_DISABLED_TITLE,
-        TEXT.SETTINGS_NOTIFICATIONS_DISABLED_MESSAGE,
-        [
-          { text: TEXT.SHARED_OK, style: 'cancel' },
-          { text: TEXT.SETTINGS_OPEN_OS_SETTINGS, onPress: () => Linking.openSettings() },
-        ],
-      );
+      // The half that used to be missing: without this the flag above lived
+      // only on this phone and the gateway kept sending to it.
+      if (authUser) void setDevicePushEnabled(authUser, false).catch(() => null);
     }
   }
 

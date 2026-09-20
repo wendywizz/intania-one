@@ -30,6 +30,15 @@ import { formatFullDate, formatWeekday } from '@/utils/date-format';
 import { scaleFont } from '@/utils/font-scale';
 
 /**
+ * A resume within this long of the last load does not reload the screen.
+ *
+ * Long enough to swallow the pause-and-resume an OS permission check causes on
+ * Android, short enough that coming back after a real trip away — to Settings,
+ * to grant location — still refreshes what the card says.
+ */
+const MIN_RELOAD_GAP_MS = 2000;
+
+/**
  * 'วันศุกร์ 04 กันยายน 2569'.
  *
  * Built from the shared helpers rather than a moment format string, because
@@ -98,6 +107,9 @@ export default function LectTimestampScreen() {
   // not a loop: it marks the moment the card became true and then stops asking
   // for attention. Reset first, so a pull-to-refresh plays it again.
   const medallionScale = useRef(new Animated.Value(0.85)).current;
+  // A load in flight, and when the last one finished. See MIN_RELOAD_GAP_MS.
+  const loadingRef = useRef(false);
+  const lastLoadAtRef = useRef(0);
   useEffect(() => {
     if (loading) return;
 
@@ -110,13 +122,25 @@ export default function LectTimestampScreen() {
     }).start();
   }, [loading, status?.stamped, medallionScale]);
 
-    const load = useCallback(
+  const load = useCallback(
     async (mode: 'initial' | 'refresh') => {
-      if (mode === 'refresh') setRefreshing(true);
-      if (mode === 'initial') setLoading(true);
+      // One load at a time, and no refresh straight after the last one. A
+      // resume can arrive while the read that caused it is still running: two
+      // loads then race, and because each walks the same two steps the loader
+      // flips between them for as long as the screen is open.
+      if (loadingRef.current) return;
+      if (mode === 'refresh' && Date.now() - lastLoadAtRef.current < MIN_RELOAD_GAP_MS) return;
+      loadingRef.current = true;
 
-      // Reset status to avoid showing stale data while waiting for location
-      setStatus(null);
+      if (mode === 'refresh') setRefreshing(true);
+      if (mode === 'initial') {
+        setLoading(true);
+        // Yesterday's times under this load's own spinner read as its answer.
+        // Only the initial load clears them; on a refresh the card stays up
+        // and the RefreshControl says what is happening.
+        setStatus(null);
+      }
+
       setLoadStep('location');
 
       try {
@@ -137,6 +161,8 @@ export default function LectTimestampScreen() {
         // successful answer with a reason, and is rendered as one.
         setError(err instanceof Error ? err.message : MESSAGE_CANNOT_CONNECT_TO_SERVER);
       } finally {
+        loadingRef.current = false;
+        lastLoadAtRef.current = Date.now();
         setLoading(false);
         setRefreshing(false);
       }
@@ -155,8 +181,25 @@ export default function LectTimestampScreen() {
       // is not a focus change as far as the navigator is concerned — without
       // this, the user does exactly what the banner told them to and comes
       // back to the same banner. Only while this tab is the focused one.
+      //
+      // Only a real trip away earns the reload. 'inactive' fires for transients
+      // like the notification shade, and on Android every permission request
+      // pauses and resumes the app — including the ones the OS answers itself,
+      // without drawing anything, because the permission is already granted.
+      // Reloading on any 'active' therefore reloads on the permission check the
+      // reload itself performs, which is a loop with no way out. Same shape as
+      // the guard in app/_layout.tsx and components/biometric-gate.tsx.
+      let leftTheApp = false;
+
       const subscription = AppState.addEventListener('change', (next) => {
-        if (next === 'active') void load('refresh');
+        if (next === 'background') {
+          leftTheApp = true;
+          return;
+        }
+
+        if (next !== 'active' || !leftTheApp) return;
+        leftTheApp = false;
+        void load('refresh');
       });
 
       return () => subscription.remove();
@@ -221,10 +264,9 @@ export default function LectTimestampScreen() {
         <ErrorState
           title={TEXT.LECT_TIMESTAMP_LOAD_ERROR}
           message={error}
-          onRetry={() => {
-            setLoading(true);
-            void load('initial');
-          }}
+          // `load` raises its own loader; setting one here as well would leave
+          // it up for good on the call the re-entrancy guard declines.
+          onRetry={() => void load('initial')}
         />
       );
     }

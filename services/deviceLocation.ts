@@ -95,7 +95,18 @@ export async function readDevicePosition(): Promise<LocationReading> {
   }
 
   try {
-    const permission = await Location.requestForegroundPermissionsAsync();
+    // Read the current grant before asking for it. On Android, requesting a
+    // permission always starts the system's permission activity — even when
+    // everything asked for is already granted and it closes again without
+    // drawing anything — and that pauses and resumes the app. React Native
+    // reports the pair as `background` then `active`, so a screen that reloads
+    // on `active` and reloads by calling this function asks the OS a question
+    // whose answer restarts the reload: it then reloads forever. Reading the
+    // grant never leaves the app, so it cannot close that loop, and the prompt
+    // is still raised the one time it is actually needed.
+    const granted = await Location.getForegroundPermissionsAsync().catch(() => null);
+    const permission = granted?.granted ? granted : await Location.requestForegroundPermissionsAsync();
+
     if (permission.status !== 'granted') {
       return fail('denied', permission.canAskAgain !== false);
     }

@@ -1,7 +1,10 @@
 import { Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { tabBarButton } from '@/components/haptic-tab';
+import { moduleTabBarStyle } from '@/constants/tab-bar';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -15,6 +18,7 @@ import { scaleFont } from '@/utils/font-scale';
 
 export default function absenceTabLayout() {
   const c = useColors();
+  const insets = useSafeAreaInsets();
   const { user: authUser } = useAuth();
   const staffId = authUser?.staffId || USER_ID;
 
@@ -70,13 +74,7 @@ export default function absenceTabLayout() {
         tabBarButton,
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
-        tabBarStyle: {
-          backgroundColor: c.primary,
-          borderTopColor: c.primary,
-          height: 68,
-          paddingBottom: 10,
-          paddingTop: 6,
-        },
+        tabBarStyle: moduleTabBarStyle(c, insets.bottom),
         tabBarLabelStyle: {
           fontSize: scaleFont(11),
           fontFamily: AppFonts.psuRegular,

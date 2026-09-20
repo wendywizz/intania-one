@@ -2,7 +2,10 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { TEXT } from '@/constants/text';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { tabBarButton } from '@/components/haptic-tab';
+import { moduleTabBarStyle } from '@/constants/tab-bar';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { useColors } from '@/constants/theme';
@@ -10,6 +13,7 @@ import { scaleFont } from '@/utils/font-scale';
 
 export default function MeetingTabLayout() {
   const c = useColors();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -18,13 +22,7 @@ export default function MeetingTabLayout() {
         tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
         headerShown: false,
         tabBarButton,
-        tabBarStyle: {
-          height: 68,
-          paddingBottom: 10,
-          paddingTop: 6,
-          backgroundColor: c.primary,
-          borderTopColor: c.primary,
-        },
+        tabBarStyle: moduleTabBarStyle(c, insets.bottom),
         tabBarLabelStyle: {
           fontSize: scaleFont(11),
           fontFamily: AppFonts.psuRegular,

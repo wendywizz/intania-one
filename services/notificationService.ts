@@ -95,31 +95,19 @@ function getNotificationHistoryItem(notification: ExpoNotifications.Notification
   };
 }
 
-async function showForegroundNotificationCopy(
-  Notifications: typeof ExpoNotifications,
-  notification: ExpoNotifications.Notification,
-) {
-  if (isLocalDisplayNotification(notification)) {
-    return;
-  }
-
-  const content = notification.request.content;
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: textValue(content.title) || "Notification",
-      body: textValue(content.body),
-      data: {
-        ...normalizeNotificationData(content.data),
-        [LOCAL_DISPLAY_DATA_KEY]: "true",
-        [SOURCE_NOTIFICATION_ID_DATA_KEY]: textValue(notification.request.identifier),
-      },
-      sound: "default",
-    },
-    trigger: {
-      channelId: DEFAULT_CHANNEL_ID,
-    },
-  });
-}
+/*
+ * There used to be a showForegroundNotificationCopy() here, scheduling a local
+ * notification for every push that arrived while the app was open. Removed
+ * 2026-09-20: setForegroundNotificationHandler above already returns
+ * shouldShowBanner/shouldShowList, which is what puts a foreground push on
+ * screen — so the copy was a second, identical banner for the same event, and
+ * every in-app notification appeared twice.
+ *
+ * LOCAL_DISPLAY_DATA_KEY and SOURCE_NOTIFICATION_ID_DATA_KEY stay in use: a
+ * phone still running the previous build can deliver a copy that was already
+ * scheduled, and those keys are what keep it out of history and out of the tap
+ * count. Nothing writes them any more.
+ */
 
 async function readStoredHistory() {
   const stored = await AsyncStorage.getItem(NOTIFICATION_HISTORY_STORAGE_KEY);
@@ -303,7 +291,6 @@ function registerNotificationHistoryListeners(Notifications: typeof ExpoNotifica
     }
 
     void upsertNotificationHistoryItem(getNotificationHistoryItem(notification, "unread"));
-    void showForegroundNotificationCopy(Notifications, notification);
   });
 
   Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);

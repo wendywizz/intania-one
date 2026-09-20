@@ -47,3 +47,5 @@ app-example
 # local environment files
 .env*.local
 
+# other
+docs/

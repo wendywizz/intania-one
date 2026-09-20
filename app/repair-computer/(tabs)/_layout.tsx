@@ -3,7 +3,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { TEXT } from '@/constants/text';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { tabBarButton } from '@/components/haptic-tab';
+import { moduleTabBarStyle } from '@/constants/tab-bar';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -90,6 +93,7 @@ function blurActiveWebElement() {
 
 export default function RepairComputerTabLayout() {
   const c = useColors();
+  const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const { user: authUser } = useAuth();
   const userId = authUser?.staffId || USER_ID;
@@ -197,13 +201,7 @@ export default function RepairComputerTabLayout() {
             tabBarButton,
             tabBarActiveTintColor: '#FFFFFF',
             tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
-            tabBarStyle: {
-              backgroundColor: c.primary,
-              borderTopColor: c.primary,
-              height: 68,
-              paddingBottom: 10,
-              paddingTop: 6,
-            },
+            tabBarStyle: moduleTabBarStyle(c, insets.bottom),
             tabBarLabelStyle: {
               fontSize: scaleFont(11),
               fontFamily: AppFonts.psuRegular,

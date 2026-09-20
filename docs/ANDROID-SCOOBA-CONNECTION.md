@@ -1,221 +1,205 @@
 # Android รุ่นเก่าเชื่อมต่อ scooba-service ไม่ได้
 
+ตรวจสอบและยืนยันสาเหตุแล้วเมื่อ 2026-09-20
+
 ## สรุปปัญหา
 
-พบว่าอุปกรณ์ Android บางรุ่นเปิดแอปได้ แต่หน้าแรกแสดงว่าไม่สามารถเชื่อมต่อ scooba-service ได้ โดยพบกับอุปกรณ์ต่อไปนี้:
+อุปกรณ์ Android บางรุ่นเปิดแอปได้ แต่หน้าแรกแจ้งว่าเชื่อมต่อ scooba-service ไม่ได้
+(health gate ใน `services/healthService.ts` ตอบ `false`)
 
 | อุปกรณ์ | Android | ผลลัพธ์ |
 |---|---:|---|
+| Samsung Galaxy S24+ | 15 / 16 | ใช้งานได้ |
 | Samsung Galaxy A52s 5G | 14 | เชื่อมต่อไม่ได้ |
 | HUAWEI P20 Pro CLT-L29 | 10 | เชื่อมต่อไม่ได้ |
-| Samsung Galaxy S24+ | ใหม่กว่า | ใช้งานได้ |
 
-แอปติดตั้งและเปิดได้บน Android 10 ดังนั้นปัญหาไม่ใช่ `minSdkVersion` สูงเกินไป
+ไม่ใช่ปัญหา `minSdkVersion` แอปตั้งไว้ที่ 26 (Android 8.0) และ Android 10 คือ API 29
 
-## สาเหตุที่ตรวจพบ
+## สาเหตุ: server ส่ง certificate chain ไม่ครบ
 
-### 1. แอปใช้ production endpoint ไม่ตรงกับ Kubernetes Ingress
-
-เดิมแอปกำหนด production URL ใน `constants/apiDomains.js` เป็น:
+`apis.eng.psu.ac.th` ส่ง certificate มาเพียง 2 ใบ
 
 ```text
-https://apis.eng.psu.ac.th/scooba
+0  s: CN=*.eng.psu.ac.th
+   i: C=AT, O=ZeroSSL GmbH, CN=ZeroSSL ECC DV SSL CA 2
+1  s: C=AT, O=ZeroSSL GmbH, CN=ZeroSSL ECC DV SSL CA 2
+   i: C=GB, O=Sectigo Limited, CN=Sectigo Public Server Authentication Root E46
 ```
 
-แต่ Kubernetes Ingress ของ `scooba-service` ใช้:
+ใบที่ 1 ออกโดย **Sectigo Public Server Authentication Root E46** ซึ่งเป็น root ที่สร้างเมื่อ
+2021-03-22 root ตัวนี้อยู่ใน trust store ของ Android รุ่นใหม่ แต่ **ไม่อยู่ใน Android รุ่นเก่า**
+เพราะ trust store ของ Android ถูกแช่ไว้ตามเวอร์ชันของ OS ไม่ได้อัปเดตตามเครื่อง
+
+ดังนั้น Android 15/16 หา root เจอจึงผ่าน ส่วน Android 10 และ 14 หาไม่เจอ
+TLS handshake ล้ม แอปจึงรายงานว่าเชื่อมต่อไม่ได้
+
+### การพิสูจน์
+
+จำลอง trust store ของเครื่องเก่า โดยเชื่อถือเฉพาะ `USERTrust ECC Certification Authority`
+(root เก่าที่ Android ทุกรุ่นที่ใช้งานอยู่มีแน่นอน)
+
+```bash
+# ก. chain ที่ server ส่งอยู่ตอนนี้
+openssl verify -CAfile usertrust-ecc.pem -untrusted zerossl-intermediate.pem leaf.pem
+# -> error 20 at 1 depth lookup: unable to get local issuer certificate
+# -> verification failed
+
+# ข. chain เดิม + cross-signed E46
+openssl verify -CAfile usertrust-ecc.pem \
+  -untrusted <(cat zerossl-intermediate.pem e46-cross.pem) leaf.pem
+# -> OK
+```
+
+ผลนี้ตรงกับอาการที่พบบนเครื่องจริงทุกประการ
+
+## ⚠️ certificate ใกล้หมดอายุ
 
 ```text
-https://create.eng.psu.ac.th/scooba
+notBefore = Jun 24 00:00:00 2026 GMT
+notAfter  = Sep 22 23:59:59 2026 GMT
 ```
 
-ผลคือการแก้ Ingress/certificate ของ `create.eng.psu.ac.th` ไม่ได้แก้ endpoint ที่แอปใช้งานจริง (`apis.eng.psu.ac.th`) และสองโดเมนอาจอยู่คนละระบบ/คนละเส้นทาง
+เหลืออีก 2 วันนับจากวันที่ตรวจสอบ ต้องต่ออายุก่อน ไม่เช่นนั้นจะใช้งานไม่ได้ทุกเครื่องทุกแพลตฟอร์ม
+ตอนต่ออายุให้ติดตั้ง chain ให้ครบตามหัวข้อถัดไปในคราวเดียว
 
-### 2. Certificate ของ endpoint เดิมยังเป็น ZeroSSL
+## วิธีแก้
 
-ตรวจสอบ `apis.eng.psu.ac.th` โดยตรงแล้วพบ:
+### ทาง ก. แก้ที่ server (ควรทำ)
+
+เพิ่ม cross-signed E46 เข้าไปใน chain ที่ server ส่ง ให้กลายเป็น 3 ใบ
 
 ```text
-Subject: CN=*.eng.psu.ac.th
-Issuer: CN=ZeroSSL ECC DV SSL CA 2, O=ZeroSSL GmbH, C=AT
+0  leaf                  CN=*.eng.psu.ac.th
+1  intermediate          ZeroSSL ECC DV SSL CA 2
+2  cross-signed root     Sectigo Public Server Authentication Root E46
+                         (ออกโดย USERTrust ECC Certification Authority)
 ```
 
-เครื่อง Windows เรียก endpoint ได้ HTTP 200 แต่ยังไม่ยืนยันว่า Android 10/Huawei trust certificate chain เดียวกัน เนื่องจาก Android ใช้ trust store คนละชุดกับ Windows
-
-จึงมีความเป็นไปได้เรื่อง TLS/certificate compatibility โดยเฉพาะอุปกรณ์ Android รุ่นเก่า แต่ไม่ควรสรุปว่า ZeroSSL เป็นสาเหตุเดียวจนกว่าจะทดสอบ endpoint ใหม่บนอุปกรณ์จริง
-
-### 3. Custom Network Security Config
-
-ไฟล์:
+**ติดตั้งที่เครื่องไหน** — ไม่ใช่ Kubernetes cluster ของ scooba
 
 ```text
-plugins/with-android-scooba-network-security.js
+apis.eng.psu.ac.th   -> CNAME apigateway.eng.psu.ac.th -> 172.31.0.135   <- แอปใช้ตัวนี้
+create.eng.psu.ac.th ----------------------------------> 172.31.0.189   <- Kong ingress ของ cluster
 ```
 
-กำหนด trust anchor เพิ่มสำหรับ `apis.eng.psu.ac.th` และใช้ system certificates:
+คนละเครื่อง คนละ IP การแก้ `scooba-service/k8s/base/ingress.yaml` **ไม่ทำให้
+certificate ของ `apis.eng.psu.ac.th` เปลี่ยน** ต้องติดตั้งบน
+`apigateway.eng.psu.ac.th` ซึ่งเป็น API gateway กลางของคณะ อยู่นอก repo
+ทั้งสองโดเมนใช้ wildcard ใบเดียวกันและพังเหมือนกัน ควรแก้ทั้งคู่
 
-```xml
-<domain-config>
-  <domain includeSubdomains="true">apis.eng.psu.ac.th</domain>
-  <trust-anchors>
-    <certificates src="system" />
-    <certificates src="@raw/sectigo_public_server_authentication_root_e46" />
-  </trust-anchors>
-</domain-config>
+ดาวน์โหลดใบที่ 2 จาก Sectigo
+
+```bash
+curl -O http://crt.sectigo.com/SectigoPublicServerAuthenticationRootE46_USERTrust.crt
+openssl x509 -inform DER -in SectigoPublicServerAuthenticationRootE46_USERTrust.crt \
+  -out e46-cross.pem
 ```
 
-Config นี้ไม่ได้ครอบคลุม `create.eng.psu.ac.th` แต่เมื่อเปลี่ยนแอปไปใช้ endpoint ใหม่แล้ว ระบบจะพึ่งพา system trust store เป็นหลัก จึงต้องทดสอบด้วย APK build ใหม่
+แล้วต่อท้าย leaf กับ intermediate ให้เป็น 3 ใบ
 
-## ค่า Android ที่ตรวจสอบแล้ว
+**ไฟล์และสคริปต์เตรียมไว้ให้แล้วที่ `scooba-service/k8s/tls/`** ไม่ต้องทำเองทีละขั้น
 
-ใน `app.json` มี:
+```bash
+cd scooba-service/k8s/tls
 
-```json
-"expo-build-properties": {
-  "android": {
-    "minSdkVersion": 26
-  }
-}
+# ประกอบ fullchain (ใช้ private key เดิม ไม่ต้องเปลี่ยน)
+./build-fullchain.sh /path/to/new-leaf.crt fullchain.pem
+
+# ตรวจก่อนและหลังติดตั้ง
+./verify-legacy-android.sh apis.eng.psu.ac.th
 ```
 
-ดังนั้นแอปรองรับ Android API 26 ขึ้นไป หรือ Android 8.0 ขึ้นไป
+`chain.pem` ในโฟลเดอร์นั้นคือ intermediate + cross-signed root
+**ตั้งครั้งเดียวใช้ยาวถึงปี 2035** ตอนต่ออายุ leaf ทุก ~90 วัน แค่รัน
+`build-fullchain.sh` กับ leaf ใบใหม่ ไม่ต้องไปหา cross cert ใหม่
 
-HUAWEI P20 Pro Android 10 คือ API 29 จึงผ่าน minimum requirement แน่นอน ปัญหาไม่ได้เกิดจาก Android 10 ต่ำกว่า `minSdkVersion`
+ข้อดีของทางนี้คือแก้ให้ทุก client พร้อมกัน — เบราว์เซอร์บนมือถือเก่า iOS แอปอื่น
+และระบบอื่นที่เรียก `*.eng.psu.ac.th` ไม่ใช่เฉพาะแอป intania-one
 
-## การแก้ไขที่ดำเนินการแล้ว
+USERTrust ECC Certification Authority หมดอายุ Jan 2038 และอยู่ใน trust store
+มาตั้งแต่ Android รุ่นแรก ๆ จึงครอบคลุมเครื่องเก่าทั้งหมด
 
-### ฝั่งแอป `intania-one`
+### ทาง ข. แก้ในแอป (มีอยู่แล้วใน repo)
 
-แก้ `constants/apiDomains.js` จาก:
+`plugins/with-android-scooba-network-security.js` ฝัง root E46 ไว้ในแอปเป็น trust anchor
+เพิ่มเติมสำหรับ `apis.eng.psu.ac.th` อยู่แล้ว
 
-```js
-production: 'https://apis.eng.psu.ac.th/scooba'
+ตรวจสอบแล้วว่า root ที่ฝังไว้ **ใช้ยืนยัน chain จริงของ server ได้**
+
+```bash
+openssl verify \
+  -CAfile android/app/src/main/res/raw/sectigo_public_server_authentication_root_e46.pem \
+  -untrusted zerossl-intermediate.pem leaf.pem
+# -> OK
 ```
 
-เป็น:
+แปลว่าโค้ดฝั่งแอปถูกต้องแล้ว เหลือแค่ build APK ใหม่จาก commit ปัจจุบัน
 
-```js
-production: 'https://create.eng.psu.ac.th/scooba'
-```
+ข้อจำกัดของทางนี้: แก้ได้เฉพาะแอปนี้ และผูกกับ root ตัวนี้ ถ้าวันหนึ่ง server
+เปลี่ยนไปใช้ CA อื่น จะต้องออก APK ใหม่อีกครั้ง — จึงควรทำทาง ก. ควบคู่ไปด้วย
 
-เหตุผล: ให้ตรงกับ Kubernetes Kong Ingress ของ `scooba-service` และ certificate ที่ควรจัดการโดย Ingress/cert-manager
+## ทำไมการแก้รอบก่อนไม่ได้ผล
 
-Commit ล่าสุด:
+ลำดับ commit ที่เกี่ยวข้อง
 
 ```text
-9877ec5 Use Kong scooba service endpoint
+efb7802  2026-09-17 10:57  เพิ่ม plugin ฝัง root E46 (ครอบคลุมเฉพาะ apis.eng.psu.ac.th)
+9877ec5  2026-09-18 13:20  เปลี่ยน endpoint ไป create.eng.psu.ac.th
+5f124cd  2026-09-18 13:46  rollback กลับมา apis.eng.psu.ac.th
 ```
 
-ต้อง build และติดตั้ง APK ใหม่ เพราะ `updates.checkAutomatically` ตั้งเป็น `NEVER` และ APK เดิมจะยังใช้ URL เก่า
+ระหว่าง `9877ec5` แอปชี้ไปที่ `create.eng.psu.ac.th` ซึ่ง **ไม่อยู่ใน domain-config**
+ของ network security config ที่ระบุไว้แค่ `apis.eng.psu.ac.th` root ที่ฝังไว้จึงไม่ถูกใช้เลย
+APK ที่ทดสอบในช่วงนั้นเท่ากับไม่มี fix
 
-### ฝั่ง `scooba-service`
+ตอนนี้ HEAD ชี้กลับมาที่ `apis.eng.psu.ac.th` แล้ว ซึ่งตรงกับ domain-config
+**APK ที่ build จาก HEAD ปัจจุบันจึงควรใช้งานได้บน Android 10 และ 14**
 
-เพิ่ม Let's Encrypt ClusterIssuer:
+หมายเหตุ: `updates.checkAutomatically` ตั้งเป็น `NEVER` การ push git หรือ EAS Update
+ไม่เปลี่ยน APK ที่ติดตั้งอยู่ ต้อง build และติดตั้งใหม่เท่านั้น
 
-```text
-k8s/base/cluster-issuer.yaml
+## ขั้นตอนตรวจสอบ
+
+### ตรวจ chain ที่ server ส่งจริง
+
+```bash
+echo | openssl s_client -connect apis.eng.psu.ac.th:443 \
+  -servername apis.eng.psu.ac.th -showcerts 2>/dev/null | grep -E "^ [0-9] s:|^   i:"
 ```
 
-เปิด annotation ใน Ingress:
+แก้สำเร็จเมื่อเห็น 3 ใบ และใบสุดท้ายออกโดย `USERTrust ECC Certification Authority`
 
-```yaml
-cert-manager.io/cluster-issuer: "letsencrypt-prod"
+### ตรวจว่าเครื่องที่มีปัญหาขาด root ตัวไหน
+
+Android เก็บ root ไว้เป็นไฟล์ชื่อตาม subject hash
+
+```bash
+adb shell ls /system/etc/security/cacerts/ | grep -E "3afde786|04f60c28"
 ```
 
-แก้ indentation ของ `metadata.annotations` ให้อยู่ระดับเดียวกับ `metadata.labels`:
+- `3afde786.0` = Sectigo Public Server Authentication Root E46 (คาดว่าไม่มีบน Android 10/14)
+- `04f60c28.0` = USERTrust ECC Certification Authority (ควรมีทุกเครื่อง)
 
-```yaml
-metadata:
-  labels:
-    app: scooba-service
-  annotations:
-    konghq.com/strip-path: "true"
-    konghq.com/preserve-host: "true"
-    konghq.com/protocols: "https,http"
-    konghq.com/plugins: "request-transformer-add-forwarded"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-```
-
-Commit ที่เกี่ยวข้อง:
-
-```text
-6925f81 Switch to Let's Encrypt and fix client IP detection
-5d976d0 Fix ingress annotations for Let's Encrypt
-```
-
-## สถานะปัจจุบัน
-
-- แอปถูกเปลี่ยนให้ใช้ `create.eng.psu.ac.th/scooba` แล้ว
-- `scooba-service` มีการตั้งค่า Let's Encrypt ใน Git แล้ว
-- ก่อนทดสอบครั้งสุดท้าย ต้องยืนยันว่า certificate ที่ server ส่งจาก `create.eng.psu.ac.th` เปลี่ยนจาก ZeroSSL เป็น Let's Encrypt แล้ว
-- ต้องสร้าง APK ใหม่จาก commit `9877ec5` หรือใหม่กว่า และติดตั้งบน Huawei P20 Pro
-- การทดสอบจาก Windows ที่ได้ HTTP 200 ไม่เพียงพอที่จะยืนยันว่า Android 10 เชื่อมต่อได้
-
-## ขั้นตอนตรวจสอบหลัง deploy
-
-### ตรวจ endpoint ใหม่
+### ตรวจ health endpoint
 
 ```powershell
-Invoke-WebRequest -Uri "https://create.eng.psu.ac.th/scooba/api/health" -Method Get
+Invoke-WebRequest -Uri "https://apis.eng.psu.ac.th/scooba/api/health" -Method Get
 ```
 
-ควรได้ HTTP 200 และ body ลักษณะนี้:
+ควรได้ HTTP 200 และ body
 
 ```json
-{
-  "data": {
-    "status": "ok",
-    "service": "scooba-service"
-  }
-}
+{ "data": { "status": "ok", "service": "scooba-service" } }
 ```
-
-### ตรวจ certificate
-
-ตรวจ certificate ของโดเมนที่แอปใช้จริงเท่านั้น:
-
-```text
-https://create.eng.psu.ac.th/scooba/api/health
-```
-
-อย่าใช้ผลจาก `apis.eng.psu.ac.th` แทน เพราะเป็นคนละ endpoint
-
-### ตรวจ Kubernetes
-
-รันบนเครื่องที่มี `kubectl` และ cluster context ที่ถูกต้อง:
-
-```powershell
-kubectl get ingress scooba-ingress -A -o yaml
-kubectl get clusterissuer letsencrypt-prod
-kubectl describe clusterissuer letsencrypt-prod
-kubectl get certificate,certificaterequest,order,challenge -A
-kubectl describe certificate create-eng-psu-tls -A
-kubectl get secret create-eng-psu-tls -A
-```
-
-ถ้า certificate ยังไม่เปลี่ยน ให้ตรวจ:
-
-- cert-manager ติดตั้งอยู่ใน cluster หรือไม่
-- `ClusterIssuer` เป็น Ready หรือไม่
-- HTTP-01 challenge ผ่านหรือไม่
-- DNS ของ `create.eng.psu.ac.th` ชี้เข้า Kong/Ingress ถูกต้องหรือไม่
-- Secret `create-eng-psu-tls` ถูกสร้างใน namespace เดียวกับ Ingress หรือไม่
-
-## หากยังเชื่อมต่อไม่ได้หลังเปลี่ยน endpoint
-
-ให้แยกสาเหตุด้วยลำดับนี้:
-
-1. ยืนยันว่า APK เป็น build หลัง commit `9877ec5`
-2. ตรวจ log หรือเพิ่ม logging ชั่วคราวใน `services/healthService.ts`
-3. แยกว่าเป็น DNS failure, TLS handshake failure, timeout หรือ response body ไม่ตรง
-4. ทดสอบ `https://create.eng.psu.ac.th/scooba/api/health` จาก browser ของ Huawei
-5. ตรวจว่า Huawei มี Private DNS, VPN, proxy หรือ captive portal หรือไม่
-6. เพิ่ม timeout จาก 6 วินาทีเป็น 10–15 วินาทีเฉพาะถ้าพบว่าเป็น timeout ไม่ใช่ TLS failure
-7. ไม่ควรฝัง ZeroSSL root certificate เพิ่มในแอปแบบเดาสุ่ม เพราะ certificate ฝั่ง server อาจเปลี่ยนและทำให้ต้องออก APK ใหม่อีก
 
 ## ข้อควรระวัง
 
+- ผลการทดสอบจาก Windows, macOS หรือ curl **ไม่ยืนยันอะไรเลย** เรื่อง Android เก่า
+  เพราะใช้ trust store คนละชุด ต้องทดสอบด้วย `openssl verify` แบบจำกัด root ตามด้านบน
+  หรือทดสอบบนเครื่องจริง
 - อย่าสับสนระหว่าง `apis.eng.psu.ac.th` กับ `create.eng.psu.ac.th`
-- อย่าสรุปว่า Android รุ่นเก่าไม่รองรับโดยดูจากรุ่นเพียงอย่างเดียว
-- `minSdkVersion` ของแอปคือ 26 และ Android 10/API 29 รองรับ
-- การ push Git ไม่ได้เปลี่ยน APK ที่ติดตั้งอยู่ ต้อง build/install ใหม่
-- ต้องตรวจ certificate ของ endpoint ที่ APK ใช้จริงเสมอ
+  ถ้าเปลี่ยน endpoint ต้องแก้ `domain` ใน `plugins/with-android-scooba-network-security.js`
+  ให้ตรงกันด้วย ไม่อย่างนั้น trust anchor ที่ฝังไว้จะไม่ถูกใช้
+- แอปมีที่เดียวที่เขียน host ไว้คือ `constants/apiDomains.js`
+- iOS ไม่มี network security config ใช้ trust store ของระบบล้วน ๆ
+  การแก้ทาง ก. จึงเป็นทางเดียวที่ครอบคลุม iOS รุ่นเก่าด้วย
