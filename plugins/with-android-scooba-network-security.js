@@ -19,6 +19,11 @@ const NETWORK_SECURITY_XML = `<?xml version="1.0" encoding="utf-8"?>
       <certificates src="@raw/sectigo_public_server_authentication_root_e46" />
     </trust-anchors>
   </domain-config>
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">localhost</domain>
+    <domain includeSubdomains="false">127.0.0.1</domain>
+    <domain includeSubdomains="false">10.0.2.2</domain>
+  </domain-config>
 </network-security-config>
 `;
 
