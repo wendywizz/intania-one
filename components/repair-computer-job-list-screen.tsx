@@ -293,8 +293,7 @@ export function RepairComputerJobListScreen({
     <ThemedView style={styles.container}>
       <NavTopBar
         title={title}
-        backHref="/"
-        showHomeButton={false}
+        backHref="/repair"
       />
 
       <View style={styles.content}>

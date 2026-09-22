@@ -334,7 +334,6 @@ export default function BookingDetailScreen() {
         }
         backHref={backHref}
         titleInNavBar
-        showHomeButton={false}
         tone="primary"
       />
       {body()}

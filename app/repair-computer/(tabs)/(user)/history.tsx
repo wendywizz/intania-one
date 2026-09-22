@@ -253,8 +253,7 @@ export default function RepairComputerHistoryScreen() {
     <ThemedView style={styles.container}>
             <NavTopBar
               title={TEXT.SHARED_HISTORY}
-              backHref="/"
-              showHomeButton={false}
+              backHref="/repair"
             />
 
       <View style={styles.content}>

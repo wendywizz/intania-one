@@ -239,6 +239,11 @@ export const TEXT = {
   ABSENCE_REQUESTER_LABEL: 'ผู้ยื่นคำขอ',
   ABSENCE_APPROVER_PLACEHOLDER: 'เลือกผู้อนุมัติ',
   ABSENCE_BIRTH_TITLE: 'ลาคลอด',
+  // TYPE_ABSENCE_CANCEL ('0') — a request to cancel a leave already approved,
+  // not a leave type of its own. Phoenix sends no type name for these, so
+  // without this the type-label fallback showed the raw code as
+  // "Absence type 0" (see components/absence/absence-list-item.tsx).
+  ABSENCE_CANCEL_TITLE: 'ยกเลิกการลา',
   ABSENCE_BUSINESS_FORM_TITLE: 'แบบฟอร์มไปราชการ',
   ABSENCE_BUSINESS_SUBMIT_SUCCESS_MESSAGE: 'ส่งคำขอลากิจส่วนตัวสำเร็จ',
   ABSENCE_BUSINESS_TITLE: 'ลากิจส่วนตัว',

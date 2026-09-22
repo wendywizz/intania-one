@@ -168,7 +168,6 @@ export default function BookingSlotsScreen() {
         title={TEXT.BOOKING_ROOM_SLOT_LIST_TITLE}
         backHref={backHref}
         titleInNavBar
-        showHomeButton={false}
         tone="primary"
       />
       {body()}

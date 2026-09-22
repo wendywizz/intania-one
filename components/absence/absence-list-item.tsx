@@ -8,6 +8,7 @@ import { useColors } from '@/constants/theme';
 import {
   TYPE_ABSENCE_BIRTH,
   TYPE_ABSENCE_BUSINESS,
+  TYPE_ABSENCE_CANCEL,
   TYPE_ABSENCE_HAJJ,
   TYPE_ABSENCE_HELPMATE,
   TYPE_ABSENCE_RELAX,
@@ -17,6 +18,7 @@ import type { absence } from '@/models/types';
 import { formatDateRange } from '@/utils/date-format';
 
 const absenceTypeLabels: Record<string, string> = {
+  [TYPE_ABSENCE_CANCEL]: TEXT.ABSENCE_CANCEL_TITLE,
   [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
   [TYPE_ABSENCE_BUSINESS]: TEXT.ABSENCE_BUSINESS_TITLE,
   [TYPE_ABSENCE_BIRTH]: TEXT.ABSENCE_BIRTH_TITLE,

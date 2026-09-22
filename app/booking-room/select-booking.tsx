@@ -67,7 +67,6 @@ export default function SelectBookingScreen() {
         // list, so back goes there rather than skipping past it.
         backHref="/booking-room/select-room-type"
         titleInNavBar
-        showHomeButton={false}
         tone="primary"
       />
 

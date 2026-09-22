@@ -2,8 +2,9 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -83,6 +84,73 @@ function splitParagraphs(value: string) {
     .filter(Boolean);
 }
 
+type NewsLink = { href: string; label: string };
+
+// A sentinel that can't collide with real content and survives both the tag
+// stripping and entity decoding done in stripHtml().
+const LINK_SENTINEL = /\u0000LINK(\d+)\u0000/;
+const LINK_SENTINEL_GLOBAL = /\u0000LINK(\d+)\u0000/g;
+
+// Pull <a href="…">…</a> out of the news HTML before stripHtml() discards all
+// tags, replacing each with a sentinel so its position survives paragraph
+// splitting. Returns the rewritten html plus the extracted links.
+function extractLinks(html: string): { html: string; links: NewsLink[] } {
+  const links: NewsLink[] = [];
+  const rewritten = html.replace(
+    /<a\b[^>]*\bhref=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi,
+    (_match, href: string, inner: string) => {
+      let url = href.trim();
+      if (url.startsWith('//')) url = `https:${url}`;
+      const label = decodeHtmlEntities(inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+      const index = links.length;
+      links.push({ href: url, label: label || url });
+      return `\u0000LINK${index}\u0000`;
+    },
+  );
+  return { html: rewritten, links };
+}
+
+type ParagraphSegment = { type: 'text'; value: string } | { type: 'link'; link: NewsLink };
+
+function parseParagraphSegments(paragraph: string, links: NewsLink[]): ParagraphSegment[] {
+  if (!LINK_SENTINEL.test(paragraph)) {
+    return paragraph ? [{ type: 'text', value: paragraph }] : [];
+  }
+
+  const segments: ParagraphSegment[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  LINK_SENTINEL_GLOBAL.lastIndex = 0;
+
+  while ((match = LINK_SENTINEL_GLOBAL.exec(paragraph)) !== null) {
+    const text = paragraph.slice(lastIndex, match.index);
+    if (text) segments.push({ type: 'text', value: text });
+
+    const link = links[Number(match[1])];
+    if (link) segments.push({ type: 'link', link });
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  const trailingText = paragraph.slice(lastIndex);
+  if (trailingText) segments.push({ type: 'text', value: trailingText });
+
+  return segments;
+}
+
+async function openNewsLink(url: string) {
+  if (Platform.OS === 'web') {
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+
+  try {
+    await WebBrowser.openBrowserAsync(url);
+  } catch {
+    Linking.openURL(url).catch(() => {});
+  }
+}
+
 function sameNewsItem(news: News, selected: News) {
   const selectedKey = selected.guid || selected.link || selected.title;
   const newsKey = news.guid || news.link || news.title;
@@ -137,7 +205,10 @@ export default function NewsDetailScreen() {
     };
   }, [initialNews]);
 
-  const paragraphs = splitParagraphs(news.description ?? '');
+  const { paragraphs, links } = useMemo(() => {
+    const { html, links: extractedLinks } = extractLinks(news.description ?? '');
+    return { paragraphs: splitParagraphs(html), links: extractedLinks };
+  }, [news.description]);
   const images = useMemo(() => extractImages(news.description ?? ''), [news.description]);
   const date = news.pubDate ? formatNewsDateTime(news.pubDate) : '';
   const metaItems = [news.category, date].filter(Boolean);
@@ -181,11 +252,27 @@ export default function NewsDetailScreen() {
 
             {/* Body paragraphs */}
             {paragraphs.length > 0 ? (
-              paragraphs.map((paragraph, index) => (
-                <ThemedText key={`${paragraph.slice(0, 20)}-${index}`} style={styles.paragraph}>
-                  {paragraph}
-                </ThemedText>
-              ))
+              paragraphs.map((paragraph, index) => {
+                const segments = parseParagraphSegments(paragraph, links);
+                return (
+                  <ThemedText key={`${paragraph.slice(0, 20)}-${index}`} style={styles.paragraph}>
+                    {segments.map((segment, segmentIndex) =>
+                      segment.type === 'link' ? (
+                        <ThemedText
+                          key={`link-${segmentIndex}`}
+                          style={styles.linkChip}
+                          onPress={() => openNewsLink(segment.link.href)}
+                          suppressHighlighting
+                        >
+                          {segment.link.label}
+                        </ThemedText>
+                      ) : (
+                        segment.value
+                      ),
+                    )}
+                  </ThemedText>
+                );
+              })
             ) : (
               <ThemedText style={styles.emptyText}>{TEXT.HOME_NO_NEWS_MESSAGE}</ThemedText>
             )}
@@ -254,6 +341,19 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     lineHeight: 24,
     color: c.textMuted,
     fontFamily: AppFonts.psuRegular,
+  },
+  // Matches Bootstrap's .btn.btn-info look (solid info-teal fill, white text)
+  // since that's the reference the news content's own site links are styled after.
+  linkChip: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#FFFFFF',
+    fontFamily: AppFonts.psuBold,
+    backgroundColor: '#17A2B8',
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    overflow: 'hidden',
   },
   emptyText: {
     color: c.textMuted,

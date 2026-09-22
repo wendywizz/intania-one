@@ -561,7 +561,6 @@ export default function MeetingRoomFormScreen() {
           title={TEXT.MEETING_ROOM_FORM_NAV_TITLE}
           backHref="/booking-room/select-room-type"
           titleInNavBar
-          showHomeButton={false}
           tone="primary"
         />
         <View style={styles.centered}>
@@ -578,7 +577,6 @@ export default function MeetingRoomFormScreen() {
           title={TEXT.MEETING_ROOM_FORM_NAV_TITLE}
           backHref="/booking-room/select-room-type"
           titleInNavBar
-          showHomeButton={false}
           tone="primary"
         />
         <ErrorState
@@ -596,7 +594,6 @@ export default function MeetingRoomFormScreen() {
         title={TEXT.MEETING_ROOM_FORM_NAV_TITLE}
         backHref="/booking-room/select-room-type"
         titleInNavBar
-        showHomeButton={false}
         tone="primary"
       />
 

@@ -1,4 +1,5 @@
 import { Link } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
@@ -8,7 +9,10 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
+import { USER_ID } from '@/constants/user';
+import { useAuth } from '@/context/AuthContext';
 import { boxShadow } from '@/constants/shadows';
+import { approvingWaitingData, peekApprovingWaiting } from '@/services/absenceService';
 
 type IconName = 'cross.fill' | 'briefcase.fill' | 'sun.max.fill' | 'figure.child';
 
@@ -44,13 +48,36 @@ export default function ChooseAbsenceScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
+  const { user: authUser } = useAuth();
+  const staffId = authUser?.staffId || USER_ID;
+
+  // Which tab this leads back to differs by role, same split as the module's
+  // own tab bar: an approver's own requests live under "my-leave", a general
+  // user's under "pending" — going to the wrong one would land back-navigation
+  // on a screen this person doesn't actually have a tab for. Best-effort only
+  // (falls back to the general-user tab): this screen isn't gated on it the
+  // way the tab bar is, since a wrong guess here only affects where "back"
+  // goes, not which screen renders.
+  const cached = peekApprovingWaiting(staffId);
+  const [isApprover, setIsApprover] = useState(() => cached?.show ?? false);
+
+  useEffect(() => {
+    let active = true;
+    approvingWaitingData(staffId)
+      .then((result) => { if (active) setIsApprover(result.show); })
+      .catch(() => { if (active) setIsApprover(false); });
+    return () => { active = false; };
+  }, [staffId]);
+
+  const backHref = isApprover ? '/absence/my-leave' : '/absence/pending';
+
   return (
     <ThemedView style={styles.container}>
-      {/* Back to the pending list, which is the only way in here now that
-          "ยื่นลา" is not a tab — going to the dashboard instead would drop the
-          person out of the module they are halfway through. The home button is
-          there for the times they do want to leave. */}
-      <ScreenHeader title="ยื่นลา" backHref="/absence/pending" titleInNavBar showHomeButton />
+      {/* Back to whichever list is the way in here, now that "ยื่นลา" is not a
+          tab — going to the dashboard instead would drop the person out of the
+          module they are halfway through. The home button is there for the
+          times they do want to leave. */}
+      <ScreenHeader title="ยื่นลา" backHref={backHref} titleInNavBar showHomeButton />
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]} showsVerticalScrollIndicator={false}>
         <View style={styles.intro}>
           <ThemedText style={styles.screenTitle}>เลือกประเภทการลา</ThemedText>

@@ -313,7 +313,6 @@ function Header() {
       title={TEXT.BOOKING_ROOM_CART_TITLE}
       backHref="/booking-room"
       titleInNavBar
-      showHomeButton={false}
       tone="primary"
     />
   );

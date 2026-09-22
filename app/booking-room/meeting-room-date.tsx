@@ -167,7 +167,6 @@ export default function MeetingRoomDateScreen() {
         title={isEdit ? TEXT.MEETING_ROOM_DATE_NAV_TITLE_EDIT : TEXT.MEETING_ROOM_DATE_NAV_TITLE_ADD}
         backHref="/booking-room/meeting-room-form"
         titleInNavBar
-        showHomeButton={false}
         tone="primary"
       />
 

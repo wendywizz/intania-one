@@ -316,8 +316,7 @@ export default function RepairComputerQueueScreen() {
     <ThemedView style={styles.container}>
       <NavTopBar
         title={TEXT.REPAIR_COMPUTER_QUEUE}
-        backHref="/"
-        showHomeButton={false}
+        backHref="/repair"
       />
 
       <View style={styles.content}>

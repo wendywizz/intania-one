@@ -1070,7 +1070,6 @@ function Header() {
       title={TEXT.BOOKING_ROOM_PERIOD_TITLE}
       backHref="/booking-room/select-booking"
       titleInNavBar
-      showHomeButton={false}
       tone="primary"
     />
   );

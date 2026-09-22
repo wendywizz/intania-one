@@ -989,7 +989,6 @@ function Header() {
       // Back to the chooser this form was opened from, not to the tabs.
       backHref="/booking-room/select-booking"
       titleInNavBar
-      showHomeButton={false}
       tone="primary"
     />
   );

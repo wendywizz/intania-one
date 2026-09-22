@@ -993,7 +993,6 @@ function Header() {
       title={TEXT.BOOKING_ROOM_TERM_TITLE}
       backHref="/booking-room/select-booking"
       titleInNavBar
-      showHomeButton={false}
       tone="primary"
     />
   );

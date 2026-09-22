@@ -205,7 +205,6 @@ export default function MeetingRoomDetailScreen() {
         }
         backHref={backHref}
         titleInNavBar
-        showHomeButton={false}
         tone="primary"
       />
       {body()}

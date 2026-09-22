@@ -355,8 +355,7 @@ export default function RepairComputerCurrentJobScreen() {
     <ThemedView style={styles.container}>
                         <NavTopBar
         title={TEXT.REPAIR_COMPUTER_CURRENT_JOB}
-        backHref="/"
-        showHomeButton={false}
+        backHref="/repair"
       />
 
       <View style={styles.content}>

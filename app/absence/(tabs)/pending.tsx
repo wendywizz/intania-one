@@ -1,7 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { type AppColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 
 import {
   AbsenceListItem,
@@ -9,16 +9,14 @@ import {
   getAbsenceId,
   getAbsenceType,
 } from '@/components/absence/absence-list-item';
+import { NewLeaveRow, openNewLeave } from '@/components/absence/new-leave-row';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { TopTabs } from '@/components/ui';
 import { ScreenHeader } from '@/components/screen-header';
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Button } from '@/components/ui/button';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import {
   TYPE_ABSENCE_BIRTH,
@@ -45,7 +43,6 @@ function getEditPathname(type: string) {
 type PendingTab = 'approve' | 'mine';
 
 export default function PendingScreen() {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
   const { user: authUser } = useAuth();
@@ -131,11 +128,6 @@ export default function PendingScreen() {
    * never empty — one item in it is what makes them a boss here.
    */
   const emptyListVisible = canRequestLeave && (!isBoss || activeTab === 'mine');
-
-  const openNewLeave = useCallback(
-    () => navPush('/absence' as Parameters<typeof navPush>[0]),
-    [],
-  );
 
   const openDetail = useCallback((item: absence) => {
     const type = getAbsenceType(item);
@@ -264,29 +256,14 @@ export default function PendingScreen() {
     <ThemedView style={styles.container}>
       <ScreenHeader title={TEXT.ABSENCE_PENDING_TITLE} backHref="/" titleInNavBar showHomeButton={false} />
 
-      {/* The way into the leave forms, now that "ยื่นลา" is not a tab. Same
-          dashed outline booking-room uses for "จองห้อง": it reads as "start
-          something new" rather than as another item in the list below it.
-
-          Hidden while a request of this person's is still waiting — the system
+      {/* Hidden while a request of this person's is still waiting — the system
           allows one at a time, so offering to start another would only lead to
           a form that cannot be submitted. The pending card below is the answer
           to "why not": it is the request in the way.
 
           Also hidden when the list below is empty: the same action is drawn
           under the empty state's message instead (see `emptyListVisible`). */}
-      {canRequestLeave && !emptyListVisible ? (
-        <View style={[styles.addRow, { paddingHorizontal: gutter }]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={TEXT.ABSENCE_NEW_LEAVE}
-            onPress={() => navPush('/absence' as Parameters<typeof navPush>[0])}
-            style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}>
-            <IconSymbol name="plus" size={20} color={c.primary} />
-            <ThemedText style={styles.addButtonText}>{TEXT.ABSENCE_NEW_LEAVE}</ThemedText>
-          </Pressable>
-        </View>
-      ) : null}
+      {canRequestLeave && !emptyListVisible ? <NewLeaveRow /> : null}
 
       <View style={styles.content}>{renderContent()}</View>
     </ThemedView>
@@ -317,34 +294,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   content: {
     flex: 1,
-  },
-  // Sits between the nav bar and the list, so the list's own top padding is
-  // measured from the button rather than from the navbar.
-  addRow: {
-    paddingTop: 16,
-    paddingBottom: 4,
-  },
-  // Copied in shape from booking-room's add row: a dashed outline reads as
-  // "start a new one", which is exactly what it does.
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    minHeight: 54,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: c.primary,
-    backgroundColor: c.primarySoft,
-    paddingHorizontal: 16,
-  },
-  addButtonPressed: { opacity: 0.7 },
-  addButtonText: {
-    color: c.primary,
-    fontSize: 15,
-    lineHeight: 21,
-    fontFamily: AppFonts.psuBold,
   },
   tabContent: {
     flex: 1,

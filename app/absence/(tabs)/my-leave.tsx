@@ -10,10 +10,12 @@ import {
   getAbsenceType,
   getStatusBadge,
 } from '@/components/absence/absence-list-item';
+import { openNewLeave } from '@/components/absence/new-leave-row';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { TopTabs } from '@/components/ui';
+import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedView } from '@/components/themed-view';
 import { TEXT } from '@/constants/text';
@@ -132,6 +134,12 @@ export default function MyLeaveScreen() {
 
   const pendingItems = [pending.remain, pending.cancel].filter(Boolean) as absence[];
 
+  // Same rule as the general user's "mine" tab (pending.tsx): a boss is a
+  // person too, and can only have one leave request in flight at a time — so
+  // the button to start a new one is hidden while one is already waiting, or
+  // while that answer isn't known yet.
+  const canRequestLeave = !isLoading && !error && !pending.remain && !pending.cancel;
+
   const renderContent = () => {
     // Only while there is nothing to show; see components/timestamp/timestamp-forgot-list.
     if (isLoading && !pending.remain && !pending.cancel && history.length === 0) {
@@ -163,7 +171,15 @@ export default function MyLeaveScreen() {
             // Nothing of this person's is waiting on anyone — same picture and
             // wording as the general user's "mine" tab (pending.tsx), which
             // shows the identical list under a different role's tab bar.
-            <EmptyState preset="pending" message={TEXT.ABSENCE_MINE_EMPTY} />
+            <EmptyState
+              preset="pending"
+              message={TEXT.ABSENCE_MINE_EMPTY}
+              action={
+                canRequestLeave ? (
+                  <Button title={TEXT.ABSENCE_NEW_LEAVE} icon="plus" onPress={openNewLeave} />
+                ) : null
+              }
+            />
           ) : (
             <EmptyState preset="history" message={TEXT.ABSENCE_HISTORY_EMPTY} />
           )

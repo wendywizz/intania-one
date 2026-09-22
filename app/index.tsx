@@ -1678,7 +1678,7 @@ const makeStyles = (m: M) => StyleSheet.create({
   // Padded content below header
   innerContent: {
     paddingHorizontal: D.pad,
-    paddingTop: 24,
+    paddingTop: 12,
     gap: 40,
   },
 

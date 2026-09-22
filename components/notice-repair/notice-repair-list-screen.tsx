@@ -189,9 +189,8 @@ export function NoticeRepairListScreen({ title, listType, staffId, segments, onA
     <ThemedView style={styles.container}>
       <NavTopBar
         title={TEXT.NOTICE_REPAIR__TITLE}
-        backHref="/"
+        backHref="/repair"
         rightContent={roleSwitcher}
-        showHomeButton={false}
       />
 
       {segments ? (

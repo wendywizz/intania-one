@@ -56,7 +56,6 @@ export default function SelectRoomTypeScreen() {
         title={TEXT.MEETING_ROOM_HUB_NAV_TITLE}
         backHref="/booking-room"
         titleInNavBar
-        showHomeButton={false}
         tone="primary"
       />
 
