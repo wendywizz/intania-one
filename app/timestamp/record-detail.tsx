@@ -135,9 +135,6 @@ export default function TimestampRecordDetailScreen() {
   const requesterPosition = String(detail?.positionName ?? "");
   const requesterDept = String(detail?.deptName ?? "");
   const requesterStaffId = detail?.uniStaffId ?? fallback.uniStaffId;
-  const approverName = String(detail?.approverName ?? "");
-  const approverPosition = String(detail?.approverPositionName ?? "");
-  const approverStaffId = detail?.approverUniStaffId;
 
   return (
     <ThemedView style={styles.container}>
@@ -191,13 +188,6 @@ export default function TimestampRecordDetailScreen() {
                 position={[requesterPosition, requesterDept].filter(Boolean).join(" · ")}
                 staffId={requesterStaffId}
               />
-            </SectionCard>
-          ) : null}
-
-          {/* Approver card */}
-          {approverName || approverPosition ? (
-            <SectionCard title={TEXT.TIMESTAMP_FIELD_APPROVER}>
-              <PersonRow name={approverName || approverPosition} position={approverName ? approverPosition : ""} staffId={approverStaffId} />
             </SectionCard>
           ) : null}
 

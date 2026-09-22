@@ -2,13 +2,15 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { getApprovalStatusBadge } from '@/constants/approval-status';
 
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ScreenHeader } from "@/components/screen-header";
+import { SectionCard } from "@/components/section-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
+import { DetailInfoCard } from "@/components/ui/detail-info-card";
 import { UserAvatar } from "@/components/user-avatar";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
@@ -41,35 +43,6 @@ function formatTime(value?: string | null) {
   return match ? `${match[1].padStart(2, "0")}:${match[2]}` : "";
 }
 
-// A boxed field cell (rounded light box). `wide` cells span the full row; the
-// rest pack two-per-row in a wrapping grid.
-function InfoCell({
-  label,
-  value,
-  icon,
-  wide,
-}: {
-  label: string;
-  value: string;
-  icon?: IconSymbolName;
-  wide?: boolean;
-}) {
-  const c = useColors();
-  const styles = useThemedStyles(makeStyles);
-  if (!value) return null;
-  return (
-    <View style={[styles.cell, wide ? styles.cellWide : styles.cellHalf]}>
-      <ThemedText style={styles.cellLabel}>{label}</ThemedText>
-      <View style={styles.cellValueRow}>
-        {icon ? <IconSymbol name={icon} size={16} color={c.primary} /> : null}
-        <ThemedText style={styles.cellValue} numberOfLines={2}>
-          {value}
-        </ThemedText>
-      </View>
-    </View>
-  );
-}
-
 function PersonRow({
   name,
   position,
@@ -79,7 +52,6 @@ function PersonRow({
   position: string;
   staffId?: string | number | null;
 }) {
-  const c = useColors();
   const styles = useThemedStyles(makeStyles);
   if (!name && !position) return null;
   return (
@@ -133,6 +105,7 @@ export default function TimestampApproveDetailScreen() {
   );
 
   const typeLabel = String(detail?.approveName ?? fallback.approveName ?? TEXT.TIMESTAMP_FORGOT_TAB);
+  const pendingBadge = getApprovalStatusBadge('pending', c);
 
   const stampDate = detail?.stampDate ? formatFullDate(String(detail.stampDate)) : "";
   const writeDate = detail?.writeDate ? formatFullDate(String(detail.writeDate)) : "";
@@ -144,9 +117,6 @@ export default function TimestampApproveDetailScreen() {
   const requesterPosition = String(detail?.positionName ?? "");
   const requesterDept = String(detail?.deptName ?? "");
   const requesterStaffId = detail?.uniStaffId ?? fallback.uniStaffId;
-  const approverName = String(detail?.approverName ?? "");
-  const approverPosition = String(detail?.approverPositionName ?? "");
-  const approverStaffId = detail?.approverUniStaffId;
 
   const goToDecision = (status: "1" | "2") => {
     if (!detail) return;
@@ -185,55 +155,37 @@ export default function TimestampApproveDetailScreen() {
       ) : (
         <>
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            {/* Miss-timestamp info card */}
-            <View style={styles.card}>
-              <ThemedText style={styles.sectionTitle}>{TEXT.TIMESTAMP_RECORD_INFO_SECTION}</ThemedText>
-
-              <View style={styles.infoHeader}>
-                <View style={styles.typeIconCircle}>
-                  <IconSymbol name="clock.fill" size={22} color={c.primary} />
+            {/* Miss-timestamp info — same titled card + icon/label/value rows as
+                record-detail (and the absence detail screen it in turn mirrors). */}
+            <DetailInfoCard
+              title={TEXT.TIMESTAMP_RECORD_INFO_SECTION}
+              trailing={
+                <View style={[styles.statusBadge, { backgroundColor: pendingBadge.bg }]}>
+                  <ThemedText style={[styles.statusText, { color: pendingBadge.color }]}>
+                    {TEXT.TIMESTAMP_APPROVE_STATUS_PENDING}
+                  </ThemedText>
                 </View>
-                <ThemedText style={styles.infoType} numberOfLines={2}>
-                  {typeLabel}
-                </ThemedText>
-              </View>
-
-              <View style={styles.infoGrid}>
-                <InfoCell label={TEXT.TIMESTAMP_APPROVE_STAMP_DATE_LABEL} value={stampDate} icon="calendar" wide />
-                <InfoCell label={TEXT.TIMESTAMP_APPROVE_IN_TIME_LABEL} value={inTime} icon="clock.fill" />
-                <InfoCell label={TEXT.TIMESTAMP_APPROVE_OUT_TIME_LABEL} value={outTime} icon="clock.fill" />
-                <InfoCell label={TEXT.TIMESTAMP_APPROVE_REASON_LABEL} value={reason} wide />
-              </View>
-            </View>
+              }
+              rows={[
+                { label: TEXT.TIMESTAMP_APPROVE_STAMP_DATE_LABEL, value: stampDate, icon: "calendar" },
+                { label: TEXT.TIMESTAMP_APPROVE_IN_TIME_LABEL, value: inTime, icon: "clock.fill" },
+                { label: TEXT.TIMESTAMP_APPROVE_OUT_TIME_LABEL, value: outTime, icon: "clock.fill" },
+                { label: TEXT.TIMESTAMP_APPROVE_WRITE_DATE_LABEL, value: writeDate, icon: "calendar" },
+                { label: TEXT.TIMESTAMP_APPROVE_REASON_LABEL, value: reason, icon: "list.bullet" },
+              ]}
+            />
 
             {/* Requester card */}
             {requesterName || requesterPosition || requesterDept ? (
-              <View style={styles.card}>
-                <ThemedText style={styles.sectionTitle}>{TEXT.TIMESTAMP_APPROVE_REQUESTER_LABEL}</ThemedText>
+              <SectionCard title={TEXT.TIMESTAMP_APPROVE_REQUESTER_LABEL}>
                 <PersonRow
                   name={requesterName}
                   position={[requesterPosition, requesterDept].filter(Boolean).join(" · ")}
                   staffId={requesterStaffId}
                 />
-                {writeDate ? (
-                  <View style={styles.infoGrid}>
-                    <InfoCell label={TEXT.TIMESTAMP_APPROVE_WRITE_DATE_LABEL} value={writeDate} icon="calendar" wide />
-                  </View>
-                ) : null}
-              </View>
+              </SectionCard>
             ) : null}
 
-            {/* Approver card */}
-            {approverName || approverPosition ? (
-              <View style={styles.card}>
-                <ThemedText style={styles.sectionTitle}>{TEXT.TIMESTAMP_FIELD_APPROVER}</ThemedText>
-                <PersonRow
-                  name={approverName || approverPosition}
-                  position={approverName ? approverPosition : ""}
-                  staffId={approverStaffId}
-                />
-              </View>
-            ) : null}
           </ScrollView>
 
           <View style={styles.bottomBar}>
@@ -268,81 +220,21 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: c.background,
   },
   scrollContent: {
+    paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 40,
-  },
-  card: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: c.surface,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
     gap: 12,
   },
-  sectionTitle: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: "600",
-    color: c.textMuted,
-  },
-  infoHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  typeIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: c.primarySoft,
-  },
-  infoType: {
-    flex: 1,
-    fontFamily: AppFonts.psuBold,
-    fontSize: 17,
-    lineHeight: 24,
-    color: c.text,
-  },
-  infoGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  cell: {
-    backgroundColor: c.surfaceAlt,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
+  statusBadge: {
+    borderRadius: 9999,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 4,
+    paddingVertical: 5,
+    alignSelf: "flex-start",
   },
-  cellHalf: {
-    flexBasis: "47%",
-    flexGrow: 1,
-  },
-  cellWide: {
-    flexBasis: "100%",
-  },
-  cellLabel: {
+  statusText: {
+    fontFamily: AppFonts.psuBold,
     fontSize: 12,
     lineHeight: 16,
-    color: c.textFaint,
-  },
-  cellValueRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  cellValue: {
-    flex: 1,
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 15,
-    lineHeight: 22,
-    color: c.text,
   },
   personRow: {
     flexDirection: "row",

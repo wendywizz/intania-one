@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from "expo-router";
 import { InfinityLoader } from '@/components/infinity-loader';
-import { Clock, LogIn, LogOut } from "lucide-react-native";
+import { CalendarDays, Clock, LogIn, LogOut } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
   FlatList,
@@ -17,6 +17,7 @@ import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ListCard } from "@/components/ui/list-card";
+import { UserAvatar } from "@/components/user-avatar";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
@@ -48,11 +49,17 @@ function getTypeIcon(item: { inTime?: string | number | null; outTime?: string |
   return { Icon: Clock, color: "#B33939", bg: "#FBEAEA" };
 }
 
+// Same requester-led shape as the pending list (and the absence approve-leave
+// list it mirrors): the photo + name lead, the miss-timestamp type and date
+// move into meta rows.
 function ApprovedCard({ item }: { item: TimestampApproved }) {
+  const c = useColors();
   const stampValue = String(item.stampDate ?? "");
   const stampLabel = stampValue ? formatFullDate(stampValue) : "";
   const badge = statusStyle(String(item.status ?? ""));
-  const { Icon: TypeIcon, color: typeColor, bg: typeBg } = getTypeIcon(item);
+  const { Icon: TypeIcon } = getTypeIcon(item);
+  const typeLabel = String(item.approveName ?? TEXT.TIMESTAMP_FORGOT_TAB);
+  const requesterName = String(item.name ?? "");
 
   const handlePress = () => {
     router.push({
@@ -67,12 +74,13 @@ function ApprovedCard({ item }: { item: TimestampApproved }) {
   return (
     <ListCard
       onPress={handlePress}
-      icon={<TypeIcon size={18} color={typeColor} />}
-      iconBackground={typeBg}
-      title={String(item.approveName ?? TEXT.TIMESTAMP_FORGOT_TAB)}
+      icon={<UserAvatar staffId={item.uniStaffId} size={40} />}
+      title={requesterName || typeLabel}
       titleNumberOfLines={1}
-      date={stampLabel || undefined}
-      meta={[{ text: String(item.name ?? "") }]}
+      meta={[
+        { icon: <TypeIcon size={13} color={c.textMuted} />, text: typeLabel },
+        ...(stampLabel ? [{ icon: <CalendarDays size={13} color={c.textMuted} />, text: stampLabel }] : []),
+      ]}
       badge={{
         text: item.statusName ? String(item.statusName) : badge.label,
         bg: badge.bg,

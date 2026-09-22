@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from "expo-router";
 import { InfinityLoader } from '@/components/infinity-loader';
-import { Clock, LogIn, LogOut } from "lucide-react-native";
+import { CalendarDays, Clock, LogIn, LogOut } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
   FlatList,
@@ -17,6 +17,7 @@ import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { ListCard } from "@/components/ui/list-card";
+import { UserAvatar } from "@/components/user-avatar";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
 import { useAuth } from "@/context/AuthContext";
@@ -40,11 +41,17 @@ function getTypeIcon(item: { inTime?: string | number | null; outTime?: string |
   return { Icon: Clock, color: "#B33939", bg: "#FBEAEA" };
 }
 
+// Leads with the requester's photo + name (same shape as the absence
+// approve-leave list's showRequester row) since an approver looking through
+// other people's requests cares who it is more than the miss-timestamp type.
+// The type moves into a meta row alongside the date instead of disappearing.
 function ApprovalCard({ item }: { item: TimestampApproval }) {
   const c = useColors();
   const dateValue = String(item.stampDate ?? "");
   const dateLabel = dateValue ? formatFullDate(dateValue) : "";
-  const { Icon: TypeIcon, color: typeColor, bg: typeBg } = getTypeIcon(item);
+  const { Icon: TypeIcon } = getTypeIcon(item);
+  const typeLabel = String(item.approveName ?? TEXT.TIMESTAMP_FORGOT_TAB);
+  const requesterName = String(item.name ?? "");
 
   const handlePress = () => {
     router.push({
@@ -59,12 +66,13 @@ function ApprovalCard({ item }: { item: TimestampApproval }) {
   return (
     <ListCard
       onPress={handlePress}
-      icon={<TypeIcon size={18} color={typeColor} />}
-      iconBackground={typeBg}
-      title={String(item.approveName ?? TEXT.TIMESTAMP_FORGOT_TAB)}
+      icon={<UserAvatar staffId={item.uniStaffId} size={40} />}
+      title={requesterName || typeLabel}
       titleNumberOfLines={1}
-      date={dateLabel || undefined}
-      meta={[{ text: String(item.name ?? "") }]}
+      meta={[
+        { icon: <TypeIcon size={13} color={c.textMuted} />, text: typeLabel },
+        ...(dateLabel ? [{ icon: <CalendarDays size={13} color={c.textMuted} />, text: dateLabel }] : []),
+      ]}
       badge={{ text: TEXT.TIMESTAMP_PENDING_BADGE, bg: c.warningSoft, color: "#92400E" }}
     />
   );
