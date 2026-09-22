@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarDays, Clock, LogIn, LogOut, UserX } from 'lucide-react-native';
+import { ArrowRight, BriefcaseBusiness, CalendarDays, Clock, LogIn, LogOut, UserX } from 'lucide-react-native';
 import moment from 'moment';
 import 'moment/locale/th';
 import { router, useFocusEffect } from 'expo-router';
@@ -57,6 +57,12 @@ function deriveStatus(
   const hasOut = Boolean(day?.outTime);
   const isLeave = Boolean(day?.isLeave);
   const isHoliday = Boolean(day?.isHoliday);
+  const isTravel = Boolean(day?.isTravel);
+
+  // Official travel first, today included: the day's row exists but has no
+  // times on purpose, so every check below would misread it — as "present"
+  // on a past weekday (no forget record) or "none" today.
+  if (isTravel) return 'travel';
 
   if (isToday) {
     // The workday isn't over yet: only mark "present" once BOTH stamps exist.
@@ -90,6 +96,8 @@ function getStatusLabel(status: DayStatus) {
       return TEXT.TIMESTAMP_CALENDAR_LEGEND_ABSENT;
     case 'leave':
       return TEXT.TIMESTAMP_CALENDAR_LEGEND_LEAVE;
+    case 'travel':
+      return TEXT.TIMESTAMP_CALENDAR_LEGEND_TRAVEL;
     case 'holiday':
       return TEXT.TIMESTAMP_CALENDAR_LEGEND_HOLIDAY;
     default:
@@ -381,6 +389,7 @@ export default function TimestampCalendarScreen() {
     // correct, so it gets its own hand-off to the leave module below instead.
     const isForgetDay = Boolean(selectedData) && status === 'incomplete';
     const isAbsentDay = Boolean(selectedData) && status === 'absent';
+    const isTravelDay = status === 'travel';
     const canRequest = Boolean(selectedData?.canRequest);
     // A half-day leave can still carry one real stamp (clocked in, then left
     // on approved leave), which lands it in 'incomplete' above — but there is
@@ -406,7 +415,25 @@ export default function TimestampCalendarScreen() {
         </View>
 
         <View style={styles.detailBody}>
-        {isAbsentDay ? (
+        {isTravelDay ? (
+          // Away on official duty: no stamps are expected, so the in/out pair
+          // would only show two dashes. Same single-row shape as "ขาดงาน".
+          <View style={styles.timeRow}>
+            <View style={styles.timeBox}>
+              <View style={[styles.timeIcon, { backgroundColor: STATUS_STYLE.travel.bg }]}>
+                <BriefcaseBusiness size={18} color={STATUS_STYLE.travel.dot} />
+              </View>
+              <View style={styles.travelText}>
+                <ThemedText style={styles.timeValue}>
+                  {TEXT.TIMESTAMP_CALENDAR_LEGEND_TRAVEL}
+                </ThemedText>
+                <ThemedText style={styles.timeLabel}>
+                  {TEXT.TIMESTAMP_CALENDAR_TRAVEL_DESC}
+                </ThemedText>
+              </View>
+            </View>
+          </View>
+        ) : isAbsentDay ? (
           // Neither stamp exists, so the in/out pair has nothing to show — two
           // dashes there read as a data problem, not an answer. One row saying
           // "ขาดงาน" replaces both boxes instead of sitting awkwardly beside them.
@@ -528,7 +555,7 @@ export default function TimestampCalendarScreen() {
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.legend}
     >
-      {(['present', 'incomplete', 'absent', 'leave', 'holiday'] as DayStatus[]).map((status) => (
+      {(['present', 'incomplete', 'absent', 'leave', 'travel', 'holiday'] as DayStatus[]).map((status) => (
         <View key={status} style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: STATUS_STYLE[status].dot }]} />
           <ThemedText style={styles.legendText} numberOfLines={1}>
@@ -821,7 +848,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   timeRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    // Top-aligned, not centered: the "in" column grows taller than "out" when
+    // the late chip appears under it, and centering the row on that extra
+    // height was pushing "out"'s label/value down out of line with "in"'s.
+    alignItems: 'flex-start',
     backgroundColor: c.background,
     borderRadius: 12,
     padding: 14,
@@ -829,7 +859,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   timeBox: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
+    // Same reasoning as timeRow: the icon sits against the label's top line
+    // rather than centering on a column whose height varies with the chip.
+    alignItems: 'flex-start',
     gap: 10,
   },
   // Tinted circle behind the in/out glyph. The tint is set at the call site so
@@ -842,6 +874,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+  },
+  // The travel row's text column. `flex: 1` so the one-line description wraps
+  // inside the card instead of running past its edge on a narrow phone.
+  travelText: {
+    flex: 1,
   },
   timeDivider: {
     width: 1,

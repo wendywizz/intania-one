@@ -29,6 +29,8 @@ export type TimestampCalendarDay = {
   leaveType?: string;
   // true when the scan-in was flagged late (ABSENCE.timestamp.flag_in = 2)
   isLate?: boolean;
+  // true on an official-travel day (ไปราชการ, ABSENCE.timestamp.flag_in = 7)
+  isTravel?: boolean;
 };
 
 export type TimestampCalendar = {

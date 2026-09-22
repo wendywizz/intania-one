@@ -113,6 +113,10 @@ export type AppColors = {
   // success/warning/danger concept, so they get their own soft/text pair.
   leave: string;   leaveSoft: string;   leaveOnSoft: string;
   holiday: string; holidaySoft: string; holidayOnSoft: string;
+  // Official travel (ไปราชการ) — cyan, apart from leave's indigo and the
+  // selected-day blue, since an approved absence from the office on duty is
+  // neither a leave nor a day off.
+  travel: string;  travelSoft: string;  travelOnSoft: string;
   // Flat UI (Defo) palette — fixed named swatches, identical in light & dark
   turquoise: string;   emerald: string;
   peterRiver: string;  amethyst: string;
@@ -173,6 +177,7 @@ export const LightColors: AppColors = {
   info: Defo.peterRiver,    infoSoft: '#EAF4FB',    infoOnSoft: '#1D4ED8',
   leave: '#5B5BD6',   leaveSoft: '#EEF0FF',   leaveOnSoft: '#5B5BD6',
   holiday: '#9AA0AA', holidaySoft: '#EFF1F5', holidayOnSoft: '#9AA0AA',
+  travel: '#0E7490',  travelSoft: '#E0F5F9',  travelOnSoft: '#0E7490',
   // Flat UI (Defo) palette — fixed named swatches
   ...Defo,
   // Extra named accents
@@ -209,6 +214,7 @@ export const DarkColors: AppColors = {
   info: Defo.peterRiver,    infoSoft: 'rgba(52,152,219,0.16)',     infoOnSoft: '#7DD3FC',
   leave: '#A8AEF0',   leaveSoft: 'rgba(91,91,214,0.28)',    leaveOnSoft: '#A8AEF0',
   holiday: '#C7CBD1', holidaySoft: 'rgba(154,160,170,0.22)', holidayOnSoft: '#C7CBD1',
+  travel: '#67E8F9',  travelSoft: 'rgba(8,145,178,0.24)',   travelOnSoft: '#67E8F9',
   // Flat UI (Defo) palette — same fixed swatches as light
   ...Defo,
   // Extra named accents

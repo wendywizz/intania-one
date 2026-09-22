@@ -12,6 +12,7 @@ export type DayStatus =
   | 'incomplete'
   | 'absent'
   | 'leave'
+  | 'travel'
   | 'holiday'
   | 'none';
 
@@ -28,6 +29,7 @@ export function getDayStatusStyle(c: AppColors): DayStatusStyles {
     incomplete: { bg: c.warningSoft, dot: c.warningOnSoft },
     absent: { bg: c.dangerSoft, dot: c.dangerOnSoft },
     leave: { bg: c.leaveSoft, dot: c.leaveOnSoft },
+    travel: { bg: c.travelSoft, dot: c.travelOnSoft },
     // Weekends fold into "holiday" in the timestamp calendar — both use this grey.
     holiday: { bg: c.holidaySoft, dot: c.holidayOnSoft },
     none: { bg: 'transparent', dot: 'transparent' },

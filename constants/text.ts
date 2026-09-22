@@ -1411,6 +1411,8 @@ export const TEXT = {
   TIMESTAMP_CALENDAR_LEGEND_INCOMPLETE: 'ลงเวลาไม่ครบ',
   TIMESTAMP_CALENDAR_LEGEND_ABSENT: 'ขาดงาน',
   TIMESTAMP_CALENDAR_LEGEND_LEAVE: 'ลา',
+  TIMESTAMP_CALENDAR_LEGEND_TRAVEL: 'ไปราชการ',
+  TIMESTAMP_CALENDAR_TRAVEL_DESC: 'บันทึกเป็นวันไปราชการ ไม่ต้องลงเวลาเข้า-ออก',
   TIMESTAMP_CALENDAR_LEGEND_HOLIDAY: 'วันหยุด',
   TIMESTAMP_CALENDAR_LEGEND_LATE: 'มาสาย',
   TIMESTAMP_CALENDAR_NO_DATA: 'ยังไม่มีข้อมูลการลงเวลาในเดือนนี้',
