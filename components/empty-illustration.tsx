@@ -19,7 +19,8 @@
  * been filed into yet, `meeting` for a room nobody is in, `repair` for a job
  * queue with nothing broken in it, `notice` for a building nothing has been
  * reported against, `room` for a room nobody has booked, `exam` for a sitting
- * nobody has been rostered to.
+ * nobody has been rostered to, `notification` for a tray nothing has been
+ * pushed into.
  *
  * Everything is drawn from theme tokens, as a ramp stepping *away from the
  * page*: `surfaceAlt` fills, then `border`, then `borderStrong`, then
@@ -48,7 +49,8 @@ export type EmptyIllustrationName =
   | 'repair'
   | 'notice'
   | 'room'
-  | 'exam';
+  | 'exam'
+  | 'notification';
 
 /** The drawings are authored in this box and scaled from it. */
 const VIEW_BOX_WIDTH = 180;
@@ -497,6 +499,44 @@ function HistoryArt({ fill, soft, line, ink, page }: Palette) {
   );
 }
 
+/**
+ * Nothing pushed: a bell, still and unrung, with its clapper resting. Cut
+ * through the same way `offline` severs its signal arcs — one shared mark for
+ * "nothing is coming through", pointed at push instead of the network.
+ */
+function NotificationArt({ fill, soft, line, ink, page }: Palette) {
+  return (
+    <G>
+      <Ground soft={soft} rx={48} />
+
+      <Path d={sparkle(34, 36, 6)} fill={line} />
+      <Path d={sparkle(148, 30, 5)} fill={line} />
+
+      <Circle cx={90} cy={20} r={6} fill={fill} stroke={ink} strokeWidth={3} />
+      <Path
+        d="M90 26 C64 26 54 46 54 68 V84 L40 100 H140 L126 84 V68 C126 46 116 26 90 26 Z"
+        fill={fill}
+        stroke={ink}
+        strokeWidth={3.5}
+        strokeLinejoin="round"
+      />
+      <Path d="M40 100 H140" stroke={ink} strokeWidth={3.5} strokeLinecap="round" />
+      <Path
+        d="M76 100 a14 14 0 0 0 28 0"
+        fill="none"
+        stroke={line}
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
+
+      {/* Cut twice: once in the page colour to clear a gutter, once in ink —
+          the same technique `offline` uses for its severed signal. */}
+      <Path d="M42 112 L138 32" stroke={page} strokeWidth={11} strokeLinecap="round" />
+      <Path d="M42 112 L138 32" stroke={ink} strokeWidth={4} strokeLinecap="round" />
+    </G>
+  );
+}
+
 /** Looked for, not found: a page under a lens with a cross in it. */
 function SearchArt({ fill, soft, line, ink, page }: Palette) {
   return (
@@ -583,6 +623,7 @@ const ART: Record<EmptyIllustrationName, (palette: Palette) => ReactElement> = {
   notice: NoticeArt,
   room: RoomArt,
   exam: ExamArt,
+  notification: NotificationArt,
 };
 
 type EmptyIllustrationProps = {
