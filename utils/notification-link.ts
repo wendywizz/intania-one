@@ -79,6 +79,8 @@ const ROUTE_BY_TYPE: Readonly<Record<string, string>> = {
   repair_computer_worker_response: '/repair-computer/manage-job',
   repair_computer_operate_progress: '/repair-computer/manage-job',
   repair_computer_supply_result: '/repair-computer/manage-job',
+  // No longer sent (merged into job_submitted 2026-09-22); kept so the ones
+  // already in users' history still open.
   repair_computer_sent_to_foreman: '/repair-computer/manage-job',
   repair_computer_operate_update: '/repair-computer/manage-job',
   repair_computer_job_submitted: '/repair-computer/manage-job',

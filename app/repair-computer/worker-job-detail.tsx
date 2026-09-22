@@ -36,8 +36,8 @@ import { getPersonPhoto } from "@/services/personService";
 import {
     getJobDetail,
     getRequisitionPdfUrl,
+    submitJob,
     workerReceiveJob,
-    workerSendForeman,
 } from "@/services/repairComputerService";
 import { formatDateTime } from "@/utils/date-format";
 import { getRepairStatusBadgeStyle } from "@/utils/repair-computer-status";
@@ -238,7 +238,7 @@ export default function WorkerJobDetailScreen() {
     setToastMessage("");
     setToastType("");
     try {
-      const result = await workerSendForeman(jobId);
+      const result = await submitJob(jobId);
       setToastType("success");
       setToastMessage(
         result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE,

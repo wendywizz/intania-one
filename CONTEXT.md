@@ -1,6 +1,11 @@
 # Project Note
 
 - Before editing this project, read this CONTEXT.md and AGENT.md first.
+- **Anything touching notifications** (notificationService, notification-link
+  routes, device registration, the notification screen): read
+  `../scooba-service/NOTIFICATION.md` first — §0.1 is the to-do list, §0.2 the
+  change log for the whole system — and after every change add a row to §0.2 and
+  update §0.1 there.
 - Before adding an external package, prefer existing project dependencies first.
 - If a new package is needed, use an official React Native or Expo package when available.
 - If there is no official package, use a well-maintained package that is among the most popular choices in the React Native Community.
@@ -597,7 +602,7 @@ Prefer these shared components over building screen-local equivalents. When a sc
 - Headers: `components/screen-header.tsx` → `ScreenHeader` (title-in-navbar) and `components/nav-top-bar.tsx` → `NavTopBar`.
 - `components/ui/pill-button.tsx` → `PillButton`: small rounded call-to-action chip. Variants: `soft` (brand-tinted, for white surfaces — e.g. news "อ่านเพิ่มเติม"), `solid` (filled brand), `onAccent` (translucent-white, for colored bands — e.g. the home news "ดูทั้งหมด"). Optional `trailing` icon. Use it for these compact CTAs instead of hand-rolled Pressable pills.
 - `components/ui/event-timeline-item.tsx` → `EventTimelineItem`: the app-wide event/meeting row — time in the left gutter (supports a `"start\nend"` range or an all-day label), a dot on a continuous vertical rail, and a card with `title` + optional `location` + `children` meta. Single brand-red accent (`c.primary`). Used by the meeting lists (`MeetingListItem` is a thin adapter) AND the executive calendar's selected-day events, so every event looks identical. When showing events, do NOT build bespoke event rows — use this.
-- `constants/calendar-status.ts` → `DAY_STATUS_STYLE` / `DayStatus`: the single source of the calendar day-status background/dot colours (present/incomplete/absent/leave/holiday/none). The timestamp calendar is the visual source of truth; the absence date-picker references the same values (weekends & holidays → `holiday` grey, requested leave span → `leave` blue). Fixed light swatches, identical in light & dark on purpose. Don't hardcode these hex anywhere else.
+- `constants/calendar-status.ts` → `getDayStatusStyle(c)` / `DayStatus`: the single source of the calendar day-status background/dot colours (present/incomplete/absent/leave/travel/holiday/none), read from theme tokens on `AppColors`. The timestamp calendar is the visual source of truth; the absence date-picker references the same values (weekends & holidays → `holiday` grey, requested leave span → `leave` blue). `travel` (ไปราชการ, cyan) comes from the gateway's `isTravel` — ABSENCE.timestamp `flag_in = 7`, written by LINK_personnel's government_model for every date of a travel range, weekends included, with no times. Don't hardcode these hex anywhere else.
 - `components/ui/month-calendar.tsx` → `MonthCalendar`: the shared calendar chrome — bordered card, primary month-nav header band (deep-red circular prev/next buttons + single-line month label), weekday-name row, and a Sunday-first day grid. Day cells are caller-owned via `renderDay(date)` (each screen styles days differently); optional `footer` (e.g. a legend). Used by `DatePickerField` (absence forms) and the timestamp calendar. The executive calendar (`app/calendar.tsx`) uses the `react-native-calendars` library but shares the same brand tokens (`c.primary`/`c.primaryDeep`/`c.textOnPrimary`) so it stays visually identical.
 - Primitives in `components/ui`: `Button`, `TextField`, `ListItem`, `Card`, `ConfirmDialog`, `Sheet`, `IconSymbol`. Also `components/date-picker-field.tsx` → `DatePickerField` (calendar picker with weekend/holiday marking + legend, built on `MonthCalendar`) and `hooks/use-holidays.ts` → `useHolidays`.
 

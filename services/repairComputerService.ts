@@ -341,20 +341,16 @@ export function workerSupplyResult(jobId: string, detail: string) {
   return updateOperateData(jobId, { detail }, "supply_result");
 }
 
+/**
+ * Worker finishes the job and sends it to the foreman to close (→ wait foreman 4.2).
+ * The only call for this step: `operate/send_fman` is the same write on the
+ * server and is kept there only for app builds released before 2026-09-22.
+ */
 export function submitJob(jobId: string, userTip?: string) {
   return updateOperateData(
     jobId,
     userTip ? { user_tip: userTip } : {},
     "submit_job",
-  );
-}
-
-/** Worker finishes the job and sends it to the foreman to close (→ wait foreman 4.2). */
-export function workerSendForeman(jobId: string, userTip?: string) {
-  return updateOperateData(
-    jobId,
-    userTip ? { user_tip: userTip } : {},
-    "send_fman",
   );
 }
 
