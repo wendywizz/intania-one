@@ -51,7 +51,9 @@ const fs = require('fs') as typeof import('fs');
 const path = require('path') as typeof import('path');
 
 const GATEWAY_EVENTS = path.resolve(__dirname, '../../../scooba-service/src/api/push/utils/events.js');
-const ANNOUNCEMENTS = ['holiday_reminder'];
+// Nothing in the app to act on: a holiday, and a room request waiting on a
+// leader, who approves it on the website.
+const ANNOUNCEMENTS = ['holiday_reminder', 'meeting_room_new_request'];
 
 (fs.existsSync(GATEWAY_EVENTS) ? describe : describe.skip)('every notification the gateway can send', () => {
   it('opens a screen, unless it is an announcement', () => {

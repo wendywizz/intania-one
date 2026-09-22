@@ -45,6 +45,12 @@ const ROUTE_BY_TYPE: Readonly<Record<string, string>> = {
   // are still status < 90, so the request is still "current", not "history".
   meeting_room_approved: '/booking-room',
   meeting_room_rejected: '/booking-room',
+  // The faculty's decision and a staff cancellation land on the same list.
+  // meeting_room_new_request (a request waiting on a leader) has no route on
+  // purpose: approving is done on the website only.
+  meeting_room_faculty_approved: '/booking-room',
+  meeting_room_faculty_rejected: '/booking-room',
+  meeting_room_cancelled: '/booking-room',
 
   // ── Timestamp (forgot to clock in/out) ─────────────────────────────────────
   forget_timestamp_new_request: '/timestamp/approve',
@@ -84,6 +90,9 @@ const ROUTE_BY_TYPE: Readonly<Record<string, string>> = {
   // values either way.
   notice_repair_new_job: '/notice-repair/approve-pending',
   notice_repair_examined: '/notice-repair/header-review',
+  // The informer's evaluation, the last step of a job - the header's
+  // assessment list is where it shows.
+  notice_repair_evaluated: '/notice-repair/header-assessment',
   // Everything else on this module is progress reported to the informer, whose
   // live jobs are the one list that holds all of it.
   notice_repair_approved: '/notice-repair/informer-current',

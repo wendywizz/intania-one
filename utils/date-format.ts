@@ -23,11 +23,16 @@ export function parseDateTime(value: string) {
     return null;
   }
 
-  // Phoenix API returns Buddhist Era years (e.g. 2569 = CE 2026). Convert to CE before parsing.
-  const normalized = trimmedValue.replace(/^(\d{4})/, (_, y) => {
+  // Phoenix API returns Buddhist Era years (e.g. 2569 = CE 2026). Convert to CE
+  // before parsing, wherever the year sits: first (2569-09-22) or after the day
+  // and month (22/09/2569). Missing the second form printed the year as 3112.
+  const toCe = (y: string) => {
     const n = parseInt(y, 10);
     return n > 2400 ? String(n - 543) : y;
-  });
+  };
+  const normalized = trimmedValue
+    .replace(/^(\d{4})/, (_, y) => toCe(y))
+    .replace(/^(\d{1,2}[/-]\d{1,2}[/-])(\d{4})/, (_, dayMonth, y) => dayMonth + toCe(y));
 
   const parsedDate = moment(normalized, PARSE_FORMATS, true);
   return parsedDate.isValid() ? parsedDate : null;

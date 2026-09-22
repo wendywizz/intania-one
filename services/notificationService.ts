@@ -80,9 +80,23 @@ function getSourceNotificationId(notification: ExpoNotifications.Notification) {
   return textValue(notification.request.content.data?.[SOURCE_NOTIFICATION_ID_DATA_KEY]);
 }
 
+/**
+ * Milliseconds since the epoch, whatever unit the platform used.
+ *
+ * expo-notifications reports `notification.date` in SECONDS on iOS
+ * (`timeIntervalSince1970`) and in milliseconds on Android. Read as
+ * milliseconds, an iPhone push was dated 21 Jan 1970 and the list said
+ * "57 ปีที่แล้ว". Anything below 1e11 is taken as seconds: as milliseconds
+ * that would be before March 1973, and as seconds it stays unambiguous until
+ * the year 5138.
+ */
+function toEpochMs(value: number) {
+  return value < 1e11 ? value * 1000 : value;
+}
+
 function getNotificationHistoryItem(notification: ExpoNotifications.Notification, status: PushNotificationHistoryItem["status"]) {
   const content = notification.request.content;
-  const receivedAt = new Date(notification.date || Date.now()).toISOString();
+  const receivedAt = new Date(notification.date ? toEpochMs(notification.date) : Date.now()).toISOString();
   const fallbackId = `${receivedAt}:${textValue(content.title)}:${textValue(content.body)}`;
 
   return {
@@ -109,6 +123,19 @@ function getNotificationHistoryItem(notification: ExpoNotifications.Notification
  * count. Nothing writes them any more.
  */
 
+/**
+ * History saved before toEpochMs() existed holds iPhone pushes dated 1970: the
+ * seconds value was read as milliseconds. The number itself is intact, so the
+ * real time is recoverable - a stored time that early can only be that.
+ */
+function repairReceivedAt(item: PushNotificationHistoryItem): PushNotificationHistoryItem {
+  const stored = Date.parse(item.receivedAt);
+  if (Number.isNaN(stored) || stored >= 1e11) {
+    return item;
+  }
+  return { ...item, receivedAt: new Date(toEpochMs(stored)).toISOString() };
+}
+
 async function readStoredHistory() {
   const stored = await AsyncStorage.getItem(NOTIFICATION_HISTORY_STORAGE_KEY);
   if (!stored) {
@@ -121,16 +148,18 @@ async function readStoredHistory() {
       return [];
     }
 
-    return parsed.filter((item): item is PushNotificationHistoryItem => {
-      return (
-        item &&
-        typeof item === "object" &&
-        typeof item.id === "string" &&
-        typeof item.title === "string" &&
-        typeof item.receivedAt === "string" &&
-        (item.status === "read" || item.status === "unread")
-      );
-    });
+    return parsed
+      .filter((item): item is PushNotificationHistoryItem => {
+        return (
+          item &&
+          typeof item === "object" &&
+          typeof item.id === "string" &&
+          typeof item.title === "string" &&
+          typeof item.receivedAt === "string" &&
+          (item.status === "read" || item.status === "unread")
+        );
+      })
+      .map(repairReceivedAt);
   } catch {
     return [];
   }
