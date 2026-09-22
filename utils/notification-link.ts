@@ -28,6 +28,11 @@ const ROUTE_BY_TYPE: Readonly<Record<string, string>> = {
   // The gateway's cron, an hour before it starts, so today's list is the answer.
   meeting_reminder: '/meeting',
 
+  // ── Examinar ───────────────────────────────────────────────────────────────
+  // The gateway's cron, ahead of an exam duty. Like the meeting reminder, the
+  // list is the answer.
+  examinar_reminder: '/examinar',
+
   // ── Absence ────────────────────────────────────────────────────────────────
   ABSENCE_new_request: '/absence/approve-leave',
   ABSENCE_response: '/absence/my-leave',
@@ -46,6 +51,11 @@ const ROUTE_BY_TYPE: Readonly<Record<string, string>> = {
   // A decided request has left the pending tab; the history is where it is now.
   forget_timestamp_approve_result: '/timestamp/history',
   forget_timestamp_rejected: '/timestamp/history',
+  // The gateway's morning cron: a stamp missing from yesterday. The form is
+  // where it gets fixed.
+  forget_timestamp_reminder: '/timestamp/forgot-timestamp',
+  // The gateway's 09:35 cron, to lecturers who have not stamped yet today.
+  lect_timestamp_reminder: '/timestamp/stamp',
 
   // ── Repair Computer ────────────────────────────────────────────────────────
   repair_computer_new_job: '/repair-computer/foreman-new-job',
