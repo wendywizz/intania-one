@@ -28,7 +28,7 @@ import {
   setCachedRepairComputerPrivilege,
 } from '@/context/repairComputerRoleSelection';
 import { checkPrivilege } from '@/services/repairComputerService';
-import { scaleFont } from '@/utils/font-scale';
+import { MIN_LINE_HEIGHT_RATIO, scaleFont } from '@/utils/font-scale';
 
 function normalizeRepairComputerRole(privilege?: string): RepairComputerRole {
   if (privilege === PRIVILEGE_RC_TECH || privilege === PRIVILEGE_RC_FOREMAN) {
@@ -204,6 +204,7 @@ export default function RepairComputerTabLayout() {
             tabBarStyle: moduleTabBarStyle(c, insets.bottom),
             tabBarLabelStyle: {
               fontSize: scaleFont(11),
+              lineHeight: Math.round(scaleFont(11) * MIN_LINE_HEIGHT_RATIO),
               fontFamily: AppFonts.psuRegular,
             },
           }}>

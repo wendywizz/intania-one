@@ -19,7 +19,7 @@ import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { useColors } from '@/constants/theme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { scaleFont } from '@/utils/font-scale';
+import { MIN_LINE_HEIGHT_RATIO, scaleFont } from '@/utils/font-scale';
 
 export default function BookingRoomTabLayout() {
   const c = useColors();
@@ -35,6 +35,7 @@ export default function BookingRoomTabLayout() {
         tabBarStyle: moduleTabBarStyle(c, insets.bottom),
         tabBarLabelStyle: {
           fontSize: scaleFont(11),
+          lineHeight: Math.round(scaleFont(11) * MIN_LINE_HEIGHT_RATIO),
           fontFamily: AppFonts.psuRegular,
         },
       }}>

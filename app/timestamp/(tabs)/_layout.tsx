@@ -14,7 +14,7 @@ import {
   getForgetApprovalWaiting,
   peekForgetApprovalWaiting,
 } from "@/services/timestampService";
-import { scaleFont } from "@/utils/font-scale";
+import { MIN_LINE_HEIGHT_RATIO, scaleFont } from "@/utils/font-scale";
 
 /**
  * The tab bar's own look, re-exported here because the face-scan screen hides
@@ -69,6 +69,7 @@ export default function TimestampTabLayout() {
         tabBarStyle: timestampTabBarStyle(c, insets.bottom),
         tabBarLabelStyle: {
           fontSize: scaleFont(11),
+          lineHeight: Math.round(scaleFont(11) * MIN_LINE_HEIGHT_RATIO),
           fontFamily: AppFonts.psuRegular,
         },
       }}

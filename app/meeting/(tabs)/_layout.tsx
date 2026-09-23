@@ -9,7 +9,7 @@ import { moduleTabBarStyle } from '@/constants/tab-bar';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { useColors } from '@/constants/theme';
-import { scaleFont } from '@/utils/font-scale';
+import { MIN_LINE_HEIGHT_RATIO, scaleFont } from '@/utils/font-scale';
 
 export default function MeetingTabLayout() {
   const c = useColors();
@@ -25,6 +25,7 @@ export default function MeetingTabLayout() {
         tabBarStyle: moduleTabBarStyle(c, insets.bottom),
         tabBarLabelStyle: {
           fontSize: scaleFont(11),
+          lineHeight: Math.round(scaleFont(11) * MIN_LINE_HEIGHT_RATIO),
           fontFamily: AppFonts.psuRegular,
         },
       }}>

@@ -38,14 +38,19 @@ const TEXT_METRICS = ['fontSize', 'lineHeight'] as const;
  * React Native scales `lineHeight` in step with `fontSize` (RCTTextAttributes
  * multiplies both by the same font multiplier), so a ratio that crops its
  * glyphs crops them at every text size - by a hairline at the default, by a
- * dozen pixels on a phone set to large type, which is how this was found. The
- * PSU faces stand taller than their em box and need about 1.35.
+ * dozen pixels on a phone set to large type, which is how this was found.
+ * 1.35 was the first number tried and still let สระ ุ/ู clip and ฎ ฐ ฏ lose
+ * their loop on small labels (tab bars, menu tiles) - those sit right at the
+ * old floor once scaled. 1.5 is the room Thai script actually needs above and
+ * below the em box at once.
  *
  * Applied as a floor, never a ceiling: a sheet asking for more headroom keeps
- * it. Only when a sheet sets BOTH metrics - with no lineHeight at all the font
- * picks its own, which already clears its glyphs.
+ * it. Only when a sheet sets BOTH metrics - a sheet with no lineHeight at all
+ * still relies on the font's own metrics, which is the tab-bar-label bug this
+ * same investigation found; give those an explicit lineHeight too rather than
+ * assuming the default clears the glyphs.
  */
-export const MIN_LINE_HEIGHT_RATIO = 1.35;
+export const MIN_LINE_HEIGHT_RATIO = 1.5;
 
 type StyleObject = Record<string, unknown>;
 type StyleSheetInput = Record<string, StyleObject>;

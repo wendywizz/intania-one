@@ -16,11 +16,17 @@ import type { AppColors } from '@/constants/theme';
  *
  * It was a copy of this object in each module's `(tabs)/_layout.tsx` that let
  * the fix land in one module and miss the other five.
+ *
+ * `height` leaves `78 - paddingTop - paddingBottom = 62` for the icon + label
+ * column, not 68's 52. That grew alongside `MIN_LINE_HEIGHT_RATIO`: once every
+ * module's `tabBarLabelStyle` got an explicit lineHeight (to stop สระ ุ/ู and
+ * ฎ/ฐ/ฏ clipping — see font-scale.ts), the label needed more room than the
+ * font's own metrics used to claim, and 68 clipped the taller label instead.
  */
 export const moduleTabBarStyle = (c: AppColors, bottom: number = 0): ViewStyle => ({
   backgroundColor: c.primary,
   borderTopColor: c.primary,
-  height: 68 + bottom,
+  height: 78 + bottom,
   paddingBottom: 10 + bottom,
   paddingTop: 6,
 });

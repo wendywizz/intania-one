@@ -14,7 +14,7 @@ import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { useColors } from '@/constants/theme';
 import { approvingWaitingData, peekApprovingWaiting } from '@/services/absenceService';
-import { scaleFont } from '@/utils/font-scale';
+import { MIN_LINE_HEIGHT_RATIO, scaleFont } from '@/utils/font-scale';
 
 export default function absenceTabLayout() {
   const c = useColors();
@@ -77,6 +77,7 @@ export default function absenceTabLayout() {
         tabBarStyle: moduleTabBarStyle(c, insets.bottom),
         tabBarLabelStyle: {
           fontSize: scaleFont(11),
+          lineHeight: Math.round(scaleFont(11) * MIN_LINE_HEIGHT_RATIO),
           fontFamily: AppFonts.psuRegular,
         },
       }}>
