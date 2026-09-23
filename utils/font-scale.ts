@@ -45,7 +45,7 @@ const TEXT_METRICS = ['fontSize', 'lineHeight'] as const;
  * it. Only when a sheet sets BOTH metrics - with no lineHeight at all the font
  * picks its own, which already clears its glyphs.
  */
-const MIN_LINE_HEIGHT_RATIO = 1.35;
+export const MIN_LINE_HEIGHT_RATIO = 1.35;
 
 type StyleObject = Record<string, unknown>;
 type StyleSheetInput = Record<string, StyleObject>;

@@ -8,7 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useScreenGutter, useScreenTitleGap, useThemedStyles } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
-import { scaleFont } from '@/utils/font-scale';
+import { MIN_LINE_HEIGHT_RATIO, scaleFont } from '@/utils/font-scale';
 
 type ScreenHeaderProps = {
   /** Large title shown in the content, below a minimal blended nav bar. */
@@ -67,7 +67,11 @@ export function ScreenHeader({
       <StatusBar style={isPrimary || isDarkMode ? 'light' : 'dark'} />
       <NavTopBar
         title={titleInNavBar ? title : ''}
-        titleStyle={titleInNavBar ? { fontSize: scaleFont(20), lineHeight: scaleFont(26) } : undefined}
+        titleStyle={
+          titleInNavBar
+            ? { fontSize: scaleFont(20), lineHeight: Math.round(scaleFont(20) * MIN_LINE_HEIGHT_RATIO) }
+            : undefined
+        }
         backHref={backHref}
         onBackPress={onBackPress}
         showBackButton={showBackButton}
@@ -84,7 +88,9 @@ export function ScreenHeader({
         ) : null
       ) : (
         <View style={[styles.titleRow, { paddingHorizontal: titlePad, paddingBottom: titleGap }]}>
-          <ThemedText style={[styles.title, { fontSize: titleSize, lineHeight: titleSize + 6 }]}>
+          <ThemedText
+            style={[styles.title, { fontSize: titleSize, lineHeight: Math.round(titleSize * MIN_LINE_HEIGHT_RATIO) }]}
+          >
             {title}
           </ThemedText>
           {titleTrailing}

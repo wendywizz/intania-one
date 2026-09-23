@@ -191,6 +191,29 @@ function getRequesterInfo(item: absence): StaffEntry {
   };
 }
 
+// Same nested-object shape as getRequesterInfo — the backend (apis/absence/*
+// controllers on LINK_personnel) runs the assigned approver through the same
+// serialize_staff_data() as the requester and returns it under `mainApprover`
+// (an array for hajj, an object everywhere else). Flat fields are a fallback
+// only, for any response shape that doesn't nest it.
+function getApproverInfo(item: absence): StaffEntry {
+  const record = item as Record<string, unknown>;
+  let approverObj = record.mainApprover;
+  if (Array.isArray(approverObj)) approverObj = approverObj[0];
+  if (approverObj && typeof approverObj === 'object') {
+    return {
+      name: getStaffName(approverObj),
+      position: getStaffPosition(approverObj),
+      staffId: getStaffId(approverObj),
+    };
+  }
+  return {
+    name: getText(item, ['approverName', 'approver_name', 'mainApproverName', 'main_approver_name']),
+    position: getText(item, ['approverPosition', 'approver_position', 'approverPositionName', 'approver_position_name']),
+    staffId: getText(item, ['main_approver', 'approverStaffId', 'approver_staff_id']),
+  };
+}
+
 function getAgentEntries(item: absence): StaffEntry[] {
   const rawValue =
     item.selectedAgents ??
@@ -309,6 +332,7 @@ export default function absenceDetailScreen() {
   // name and photo staring back. Ambiguous cases (no staffId to compare) show
   // the card rather than risk hiding a real name.
   const isOwnRequest = Boolean(requester.staffId) && requester.staffId === viewerStaffId;
+  const approver = getApproverInfo(item);
   const agentEntries = getAgentEntries(item);
   const reason = getText(item, ['reason', 'detail', 'description']);
   const halfDay = getDisplayHalfDay(getText(item, ['partFlag', 'part_flag', 'startpart', 'half_day', 'halfDay']));
@@ -419,6 +443,21 @@ export default function absenceDetailScreen() {
         {requester.name && !isOwnRequest ? (
           <SectionCard title={TEXT.ABSENCE_REQUESTER_LABEL}>
             <PersonRow name={requester.name} position={requester.position} staffId={requester.staffId} />
+          </SectionCard>
+        ) : null}
+
+        {/* Approver card — mirrors the Requester card's own/other-people split
+            in the opposite direction: worth showing only on your own request
+            (reached via my-leave or the general-user "mine" tab), regardless
+            of whether the viewer has approval rights themselves. On someone
+            else's request (reached via a boss's approve-leave history tab)
+            the approver is the viewer themselves — already implied by being
+            on that screen at all — so the card would just be their own name
+            and photo staring back, same as the Requester card would be on
+            your own request. */}
+        {isOwnRequest && approver.name ? (
+          <SectionCard title={TEXT.ABSENCE_APPROVER_LABEL}>
+            <PersonRow name={approver.name} position={approver.position} staffId={approver.staffId} />
           </SectionCard>
         ) : null}
 

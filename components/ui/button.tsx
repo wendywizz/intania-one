@@ -11,7 +11,7 @@ import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, View, ViewSt
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors } from '@/constants/theme';
-import { scaleFont } from '@/utils/font-scale';
+import { MIN_LINE_HEIGHT_RATIO, scaleFont } from '@/utils/font-scale';
 
 export type ButtonVariant =
   | 'primary'
@@ -139,7 +139,12 @@ export function Button({
           {icon ? <IconSymbol name={icon} size={dims.iconSize} color={fg} /> : null}
           <Text
             numberOfLines={1}
-            style={{ color: fg, fontSize, fontFamily: AppFonts.psuBold, lineHeight: fontSize + 5 }}
+            style={{
+              color: fg,
+              fontSize,
+              fontFamily: AppFonts.psuBold,
+              lineHeight: Math.round(fontSize * MIN_LINE_HEIGHT_RATIO),
+            }}
           >
             {title}
           </Text>
