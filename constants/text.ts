@@ -1574,6 +1574,10 @@ export const TEXT = {
   MAIL_CONNECT_HEADER_TITLE: 'เชื่อมต่ออีเมล',
   MAIL_CONNECT_PAGE_TIMEOUT: 'โหลดหน้าเชื่อมต่ออีเมลไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่อีกครั้ง',
   MAIL_CONNECT_CANCELLED_MESSAGE: 'การเชื่อมต่อถูกยกเลิก',
+  MAIL_SEARCH_PLACEHOLDER: 'ค้นหาอีเมล ผู้ส่ง หรือหัวข้อ',
+  MAIL_SEARCH_NO_RESULT: 'ไม่พบอีเมลที่ค้นหา',
+  MAIL_SEARCH_NO_RESULT_HINT: 'ลองตรวจสอบคำค้นหาอีกครั้ง',
+  MAIL_MOCK_BANNER: 'โหมดทดสอบ • ข้อมูลจำลอง',
 
   // Modal
 } as const;

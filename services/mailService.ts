@@ -1,7 +1,8 @@
-import { MAIL_AUTH } from '@/constants/mailAuth';
+import { MAIL_AUTH, MAIL_MOCK_ENABLED } from '@/constants/mailAuth';
 import { ENDPOINTS } from '@/constants/endpoints';
 import { fetchWithTimeout, isModuleDisabled, requestJson } from '@/services/api';
 import { getValidAccessToken } from '@/services/mailAuthService';
+import { mockGetMessage, mockListInbox, mockSearchInbox } from '@/services/mailMockData';
 
 /**
  * Microsoft Graph calls for the mail module. Plain exported async functions
@@ -93,8 +94,14 @@ async function graphFetch<T>(url: string): Promise<T> {
  * Resolves silently (does not throw) on anything that isn't the gateway
  * explicitly saying the module is off — a network hiccup here must not block
  * the connect screen or the inbox when the module is in fact on.
+ *
+ * Skipped entirely in mock mode: the whole point of `MAIL_MOCK_ENABLED` is
+ * clicking through the mail screens on web without a running scooba-service,
+ * so this must not turn into a network call that just fails differently.
  */
 export async function assertMailModuleEnabled(): Promise<void> {
+  if (MAIL_MOCK_ENABLED) return;
+
   try {
     await requestJson(ENDPOINTS.mailStatus);
   } catch (error) {
@@ -112,6 +119,18 @@ export async function listInboxMessages({
   top = 25,
   nextLink,
 }: { top?: number; nextLink?: string } = {}): Promise<{ messages: MailMessage[]; nextLink?: string }> {
+  if (MAIL_MOCK_ENABLED) {
+    // `nextLink` is an opaque string everywhere else (Graph's own
+    // `@odata.nextLink`); in mock mode it is just a stringified offset into
+    // the fixture array, encoded/decoded only here.
+    const cursor = nextLink ? Number(nextLink) : 0;
+    const result = await mockListInbox({ top, cursor });
+    return {
+      messages: result.messages,
+      nextLink: result.nextCursor != null ? String(result.nextCursor) : undefined,
+    };
+  }
+
   const url =
     nextLink ??
     `${MAIL_AUTH.endpoints.graphBase}/me/mailFolders/inbox/messages` +
@@ -124,7 +143,44 @@ export async function listInboxMessages({
   };
 }
 
+/**
+ * Full-text search across the Inbox — subject, sender and body — via Graph's
+ * own `$search`, not a client-side filter of whatever page happens to be
+ * loaded. That matters here specifically: `listInboxMessages` only ever holds
+ * the pages paged in so far, so filtering it in JS would silently miss every
+ * older message the person hasn't scrolled to yet.
+ *
+ * Deliberately no `nextLink` — Graph returns `$search` hits ranked by
+ * relevance, not `$orderby`'d (the two cannot be combined on this resource),
+ * and the top 25 already answers "did I find it", the only question a search
+ * box is for here. Same reasoning `person-search.tsx`'s `getPersonnelSuggestions`
+ * hard-caps at `PAGE_SIZE` rather than paging.
+ */
+export async function searchInboxMessages(
+  query: string,
+  { top = 25 }: { top?: number } = {},
+): Promise<{ messages: MailMessage[] }> {
+  if (MAIL_MOCK_ENABLED) {
+    const result = await mockSearchInbox(query);
+    return { messages: result.messages.slice(0, top) };
+  }
+
+  // A bare `"` would break out of the quoted $search term below — Graph's own
+  // OData query, not HTML, so this is quote-stripping, not escaping.
+  const safeQuery = query.replace(/"/g, '').trim();
+  if (!safeQuery) return { messages: [] };
+
+  const url =
+    `${MAIL_AUTH.endpoints.graphBase}/me/mailFolders/inbox/messages` +
+    `?$search=${encodeURIComponent(`"${safeQuery}"`)}&$top=${top}&$select=${LIST_SELECT}`;
+
+  const json = await graphFetch<GraphListResponse>(url);
+  return { messages: (json.value ?? []).map(toMailMessage) };
+}
+
 export async function getMessage(id: string): Promise<MailMessage> {
+  if (MAIL_MOCK_ENABLED) return mockGetMessage(id);
+
   const url = `${MAIL_AUTH.endpoints.graphBase}/me/messages/${encodeURIComponent(id)}?$select=${DETAIL_SELECT}`;
   const json = await graphFetch<GraphMessage>(url);
   return toMailMessage(json);

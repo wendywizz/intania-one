@@ -1,21 +1,41 @@
 import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { Search, X } from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Platform,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { InfinityLoader } from '@/components/infinity-loader';
 import { LoadingAnimate } from '@/components/loading-animate';
+import { MailMockBanner } from '@/components/mail/mock-banner';
+import { SenderAvatar } from '@/components/mail/sender-avatar';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
+import { AppFonts } from '@/constants/fonts';
+import { boxShadow } from '@/constants/shadows';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import * as mailAuthService from '@/services/mailAuthService';
-import { assertMailModuleEnabled, listInboxMessages, type MailMessage } from '@/services/mailService';
+import {
+  assertMailModuleEnabled,
+  listInboxMessages,
+  searchInboxMessages,
+  type MailMessage,
+} from '@/services/mailService';
 import { formatNewsDateTime } from '@/utils/date-format';
+
+const SEARCH_DEBOUNCE_MS = 350;
 
 function MailCard({ message }: { message: MailMessage }) {
   const c = useColors();
@@ -25,12 +45,21 @@ function MailCard({ message }: { message: MailMessage }) {
   return (
     <ListCard
       onPress={() => router.push({ pathname: '/mail/detail', params: { id: message.id } })}
-      icon={<IconSymbol name="envelope.fill" size={18} color={isRead ? c.textFaint : c.primary} />}
-      iconBackground={isRead ? c.surfaceMuted : c.primarySoft}
+      icon={<SenderAvatar name={message.from.name} address={message.from.address} size={40} />}
+      iconBackground="transparent"
       title={message.subject || TEXT.MAIL_NO_SUBJECT}
       titleNumberOfLines={1}
       date={message.receivedDateTime ? formatNewsDateTime(message.receivedDateTime) : undefined}
-      meta={[{ text: senderName }, { text: message.bodyPreview }]}
+      meta={[
+        {
+          // A small dot ahead of the sender's name — the closest read/unread
+          // signal to iOS Mail's own blue dot — only spent on rows that need
+          // it, so a read inbox stays visually quiet.
+          icon: isRead ? undefined : <View style={[styles.unreadDot, { backgroundColor: c.primary }]} />,
+          text: senderName,
+        },
+        { text: message.bodyPreview },
+      ]}
     />
   );
 }
@@ -46,6 +75,56 @@ export default function MailInboxScreen() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState('');
 
+  // --- search --------------------------------------------------------------
+  // A separate result set, not a client-side filter of `messages`: the list
+  // only holds whatever pages have been scrolled into so far, so filtering it
+  // in JS would silently miss every older message. `searchInboxMessages` asks
+  // Graph's own full-text search instead — see services/mailService.ts.
+  const [searchText, setSearchText] = useState('');
+  const [searchResults, setSearchResults] = useState<MailMessage[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchRequestId = useRef(0);
+  const isSearchMode = searchText.trim().length > 0;
+
+  useEffect(() => {
+    const trimmed = searchText.trim();
+
+    if (!trimmed) {
+      searchRequestId.current += 1;
+      setSearchResults(null);
+      setIsSearching(false);
+      return undefined;
+    }
+
+    const id = ++searchRequestId.current;
+    setIsSearching(true);
+
+    const timeoutId = setTimeout(() => {
+      searchInboxMessages(trimmed)
+        .then((result) => {
+          if (id !== searchRequestId.current) return;
+          setSearchResults(result.messages);
+        })
+        .catch((err) => {
+          if (id !== searchRequestId.current) return;
+          if (err instanceof Error && mailAuthService.isMailReauthRequiredText(err.message)) {
+            router.replace('/mail/connect');
+            return;
+          }
+          setSearchResults([]);
+        })
+        .finally(() => {
+          if (id !== searchRequestId.current) return;
+          setIsSearching(false);
+        });
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchText]);
+
+  const displayedMessages = isSearchMode ? (searchResults ?? []) : messages;
+
+  // --- load / refresh --------------------------------------------------------
   const loadMessages = useCallback(async (showRefreshing = false) => {
     if (showRefreshing) setIsRefreshing(true);
     else setIsLoading(true);
@@ -145,40 +224,120 @@ export default function MailInboxScreen() {
             onRetry={() => checkAndLoad()}
           />
         ) : (
-          <FlatList
-            style={styles.flatList}
-            contentContainerStyle={styles.listContent}
-            data={messages}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <MailCard message={item} />}
-            refreshControl={
-              <RefreshControl
-                refreshing={isRefreshing}
-                onRefresh={() => loadMessages(true)}
-                tintColor={c.primary}
-                colors={[c.primary]}
+          <>
+            <MailMockBanner />
+            <View style={styles.searchBar}>
+              <Search size={17} color={c.textMuted} />
+              <TextInput
+                accessibilityLabel={TEXT.MAIL_SEARCH_PLACEHOLDER}
+                autoCapitalize="none"
+                autoCorrect={false}
+                onChangeText={setSearchText}
+                placeholder={TEXT.MAIL_SEARCH_PLACEHOLDER}
+                placeholderTextColor={c.textFaint}
+                returnKeyType="search"
+                value={searchText}
+                // react-native-web draws a black focus outline on inputs; remove it.
+                style={[styles.searchInput, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]}
               />
-            }
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={
-              isLoadingMore ? (
-                <View style={styles.footer}>
-                  <InfinityLoader size={44} strokeWidth={4} />
-                </View>
-              ) : null
-            }
-            ListEmptyComponent={<EmptyState preset="cleared" message={TEXT.MAIL_INBOX_EMPTY} />}
-          />
+              {isSearching ? (
+                <ActivityIndicator color={c.primary} size="small" />
+              ) : searchText ? (
+                <Pressable
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={() => setSearchText('')}
+                >
+                  <View style={[styles.clearButton, { backgroundColor: c.surfaceMuted }]}>
+                    <X size={12} color={c.textMuted} />
+                  </View>
+                </Pressable>
+              ) : null}
+            </View>
+
+            <FlatList
+              style={styles.flatList}
+              contentContainerStyle={styles.listContent}
+              data={displayedMessages}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => <MailCard message={item} />}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              refreshControl={
+                isSearchMode ? undefined : (
+                  <RefreshControl
+                    refreshing={isRefreshing}
+                    onRefresh={() => loadMessages(true)}
+                    tintColor={c.primary}
+                    colors={[c.primary]}
+                  />
+                )
+              }
+              onEndReached={isSearchMode ? undefined : handleLoadMore}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={
+                isLoadingMore ? (
+                  <View style={styles.footer}>
+                    <InfinityLoader size={44} strokeWidth={4} />
+                  </View>
+                ) : null
+              }
+              ListEmptyComponent={
+                isSearchMode ? (
+                  isSearching ? null : (
+                    <EmptyState
+                      preset="search"
+                      message={`${TEXT.MAIL_SEARCH_NO_RESULT} “${searchText.trim()}”`}
+                      description={TEXT.MAIL_SEARCH_NO_RESULT_HINT}
+                    />
+                  )
+                ) : (
+                  <EmptyState preset="cleared" message={TEXT.MAIL_INBOX_EMPTY} />
+                )
+              }
+            />
+          </>
         )}
       </View>
     </ThemedView>
   );
 }
 
+const styles = StyleSheet.create({
+  unreadDot: { width: 7, height: 7, borderRadius: 3.5 },
+});
+
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
   content: { flex: 1, paddingHorizontal: 16, paddingTop: 12 },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 42,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    backgroundColor: c.surface,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.04 }),
+  },
+  searchInput: {
+    flex: 1,
+    height: '100%',
+    color: c.text,
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 14.5,
+    paddingVertical: 0,
+  },
+  clearButton: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   flatList: { flex: 1 },
   listContent: { flexGrow: 1, paddingTop: 4, paddingBottom: 24 },
   footer: { paddingVertical: 20, alignItems: 'center' },

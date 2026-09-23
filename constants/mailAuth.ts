@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 import { ENV } from './config';
 import { AUTH_REDIRECT_DOMAINS, ENTRA_AUTHORIZE_URL, ENTRA_TOKEN_URL, GRAPH_API_BASE_URL } from './endpoints';
 
@@ -17,6 +19,22 @@ import { AUTH_REDIRECT_DOMAINS, ENTRA_AUTHORIZE_URL, ENTRA_TOKEN_URL, GRAPH_API_
  * attempting a flow that has nowhere to redirect back to.
  */
 export const MAIL_REDIRECT_PATH = 'mail/callback';
+
+/**
+ * Mock mode: lets the mail screens be built and clicked through in a plain
+ * web browser (`expo start --web`) — the one place the real flow can never
+ * run, both because SecureStore has no web implementation and because the
+ * `intania-one-mail` app registration has no Web redirect URI registered in
+ * Entra at all. `services/mailAuthService.ts` and `services/mailService.ts`
+ * branch on this to serve `services/mailMockData.ts` instead of Entra/Graph.
+ *
+ * Gated on BOTH conditions, not just platform, so a *production* web build —
+ * should one ever exist — still shows the same "not supported on web" state
+ * a real user would see, never a pretend inbox. `ENV.appMode` is the same
+ * `EXPO_PUBLIC_MODE`-driven switch every other dev/prod split in this app
+ * uses (see constants/endpoints.ts's `API_BASE_URL`).
+ */
+export const MAIL_MOCK_ENABLED = ENV.appMode !== 'production' && Platform.OS === 'web';
 
 export const MAIL_AUTH = {
   clientId: ENV.graphClientId,

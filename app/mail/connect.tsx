@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
+import { MailMockBanner } from '@/components/mail/mock-banner';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -87,6 +88,7 @@ export default function MailConnectScreen() {
           <ErrorState message={moduleError} onRetry={() => checkModule()} />
         ) : (
           <>
+            <MailMockBanner />
             <View style={styles.iconCircle}>
               <IconSymbol name="envelope.fill" size={40} color={c.primary} />
             </View>

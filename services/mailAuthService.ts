@@ -5,7 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
-import { MAIL_AUTH } from '@/constants/mailAuth';
+import { MAIL_AUTH, MAIL_MOCK_ENABLED } from '@/constants/mailAuth';
 import { TEXT } from '@/constants/text';
 import { fetchApi } from '@/services/api';
 
@@ -36,9 +36,24 @@ type EntraTokenResponse = {
 
 // SecureStore has no web implementation, and the intania-one-mail app
 // registration has no Web redirect URI registered in Entra either — web is
-// unsupported for this module in v1 on both counts.
+// unsupported for this module in v1 on both counts. `MAIL_MOCK_ENABLED`
+// (development + web only, never a real build — see constants/mailAuth.ts)
+// is the one exception: it swaps the real flow below for a fixture one, so
+// the screens still light up as "supported" there.
 const isSupported = Platform.OS !== 'web';
-export const MAIL_SUPPORTED_ON_PLATFORM = isSupported;
+export const MAIL_SUPPORTED_ON_PLATFORM = isSupported || MAIL_MOCK_ENABLED;
+
+// ─── Mock mode (development + web only) ────────────────────────────────────
+// A single AsyncStorage flag standing in for "has a real refresh token" —
+// AsyncStorage rather than SecureStore so it round-trips through a plain web
+// reload (localStorage under the hood), which is the whole point of testing
+// in a browser tab instead of a device build.
+const MOCK_CONNECTED_KEY = 'MAIL_MOCK_CONNECTED';
+const MOCK_CONNECT_DELAY_MS = 600;
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /** Marker the caller matches on to redirect to /mail/connect instead of ErrorState. */
 export const MAIL_REAUTH_REQUIRED = 'MAIL_REAUTH_REQUIRED';
@@ -319,12 +334,26 @@ export function cancelAndroidWebViewLogin() {
 // ─── Public surface ─────────────────────────────────────────────────────────
 
 export async function isConnected() {
+  if (MAIL_MOCK_ENABLED) {
+    return (await AsyncStorage.getItem(MOCK_CONNECTED_KEY)) === 'true';
+  }
   if (!isSupported) return false;
   const { refreshToken } = await readTokens();
   return Boolean(refreshToken);
 }
 
 export async function connect(): Promise<void> {
+  if (MAIL_MOCK_ENABLED) {
+    // A short delay so the connect screen's loading state is something a
+    // developer can actually see, the same reason mailMockData.ts's list/get
+    // aren't instant either — real Entra sign-in is not close to
+    // instantaneous, and a UI that only gets exercised at 0ms hides bugs in
+    // its own loading/disabled states.
+    await delay(MOCK_CONNECT_DELAY_MS);
+    await AsyncStorage.setItem(MOCK_CONNECTED_KEY, 'true');
+    return;
+  }
+
   if (!isSupported) {
     throw new Error(TEXT.MAIL_CONNECT_WEB_UNSUPPORTED);
   }
@@ -353,6 +382,10 @@ export async function connect(): Promise<void> {
 }
 
 export async function disconnect() {
+  if (MAIL_MOCK_ENABLED) {
+    await AsyncStorage.removeItem(MOCK_CONNECTED_KEY);
+    return;
+  }
   await clearPendingFlow();
   await clearTokens();
 }
@@ -365,6 +398,15 @@ export async function disconnect() {
  * generic ErrorState.
  */
 export async function getValidAccessToken(): Promise<string> {
+  // Dead in practice — services/mailService.ts's own functions all branch on
+  // MAIL_MOCK_ENABLED before ever reaching graphFetch(), the only caller of
+  // this — but kept correct in case something calls it directly later.
+  if (MAIL_MOCK_ENABLED) {
+    const connected = await isConnected();
+    if (!connected) throw new Error(MAIL_REAUTH_REQUIRED);
+    return 'mock-access-token';
+  }
+
   if (!isSupported) {
     throw new Error(MAIL_REAUTH_REQUIRED);
   }
