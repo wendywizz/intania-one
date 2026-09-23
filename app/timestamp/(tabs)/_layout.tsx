@@ -3,9 +3,8 @@ import React, { useEffect, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { tabBarButton } from "@/components/haptic-tab";
-import { moduleTabBarStyle } from "@/constants/tab-bar";
+import { moduleTabBarLabelStyle, moduleTabBarStyle } from "@/constants/tab-bar";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { AppFonts } from "@/constants/fonts";
 import { useColors } from "@/constants/theme";
 import { TEXT } from "@/constants/text";
 import { USER_ID } from "@/constants/user";
@@ -14,7 +13,6 @@ import {
   getForgetApprovalWaiting,
   peekForgetApprovalWaiting,
 } from "@/services/timestampService";
-import { MIN_LINE_HEIGHT_RATIO, scaleFont } from "@/utils/font-scale";
 
 /**
  * The tab bar's own look, re-exported here because the face-scan screen hides
@@ -67,11 +65,7 @@ export default function TimestampTabLayout() {
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
         tabBarStyle: timestampTabBarStyle(c, insets.bottom),
-        tabBarLabelStyle: {
-          fontSize: scaleFont(11),
-          lineHeight: Math.round(scaleFont(11) * MIN_LINE_HEIGHT_RATIO),
-          fontFamily: AppFonts.psuRegular,
-        },
+        tabBarLabelStyle: moduleTabBarLabelStyle,
       }}
     >
       <Tabs.Screen

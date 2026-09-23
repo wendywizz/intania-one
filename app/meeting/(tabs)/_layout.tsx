@@ -5,11 +5,9 @@ import { TEXT } from '@/constants/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { tabBarButton } from '@/components/haptic-tab';
-import { moduleTabBarStyle } from '@/constants/tab-bar';
+import { moduleTabBarLabelStyle, moduleTabBarStyle } from '@/constants/tab-bar';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { AppFonts } from '@/constants/fonts';
 import { useColors } from '@/constants/theme';
-import { MIN_LINE_HEIGHT_RATIO, scaleFont } from '@/utils/font-scale';
 
 export default function MeetingTabLayout() {
   const c = useColors();
@@ -23,11 +21,7 @@ export default function MeetingTabLayout() {
         headerShown: false,
         tabBarButton,
         tabBarStyle: moduleTabBarStyle(c, insets.bottom),
-        tabBarLabelStyle: {
-          fontSize: scaleFont(11),
-          lineHeight: Math.round(scaleFont(11) * MIN_LINE_HEIGHT_RATIO),
-          fontFamily: AppFonts.psuRegular,
-        },
+        tabBarLabelStyle: moduleTabBarLabelStyle,
       }}>
       <Tabs.Screen
         name="index"

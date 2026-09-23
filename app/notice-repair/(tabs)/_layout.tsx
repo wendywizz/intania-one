@@ -1,11 +1,10 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { tabBarButton } from '@/components/haptic-tab';
-import { moduleTabBarStyle } from '@/constants/tab-bar';
+import { moduleTabBarLabelStyle, moduleTabBarStyle } from '@/constants/tab-bar';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { AppFonts } from '@/constants/fonts';
 import { useColors } from '@/constants/theme';
 import { TEXT } from '@/constants/text';
 import {
@@ -23,7 +22,6 @@ import { Tabs, router, usePathname } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ABSOLUTE_FILL } from '@/constants/layout';
-import { MIN_LINE_HEIGHT_RATIO, scaleFont } from '@/utils/font-scale';
 
 function getRoleRoute(pathname: string): NoticeRepairRole | null {
   if (pathname.includes('/inform'))            return NOTICE_REPAIR_ROLE_INFORMER;
@@ -125,11 +123,7 @@ export default function NoticeRepairTabLayout() {
           tabBarActiveTintColor: '#FFFFFF',
           tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
           tabBarStyle: moduleTabBarStyle(c, insets.bottom),
-          tabBarLabelStyle: {
-            fontSize: scaleFont(11),
-            lineHeight: Math.round(scaleFont(11) * MIN_LINE_HEIGHT_RATIO),
-            fontFamily: AppFonts.psuRegular,
-          },
+          tabBarLabelStyle: moduleTabBarLabelStyle,
         }}>
           {/* ── Informer ── */}
           {/* inform is reached via the FAB on the current-job screen, not a tab,

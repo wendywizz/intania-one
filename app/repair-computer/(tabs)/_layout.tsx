@@ -6,7 +6,7 @@ import { TEXT } from '@/constants/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { tabBarButton } from '@/components/haptic-tab';
-import { moduleTabBarStyle } from '@/constants/tab-bar';
+import { moduleTabBarLabelStyle, moduleTabBarStyle } from '@/constants/tab-bar';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -17,7 +17,6 @@ import {
   REPAIR_COMPUTER_DEFAULT_ROLE,
   type RepairComputerRole,
 } from '@/constants/types';
-import { AppFonts } from '@/constants/fonts';
 import { useColors } from '@/constants/theme';
 import { ABSOLUTE_FILL } from '@/constants/layout';
 import { USER_ID } from '@/constants/user';
@@ -28,7 +27,6 @@ import {
   setCachedRepairComputerPrivilege,
 } from '@/context/repairComputerRoleSelection';
 import { checkPrivilege } from '@/services/repairComputerService';
-import { MIN_LINE_HEIGHT_RATIO, scaleFont } from '@/utils/font-scale';
 
 function normalizeRepairComputerRole(privilege?: string): RepairComputerRole {
   if (privilege === PRIVILEGE_RC_TECH || privilege === PRIVILEGE_RC_FOREMAN) {
@@ -202,11 +200,7 @@ export default function RepairComputerTabLayout() {
             tabBarActiveTintColor: '#FFFFFF',
             tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
             tabBarStyle: moduleTabBarStyle(c, insets.bottom),
-            tabBarLabelStyle: {
-              fontSize: scaleFont(11),
-              lineHeight: Math.round(scaleFont(11) * MIN_LINE_HEIGHT_RATIO),
-              fontFamily: AppFonts.psuRegular,
-            },
+            tabBarLabelStyle: moduleTabBarLabelStyle,
           }}>
           {/* User tabs - only shown if highest role is user */}
           <Tabs.Screen

@@ -14,12 +14,10 @@ import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { tabBarButton } from '@/components/haptic-tab';
-import { moduleTabBarStyle } from '@/constants/tab-bar';
-import { AppFonts } from '@/constants/fonts';
+import { moduleTabBarLabelStyle, moduleTabBarStyle } from '@/constants/tab-bar';
 import { TEXT } from '@/constants/text';
 import { useColors } from '@/constants/theme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { MIN_LINE_HEIGHT_RATIO, scaleFont } from '@/utils/font-scale';
 
 export default function BookingRoomTabLayout() {
   const c = useColors();
@@ -33,11 +31,7 @@ export default function BookingRoomTabLayout() {
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
         tabBarStyle: moduleTabBarStyle(c, insets.bottom),
-        tabBarLabelStyle: {
-          fontSize: scaleFont(11),
-          lineHeight: Math.round(scaleFont(11) * MIN_LINE_HEIGHT_RATIO),
-          fontFamily: AppFonts.psuRegular,
-        },
+        tabBarLabelStyle: moduleTabBarLabelStyle,
       }}>
       <Tabs.Screen
         name="index"

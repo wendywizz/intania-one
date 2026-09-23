@@ -4,17 +4,15 @@ import React, { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { tabBarButton } from '@/components/haptic-tab';
-import { moduleTabBarStyle } from '@/constants/tab-bar';
+import { moduleTabBarLabelStyle, moduleTabBarStyle } from '@/constants/tab-bar';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { useColors } from '@/constants/theme';
 import { approvingWaitingData, peekApprovingWaiting } from '@/services/absenceService';
-import { MIN_LINE_HEIGHT_RATIO, scaleFont } from '@/utils/font-scale';
 
 export default function absenceTabLayout() {
   const c = useColors();
@@ -75,11 +73,7 @@ export default function absenceTabLayout() {
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
         tabBarStyle: moduleTabBarStyle(c, insets.bottom),
-        tabBarLabelStyle: {
-          fontSize: scaleFont(11),
-          lineHeight: Math.round(scaleFont(11) * MIN_LINE_HEIGHT_RATIO),
-          fontFamily: AppFonts.psuRegular,
-        },
+        tabBarLabelStyle: moduleTabBarLabelStyle,
       }}>
       {/* The leave-form chooser is still a route — /absence lands on it, and the
           pending list links to it — but it is no longer a tab: picking a form is

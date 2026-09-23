@@ -1,6 +1,40 @@
-import type { ViewStyle } from 'react-native';
+import type { TextStyle, ViewStyle } from 'react-native';
 
+import { AppFonts } from '@/constants/fonts';
 import type { AppColors } from '@/constants/theme';
+import { MIN_LINE_HEIGHT_RATIO, scaleFont } from '@/utils/font-scale';
+
+const LABEL_FONT_SIZE = scaleFont(11);
+const LABEL_LINE_HEIGHT = Math.round(LABEL_FONT_SIZE * MIN_LINE_HEIGHT_RATIO);
+
+/**
+ * The label under each tab icon.
+ *
+ * `lineHeight` is spelled out because a navigator option is one of the few
+ * styles that never passes through StyleSheet.create, so the app-wide floor in
+ * font-scale.ts cannot reach it — and Sarabun's own metrics are not tall
+ * enough: they clip สระ ุ/ู and the tail of ฎ/ฐ/ฏ.
+ */
+export const moduleTabBarLabelStyle: TextStyle = {
+  fontSize: LABEL_FONT_SIZE,
+  lineHeight: LABEL_LINE_HEIGHT,
+  fontFamily: AppFonts.psuRegular,
+};
+
+/**
+ * What one tab actually occupies, taken from the navigator's own metrics
+ * rather than guessed: the icon sits in a fixed 28pt box (`ICON_SIZE_TALL` in
+ * TabBarIcon) and the item adds 5pt above and below it (`tabVerticalUiKit`).
+ * The last 2pt is tolerance for platform rounding.
+ *
+ * This has to be right, not merely generous. The item lays its column out
+ * `flex-start`, so every point the bar is taller than its content becomes dead
+ * space under the labels instead of breathing room around them.
+ */
+const TAB_CONTENT_HEIGHT = 5 + 28 + LABEL_LINE_HEIGHT + 5 + 2;
+
+const PADDING_TOP = 6;
+const PADDING_BOTTOM = 6;
 
 /**
  * The red module tab bar, written once because every module has the same one.
@@ -12,21 +46,15 @@ import type { AppColors } from '@/constants/theme';
  * phone that draws the app edge to edge — every Android 15 device, since the
  * system stopped honouring the opt-out — the bar then sits underneath the
  * back/home/recents buttons and the labels are unreadable. Adding the inset
- * back is what keeps them clear of it.
+ * back to both is what keeps them clear of it.
  *
  * It was a copy of this object in each module's `(tabs)/_layout.tsx` that let
  * the fix land in one module and miss the other five.
- *
- * `height` leaves `78 - paddingTop - paddingBottom = 62` for the icon + label
- * column, not 68's 52. That grew alongside `MIN_LINE_HEIGHT_RATIO`: once every
- * module's `tabBarLabelStyle` got an explicit lineHeight (to stop สระ ุ/ู and
- * ฎ/ฐ/ฏ clipping — see font-scale.ts), the label needed more room than the
- * font's own metrics used to claim, and 68 clipped the taller label instead.
  */
 export const moduleTabBarStyle = (c: AppColors, bottom: number = 0): ViewStyle => ({
   backgroundColor: c.primary,
   borderTopColor: c.primary,
-  height: 78 + bottom,
-  paddingBottom: 10 + bottom,
-  paddingTop: 6,
+  height: PADDING_TOP + TAB_CONTENT_HEIGHT + PADDING_BOTTOM + bottom,
+  paddingBottom: PADDING_BOTTOM + bottom,
+  paddingTop: PADDING_TOP,
 });
