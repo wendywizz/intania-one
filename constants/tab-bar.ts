@@ -25,16 +25,20 @@ export const moduleTabBarLabelStyle: TextStyle = {
  * What one tab actually occupies, taken from the navigator's own metrics
  * rather than guessed: the icon sits in a fixed 28pt box (`ICON_SIZE_TALL` in
  * TabBarIcon) and the item adds 5pt above and below it (`tabVerticalUiKit`).
- * The last 2pt is tolerance for platform rounding.
  *
  * This has to be right, not merely generous. The item lays its column out
  * `flex-start`, so every point the bar is taller than its content becomes dead
- * space under the labels instead of breathing room around them.
+ * space under the labels instead of breathing room around them. No rounding
+ * tolerance is added on top - these four numbers are exact, not estimated.
  */
-const TAB_CONTENT_HEIGHT = 5 + 28 + LABEL_LINE_HEIGHT + 5 + 2;
+const TAB_CONTENT_HEIGHT = 5 + 28 + LABEL_LINE_HEIGHT + 5;
 
-const PADDING_TOP = 6;
-const PADDING_BOTTOM = 6;
+const PADDING_TOP = 4;
+// However small this is, it never reaches zero: `paddingBottom` here is added
+// ON TOP OF the safe-area inset (see below), not instead of it, so this is
+// pure breathing room above the home indicator - not what makes the bar tall
+// on notched phones. That's the inset, and it isn't ours to shrink.
+const PADDING_BOTTOM = 2;
 
 /**
  * The red module tab bar, written once because every module has the same one.
