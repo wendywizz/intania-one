@@ -14,7 +14,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import * as mailAuthService from '@/services/mailAuthService';
-import { assertMailModuleEnabled } from '@/services/mailService';
+import { checkMailModule } from '@/services/mailService';
 
 /**
  * The explicit "connect your email" step. Mail is a second, independent
@@ -36,7 +36,9 @@ export default function MailConnectScreen() {
     setIsChecking(true);
     setModuleError('');
     try {
-      await assertMailModuleEnabled();
+      // Also decides which scopes connect() asks Microsoft for — see
+      // 'scooba-psu-mail-compose' in constants/mailAuth.ts.
+      await checkMailModule();
     } catch (error) {
       setIsChecking(false);
       setModuleError(error instanceof Error ? error.message : TEXT.MAIL_CONNECT_FAILED);
@@ -88,7 +90,7 @@ export default function MailConnectScreen() {
           <ErrorState message={moduleError} onRetry={() => checkModule()} />
         ) : (
           <>
-            <MailMockBanner />
+            <MailMockBanner style={styles.mockBanner} />
             <View style={styles.iconCircle}>
               <IconSymbol name="envelope.fill" size={40} color={c.primary} />
             </View>
@@ -121,6 +123,7 @@ export default function MailConnectScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 },
+  mockBanner: { alignSelf: 'center', marginBottom: 20 },
   iconCircle: {
     width: 88,
     height: 88,

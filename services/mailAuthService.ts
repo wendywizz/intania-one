@@ -5,9 +5,10 @@ import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
-import { MAIL_AUTH, MAIL_MOCK_ENABLED } from '@/constants/mailAuth';
+import { MAIL_AUTH, MAIL_MOCK_ENABLED, mailScopes } from '@/constants/mailAuth';
 import { TEXT } from '@/constants/text';
 import { fetchApi } from '@/services/api';
+import { MOCK_ACCOUNT } from '@/services/mailMockData';
 
 /**
  * OAuth (PKCE, public client) against Microsoft Entra ID for the mail
@@ -53,6 +54,26 @@ const MOCK_CONNECT_DELAY_MS = 600;
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ─── Compose switch ─────────────────────────────────────────────────────────
+// Set from scooba's GET /api/mail/status (services/mailService.ts's
+// checkMailModule) before anything else on the mail screens runs. Starts
+// false — asking for fewer scopes is the safe guess while it is still
+// unknown — except in mock mode, which has no gateway to ask and always shows
+// the full feature set so it can be clicked through.
+let composeEnabled = MAIL_MOCK_ENABLED;
+
+export function setMailComposeEnabled(value: boolean) {
+  composeEnabled = MAIL_MOCK_ENABLED || value;
+}
+
+export function isMailComposeEnabled() {
+  return composeEnabled;
+}
+
+function currentScopes() {
+  return mailScopes(composeEnabled);
 }
 
 /** Marker the caller matches on to redirect to /mail/connect instead of ErrorState. */
@@ -103,7 +124,9 @@ async function getOAuthErrorMessage(response: Response, fallback: string) {
 // one explicit /mail/connect screen, unlike psusso which can be triggered
 // from several places) ──────────────────────────────────────────────────────
 
-type PendingFlow = { state: string; codeVerifier: string };
+// `scopes` travels with the flow so the code is redeemed for exactly what the
+// authorize request asked for, even if the compose switch changes mid-flow.
+type PendingFlow = { state: string; codeVerifier: string; scopes: string };
 
 async function savePendingFlow(flow: PendingFlow) {
   if (!isSupported) return;
@@ -116,7 +139,12 @@ async function readPendingFlow(): Promise<PendingFlow | null> {
     const raw = await SecureStore.getItemAsync(MAIL_AUTH.storageKeys.pkcePending);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PendingFlow>;
-    return parsed.state && parsed.codeVerifier ? (parsed as PendingFlow) : null;
+    if (!parsed.state || !parsed.codeVerifier) return null;
+    return {
+      state: parsed.state,
+      codeVerifier: parsed.codeVerifier,
+      scopes: parsed.scopes || mailScopes(false),
+    };
   } catch {
     return null;
   }
@@ -133,11 +161,12 @@ async function clearPendingFlow() {
 
 // ─── Token persistence ──────────────────────────────────────────────────────
 
-async function persistTokens(tokens: EntraTokenResponse) {
+async function persistTokens(tokens: EntraTokenResponse, scopes: string) {
   if (!isSupported) return;
   const expiresAt = Date.now() + Number(tokens.expires_in ?? 0) * 1000;
   await SecureStore.setItemAsync(MAIL_AUTH.storageKeys.accessToken, tokens.access_token);
   await SecureStore.setItemAsync(MAIL_AUTH.storageKeys.expiresAt, String(expiresAt));
+  await SecureStore.setItemAsync(MAIL_AUTH.storageKeys.tokenScopes, scopes);
   if (tokens.refresh_token) {
     await SecureStore.setItemAsync(MAIL_AUTH.storageKeys.refreshToken, tokens.refresh_token);
   }
@@ -145,16 +174,17 @@ async function persistTokens(tokens: EntraTokenResponse) {
 
 async function readTokens() {
   if (!isSupported) {
-    return { accessToken: null, refreshToken: null, expiresAt: null } as const;
+    return { accessToken: null, refreshToken: null, expiresAt: null, tokenScopes: null } as const;
   }
 
-  const [accessToken, refreshToken, expiresAt] = await Promise.all([
+  const [accessToken, refreshToken, expiresAt, tokenScopes] = await Promise.all([
     SecureStore.getItemAsync(MAIL_AUTH.storageKeys.accessToken),
     SecureStore.getItemAsync(MAIL_AUTH.storageKeys.refreshToken),
     SecureStore.getItemAsync(MAIL_AUTH.storageKeys.expiresAt),
+    SecureStore.getItemAsync(MAIL_AUTH.storageKeys.tokenScopes),
   ]);
 
-  return { accessToken, refreshToken, expiresAt };
+  return { accessToken, refreshToken, expiresAt, tokenScopes };
 }
 
 async function clearTokens() {
@@ -163,6 +193,7 @@ async function clearTokens() {
     await SecureStore.deleteItemAsync(MAIL_AUTH.storageKeys.accessToken);
     await SecureStore.deleteItemAsync(MAIL_AUTH.storageKeys.refreshToken);
     await SecureStore.deleteItemAsync(MAIL_AUTH.storageKeys.expiresAt);
+    await SecureStore.deleteItemAsync(MAIL_AUTH.storageKeys.tokenScopes);
   } catch {
     // A failed delete only leaves tokens nothing else will read as "connected".
   }
@@ -189,6 +220,7 @@ async function fetchAndCacheAccount(accessToken: string) {
 }
 
 export async function getAccount(): Promise<MailAccount | null> {
+  if (MAIL_MOCK_ENABLED) return MOCK_ACCOUNT;
   try {
     const raw = await AsyncStorage.getItem(MAIL_AUTH.storageKeys.account);
     return raw ? (JSON.parse(raw) as MailAccount) : null;
@@ -199,14 +231,18 @@ export async function getAccount(): Promise<MailAccount | null> {
 
 // ─── Token exchange ─────────────────────────────────────────────────────────
 
-async function exchangeCodeForToken(code: string, codeVerifier: string): Promise<EntraTokenResponse> {
+async function exchangeCodeForToken(
+  code: string,
+  codeVerifier: string,
+  scopes: string,
+): Promise<EntraTokenResponse> {
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     client_id: MAIL_AUTH.clientId,
     code,
     redirect_uri: MAIL_AUTH.redirectUrl,
     code_verifier: codeVerifier,
-    scope: MAIL_AUTH.scopes.join(' '),
+    scope: scopes,
   });
 
   const response = await fetchApi(MAIL_AUTH.endpoints.token, {
@@ -222,12 +258,18 @@ async function exchangeCodeForToken(code: string, codeVerifier: string): Promise
   return response.json();
 }
 
-async function exchangeRefreshToken(refreshToken: string): Promise<EntraTokenResponse> {
+/**
+ * Entra v2 lets a refresh ask for a different scope set than the original
+ * sign-in, as long as every scope in it has been consented — which, with
+ * tenant-wide admin consent, they all have or none have. That is what lets the
+ * compose switch be flipped without anyone having to reconnect.
+ */
+async function exchangeRefreshToken(refreshToken: string, scopes: string): Promise<EntraTokenResponse> {
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
     client_id: MAIL_AUTH.clientId,
     refresh_token: refreshToken,
-    scope: MAIL_AUTH.scopes.join(' '),
+    scope: scopes,
   });
 
   const response = await fetchApi(MAIL_AUTH.endpoints.token, {
@@ -247,17 +289,18 @@ async function createAuthorizeUrl() {
   const state = createState();
   const codeVerifier = createCodeVerifier();
   const codeChallenge = await createCodeChallenge(codeVerifier);
+  const scopes = currentScopes();
 
   const url = new URL(MAIL_AUTH.endpoints.authorize);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('client_id', MAIL_AUTH.clientId);
   url.searchParams.set('redirect_uri', MAIL_AUTH.redirectUrl);
-  url.searchParams.set('scope', MAIL_AUTH.scopes.join(' '));
+  url.searchParams.set('scope', scopes);
   url.searchParams.set('state', state);
   url.searchParams.set('code_challenge', codeChallenge);
   url.searchParams.set('code_challenge_method', 'S256');
 
-  await savePendingFlow({ state, codeVerifier });
+  await savePendingFlow({ state, codeVerifier, scopes });
 
   return url.toString();
 }
@@ -282,8 +325,8 @@ async function completeAuth(params: {
   }
 
   await clearPendingFlow();
-  const tokens = await exchangeCodeForToken(params.code, pending.codeVerifier);
-  await persistTokens(tokens);
+  const tokens = await exchangeCodeForToken(params.code, pending.codeVerifier, pending.scopes);
+  await persistTokens(tokens, pending.scopes);
   await fetchAndCacheAccount(tokens.access_token);
 }
 
@@ -411,18 +454,23 @@ export async function getValidAccessToken(): Promise<string> {
     throw new Error(MAIL_REAUTH_REQUIRED);
   }
 
-  const { accessToken, refreshToken, expiresAt } = await readTokens();
+  const { accessToken, refreshToken, expiresAt, tokenScopes } = await readTokens();
   if (!accessToken || !refreshToken) {
     throw new Error(MAIL_REAUTH_REQUIRED);
   }
 
-  if (Date.now() < Number(expiresAt ?? 0) - REFRESH_MARGIN_MS) {
+  // A still-valid token issued for a different scope set is refreshed anyway:
+  // after the compose switch is turned on, the cached read-only token would
+  // otherwise 403 every send until it happened to expire.
+  const wantedScopes = currentScopes();
+  const scopesMatch = tokenScopes === wantedScopes;
+  if (scopesMatch && Date.now() < Number(expiresAt ?? 0) - REFRESH_MARGIN_MS) {
     return accessToken;
   }
 
   try {
-    const refreshed = await exchangeRefreshToken(refreshToken);
-    await persistTokens(refreshed);
+    const refreshed = await exchangeRefreshToken(refreshToken, wantedScopes);
+    await persistTokens(refreshed, wantedScopes);
     return refreshed.access_token;
   } catch {
     // Refresh token revoked/expired — nothing left to try silently, force a

@@ -1,7 +1,7 @@
-import { FlaskConical } from 'lucide-react-native';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { MAIL_MOCK_ENABLED } from '@/constants/mailAuth';
@@ -14,14 +14,14 @@ import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
  * outside that mode, so it is inert (not just invisible) in every real
  * build.
  */
-export function MailMockBanner() {
+export function MailMockBanner({ style }: { style?: StyleProp<ViewStyle> }) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   if (!MAIL_MOCK_ENABLED) return null;
 
   return (
-    <View style={styles.banner}>
-      <FlaskConical size={13} color={c.warningOnSoft} />
+    <View style={[styles.banner, style]}>
+      <IconSymbol name="flask" size={13} color={c.warningOnSoft} />
       <ThemedText style={styles.text}>{TEXT.MAIL_MOCK_BANNER}</ThemedText>
     </View>
   );
@@ -37,7 +37,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 8,
     backgroundColor: c.warningSoft,
-    marginBottom: 10,
   },
   text: {
     fontFamily: AppFonts.psuBold,

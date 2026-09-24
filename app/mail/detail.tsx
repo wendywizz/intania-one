@@ -3,18 +3,36 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import WebView from 'react-native-webview';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { SenderAvatar } from '@/components/mail/sender-avatar';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
-import { isMailReauthRequiredText } from '@/services/mailAuthService';
-import { getMessage, type MailMessage } from '@/services/mailService';
+import { isMailComposeEnabled, isMailReauthRequiredText } from '@/services/mailAuthService';
+import {
+  getMessage,
+  markMessageRead,
+  type ComposeMode,
+  type MailMessage,
+  type MailRecipient,
+} from '@/services/mailService';
 import { formatNewsDateTime } from '@/utils/date-format';
+
+const RESPONSE_ACTIONS: { mode: ComposeMode; label: string; icon: IconSymbolName }[] = [
+  { mode: 'reply', label: TEXT.MAIL_REPLY, icon: 'arrowshape.turn.up.left' },
+  { mode: 'replyAll', label: TEXT.MAIL_REPLY_ALL, icon: 'arrowshape.turn.up.left.2' },
+  { mode: 'forward', label: TEXT.MAIL_FORWARD, icon: 'arrowshape.turn.up.right' },
+];
+
+function recipientNames(list: MailRecipient[]) {
+  return list.map((recipient) => recipient.name || recipient.address).filter(Boolean).join(', ');
+}
 
 /**
  * Threads the app's own theme colours into whatever HTML Graph handed back,
@@ -67,8 +85,11 @@ function withThemedStyle(html: string, c: AppColors): string {
 export default function MailDetailScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id: string }>();
   const id = params.id ?? '';
+  // Read once: the list screen has already asked scooba on its way here.
+  const composeEnabled = isMailComposeEnabled();
 
   const [message, setMessage] = useState<MailMessage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,7 +117,14 @@ export default function MailDetailScreen() {
     setError('');
     getMessage(id)
       .then((data) => {
-        if (!cancelled) setMessage(data);
+        if (cancelled) return;
+        setMessage(data);
+        // Opening it reads it, in Outlook too. Needs Mail.ReadWrite, so only
+        // while compose is on; fire-and-forget — a failure here leaves the
+        // message unread, which is not worth interrupting reading it for.
+        if (!data.isRead && composeEnabled) {
+          markMessageRead(data.id).catch(() => undefined);
+        }
       })
       .catch((err) => {
         if (cancelled) return;
@@ -113,7 +141,7 @@ export default function MailDetailScreen() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, composeEnabled]);
 
   if (isLoading) {
     return (
@@ -171,6 +199,22 @@ export default function MailDetailScreen() {
             <ThemedText style={styles.date}>{formatNewsDateTime(message.receivedDateTime)}</ThemedText>
           ) : null}
         </View>
+        {message.toRecipients.length > 0 || message.ccRecipients.length > 0 ? (
+          <View style={styles.recipients}>
+            {message.toRecipients.length > 0 ? (
+              <ThemedText style={styles.recipientLine} numberOfLines={2}>
+                <ThemedText style={styles.recipientLabel}>{TEXT.MAIL_TO_PREFIX} </ThemedText>
+                {recipientNames(message.toRecipients)}
+              </ThemedText>
+            ) : null}
+            {message.ccRecipients.length > 0 ? (
+              <ThemedText style={styles.recipientLine} numberOfLines={2}>
+                <ThemedText style={styles.recipientLabel}>{TEXT.MAIL_CC_PREFIX} </ThemedText>
+                {recipientNames(message.ccRecipients)}
+              </ThemedText>
+            ) : null}
+          </View>
+        ) : null}
       </View>
 
       {message.body?.content ? (
@@ -204,6 +248,26 @@ export default function MailDetailScreen() {
           <ThemedText style={styles.textBody}>{message.bodyPreview}</ThemedText>
         </ScrollView>
       )}
+
+      {/* iOS Mail keeps these in a bar under the message, where the thumb is.
+          Not on a draft: that is carried on writing from the Drafts list. */}
+      {composeEnabled && !message.isDraft ? (
+        <View style={[styles.actionBar, { paddingBottom: insets.bottom + 8 }]}>
+          {RESPONSE_ACTIONS.map((action) => (
+            <Pressable
+              key={action.mode}
+              accessibilityRole="button"
+              onPress={() =>
+                router.push({ pathname: '/mail/compose', params: { mode: action.mode, id: message.id } })
+              }
+              style={({ pressed }) => [styles.action, pressed ? styles.actionPressed : null]}
+            >
+              <IconSymbol name={action.icon} size={21} color={c.primary} />
+              <ThemedText style={styles.actionLabel}>{action.label}</ThemedText>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </ThemedView>
   );
 }
@@ -242,6 +306,39 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.textFaint,
     flexShrink: 0,
     alignSelf: 'flex-start',
+  },
+  recipients: { gap: 2 },
+  recipientLine: {
+    fontFamily: AppFonts.psuRegular,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: c.textMuted,
+  },
+  recipientLabel: {
+    fontFamily: AppFonts.psuBold,
+    fontSize: 12.5,
+    color: c.textMuted,
+  },
+  actionBar: {
+    flexDirection: 'row',
+    paddingTop: 8,
+    paddingHorizontal: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.border,
+    backgroundColor: c.surface,
+  },
+  action: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  actionPressed: { backgroundColor: c.surfaceAlt },
+  actionLabel: {
+    fontFamily: AppFonts.psuBold,
+    fontSize: 12,
+    color: c.primary,
   },
   webview: { flex: 1 },
   textBodyContent: { padding: 16 },

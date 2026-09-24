@@ -36,12 +36,29 @@ export const MAIL_REDIRECT_PATH = 'mail/callback';
  */
 export const MAIL_MOCK_ENABLED = ENV.appMode !== 'production' && Platform.OS === 'web';
 
+/**
+ * What the app asks Microsoft for. Fixed, not env-driven — same as AUTH.scopes
+ * in constants/auth.ts — but in two tiers, because which tier is asked for is
+ * decided at runtime by the 'scooba-psu-mail-compose' App row (see
+ * `mailScopes` below and scooba-service's GET /api/mail/status).
+ *
+ * The split exists because Microsoft approves a sign-in request as a whole: if
+ * PSU IT approves reading mail but not sending it, asking for Mail.Send would
+ * block the inbox too. Both tiers must be listed under API permissions on the
+ * intania-one-mail app registration for an admin to grant them.
+ */
+export const MAIL_READ_SCOPES = ['Mail.Read', 'offline_access', 'User.Read'] as const;
+// Mail.ReadWrite covers drafts and marking a message read; Mail.Send covers
+// sending. Neither implies the other.
+export const MAIL_COMPOSE_SCOPES = ['Mail.ReadWrite', 'Mail.Send'] as const;
+
+export function mailScopes(composeEnabled: boolean): string {
+  return [...MAIL_READ_SCOPES, ...(composeEnabled ? MAIL_COMPOSE_SCOPES : [])].join(' ');
+}
+
 export const MAIL_AUTH = {
   clientId: ENV.graphClientId,
   tenantId: ENV.graphTenantId,
-  // Fixed, not env-driven — same as AUTH.scopes in constants/auth.ts. Read-only
-  // for v1: no Mail.ReadWrite/Mail.Send were granted in the app registration.
-  scopes: ['Mail.Read', 'offline_access', 'User.Read'],
   redirectUrl: `${AUTH_REDIRECT_DOMAINS.native}://${MAIL_REDIRECT_PATH}`,
   endpoints: {
     authorize: ENTRA_AUTHORIZE_URL,
@@ -55,6 +72,10 @@ export const MAIL_AUTH = {
     accessToken: 'MAIL_ACCESS_TOKEN',
     refreshToken: 'MAIL_REFRESH_TOKEN',
     expiresAt: 'MAIL_TOKEN_EXPIRES_AT',
+    // The scope string the stored access token was issued for. Compared with
+    // what the compose switch currently wants, so flipping that switch gets a
+    // freshly scoped token on the next call instead of a 403 from Graph.
+    tokenScopes: 'MAIL_TOKEN_SCOPES',
     // {state, codeVerifier} for the one in-flight connect attempt. The
     // verifier is what lets whoever holds it redeem an intercepted code, so
     // it belongs in SecureStore, not AsyncStorage.

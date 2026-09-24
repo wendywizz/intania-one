@@ -78,6 +78,15 @@ import LogOut from 'lucide-react-native/dist/cjs/icons/log-out';
 import LockOpen from 'lucide-react-native/dist/cjs/icons/lock-open';
 import ShoppingCart from 'lucide-react-native/dist/cjs/icons/shopping-cart';
 import Presentation from 'lucide-react-native/dist/cjs/icons/presentation';
+import SquarePen from 'lucide-react-native/dist/cjs/icons/square-pen';
+import ListFilter from 'lucide-react-native/dist/cjs/icons/list-filter';
+import FilePen from 'lucide-react-native/dist/cjs/icons/file-pen';
+import Ban from 'lucide-react-native/dist/cjs/icons/ban';
+import Reply from 'lucide-react-native/dist/cjs/icons/reply';
+import ReplyAll from 'lucide-react-native/dist/cjs/icons/reply-all';
+import Forward from 'lucide-react-native/dist/cjs/icons/forward';
+import FlaskConical from 'lucide-react-native/dist/cjs/icons/flask-conical';
+import MailOpen from 'lucide-react-native/dist/cjs/icons/mail-open';
 import type { LucideIcon } from 'lucide-react-native';
 import { OpaqueColorValue, StyleProp, ViewStyle } from 'react-native';
 
@@ -105,6 +114,18 @@ const MAPPING = {
   'gearshape.fill': Settings,
   'paperplane.fill': Send,
   'envelope.fill': Mail,
+  // Mail module (app/mail). Outlook's own folder glyphs where one exists: a
+  // pencilled page for Drafts, a no-entry sign for Junk Email.
+  'envelope.open': MailOpen,
+  'square.and.pencil': SquarePen,
+  'doc.pencil': FilePen,
+  'nosign': Ban,
+  'line.3.horizontal.decrease': ListFilter,
+  'arrowshape.turn.up.left': Reply,
+  'arrowshape.turn.up.left.2': ReplyAll,
+  'arrowshape.turn.up.right': Forward,
+  // Development-only mock data marker (components/mail/mock-banner.tsx).
+  'flask': FlaskConical,
   // People
   'person.fill': User,
   'person.2.fill': Users,
