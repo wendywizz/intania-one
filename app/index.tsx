@@ -767,6 +767,10 @@ export default function HomeScreen() {
   // which also flips true/false around a later manual retry — that retry must
   // not re-trigger the whole-page gate below.
   const [isSummaryReady, setIsSummaryReady] = useState(false);
+  // Whether the page has been shown once. Only the first load waits for
+  // everything behind the full-screen loader; after that (e.g. going back to
+  // Home from a module) the page shows at once and each band spins on its own.
+  const [hasShownHome, setHasShownHome] = useState(false);
   const [upcomingExams, setUpcomingExams] = useState<ExamTask[]>([]);
   const [absenceApproval, setAbsenceApproval] = useState<{ show: boolean; count: number }>({
     show: false,
@@ -827,11 +831,10 @@ export default function HomeScreen() {
         setUnreadCount(0);
       }
 
-      // No per-section spinner here — the whole page gates behind the single
-      // full-screen loader below until this settles. Reset on every focus
-      // (not just first mount) so coming back from another screen shows that
-      // loader again rather than leaving the last visit's cards up while this
-      // refetches quietly underneath.
+      // Reset on every focus (not just first mount) so coming back from
+      // another screen swaps the last visit's cards for the news band's own
+      // small spinner while this refetches — the page itself stays up; only
+      // the very first load gates behind the full-screen loader below.
       setIsNewsReady(false);
       void staffNewsFeed().then((items) => {
         if (!isActive) return;
@@ -860,8 +863,8 @@ export default function HomeScreen() {
       if (isAuthLoading) return;
 
       // Reset on every focus, not just first mount — matches isNewsReady
-      // above, so a revisit gates the whole page behind the full-screen
-      // loader again instead of only the upcoming-shift band's own spinner.
+      // above. On a revisit the page is already up, so this only shows the
+      // upcoming-shift band's own spinner, not the full-screen loader.
       setIsSummaryReady(false);
 
       const staffId = String(authUser?.staffId ?? '').trim();
@@ -1050,16 +1053,18 @@ export default function HomeScreen() {
     );
   }, []);
 
-  // ─── Whole-page loading gate ────────────────────────────────────────────────
-  // Nothing on this screen renders piecemeal: auth, the news feed and the
-  // shift-tile group (summary + exams + absence/timestamp approvals) all have
-  // to have settled before anything shows. Until then the page is blank but
-  // for the loader — no header, no partially-loaded sections popping in one
-  // at a time. isNewsReady/isSummaryReady are reset to false at the top of
-  // their own useFocusEffect (see above), so returning to this screen from
-  // anywhere re-gates the whole page behind the loader, the same as a first
-  // load — not just the upcoming-shift band's own spinner.
-  if (isAuthLoading || !isNewsReady || !isSummaryReady) {
+  useEffect(() => {
+    if (isNewsReady && isSummaryReady) setHasShownHome(true);
+  }, [isNewsReady, isSummaryReady]);
+
+  // ─── First-load gate ────────────────────────────────────────────────────────
+  // On the first load, auth, the news feed and the shift-tile group (summary +
+  // exams + absence/timestamp approvals) all settle before anything shows, so
+  // sections don't pop in one at a time on an otherwise empty screen. After
+  // that, returning to Home shows the page straight away: isNewsReady and
+  // isSummaryReady still reset on every focus, but only drive each band's own
+  // small spinner (see the news band and UpcomingShiftSection).
+  if (isAuthLoading || (!hasShownHome && (!isNewsReady || !isSummaryReady))) {
     return (
       <View style={[styles.container, styles.center]}>
         <LoadingAnimate />
@@ -1180,7 +1185,11 @@ export default function HomeScreen() {
 
             {/* News cards — horizontal scroll, break out to the band edges */}
             <View style={styles.newsScrollOuter}>
-            {displayedNews.length === 0 ? (
+            {!isNewsReady ? (
+              <View style={[styles.newsEmptyCard, { width: screenWidth - D.pad * 2 }]}>
+                <ActivityIndicator color={m.textMuted} />
+              </View>
+            ) : displayedNews.length === 0 ? (
               <View style={[styles.newsEmptyCard, { width: screenWidth - D.pad * 2 }]}>
                 <View style={styles.newsEmptyIcon}>
                   <IconSymbol name="doc.text.fill" size={20} color={m.textFaint} />

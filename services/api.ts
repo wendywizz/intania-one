@@ -147,10 +147,9 @@ export function withApiToken(input: RequestInfo | URL, init?: RequestInit): Requ
   return { ...init, headers: { ...headers, Authorization: `Bearer ${token}` } };
 }
 
-export async function fetchWithTimeout(
-  input: RequestInfo | URL,
-  init?: RequestInit,
-) {
+const RETRY_DELAY_MS = 300;
+
+async function fetchOnce(input: RequestInfo | URL, init?: RequestInit) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -159,18 +158,38 @@ export async function fetchWithTimeout(
       ...withApiToken(input, init),
       signal: controller.signal,
     });
-  } catch (error) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[api] request failed", String(input), error);
-    }
-
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new Error(MESSAGE_CANNOT_CONNECT_TO_SERVER);
-    }
-
-    throw error;
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+export async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+) {
+  const method = (init?.method ?? "GET").toUpperCase();
+  // On a real device a pooled keep-alive socket the server already closed fails
+  // instantly with "Network request failed", and the very next attempt succeeds.
+  // Only safe to repeat for reads — a retried POST could submit twice.
+  const attempts = method === "GET" || method === "HEAD" ? 2 : 1;
+
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fetchOnce(input, init);
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[api] request failed", `attempt ${attempt}`, String(input), error);
+      }
+
+      const aborted = error instanceof Error && error.name === "AbortError";
+
+      if (!aborted && attempt < attempts) {
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+        continue;
+      }
+
+      throw new Error(MESSAGE_CANNOT_CONNECT_TO_SERVER);
+    }
   }
 }
 
