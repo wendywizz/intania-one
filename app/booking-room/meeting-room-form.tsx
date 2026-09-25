@@ -25,9 +25,10 @@
  * order, so there is nothing to stage the way classroom booking's cart does.
  */
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { router } from 'expo-router';
+import { router, useFocusEffect, useNavigation } from 'expo-router';
 import type { Href } from 'expo-router';
 import {
+  BackHandler,
   Platform,
   Pressable,
   ScrollView,
@@ -261,6 +262,26 @@ export default function MeetingRoomFormScreen() {
     setStep(STEP_ORDER[index - 1]);
   }, [step]);
 
+  // Every way out of this screen past step 1 has to mean "previous step", not
+  // "leave": leaving unmounts the wizard, and everything typed so far goes with
+  // it. The header arrow is wired to goBack below; this covers the iOS swipe
+  // and Android's hardware back.
+  const navigation = useNavigation();
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: step === 'basics' });
+  }, [navigation, step]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (step === 'basics') return undefined;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        goBack();
+        return true;
+      });
+      return () => sub.remove();
+    }, [step, goBack]),
+  );
+
   // The last step's own "confirm" button — validates the one field that step
   // still owns (the leader) before opening the confirm modal.
   const requestSubmit = useCallback(() => {
@@ -469,12 +490,20 @@ export default function MeetingRoomFormScreen() {
     [options, foodQty],
   );
 
+  const selectedLeader = options?.leaders.find((l) => String(l.staff_id) === leaderId) ?? null;
+
   const summaryRows: DetailRow[] = [
     { label: TEXT.MEETING_ROOM_FORM_PURPOSE_LABEL, value: detail },
     { label: TEXT.MEETING_ROOM_FORM_TYPE_LABEL, value: typeOptions.find((t) => t.value === typeId)?.label ?? '' },
     { label: TEXT.MEETING_ROOM_FORM_MAN_LABEL, value: totalMan },
     { label: TEXT.MEETING_ROOM_FORM_ROOM_LABEL, value: roomSummaryLabel },
-    { label: TEXT.MEETING_ROOM_FORM_LEADER_LABEL, value: leaderOptions.find((l) => l.value === leaderId)?.label ?? '' },
+    {
+      label: TEXT.MEETING_ROOM_FORM_LEADER_LABEL,
+      value: selectedLeader?.name ?? '',
+      leading: selectedLeader ? (
+        <UserAvatar staffId={selectedLeader.uni_staff_id ?? selectedLeader.staff_id} size={40} />
+      ) : undefined,
+    },
     { label: TEXT.MEETING_ROOM_FORM_COMMENT_LABEL, value: comment, numberOfLines: 2 },
   ];
 
@@ -592,7 +621,7 @@ export default function MeetingRoomFormScreen() {
     <ThemedView style={styles.container}>
       <ScreenHeader
         title={TEXT.MEETING_ROOM_FORM_NAV_TITLE}
-        backHref="/booking-room/select-room-type"
+        onBackPress={goBack}
         titleInNavBar
         tone="primary"
       />

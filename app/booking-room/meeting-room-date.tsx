@@ -165,7 +165,7 @@ export default function MeetingRoomDateScreen() {
     <ThemedView style={styles.container}>
       <ScreenHeader
         title={isEdit ? TEXT.MEETING_ROOM_DATE_NAV_TITLE_EDIT : TEXT.MEETING_ROOM_DATE_NAV_TITLE_ADD}
-        backHref="/booking-room/meeting-room-form"
+        onBackPress={goBackToForm}
         titleInNavBar
         tone="primary"
       />

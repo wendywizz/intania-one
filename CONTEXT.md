@@ -3,7 +3,7 @@
 - Before editing this project, read this CONTEXT.md and AGENT.md first.
 - **Anything touching notifications** (notificationService, notification-link
   routes, device registration, the notification screen): read
-  `../scooba-service/NOTIFICATION.md` first — §0.1 is the to-do list, §0.2 the
+  `../scooba-service/docs/NOTIFICATION.md` first — §0.1 is the to-do list, §0.2 the
   change log for the whole system — and after every change add a row to §0.2 and
   update §0.1 there.
 - Before adding an external package, prefer existing project dependencies first.
@@ -588,7 +588,7 @@ app switches on `data.type` to deep-link; the wording is decided entirely on the
 # Theming & Colors
 - All colors — font/text color, background color, border color, icon color, everything — must come from the color variables in `constants/theme.ts`. Never hardcode hex values (e.g. `#ffffff`, `#000`) in components or screens.
 - Consume the palette via `useColors()` (inline) or `useThemedStyles((c) => …)` (StyleSheet). Reference semantic roles (`c.surface`, `c.text`, `c.primary`, `c.border`, `c.textMuted`, `c.success`/`c.danger`/`c.warning`/`c.info`, `c.amethyst`/`c.carrot`, …) so screens flip correctly between light and dark.
-- The brand primary is `#B33939`. If a needed color is missing, add it to the `AppColors` type + `LightColors`/`DarkColors` in `constants/theme.ts` (and mirror it in `DESIGN.md`) — do not invent a one-off hex in the component.
+- The brand primary is `#B33939`. If a needed color is missing, add it to the `AppColors` type + `LightColors`/`DarkColors` in `constants/theme.ts` (and mirror it in `docs/DESIGN.md`) — do not invent a one-off hex in the component.
 - The legacy indigo palette (`ColorPalette` / `SemanticColors` / `useDesignSystem`) has been removed; do not reintroduce it.
 
 # Shared UI Components

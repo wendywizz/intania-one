@@ -11,6 +11,8 @@ export type DetailRow = {
   label: string;
   value: string;
   icon?: IconSymbolName;
+  /** Rendered in the icon's place when set, e.g. a person's avatar. */
+  leading?: ReactNode;
   /** Caps the value to this many lines (ellipsized) — a long free-text note
    *  shouldn't stretch the whole card. Omitted, the value wraps in full. */
   numberOfLines?: number;
@@ -42,7 +44,7 @@ export function DetailRows({ rows, style }: { rows: DetailRow[]; style?: StylePr
           key={row.label}
           style={[styles.row, index === visible.length - 1 ? styles.rowLast : undefined]}
         >
-          {row.icon ? <IconSymbol name={row.icon} size={22} color={c.inverse} /> : null}
+          {row.leading ?? (row.icon ? <IconSymbol name={row.icon} size={22} color={c.inverse} /> : null)}
           <View style={styles.rowText}>
             <ThemedText style={styles.label}>{row.label}</ThemedText>
             <ThemedText style={styles.value} numberOfLines={row.numberOfLines} ellipsizeMode="tail">

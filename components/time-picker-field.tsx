@@ -10,8 +10,10 @@
  * library and open/close pattern that inline precedent uses:
  *   - Android: DateTimePickerAndroid.open() — a native dialog, no modal state
  *     of our own to manage.
- *   - iOS: an inline spinner shown under the trigger, dismissed by a "เสร็จ"
- *     button, since iOS has no native modal for this picker.
+ *   - iOS: the spinner inside the app's bottom `Sheet`, committed by "เสร็จ".
+ *     Not inline under the trigger: the spinner's intrinsic width is wider
+ *     than a half-width column, so an end-time field there overflowed the
+ *     screen's right edge.
  * Web has no native time picker in Expo's RN runtime, so the trigger opens
  * the app-wide `SelectSheet` with one combined "HH:MM" list — hour and minute
  * picked together in one sheet, not two separate taps/sheets, the same as a
@@ -25,7 +27,7 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { Clock } from 'lucide-react-native';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -37,8 +39,11 @@ import {
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/ui/button';
 import { SelectSheet } from '@/components/ui/select-sheet';
+import { Sheet } from '@/components/ui/sheet';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { ThemeContext } from '@/context/theme-context';
 
 type TimePickerFieldProps = {
   label: string;
@@ -51,11 +56,11 @@ type TimePickerFieldProps = {
   iconColor?: string;
   iconSize?: number;
   /**
-   * Web sheet only: hides every time at or before this Date's time-of-day —
-   * an end-time field passes its paired start time so it can never even be
-   * set to an invalid value. Native pickers aren't restricted (Android's own
-   * time dialog has no such option); the screen's own validation is what
-   * enforces the rule there, and stays the real backstop everywhere.
+   * Web and iOS: blocks every time at or before this Date's time-of-day — an
+   * end-time field passes its paired start time so it can never even be set
+   * to an invalid value. Android's own time dialog has no such option; the
+   * screen's own validation enforces the rule there, and stays the real
+   * backstop everywhere.
    */
   minExclusive?: Date | null;
   onChange: (date: Date) => void;
@@ -92,6 +97,37 @@ function withTimeParts(base: Date | null, hours: number, minutes: number) {
   return date;
 }
 
+const DAY_START_MINUTES = DAY_START_HOUR * 60;
+const DAY_END_MINUTES = 24 * 60 - MINUTE_INTERVAL;
+
+function minutesOf(date: Date) {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function atMinutes(base: Date | null, minutes: number) {
+  return withTimeParts(base, Math.floor(minutes / 60), minutes % 60);
+}
+
+/** Earliest selectable slot, as minutes since midnight. */
+function earliestMinutes(minExclusive?: Date | null) {
+  return minExclusive
+    ? Math.max(DAY_START_MINUTES, minutesOf(minExclusive) + MINUTE_INTERVAL)
+    : DAY_START_MINUTES;
+}
+
+/**
+ * What the iOS spinner opens on. It must already sit on a real slot: iOS only
+ * fires onChange when the wheel moves, so tapping "เสร็จ" without scrolling
+ * commits exactly this value, and an unrounded "now" would save e.g. 13:47.
+ */
+function initialDraft(value: Date | null, minExclusive?: Date | null) {
+  if (value) return value;
+  const now = new Date();
+  const roundedNow = Math.ceil(minutesOf(now) / MINUTE_INTERVAL) * MINUTE_INTERVAL;
+  const minutes = Math.min(DAY_END_MINUTES, Math.max(earliestMinutes(minExclusive), roundedNow));
+  return atMinutes(now, minutes);
+}
+
 export function TimePickerField({
   label,
   hideLabel,
@@ -106,22 +142,17 @@ export function TimePickerField({
 }: TimePickerFieldProps) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const [isIosPickerOpen, setIsIosPickerOpen] = useState(false);
+  const isDarkMode = useContext(ThemeContext)?.isDarkMode ?? false;
+  const [iosDraft, setIosDraft] = useState<Date | null>(null);
   const [isWebSheetOpen, setIsWebSheetOpen] = useState(false);
 
   const timeSheetOptions = minExclusive
     ? TIME_SHEET_OPTIONS.filter((option) => option.id > formatTime(minExclusive))
     : TIME_SHEET_OPTIONS;
 
-  const handleChange = (event: DateTimePickerEvent, nextDate?: Date) => {
-    if (Platform.OS === 'android') {
-      // Android's picker is its own dialog, already closed by the time this fires.
-      if (event.type === 'set' && nextDate) {
-        onChange(nextDate);
-      }
-      return;
-    }
-    if (nextDate) {
+  // Android's picker is its own dialog, already closed by the time this fires.
+  const handleAndroidChange = (event: DateTimePickerEvent, nextDate?: Date) => {
+    if (event.type === 'set' && nextDate) {
       onChange(nextDate);
     }
   };
@@ -134,15 +165,20 @@ export function TimePickerField({
         is24Hour: true,
         display: 'default',
         minuteInterval: MINUTE_INTERVAL,
-        onChange: handleChange,
+        onChange: handleAndroidChange,
       });
       return;
     }
     if (Platform.OS === 'ios') {
-      setIsIosPickerOpen(true);
+      setIosDraft(initialDraft(value, minExclusive));
       return;
     }
     setIsWebSheetOpen(true);
+  };
+
+  const confirmIosDraft = () => {
+    if (iosDraft) onChange(iosDraft);
+    setIosDraft(null);
   };
 
   const selectTime = (time: string) => {
@@ -178,25 +214,33 @@ export function TimePickerField({
         />
       ) : null}
 
-      {Platform.OS === 'ios' && isIosPickerOpen ? (
-        <>
-          <DateTimePicker
-            value={value ?? new Date()}
-            mode="time"
-            display="spinner"
-            is24Hour
-            minuteInterval={MINUTE_INTERVAL}
-            onChange={handleChange}
-          />
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setIsIosPickerOpen(false)}
-            style={styles.doneButton}>
-            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-              เสร็จ
-            </ThemedText>
-          </Pressable>
-        </>
+      {Platform.OS === 'ios' ? (
+        <Sheet
+          visible={iosDraft !== null}
+          onClose={() => setIosDraft(null)}
+          title={label}
+          scroll={false}>
+          {iosDraft ? (
+            <View style={styles.iosSheetBody}>
+              <DateTimePicker
+                value={iosDraft}
+                mode="time"
+                display="spinner"
+                is24Hour
+                locale="en_GB"
+                minuteInterval={MINUTE_INTERVAL}
+                minimumDate={atMinutes(iosDraft, earliestMinutes(minExclusive))}
+                maximumDate={atMinutes(iosDraft, DAY_END_MINUTES)}
+                themeVariant={isDarkMode ? 'dark' : 'light'}
+                onChange={(_event, next) => {
+                  if (next) setIosDraft(next);
+                }}
+                style={styles.iosSpinner}
+              />
+              <Button title="เสร็จ" onPress={confirmIosDraft} />
+            </View>
+          ) : null}
+        </Sheet>
       ) : null}
     </View>
   );
@@ -219,11 +263,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   buttonText: { flex: 1, color: c.text, fontSize: 15 },
   placeholder: { color: c.textFaint },
-  doneButton: {
-    alignSelf: 'flex-end',
-    backgroundColor: c.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
+  iosSheetBody: { gap: 12, paddingBottom: 4 },
+  iosSpinner: { alignSelf: 'stretch' },
 });
