@@ -33,6 +33,11 @@ describe('getNotificationRoute', () => {
     expect(getNotificationRoute(tapped('examinar_reminder'))).toBe('/examinar');
   });
 
+  it('opens the requests tab of the duty roster from an exchange/sale offer or its answer', () => {
+    expect(getNotificationRoute(tapped('comp_ot_swap_offered'))).toBe('/comp-ot?tab=swaps');
+    expect(getNotificationRoute(tapped('comp_ot_swap_answered'))).toBe('/comp-ot?tab=swaps');
+  });
+
   it('opens nothing for the day-before-a-holiday announcement', () => {
     expect(getNotificationRoute(tapped('holiday_reminder'))).toBeNull();
   });

@@ -116,9 +116,9 @@ const ROUTE_BY_TYPE: Readonly<Record<string, string>> = {
   comp_ot_holiday_reminder_day_before: '/comp-ot',
   comp_ot_holiday_reminder_hour_before: '/comp-ot',
   // แลกเวร / ขายเวร: an offer and an answer to one both land on the requests
-  // screen — that is where the offer is answered and where the result shows.
-  comp_ot_swap_offered: '/comp-ot/swaps',
-  comp_ot_swap_answered: '/comp-ot/swaps',
+  // tab — that is where the offer is answered and where the result shows.
+  comp_ot_swap_offered: '/comp-ot?tab=swaps',
+  comp_ot_swap_answered: '/comp-ot?tab=swaps',
 };
 
 function textValue(value: unknown) {

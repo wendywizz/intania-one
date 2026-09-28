@@ -1,15 +1,11 @@
-import { StatusBar } from 'expo-status-bar';
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { formatCompOtShift } from '@/components/comp-ot/comp-ot-format';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
-import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { useToast } from '@/components/toast-provider';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -18,11 +14,8 @@ import { AppFonts } from '@/constants/fonts';
 import { boxShadow } from '@/constants/shadows';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
-import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@/context/ThemeContext';
 import {
   cancelCompOtSwap,
-  getCompOtSwaps,
   respondCompOtSwap,
   type CompOtSwapRequest,
 } from '@/services/compOtService';
@@ -134,43 +127,41 @@ function SwapRequestCard({
   );
 }
 
-export default function CompOtSwapsScreen() {
-  const { isDarkMode } = useTheme();
+type CompOtSwapsTabProps = {
+  staffId: string;
+  /** Owned by the screen, which also needs them for the pending badges on the roster. */
+  requests: CompOtSwapRequest[];
+  isLoading: boolean;
+  error: string;
+  onReload: () => Promise<void>;
+  /** After accepting, declining or cancelling - the roster may have changed owner too. */
+  onChanged: () => void;
+};
+
+/**
+ * The exchange/sale requests the caller sent or was sent, with answering them.
+ * The second tab of the roster screen: a request that was accepted moves a
+ * shift, so the screen reloads the roster as well once one is answered.
+ */
+export function CompOtSwapsTab({ staffId, requests, isLoading, error, onReload, onChanged }: CompOtSwapsTabProps) {
   const styles = useThemedStyles(makeStyles);
   const { showToast } = useToast();
-  const { user: authUser } = useAuth();
-  const staffId = authUser?.staffId ?? '';
 
-  const [requests, setRequests] = useState<CompOtSwapRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState('');
   const [pending, setPending] = useState<{ request: CompOtSwapRequest; action: SwapAction } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const load = useCallback(
-    async (showRefreshing = false) => {
-      if (!staffId) return;
-      if (showRefreshing) setIsRefreshing(true);
-      else setIsLoading(true);
-      setError('');
-      try {
-        setRequests(await getCompOtSwaps(staffId));
-      } catch (err) {
-        setRequests([]);
-        setError(err instanceof Error ? err.message : TEXT.COMP_OT_SWAPS_LOAD_ERROR);
-      } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
-      }
-    },
-    [staffId],
-  );
-
-  useFocusEffect(useCallback(() => { load(); }, [load]));
-
   const incoming = useMemo(() => requests.filter((r) => r.direction === 'incoming'), [requests]);
   const outgoing = useMemo(() => requests.filter((r) => r.direction === 'outgoing'), [requests]);
+
+  async function handleRefresh() {
+    setIsRefreshing(true);
+    try {
+      await onReload();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }
 
   async function handleConfirm() {
     if (!pending || !staffId) return;
@@ -187,47 +178,37 @@ export default function CompOtSwapsScreen() {
           'success',
         );
       }
-      setPending(null);
-      await load(true);
     } catch (err) {
-      // The server may have dropped the request (a shift moved on) - reload so
-      // the list stops showing something that can no longer be answered.
+      // The server may have dropped the request (a shift moved on) - reload
+      // either way so the list stops showing something that can no longer be answered.
       showToast(err instanceof Error ? err.message : TEXT.COMP_OT_SWAP_ACTION_ERROR, 'error');
-      setPending(null);
-      await load(true);
     } finally {
+      setPending(null);
       setIsSubmitting(false);
+      onChanged();
     }
   }
 
   const copy = pending ? confirmCopy(pending.request, pending.action) : null;
+  const select = (request: CompOtSwapRequest, action: SwapAction) => setPending({ request, action });
 
   return (
-    <ThemedView style={styles.container}>
-      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-      <NavTopBar
-        title={TEXT.COMP_OT_SWAPS_TITLE}
-        subtitle={TEXT.COMP_OT_SWAPS_SUBTITLE}
-        backHref="/comp-ot"
-        showHomeButton={false}
-        tone="primary"
-      />
-
+    <View style={styles.root}>
       {isLoading && requests.length === 0 ? (
         <LoadingAnimate title={TEXT.SHARED_LOADING_DATA_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
       ) : error ? (
-        <ErrorState message={error} onRetry={() => load()} />
+        <ErrorState message={error} onRetry={() => onReload()} />
       ) : requests.length === 0 ? (
         <EmptyState preset="schedule" message={TEXT.COMP_OT_SWAPS_EMPTY} />
       ) : (
         <ScrollView
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => load(true)} />}>
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}>
           {incoming.length > 0 ? (
             <>
               <ThemedText style={styles.sectionTitle}>{`${TEXT.COMP_OT_SWAPS_INCOMING} (${incoming.length})`}</ThemedText>
               {incoming.map((r) => (
-                <SwapRequestCard key={r.request_id} request={r} onAction={(request, action) => setPending({ request, action })} />
+                <SwapRequestCard key={r.request_id} request={r} onAction={select} />
               ))}
             </>
           ) : null}
@@ -236,7 +217,7 @@ export default function CompOtSwapsScreen() {
             <>
               <ThemedText style={styles.sectionTitle}>{`${TEXT.COMP_OT_SWAPS_OUTGOING} (${outgoing.length})`}</ThemedText>
               {outgoing.map((r) => (
-                <SwapRequestCard key={r.request_id} request={r} onAction={(request, action) => setPending({ request, action })} />
+                <SwapRequestCard key={r.request_id} request={r} onAction={select} />
               ))}
             </>
           ) : null}
@@ -254,12 +235,12 @@ export default function CompOtSwapsScreen() {
         onConfirm={handleConfirm}
         onCancel={() => setPending(null)}
       />
-    </ThemedView>
+    </View>
   );
 }
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
-  container: { flex: 1 },
+  root: { flex: 1 },
   listContent: { padding: 16, paddingBottom: 32 },
   sectionTitle: {
     fontFamily: AppFonts.psuBold,
