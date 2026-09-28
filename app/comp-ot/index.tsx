@@ -7,6 +7,8 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-
 
 import { CompOtDutyCard } from '@/components/comp-ot/comp-ot-duty-card';
 import { CompOtStampModal } from '@/components/comp-ot/comp-ot-stamp-modal';
+import { CompOtSwapOfferSheet, type CompOtSwapOffer, type CompOtSwapTarget } from '@/components/comp-ot/comp-ot-swap-offer-sheet';
+import { CompOtSwapsButton } from '@/components/comp-ot/comp-ot-swaps-button';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -24,11 +26,16 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/toast-provider';
 import {
   getCompOtSchedule,
+  getCompOtSwapCandidates,
+  getCompOtSwaps,
+  offerCompOtSwap,
   stampCompOtEvent,
   type CompOtEvent,
   type CompOtShiftConfig,
   type CompOtShiftType,
   type CompOtStampFlag,
+  type CompOtSwapRequest,
+  type CompOtSwapType,
 } from '@/services/compOtService';
 
 moment.locale('th');
@@ -105,6 +112,14 @@ export default function CompOtScheduleScreen() {
   const [stampTarget, setStampTarget] = useState<{ event: CompOtEvent; flag: CompOtStampFlag } | null>(null);
   const [isSubmittingStamp, setIsSubmittingStamp] = useState(false);
 
+  // แลกเวร / ขายเวร: the pending requests (they decide which shifts show the
+  // offer buttons, and the count on the header button), plus the offer in
+  // progress - candidates are fetched before the sheet opens.
+  const [swaps, setSwaps] = useState<CompOtSwapRequest[]>([]);
+  const [offer, setOffer] = useState<CompOtSwapOffer | null>(null);
+  const [isPreparingOffer, setIsPreparingOffer] = useState(false);
+  const [isSubmittingOffer, setIsSubmittingOffer] = useState(false);
+
   // Every department member's shifts, not just the caller's — the single list
   // carries what used to be two tabs, told apart by each card's badge.
   const loadSchedule = useCallback(
@@ -136,7 +151,18 @@ export default function CompOtScheduleScreen() {
     [staffId, visibleMonth],
   );
 
-  useFocusEffect(useCallback(() => { loadSchedule(); }, [loadSchedule]));
+  // Secondary to the roster itself: if this fails the list still works, the
+  // shifts just do not show as pending until the next load.
+  const loadSwaps = useCallback(async () => {
+    if (!staffId) return;
+    try {
+      setSwaps(await getCompOtSwaps(staffId));
+    } catch {
+      setSwaps([]);
+    }
+  }, [staffId]);
+
+  useFocusEffect(useCallback(() => { loadSchedule(); loadSwaps(); }, [loadSchedule, loadSwaps]));
 
   // A new month asks a different question — the old answer must go first, or
   // last month's events would sit under the new header until the request
@@ -177,6 +203,18 @@ export default function CompOtScheduleScreen() {
     const byShiftType = shiftType === 'all' ? events : events.filter((e) => e.shift_type === shiftType);
     return showAllMonth ? byShiftType : byShiftType.filter((e) => e.date >= todayKey);
   }, [events, shiftType, showAllMonth, todayKey]);
+
+  // The caller's own shifts already inside a pending request: the ones they
+  // offered, and (for an exchange) the one someone asked them for.
+  const pendingEventIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const r of swaps) {
+      const own = r.direction === 'outgoing' ? r.source_event : r.target_event;
+      if (own) ids.add(own.event_id);
+    }
+    return ids;
+  }, [swaps]);
+  const incomingSwapCount = useMemo(() => swaps.filter((r) => r.direction === 'incoming').length, [swaps]);
 
   const configByCid = useMemo(() => new Map(shiftConfigs.map((c) => [c.cid, c])), [shiftConfigs]);
 
@@ -222,6 +260,39 @@ export default function CompOtScheduleScreen() {
     }
   }
 
+  async function handleOfferPress(event: CompOtEvent, type: CompOtSwapType) {
+    if (!staffId || isPreparingOffer) return;
+    setIsPreparingOffer(true);
+    try {
+      const candidates = await getCompOtSwapCandidates({ staffId, eventId: event.event_id, type });
+      setOffer({ event, candidates });
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : TEXT.COMP_OT_SWAP_CANDIDATES_ERROR, 'error');
+    } finally {
+      setIsPreparingOffer(false);
+    }
+  }
+
+  async function handleOfferSubmit(target: CompOtSwapTarget) {
+    if (!offer || !staffId) return;
+    setIsSubmittingOffer(true);
+    try {
+      await offerCompOtSwap({
+        staffId,
+        eventId: offer.event.event_id,
+        type: offer.candidates.type,
+        ...target,
+      });
+      setOffer(null);
+      showToast(TEXT.COMP_OT_SWAP_OFFER_SUCCESS, 'success');
+      await loadSwaps();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : TEXT.COMP_OT_SWAP_OFFER_ERROR, 'error');
+    } finally {
+      setIsSubmittingOffer(false);
+    }
+  }
+
   return (
     <ThemedView style={styles.container}>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
@@ -231,6 +302,7 @@ export default function CompOtScheduleScreen() {
         backHref="/"
         showHomeButton={false}
         tone="primary"
+        rightContent={<CompOtSwapsButton incomingCount={incomingSwapCount} />}
       />
 
       <View style={styles.content}>
@@ -299,6 +371,8 @@ export default function CompOtScheduleScreen() {
                 dateLabel={formatDateLabel(item.date)}
                 loginPeriodMinutes={configByCid.get(item.cid)?.login_period ?? 0}
                 onStampPress={(flag) => setStampTarget({ event: item, flag })}
+                swapPending={pendingEventIds.has(item.event_id)}
+                onOfferPress={(type) => handleOfferPress(item, type)}
               />
             )}
             ListEmptyComponent={<EmptyState preset="schedule" message={TEXT.COMP_OT_MONTH_EMPTY} />}
@@ -313,6 +387,13 @@ export default function CompOtScheduleScreen() {
         loading={isSubmittingStamp}
         onCancel={() => setStampTarget(null)}
         onSubmit={handleStampSubmit}
+      />
+
+      <CompOtSwapOfferSheet
+        offer={offer}
+        submitting={isSubmittingOffer}
+        onClose={() => setOffer(null)}
+        onSubmit={handleOfferSubmit}
       />
     </ThemedView>
   );

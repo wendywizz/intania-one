@@ -160,3 +160,151 @@ export async function stampCompOtEvent(params: {
 
   return data;
 }
+
+/* -------------------------------------------------------------------------- */
+/* แลกเวร / ขายเวร — the rules are enforced by the PHP API (Swap_Rules); what   */
+/* is here only decides what to offer the user, and relays their choice.       */
+/* -------------------------------------------------------------------------- */
+
+export type CompOtSwapType = 'ex' | 'sell';
+
+export type CompOtSwapPerson = {
+  /** UNI_STAFF_ID */
+  staff_id: string | null;
+  staff_name: string | null;
+};
+
+export type CompOtSwapRequest = {
+  request_id: string;
+  /** 'ex' = exchange shifts with each other, 'sell' = hand the shift over. */
+  type: CompOtSwapType;
+  /** incoming = addressed to the caller, outgoing = made by the caller. */
+  direction: 'incoming' | 'outgoing';
+  /** The shift being offered. Null only if an admin deleted it since. */
+  source_event: CompOtEvent | null;
+  /** The shift asked for in return — exchange only. */
+  target_event: CompOtEvent | null;
+  from: CompOtSwapPerson;
+  to: CompOtSwapPerson;
+  /** Why the request can no longer be carried out (a shift moved on, or is
+   * about to start), or null while it can. Such a request can still be
+   * declined or cancelled, never accepted. */
+  invalid_reason: string | null;
+};
+
+export type CompOtSwapStatus = 'offered' | 'accepted' | 'declined' | 'cancelled';
+
+export type CompOtSwapResult = {
+  status: CompOtSwapStatus;
+  request: CompOtSwapRequest;
+};
+
+export type CompOtSwapCandidates =
+  | { type: 'ex'; events: CompOtEvent[] }
+  | { type: 'sell'; staff: CompOtSwapPerson[] };
+
+/** A shift can change hands only until this long before it starts. Same value
+ * as Swap_Rules::LEAD_MINUTES on the PHP side, which is what actually enforces it. */
+const SWAP_LEAD_MINUTES = 60;
+
+/**
+ * Whether it is still worth showing "แลกเวร / ขายเวร" for a shift: not yet
+ * stamped, and more than an hour from starting. The server checks the same
+ * thing, so this only stops the button appearing where it can never work.
+ */
+export function canOfferCompOtEvent(
+  event: Pick<CompOtEvent, 'date' | 'start_time' | 'flag_in' | 'flag_out'>,
+  now: Date = new Date(),
+): boolean {
+  if (event.flag_in || event.flag_out) return false;
+  const start = new Date(`${event.date}T${event.start_time}`);
+  return start.getTime() - SWAP_LEAD_MINUTES * 60000 > now.getTime();
+}
+
+async function postCompOtSwapAction(
+  url: string,
+  payload: Record<string, unknown>,
+  fallbackError: string,
+): Promise<CompOtSwapResult> {
+  const json = await requestJson(url, { method: 'POST', body: JSON.stringify(payload) });
+  const data = extractObject<CompOtSwapResult>(json);
+  if (!data) {
+    throw new Error(extractError(json) || fallbackError);
+  }
+  return data;
+}
+
+/** Pending requests the caller sent or was sent, newest first. */
+export async function getCompOtSwaps(staffId: string): Promise<CompOtSwapRequest[]> {
+  const json = await requestJson(createCompOtUrl(ENDPOINTS.compOtSwaps, { staff_id: staffId }));
+  const data = extractObject<{ requests?: CompOtSwapRequest[] }>(json);
+  if (!data) {
+    throw new Error(extractError(json) || 'โหลดคำขอแลกเวร/ขายเวรไม่สำเร็จ');
+  }
+  return Array.isArray(data.requests) ? data.requests : [];
+}
+
+/** Who a shift can be offered to: other people's later shifts (ex) or colleagues on the same roster (sell). */
+export async function getCompOtSwapCandidates(params: {
+  staffId: string;
+  eventId: string;
+  type: CompOtSwapType;
+}): Promise<CompOtSwapCandidates> {
+  const json = await requestJson(
+    createCompOtUrl(ENDPOINTS.compOtSwapCandidates, {
+      staff_id: params.staffId,
+      event_id: params.eventId,
+      type: params.type,
+    }),
+  );
+  const data = extractObject<{ events?: CompOtEvent[]; staff?: CompOtSwapPerson[] }>(json);
+  if (!data) {
+    throw new Error(extractError(json) || 'โหลดรายชื่อไม่สำเร็จ');
+  }
+  return params.type === 'ex'
+    ? { type: 'ex', events: Array.isArray(data.events) ? data.events : [] }
+    : { type: 'sell', staff: Array.isArray(data.staff) ? data.staff : [] };
+}
+
+/** Offer the caller's shift: to swap for `targetEventId` (ex) or hand over to `targetStaffId` (sell). */
+export function offerCompOtSwap(params: {
+  staffId: string;
+  eventId: string;
+  type: CompOtSwapType;
+  targetEventId?: string;
+  targetStaffId?: string;
+}): Promise<CompOtSwapResult> {
+  return postCompOtSwapAction(
+    ENDPOINTS.compOtSwaps,
+    {
+      staff_id: params.staffId,
+      event_id: params.eventId,
+      type: params.type,
+      target_event_id: params.targetEventId,
+      target_staff_id: params.targetStaffId,
+    },
+    'ส่งคำขอไม่สำเร็จ',
+  );
+}
+
+/** Answer a request addressed to the caller. */
+export function respondCompOtSwap(params: {
+  staffId: string;
+  requestId: string;
+  action: 'accept' | 'decline';
+}): Promise<CompOtSwapResult> {
+  return postCompOtSwapAction(
+    ENDPOINTS.compOtSwapRespond,
+    { staff_id: params.staffId, request_id: params.requestId, action: params.action },
+    'ตอบกลับคำขอไม่สำเร็จ',
+  );
+}
+
+/** Withdraw a request the caller made, while it is still pending. */
+export function cancelCompOtSwap(params: { staffId: string; requestId: string }): Promise<CompOtSwapResult> {
+  return postCompOtSwapAction(
+    ENDPOINTS.compOtSwapCancel,
+    { staff_id: params.staffId, request_id: params.requestId },
+    'ยกเลิกคำขอไม่สำเร็จ',
+  );
+}

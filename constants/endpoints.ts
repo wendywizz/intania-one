@@ -116,6 +116,10 @@ export const ENDPOINTS = {
   // --- comp-ot (เวรห้องคอมพิวเตอร์, dept 209 only) --------------------------
   compOt: `${API_BASE_URL}/api/comp-ot`,
   compOtStamp: `${API_BASE_URL}/api/comp-ot/stamp`,
+  compOtSwaps: `${API_BASE_URL}/api/comp-ot/swaps`,
+  compOtSwapCandidates: `${API_BASE_URL}/api/comp-ot/swaps/candidates`,
+  compOtSwapRespond: `${API_BASE_URL}/api/comp-ot/swaps/respond`,
+  compOtSwapCancel: `${API_BASE_URL}/api/comp-ot/swaps/cancel`,
 
   // --- executive-calendar --------------------------------------------------
   // A Strapi content type, so this one is a base plus a path joined at call

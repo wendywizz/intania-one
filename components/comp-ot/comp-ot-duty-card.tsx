@@ -2,12 +2,19 @@ import { CalendarDays, Clock } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { PillButton } from '@/components/ui/pill-button';
 import { UserAvatar } from '@/components/user-avatar';
 import { AppFonts } from '@/constants/fonts';
 import { boxShadow } from '@/constants/shadows';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
-import { getCompOtStampWindow, type CompOtEvent, type CompOtStampFlag } from '@/services/compOtService';
+import {
+  canOfferCompOtEvent,
+  getCompOtStampWindow,
+  type CompOtEvent,
+  type CompOtStampFlag,
+  type CompOtSwapType,
+} from '@/services/compOtService';
 
 type CompOtBadgeKind = 'mine' | 'today' | 'past';
 
@@ -46,19 +53,36 @@ type CompOtDutyCardProps = {
    * side of start_time/end_time the shift may be stamped within. */
   loginPeriodMinutes: number;
   onStampPress?: (flag: CompOtStampFlag) => void;
+  /** A pending exchange/sale request already involves this shift. */
+  swapPending?: boolean;
+  /** Set to offer "แลกเวร / ขายเวร" on the caller's own upcoming shifts. */
+  onOfferPress?: (type: CompOtSwapType) => void;
 };
 
 // Same row shape as the exam-invigilation schedule's ExamCard (examinar/index.tsx):
 // a leading circle, a title + icon/text meta rows, and one status badge on the
 // right — reused here with the person's photo as the leading circle and their
 // name as the title, since a duty roster row is "who", not "where".
-export function CompOtDutyCard({ event, isToday, isPast, dateLabel, loginPeriodMinutes, onStampPress }: CompOtDutyCardProps) {
+export function CompOtDutyCard({
+  event,
+  isToday,
+  isPast,
+  dateLabel,
+  loginPeriodMinutes,
+  onStampPress,
+  swapPending = false,
+  onOfferPress,
+}: CompOtDutyCardProps) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const badge = getBadge(event, isToday, isPast);
   const iconColor = isPast ? c.textFaint : c.textMuted;
   const timeRange = `${event.start_time.slice(0, 5)} - ${event.end_time.slice(0, 5)}`;
   const isHappeningNow = isToday && isWithinShiftNow(event);
+  // Only the owner's own shift, and only while it can still change hands - see
+  // canOfferCompOtEvent(). A shift already in a pending request shows that
+  // instead of the buttons, so the same shift cannot be offered twice.
+  const canOffer = !!onOfferPress && event.is_mine && !swapPending && canOfferCompOtEvent(event);
 
   // Stamping is only ever possible on the shift's own day (the server rejects
   // anything else outright — Ot_Controller::stamp()). Three outcomes for
@@ -139,6 +163,21 @@ export function CompOtDutyCard({ event, isToday, isPast, dateLabel, loginPeriodM
             ) : null}
           </View>
         ) : null}
+
+        {event.is_mine && swapPending ? (
+          <View style={[styles.swapPendingBadge, { backgroundColor: c.warningSoft }]}>
+            <ThemedText style={[styles.swapPendingText, { color: c.warningOnSoft }]}>
+              {TEXT.COMP_OT_SWAP_PENDING_BADGE}
+            </ThemedText>
+          </View>
+        ) : null}
+
+        {canOffer ? (
+          <View style={styles.swapRow}>
+            <PillButton label={TEXT.COMP_OT_SWAP_BUTTON} onPress={() => onOfferPress?.('ex')} />
+            <PillButton label={TEXT.COMP_OT_SELL_BUTTON} onPress={() => onOfferPress?.('sell')} />
+          </View>
+        ) : null}
       </View>
 
       {badge ? (
@@ -209,6 +248,19 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   statusBadgeText: {
     fontFamily: AppFonts.psuBold,
     fontSize: 11,
+  },
+
+  swapRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  swapPendingBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: 8,
+  },
+  swapPendingText: {
+    fontSize: 12,
+    fontFamily: AppFonts.psuBold,
   },
 
   stampRow: { marginTop: 6 },
