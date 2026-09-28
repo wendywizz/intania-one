@@ -205,6 +205,8 @@ const MENU_ITEMS: readonly { title: string; href: string; icon: IconName }[] = [
   // A document, not another calendar: leave is filed as ใบลา, and the grid can
   // only carry so many calendar glyphs before they stop telling each other apart.
   { title: TEXT.ABSENCE_TITLE, href: MODULE_HREF.absence, icon: 'doc.text.fill' },
+  // Mail is daily business too — checked as often as leave, so it sits with it.
+  { title: TEXT.MAIL_MENU_TITLE, href: MODULE_HREF.mail, icon: 'envelope.fill' },
   { title: TEXT.MEETING_MENU_TITLE, href: MODULE_HREF.meeting, icon: 'person.2.fill' },
   // Opens the hub in app/repair.tsx, which hands off to whichever of the two
   // standalone modules (repair-computer / notice-repair) the person picks.
@@ -213,7 +215,6 @@ const MENU_ITEMS: readonly { title: string; href: string; icon: IconName }[] = [
   // A clipboard, not a checkmark: a tick reads as "approved/done", and this is a
   // roster of duty to turn up for.
   { title: TEXT.EXAMINER_MENU_TITLE, href: MODULE_HREF.exam, icon: 'clipboard-list' },
-  { title: TEXT.MAIL_MENU_TITLE, href: MODULE_HREF.mail, icon: 'envelope.fill' },
   { title: TEXT.CALENDAR_TITLE, href: MODULE_HREF.calendar, icon: 'calendar-range' },
   { title: TEXT.PERSON_SEARCH_TITLE, href: MODULE_HREF.person, icon: 'user-round-search' },
 ];

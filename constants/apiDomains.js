@@ -12,8 +12,8 @@
 // scooba-service/CONTEXT.md and the [Scooba-service local dev] note.
 module.exports = {
   development: 'http://172.31.133.131:1337',
-    // Existing production Kong endpoint used by the released mobile app.
-  // Keep this until the create.eng.psu.ac.th route and certificate are
-  // verified on Android and iOS devices.
-  production: 'https://apis.eng.psu.ac.th/scooba',
+  // Base only — every endpoint appends `/api/...`, so requests land on
+  // https://ecs.eng.psu.ac.th/scooba/api/... . Let's Encrypt chain (ISRG
+  // Root X1), so it needs no Sectigo trust anchor on old Android.
+  production: 'https://ecs.eng.psu.ac.th/scooba',
 };

@@ -684,11 +684,14 @@ export default function TimestampDetailScreen() {
             <View style={[styles.field, styles.dateField]}>
               <ThemedText style={styles.fieldLabel}>{TEXT.TIMESTAMP_FIELD_ORIGINAL_DATE}</ThemedText>
               {displayTimestamp ? (
-                <TextInput
-                  editable={false}
-                  style={[styles.textInput, styles.readOnlyDateInput, webNoOutline]}
-                  value={displayTimestamp}
-                />
+                // Same box as the time button beside it (inputButton), not a
+                // TextInput: a read-only TextInput sizes its own line box, so its
+                // underline sat lower than the time field's on device.
+                <View style={styles.inputButton}>
+                  <ThemedText style={[styles.inputButtonText, styles.readOnlyDateText]}>
+                    {displayTimestamp}
+                  </ThemedText>
+                </View>
               ) : null}
             </View>
             <View style={[styles.field, styles.timeField]}>
@@ -1263,8 +1266,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     minHeight: 52,
     textAlignVertical: "top",
   },
-  readOnlyDateInput: {
-    minHeight: 40,
+  readOnlyDateText: {
     color: c.textMuted,
   },
   requestUserText: {
