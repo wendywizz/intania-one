@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
+import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { Bell, ChevronRight, KeyRound, LockKeyhole, MapPin, ScanFace, Moon, SunMoon } from 'lucide-react-native';
+import { Bell, Camera, ChevronRight, KeyRound, LockKeyhole, MapPin, ScanFace, Moon, SunMoon } from 'lucide-react-native';
 import { Alert, AppState, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -50,6 +51,7 @@ const APP_VERSION = Constants.expoConfig?.version ?? '—';
 const ICON_MAP: Record<string, React.ComponentType<{ size: number; color: string }>> = {
   notifications: Bell,
   location: MapPin,
+  camera: Camera,
   fingerprint: ScanFace,
   password: KeyRound,
   // Distinct from `password`: the two sit next to each other in the password
@@ -83,6 +85,10 @@ export default function SettingsScreen() {
   // whole setting, so this switch only ever mirrors what the OS says.
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [locationLoading, setLocationLoading] = useState(true);
+  // Same shape as location: one OS permission, shared by the face scan
+  // (vision-camera) and the photo pickers (expo-image-picker).
+  const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(true);
   // Tracks the last synced value so registration only fires on the off→on edge.
   const wasNotificationsEnabledRef = useRef(false);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
@@ -126,6 +132,17 @@ export default function SettingsScreen() {
     }
   }, []);
 
+  const syncCameraState = useCallback(async () => {
+    try {
+      const permission = await ImagePicker.getCameraPermissionsAsync();
+      setCameraEnabled(permission.status === 'granted');
+    } catch {
+      setCameraEnabled(false);
+    } finally {
+      setCameraLoading(false);
+    }
+  }, []);
+
   // Coming back from the OS Settings app is the case that matters: the trip out
   // backgrounds us, so 'active' is when the permission may have just changed.
   useEffect(() => {
@@ -133,10 +150,11 @@ export default function SettingsScreen() {
       if (next === 'active') {
         void syncNotificationState();
         void syncLocationState();
+        void syncCameraState();
       }
     });
     return () => subscription.remove();
-  }, [syncNotificationState, syncLocationState]);
+  }, [syncNotificationState, syncLocationState, syncCameraState]);
 
   // Covers mount and any return to this screen from elsewhere in the app —
   // including coming back from the create-password screen, which is why the
@@ -145,6 +163,7 @@ export default function SettingsScreen() {
     useCallback(() => {
       void syncNotificationState();
       void syncLocationState();
+      void syncCameraState();
       void Promise.all([getPasswordUnlockEnabled(), hasAppPassword()]).then(
         ([enabled, exists]) => {
           setPasswordExists(exists);
@@ -159,7 +178,7 @@ export default function SettingsScreen() {
           if (enabled && !exists) void setPasswordUnlockEnabled(false);
         },
       );
-    }, [syncNotificationState]),
+    }, [syncNotificationState, syncLocationState, syncCameraState]),
   );
 
   useEffect(() => {
@@ -271,6 +290,30 @@ export default function SettingsScreen() {
     }
   }
 
+  /** Same rules as location: we can ask for the camera, never give it back. */
+  async function handleCameraToggle(next: boolean) {
+    if (!next) {
+      Alert.alert(TEXT.SETTINGS_CAMERA_OFF_TITLE, TEXT.SETTINGS_CAMERA_OFF_MESSAGE, [
+        { text: TEXT.CANCEL, style: 'cancel' },
+        { text: TEXT.SETTINGS_OPEN_OS_SETTINGS, onPress: () => Linking.openSettings() },
+      ]);
+      return;
+    }
+
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (permission.status === 'granted') {
+      setCameraEnabled(true);
+      return;
+    }
+
+    if (permission.canAskAgain === false) {
+      Alert.alert(TEXT.SETTINGS_PERMISSION_REQUIRED_TITLE, TEXT.SETTINGS_CAMERA_BLOCKED_MESSAGE, [
+        { text: TEXT.CANCEL, style: 'cancel' },
+        { text: TEXT.SETTINGS_OPEN_OS_SETTINGS, onPress: () => Linking.openSettings() },
+      ]);
+    }
+  }
+
   async function handleNotificationsToggle(next: boolean) {
     if (next) {
       const granted = await requestNotificationPermission();
@@ -360,6 +403,19 @@ export default function SettingsScreen() {
                 value={locationEnabled}
                 onValueChange={handleLocationToggle}
                 disabled={locationLoading}
+              />
+            </View>
+
+            <View style={styles.row}>
+              <IconCircle name="camera" />
+              <View style={styles.rowBody}>
+                <ThemedText style={styles.rowTitle}>{TEXT.SETTINGS_CAMERA_TITLE}</ThemedText>
+                <ThemedText style={styles.rowSub}>{TEXT.SETTINGS_CAMERA_SUB}</ThemedText>
+              </View>
+              <Toggle
+                value={cameraEnabled}
+                onValueChange={handleCameraToggle}
+                disabled={cameraLoading}
               />
             </View>
           </View>
