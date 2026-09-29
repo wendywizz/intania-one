@@ -1583,6 +1583,7 @@ export const TEXT = {
   COMP_OT_SELL_CONFIRM_TITLE: 'ยืนยันขายเวร',
   COMP_OT_SELL_CONFIRM_MESSAGE: 'ขายเวร {mine} ให้ {name}',
   COMP_OT_SWAP_CONFIRM_SEND: 'ส่งคำขอ',
+  COMP_OT_SWAP_CONFIRM_CANCEL: 'ยกเลิก',
   COMP_OT_SWAP_OFFER_SUCCESS: 'ส่งคำขอแล้ว รอผู้รับตอบกลับ',
   COMP_OT_SWAP_OFFER_ERROR: 'ส่งคำขอไม่สำเร็จ',
   COMP_OT_SWAP_REQUEST_EX: 'ขอแลกเวร',

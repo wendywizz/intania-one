@@ -19,6 +19,10 @@ import { Animated, Easing, Platform } from 'react-native';
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const IN_MS = 190;
 const OUT_MS = 140;
+/** How long a closing pop sheet keeps its Modal mounted - for a caller that must
+ * not present another Modal until this one is really gone (see
+ * components/comp-ot/comp-ot-swap-offer-sheet.tsx). */
+export const POP_OUT_MS = OUT_MS;
 const FROM_SCALE = 0.94;
 
 export type PopAnimation = {

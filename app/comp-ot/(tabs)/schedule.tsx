@@ -1,14 +1,13 @@
 import moment from 'moment';
 import 'moment/locale/th';
 import { StatusBar } from 'expo-status-bar';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { CompOtDutyCard } from '@/components/comp-ot/comp-ot-duty-card';
 import { CompOtStampModal } from '@/components/comp-ot/comp-ot-stamp-modal';
 import { CompOtSwapOfferSheet, type CompOtSwapOffer, type CompOtSwapTarget } from '@/components/comp-ot/comp-ot-swap-offer-sheet';
-import { CompOtSwapsTab } from '@/components/comp-ot/comp-ot-swaps-tab';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
@@ -18,7 +17,6 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Toggle } from '@/components/ui/toggle';
-import { TopTabs, type TopTabItem } from '@/components/ui/top-tabs';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
@@ -28,16 +26,15 @@ import { useToast } from '@/components/toast-provider';
 import {
   getCompOtSchedule,
   getCompOtSwapCandidates,
-  getCompOtSwaps,
   offerCompOtSwap,
   stampCompOtEvent,
   type CompOtEvent,
   type CompOtShiftConfig,
   type CompOtShiftType,
   type CompOtStampFlag,
-  type CompOtSwapRequest,
   type CompOtSwapType,
 } from '@/services/compOtService';
+import { loadCompOtSwaps, useCompOtSwaps } from '@/stores/compOtSwaps';
 
 moment.locale('th');
 
@@ -59,8 +56,6 @@ const YEAR_OPTIONS: ModalSelectOption[] = (() => {
   }
   return years;
 })();
-
-type CompOtTab = 'schedule' | 'swaps';
 
 type ShiftTypeFilter = 'all' | CompOtShiftType;
 
@@ -115,22 +110,11 @@ export default function CompOtScheduleScreen() {
   const [stampTarget, setStampTarget] = useState<{ event: CompOtEvent; flag: CompOtStampFlag } | null>(null);
   const [isSubmittingStamp, setIsSubmittingStamp] = useState(false);
 
-  // Two tabs on one route, as elsewhere in the app: the roster, and the
-  // exchange/sale requests. `?tab=swaps` opens the second - it is where a
-  // tapped exchange/sale notification lands (utils/notification-link.ts).
-  const params = useLocalSearchParams<{ tab?: string }>();
-  const [tab, setTab] = useState<CompOtTab>(params.tab === 'swaps' ? 'swaps' : 'schedule');
-  useEffect(() => {
-    if (params.tab === 'swaps') setTab('swaps');
-    else if (params.tab === 'schedule') setTab('schedule');
-  }, [params.tab]);
-
-  // แลกเวร / ขายเวร: the pending requests (they decide which shifts show the
-  // offer buttons, and are what the second tab lists), plus the offer in
-  // progress - candidates are fetched before the sheet opens.
-  const [swaps, setSwaps] = useState<CompOtSwapRequest[]>([]);
-  const [isLoadingSwaps, setIsLoadingSwaps] = useState(true);
-  const [swapsError, setSwapsError] = useState('');
+  // แลกเวร / ขายเวร: the pending requests, shared with the requests tab
+  // (stores/compOtSwaps.ts) - here they decide which of my shifts show the
+  // offer buttons. Plus the offer in progress: candidates are fetched before
+  // the sheet opens.
+  const { requests: swaps } = useCompOtSwaps();
   const [offer, setOffer] = useState<CompOtSwapOffer | null>(null);
   const [isPreparingOffer, setIsPreparingOffer] = useState(false);
   const [isSubmittingOffer, setIsSubmittingOffer] = useState(false);
@@ -166,26 +150,10 @@ export default function CompOtScheduleScreen() {
     [staffId, visibleMonth],
   );
 
-  // A failure here only empties the second tab (with a retry there); the
-  // roster keeps working, its shifts just do not show as pending.
-  const loadSwaps = useCallback(async () => {
-    if (!staffId) return;
-    setSwapsError('');
-    try {
-      setSwaps(await getCompOtSwaps(staffId));
-    } catch (err) {
-      setSwaps([]);
-      setSwapsError(err instanceof Error ? err.message : TEXT.COMP_OT_SWAPS_LOAD_ERROR);
-    } finally {
-      setIsLoadingSwaps(false);
-    }
-  }, [staffId]);
-
-  // A request that was answered may have moved a shift, so both lists reload.
-  const handleSwapsChanged = useCallback(() => {
-    loadSwaps();
-    loadSchedule(true);
-  }, [loadSwaps, loadSchedule]);
+  // A failure loading the requests is shown on the requests tab; the roster
+  // keeps working, its shifts just do not show as pending. Reloaded on every
+  // focus, so a request answered on the other tab shows here on return.
+  const loadSwaps = useCallback(() => loadCompOtSwaps(staffId), [staffId]);
 
   useFocusEffect(useCallback(() => { loadSchedule(); loadSwaps(); }, [loadSchedule, loadSwaps]));
 
@@ -239,17 +207,6 @@ export default function CompOtScheduleScreen() {
     }
     return ids;
   }, [swaps]);
-  const incomingSwapCount = useMemo(() => swaps.filter((r) => r.direction === 'incoming').length, [swaps]);
-
-  // The second tab carries the number of requests waiting for the caller's
-  // answer - the only ones that need them to act.
-  const tabs: TopTabItem<CompOtTab>[] = [
-    { key: 'schedule', label: TEXT.COMP_OT_TAB_SCHEDULE },
-    {
-      key: 'swaps',
-      label: incomingSwapCount > 0 ? `${TEXT.COMP_OT_TAB_SWAPS} (${incomingSwapCount})` : TEXT.COMP_OT_TAB_SWAPS,
-    },
-  ];
 
   const configByCid = useMemo(() => new Map(shiftConfigs.map((c) => [c.cid, c])), [shiftConfigs]);
 
@@ -339,20 +296,6 @@ export default function CompOtScheduleScreen() {
         tone="primary"
       />
 
-      <TopTabs tabs={tabs} activeKey={tab} onChange={setTab} />
-
-      {tab === 'swaps' ? (
-        <View style={styles.content}>
-          <CompOtSwapsTab
-            staffId={staffId}
-            requests={swaps}
-            isLoading={isLoadingSwaps}
-            error={swapsError}
-            onReload={loadSwaps}
-            onChanged={handleSwapsChanged}
-          />
-        </View>
-      ) : (
       <View style={styles.content}>
         <View style={styles.filterSection}>
           <ThemedText style={styles.filterTitle}>{TEXT.COMP_OT_FILTER_TITLE}</ThemedText>
@@ -428,7 +371,6 @@ export default function CompOtScheduleScreen() {
           />
         )}
       </View>
-      )}
 
       <CompOtStampModal
         visible={stampTarget !== null}

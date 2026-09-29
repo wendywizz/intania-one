@@ -1,11 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { compOtShiftTypeLabel, formatCompOtShift } from '@/components/comp-ot/comp-ot-format';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { SelectSheet, type SelectSheetOption } from '@/components/ui/select-sheet';
 import { UserAvatar } from '@/components/user-avatar';
 import { TEXT } from '@/constants/text';
+import { POP_OUT_MS } from '@/hooks/use-pop-animation';
 import type { CompOtEvent, CompOtSwapCandidates } from '@/services/compOtService';
+
+/** Slack on top of the sheet's own exit, for a slow frame. */
+const AFTER_SHEET_CLOSED_MS = POP_OUT_MS + 80;
 
 /** A shift the person has chosen to offer, with who/what it can be offered to. */
 export type CompOtSwapOffer = {
@@ -31,12 +35,36 @@ type CompOtSwapOfferSheetProps = {
  * the sheet never opens onto a spinner.
  */
 export function CompOtSwapOfferSheet({ offer, submitting, onClose, onSubmit }: CompOtSwapOfferSheetProps) {
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [pickedId, setPickedId] = useState<string | null>(null);
+  // SelectSheet calls onSelect and then onClose in the same tap, so the close
+  // handler cannot tell "picked something" from "dismissed" by reading state -
+  // the pick is not in state yet. The ref is.
+  const pickedRef = useRef<string | null>(null);
+  const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // A fresh choice every time a different shift is offered.
   useEffect(() => {
+    pickedRef.current = null;
     setPickedId(null);
+    setSheetOpen(!!offer);
+    return () => {
+      if (confirmTimer.current) clearTimeout(confirmTimer.current);
+    };
   }, [offer]);
+
+  function handleSheetClose() {
+    setSheetOpen(false);
+    const id = pickedRef.current;
+    if (!id) {
+      onClose();
+      return;
+    }
+    // Open the confirmation only once the sheet's own Modal is gone. On iOS a
+    // Modal that finishes dismissing while another is presented above it takes
+    // that one down with it, so opening both at once shows no dialog at all.
+    confirmTimer.current = setTimeout(() => setPickedId(id), AFTER_SHEET_CLOSED_MS);
+  }
 
   const options = useMemo<SelectSheetOption[]>(() => {
     if (!offer) return [];
@@ -79,26 +107,31 @@ export function CompOtSwapOfferSheet({ offer, submitting, onClose, onSubmit }: C
 
   return (
     <>
-      {/* Hidden while the confirmation is up rather than kept behind it - two
-          stacked modals is where iOS starts dropping the top one. */}
+      {/* One Modal at a time - the sheet closes before the dialog opens (see
+          handleSheetClose), never the two stacked. */}
       <SelectSheet
-        visible={!picked}
-        onClose={onClose}
+        visible={sheetOpen}
+        onClose={handleSheetClose}
         title={isExchange ? TEXT.COMP_OT_SWAP_PICK_SHIFT_TITLE : TEXT.COMP_OT_SWAP_PICK_STAFF_TITLE}
         options={options}
-        onSelect={(option) => setPickedId(option.id)}
+        onSelect={(option) => {
+          pickedRef.current = option.id;
+        }}
         emptyMessage={isExchange ? TEXT.COMP_OT_SWAP_NO_SHIFT_CANDIDATES : TEXT.COMP_OT_SWAP_NO_STAFF_CANDIDATES}
       />
 
+      {/* Cancelling ends the offer rather than going back to the list: going
+          back would reopen the sheet while this dialog is still closing - the
+          same iOS problem in reverse. Choosing again is one tap on the card. */}
       <ConfirmDialog
         visible={!!picked}
         title={isExchange ? TEXT.COMP_OT_SWAP_CONFIRM_TITLE : TEXT.COMP_OT_SELL_CONFIRM_TITLE}
         message={confirmMessage}
         confirmLabel={TEXT.COMP_OT_SWAP_CONFIRM_SEND}
-        cancelLabel={TEXT.COMP_OT_SWAP_BACK}
+        cancelLabel={TEXT.COMP_OT_SWAP_CONFIRM_CANCEL}
         loading={submitting}
         onConfirm={handleConfirm}
-        onCancel={() => setPickedId(null)}
+        onCancel={onClose}
       />
     </>
   );

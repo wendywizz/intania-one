@@ -33,7 +33,6 @@ import { APP_ICON_MARK, PSU_PASSPORT_BUTTON, PSU_PASSPORT_BUTTON_ASPECT } from '
 import { boxShadow } from '@/constants/shadows';
 import { TEXT } from '@/constants/text';
 import { useColors, useThemedStyles, type AppColors } from '@/constants/theme';
-import { useFontScale } from '@/constants/typography';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '—';
 
@@ -44,10 +43,11 @@ const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const GRID_MINOR = 32;
 const GRID_MAJOR = GRID_MINOR * 4;
 
-// Line heights scaled by the device font size at the call site — a fixed
-// lineHeight would clip the glyphs once they grow past it.
-const TITLE_LINE_HEIGHT = 54;
-const TAGLINE_LINE_HEIGHT = 24;
+// Text on this page does not follow the device's text-size setting at all: it
+// is a poster — a 52pt wordmark, a few short lines and an image button — laid
+// out to fit one screen, and on phones set to large text it blew up. The rest of
+// the app keeps the usual MAX_FONT_SCALE cap.
+const TEXT_MAX_SCALE = 1;
 
 /** The column never grows past this, so a tablet or desktop browser gets a
  *  phone-proportioned layout centred on the red field, not a stretched one. */
@@ -73,7 +73,6 @@ export function LoginLanding({ onLogin }: LoginLandingProps) {
   const s = useThemedStyles(makeStyles);
   const c = useColors();
   const insets = useSafeAreaInsets();
-  const fontScale = useFontScale();
   const { width: screenWidth } = useWindowDimensions();
 
   // The mark, as drawn on the 390pt artboard: a faint watermark on a disc a
@@ -223,19 +222,24 @@ export function LoginLanding({ onLogin }: LoginLandingProps) {
         <View style={s.column}>
           <View style={s.eyebrowRow}>
             <View style={s.eyebrowDot} />
-            <Text numberOfLines={1} style={s.eyebrow}>{TEXT.HOME_LANDING_EYEBROW}</Text>
+            <Text numberOfLines={1} maxFontSizeMultiplier={TEXT_MAX_SCALE} style={s.eyebrow}>{TEXT.HOME_LANDING_EYEBROW}</Text>
           </View>
 
           {/* On a tall screen the spare height goes above the headline, keeping
               it just over the card; on a short one the page scrolls. */}
           <Animated.View style={[s.hero, { paddingTop: heroTopPad }, riseStyle(heroIn)]}>
-            <Text style={[s.title, { lineHeight: TITLE_LINE_HEIGHT * fontScale }]}>
+            <Text maxFontSizeMultiplier={TEXT_MAX_SCALE} style={s.title}>
               {TEXT.HOME_APP_NAME}
               {'\n'}
-              <Text style={s.titleAccent}>{TEXT.HOME_LANDING_TITLE_SUFFIX}</Text>
+              {/* Capped again: AppText sets its own default cap on every Text,
+                  nested ones included, which would let this word outgrow the
+                  one it sits beside. */}
+              <Text maxFontSizeMultiplier={TEXT_MAX_SCALE} style={s.titleAccent}>
+                {TEXT.HOME_LANDING_TITLE_SUFFIX}
+              </Text>
             </Text>
             <View style={s.rule} />
-            <Text style={[s.tagline, { lineHeight: TAGLINE_LINE_HEIGHT * fontScale }]}>
+            <Text maxFontSizeMultiplier={TEXT_MAX_SCALE} style={s.tagline}>
               {TEXT.HOME_LANDING_TAGLINE}
             </Text>
           </Animated.View>
@@ -253,10 +257,15 @@ export function LoginLanding({ onLogin }: LoginLandingProps) {
               </Pressable>
               <View style={s.noteRow}>
                 <IconSymbol name="checkmark.shield" size={14} color={c.textMuted} />
-                <Text numberOfLines={1} style={s.note}>{TEXT.HOME_LOGIN_NOTE}</Text>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.85}
+                  maxFontSizeMultiplier={TEXT_MAX_SCALE}
+                  style={s.note}>{TEXT.HOME_LOGIN_NOTE}</Text>
               </View>
             </View>
-            <Text style={s.version}>
+            <Text maxFontSizeMultiplier={TEXT_MAX_SCALE} style={s.version}>
               {`${TEXT.HOME_APP_NAME} ${TEXT.HOME_LANDING_TITLE_SUFFIX} · v${APP_VERSION}`}
             </Text>
           </Animated.View>
@@ -342,7 +351,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   title: {
     fontFamily: 'Sarabun_Bd',
     fontSize: 52,
-    lineHeight: TITLE_LINE_HEIGHT,
+    lineHeight: 54,
     letterSpacing: -1,
     color: c.textOnPrimary,
   },
@@ -359,7 +368,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   tagline: {
     fontFamily: 'Sarabun_Rg',
     fontSize: 16,
-    lineHeight: TAGLINE_LINE_HEIGHT,
+    lineHeight: 24,
     color: 'rgba(255,255,255,0.88)',
   },
 

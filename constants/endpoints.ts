@@ -73,6 +73,7 @@ export const ENDPOINTS = {
   staffNewsFeed: `${API_BASE_URL}/api/news`,
   staffInfo: `${API_BASE_URL}/api/staff-info`,
   pushRegisterDevice: `${API_BASE_URL}/api/push/register-device`,
+  pushUnregisterDevice: `${API_BASE_URL}/api/push/unregister-device`,
   photoBase: PHOTO_BASE_URL,
 
   // --- absence -------------------------------------------------------------

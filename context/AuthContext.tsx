@@ -2,7 +2,13 @@ import React, {createContext, useContext, useEffect, useMemo, useRef, useState} 
 import {AppState} from 'react-native';
 import type {AuthUser} from '../models/types';
 import * as authService from '../services/authService';
-import {registerLoggedInDevice, subscribeToLoggedInDevicePushTokenChanges} from '../services/deviceService';
+import {
+  registerLoggedInDevice,
+  retryPendingUnregister,
+  subscribeToLoggedInDevicePushTokenChanges,
+  unregisterLoggedInDevice,
+} from '../services/deviceService';
+import {setNotificationEnabled} from '../services/notificationService';
 import {
   fetchStaffEligibility,
   readCachedEligibility,
@@ -187,6 +193,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       .then((restoredUser) => {
         setUser(restoredUser);
         registerDeviceInBackground(restoredUser);
+        if (!restoredUser) void retryPendingUnregister();
         // Not awaited: cold start must not wait on the network. The cached
         // verdict settles the screen immediately and the re-check corrects it.
         void verifyEligibility(resolveStaffId(restoredUser));
@@ -262,6 +269,10 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         return signInPromiseRef.current;
       },
       signOut: async () => {
+        // Before the session goes, or this phone keeps receiving the signed-out
+        // person's notifications. The gateway resets its Settings switch too,
+        // so the next person starts from "on" on both sides.
+        await Promise.all([unregisterLoggedInDevice(), setNotificationEnabled(true)]);
         await authService.logout();
         setUser(null);
         // Abandon any check still in flight, so its late reply cannot stamp a

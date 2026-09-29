@@ -11,6 +11,8 @@ import { fetchApi } from "./api";
 
 const DEVICE_ID_STORAGE_KEY = "PUSH_DEVICE_ID";
 const REGISTERED_DEVICE_OWNERS_STORAGE_KEY = "REGISTERED_DEVICE_OWNERS";
+const PENDING_UNREGISTER_STORAGE_KEY = "PUSH_PENDING_UNREGISTER";
+const UNREGISTER_TIMEOUT_MS = 4000;
 const DEVICE_REGISTER_API_KEY = ENV.deviceRegisterApiKey;
 
 function canRegisterDeviceWithoutPushToken() {
@@ -315,8 +317,59 @@ async function registerLoggedInDeviceWithToken(user: AuthUser, pushToken: PushRe
 export async function registerLoggedInDevice(user: AuthUser) {
   // The web build has no push capability — never register a device there.
   if (Platform.OS === "web") return;
+  // Signing in re-addresses this device anyway, so a sign-out still waiting to
+  // reach the gateway is moot.
+  await AsyncStorage.removeItem(PENDING_UNREGISTER_STORAGE_KEY);
   const pushToken = await getPushRegistrationToken();
   await registerLoggedInDeviceWithToken(user, pushToken);
+}
+
+async function sendUnregister(deviceId: string) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), UNREGISTER_TIMEOUT_MS);
+  try {
+    const response = await fetchApi(ENDPOINTS.pushUnregisterDevice, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${DEVICE_REGISTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ device_id: deviceId }),
+      signal: controller.signal,
+    });
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Stop this phone receiving the signed-out person's notifications.
+ *
+ * Never throws and never holds sign-out up for long: if the gateway cannot be
+ * reached it is remembered and retried by `retryPendingUnregister`.
+ */
+export async function unregisterLoggedInDevice() {
+  if (Platform.OS === "web" || !DEVICE_REGISTER_API_KEY) return;
+
+  const deviceId = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY);
+  if (!deviceId) return;
+
+  if (!(await sendUnregister(deviceId))) {
+    await AsyncStorage.setItem(PENDING_UNREGISTER_STORAGE_KEY, deviceId);
+  }
+}
+
+/** A sign-out made offline, delivered the next time the app opens signed out. */
+export async function retryPendingUnregister() {
+  if (Platform.OS === "web" || !DEVICE_REGISTER_API_KEY) return;
+
+  const deviceId = await AsyncStorage.getItem(PENDING_UNREGISTER_STORAGE_KEY);
+  if (deviceId && (await sendUnregister(deviceId))) {
+    await AsyncStorage.removeItem(PENDING_UNREGISTER_STORAGE_KEY);
+  }
 }
 
 /**
