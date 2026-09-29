@@ -2,6 +2,38 @@
 
 ตรวจสอบและยืนยันสาเหตุแล้วเมื่อ 2026-09-20
 
+## อัปเดต 2026-09-29: Android 10 ไม่โหลดรูปบุคคล
+
+อาการ: รูปใน navbar หน้า Home, dropdown เลือกผู้อนุมัติ, dropdown ปฏิทินผู้บริหาร
+ขึ้นเป็นรูป placeholder ทุกโมดูล ส่วนข้อมูลอื่นโหลดได้ปกติ
+
+สาเหตุเดียวกับด้านล่าง แต่คนละ certificate:
+
+- API หลักย้ายไป `ecs.eng.psu.ac.th` (Let's Encrypt, ISRG Root X1) แล้ว จึงใช้ได้ทุกเครื่อง
+- แต่รูปบุคคลยังโหลดตรงจาก `apis.eng.psu.ac.th`
+  (`PHOTO_BASE_URL` ใน `constants/endpoints.ts` ผ่าน `components/user-avatar.tsx`)
+- cert ที่ต่ออายุแล้วของ `apis.eng.psu.ac.th` **เปลี่ยนสายจาก ECC เป็น RSA**
+
+```text
+ก่อน (หมดอายุ 22 ก.ย.)                 หลังต่ออายุ (ถึง 9 ธ.ค.)
+ZeroSSL ECC DV SSL CA 2               ZeroSSL RSA DV SSL CA 2
+  └─ Sectigo ... Root E46 (ECC)         └─ Sectigo ... Root R46 (RSA)
+```
+
+root ที่แอปฝังไว้เป็น E46 จึงใช้ไม่ได้กับ cert ใหม่ และ R46 ก็ไม่อยู่ใน trust store
+ของ Android 10 เช่นกัน `UserAvatar` จับ error แล้วแสดง placeholder เงียบ ๆ
+
+พิสูจน์ด้วย trust store จำลองของเครื่องเก่า (`USERTrust RSA Certification Authority` เท่านั้น):
+chain ที่ส่งอยู่ **FAIL** / เติม cross-signed R46 แล้ว **OK**
+
+แก้แล้ว: `plugins/with-android-scooba-network-security.js` ฝังทั้ง E46 และ R46
+(self-signed ทั้งคู่ อายุถึง 2046) รอบหน้า ZeroSSL จะออกสายไหนก็ไม่พังอีก
+**ต้อง build APK ใหม่** จึงจะมีผล
+
+ฝั่ง server: `scooba-service/k8s/tls/chain.pem` ที่เตรียมไว้เดิมเป็นของสาย ECC
+**ใช้กับ cert RSA ตัวใหม่ไม่ได้** ต้องใช้ `ZeroSSL RSA DV SSL CA 2` +
+cross-signed R46 (<http://crt.sectigo.com/SectigoPublicServerAuthenticationRootR46_USERTrust.crt>)
+
 ## สรุปปัญหา
 
 อุปกรณ์ Android บางรุ่นเปิดแอปได้ แต่หน้าแรกแจ้งว่าเชื่อมต่อ scooba-service ไม่ได้

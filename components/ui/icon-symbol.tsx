@@ -76,6 +76,7 @@ import X from 'lucide-react-native/dist/cjs/icons/x';
 import Mail from 'lucide-react-native/dist/cjs/icons/mail';
 import LogOut from 'lucide-react-native/dist/cjs/icons/log-out';
 import LockOpen from 'lucide-react-native/dist/cjs/icons/lock-open';
+import ShieldCheck from 'lucide-react-native/dist/cjs/icons/shield-check';
 import ShoppingCart from 'lucide-react-native/dist/cjs/icons/shopping-cart';
 import Presentation from 'lucide-react-native/dist/cjs/icons/presentation';
 import SquarePen from 'lucide-react-native/dist/cjs/icons/square-pen';
@@ -104,6 +105,8 @@ const MAPPING = {
   'plus': Plus,
   'logout': LogOut,
   'lock.open': LockOpen,
+  // Restricted access — the "staff only" note under the login button.
+  'checkmark.shield': ShieldCheck,
   // The booking cart. A shopping cart on purpose, however little is being
   // bought: it is the one glyph everyone reads as "things I have picked but not
   // committed to", which is exactly what a room draft is.

@@ -37,12 +37,8 @@ import { listExamTasks } from '@/services/examinarService';
 import { formatNewsDateTime } from '@/utils/date-format';
 import { navPush } from '@/utils/navigation';
 import { ENDPOINTS } from '@/constants/endpoints';
-import {
-  NAV_LOGO,
-  PSU_PASSPORT_BUTTON,
-  PSU_PASSPORT_BUTTON_ASPECT,
-  USER_PLACEHOLDER,
-} from '@/constants/images';
+import { LoginLanding } from '@/components/login-landing';
+import { NAV_LOGO, USER_PLACEHOLDER } from '@/constants/images';
 import { boxShadow } from '@/constants/shadows';
 
 // Scroll offsets at which the pinned mini header appears / disappears. The gap
@@ -823,14 +819,17 @@ export default function HomeScreen() {
     useCallback(() => {
       let isActive = true;
 
-      // Signed out there is no bell to badge, and the count is per-user anyway.
-      if (authUser) {
-        void getUnreadNotificationCount().then((count) => {
-          if (isActive) setUnreadCount(count);
-        });
-      } else {
+      // Signed out there is nothing here to fill: the visitor gets LoginLanding,
+      // which has no bell and no news band. Leaving isNewsReady false also keeps
+      // the first-load gate armed for the signed-in home that follows a login.
+      if (!authUser) {
         setUnreadCount(0);
+        return () => { isActive = false; };
       }
+
+      void getUnreadNotificationCount().then((count) => {
+        if (isActive) setUnreadCount(count);
+      });
 
       // Reset on every focus (not just first mount) so coming back from
       // another screen swaps the last visit's cards for the news band's own
@@ -1058,14 +1057,63 @@ export default function HomeScreen() {
     if (isNewsReady && isSummaryReady) setHasShownHome(true);
   }, [isNewsReady, isSummaryReady]);
 
+  if (isAuthLoading) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <LoadingAnimate />
+      </View>
+    );
+  }
+
+  // Sign-in failure. It used to live on the welcome screen, which no longer
+  // exists — without it here a failed callback would report nothing. Rendered
+  // by both the signed-out landing and the home below.
+  const authErrorModal = (
+    <Modal
+      transparent
+      visible={Boolean(authCallbackErrorMessage)}
+      animationType="fade"
+      onRequestClose={() => setAuthCallbackErrorMessage('')}>
+      <Pressable style={styles.backdrop} onPress={() => setAuthCallbackErrorMessage('')}>
+        <Pressable accessibilityRole="none" onPress={(e) => e.stopPropagation()}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>{TEXT.AUTH_LOGIN_FAILED}</Text>
+            <Text style={styles.modalMessage}>{authCallbackErrorMessage}</Text>
+            <View style={styles.modalActions}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setAuthCallbackErrorMessage('')}
+                style={styles.btnPrimary}>
+                <Text style={styles.btnPrimaryText}>{TEXT.SHARED_OK}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+
+  // ─── Signed out ─────────────────────────────────────────────────────────────
+  // Nothing on the home applies to a visitor — no header, no news, no pending
+  // work, no menu — so they get a landing page of its own with the PSU Passport
+  // button, and nothing below this line runs for them.
+  if (!authUser) {
+    return (
+      <>
+        <LoginLanding onLogin={handleLogin} />
+        {authErrorModal}
+      </>
+    );
+  }
+
   // ─── First-load gate ────────────────────────────────────────────────────────
-  // On the first load, auth, the news feed and the shift-tile group (summary +
-  // exams + absence/timestamp approvals) all settle before anything shows, so
-  // sections don't pop in one at a time on an otherwise empty screen. After
-  // that, returning to Home shows the page straight away: isNewsReady and
+  // On the first load, the news feed and the shift-tile group (summary + exams +
+  // absence/timestamp approvals) all settle before anything shows, so sections
+  // don't pop in one at a time on an otherwise empty screen. After that,
+  // returning to Home shows the page straight away: isNewsReady and
   // isSummaryReady still reset on every focus, but only drive each band's own
   // small spinner (see the news band and UpcomingShiftSection).
-  if (isAuthLoading || (!hasShownHome && (!isNewsReady || !isSummaryReady))) {
+  if (!hasShownHome && (!isNewsReady || !isSummaryReady)) {
     return (
       <View style={[styles.container, styles.center]}>
         <LoadingAnimate />
@@ -1074,17 +1122,13 @@ export default function HomeScreen() {
   }
 
   // ─── Home ───────────────────────────────────────────────────────────────────
-  // Signed out, the same screen is shown with everything personal taken out of
-  // it: no greeting, no settings or notifications, no pending work and no module
-  // menu. What is left — the news feed — is public anyway, and a login button
-  // takes the place of the header actions.
-
   // Signed in but not Faculty of Engineering staff: the account is real, so there
   // is nothing to log in to and no login button to offer — but none of the
-  // modules apply to them either. They get the stripped-down screen with an
-  // explanation in place of the sign-in call to action.
-  const isDenied = Boolean(authUser) && eligibility === 'denied';
-  const isGuest = !authUser || isDenied;
+  // modules apply to them either. They get a stripped-down screen — no
+  // greeting, no settings or notifications, no pending work and no module menu —
+  // with an explanation where those would be.
+  const isDenied = eligibility === 'denied';
+  const isGuest = isDenied;
   const displayedNews = newsItems.slice(0, 3);
   const menuCardWidth = Math.floor((screenWidth - D.pad * 2 - D.gap * 2) / 3);
   const newsCardWidth = Math.floor(screenWidth * 0.72);
@@ -1138,9 +1182,8 @@ export default function HomeScreen() {
               </Pressable>
             )}
 
-            {/* Settings and notifications are both personal — signed out the
-                header carries no actions at all, and signing in is offered
-                below the news band instead. */}
+            {/* Settings and notifications are for staff — an account from
+                another faculty gets a header with no actions at all. */}
             {isGuest ? null : (
               <View style={styles.headerRight}>
                 <Pressable
@@ -1164,9 +1207,9 @@ export default function HomeScreen() {
         </View>
 
         {/* ── Padded content ──────────────────────────────────────────────── */}
-        {/* Signed out there is only the news band above the sign-in call to
-            action, so the block is allowed to grow and centre it in whatever
-            height is left rather than leaving it stranded under the news. */}
+        {/* Denied, there is only the news band above the explanation, so the
+            block is allowed to grow and centre it in whatever height is left
+            rather than leaving it stranded under the news. */}
         <View style={[styles.innerContent, isGuest && styles.innerContentGuest]}>
 
           {/* News section — sits on a full-width primary band */}
@@ -1240,11 +1283,9 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Signed out, the sign-in call to action takes the place the pending
-              work and the module menu would occupy. Signed in from another
-              faculty, the same space explains why the rest of the screen is
-              empty — offering a login button there would be nonsense, they are
-              already logged in. */}
+          {/* Signed in from another faculty, the space the pending work and the
+              module menu would occupy explains why the rest of the screen is
+              empty. */}
           {isDenied ? (
             <View style={styles.loginSection}>
               <View style={styles.deniedIcon}>
@@ -1260,23 +1301,6 @@ export default function HomeScreen() {
                 style={({ pressed }) => [styles.deniedLogoutBtn, pressed && styles.pressed]}>
                 <Text style={styles.deniedLogoutText}>{TEXT.HOME_LOGOUT}</Text>
               </Pressable>
-            </View>
-          ) : isGuest ? (
-            <View style={styles.loginSection}>
-              {/* The artwork carries the wording, so the button has no label of
-                  its own — hence the explicit accessibility label. */}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={TEXT.AUTH_LOGIN}
-                onPress={handleLogin}
-                style={({ pressed }) => [styles.loginBtn, pressed && styles.pressed]}>
-                <Image
-                  source={PSU_PASSPORT_BUTTON}
-                  style={styles.loginBtnImage}
-                  contentFit="contain"
-                />
-              </Pressable>
-              <Text style={styles.loginNote}>{TEXT.HOME_LOGIN_NOTE}</Text>
             </View>
           ) : null}
 
@@ -1336,7 +1360,7 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* ── Pinned mini header ────────────────────────────────────────────── */}
-      {/* Signed out it would carry the same avatar, name and personal actions the
+      {/* Denied, it would carry the same avatar, name and personal actions the
           main header just dropped, so it is not rendered at all. */}
       {isGuest ? null : (
       <Animated.View
@@ -1431,30 +1455,7 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* Sign-in failure. It used to live on the welcome screen, which no longer
-          exists — without it here a failed callback would report nothing. */}
-      <Modal
-        transparent
-        visible={Boolean(authCallbackErrorMessage)}
-        animationType="fade"
-        onRequestClose={() => setAuthCallbackErrorMessage('')}>
-        <Pressable style={styles.backdrop} onPress={() => setAuthCallbackErrorMessage('')}>
-          <Pressable accessibilityRole="none" onPress={(e) => e.stopPropagation()}>
-            <View style={styles.modal}>
-              <Text style={styles.modalTitle}>{TEXT.AUTH_LOGIN_FAILED}</Text>
-              <Text style={styles.modalMessage}>{authCallbackErrorMessage}</Text>
-              <View style={styles.modalActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setAuthCallbackErrorMessage('')}
-                  style={styles.btnPrimary}>
-                  <Text style={styles.btnPrimaryText}>{TEXT.SHARED_OK}</Text>
-                </Pressable>
-              </View>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {authErrorModal}
     </View>
   );
 }
@@ -1516,7 +1517,7 @@ const makeStyles = (m: M) => StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  // Stands in for the whole greeting cluster when signed out. Height matches the
+  // Stands in for the whole greeting cluster when denied. Height matches the
   // avatar so the header keeps the same bar height either way; `contentFit
   // contain` lets the width follow the artwork's own aspect ratio.
   navLogo: {
@@ -1534,24 +1535,11 @@ const makeStyles = (m: M) => StyleSheet.create({
     gap: 14,
     paddingVertical: 8,
   },
-  // Lets `loginSection` claim the leftover height. Only applied signed out —
-  // signed in the block is already taller than the screen.
+  // Lets `loginSection` claim the leftover height. Only applied when denied —
+  // for staff the block is already taller than the screen.
   innerContentGuest: {
     flexGrow: 1,
   },
-  // Width-driven: the height follows the artwork's own ratio, so the button can
-  // never end up stretched. `maxWidth` caps it on a tablet while `width: 100%`
-  // lets it shrink inside the page gutter on a narrow phone.
-  loginBtn: {
-    width: '100%',
-    maxWidth: 280,
-    aspectRatio: PSU_PASSPORT_BUTTON_ASPECT,
-  },
-  loginBtnImage: {
-    width: '100%',
-    height: '100%',
-  },
-  // Sits where the login button would be, in the same centred block.
   deniedIcon: {
     width: 64,
     height: 64,
@@ -1577,14 +1565,6 @@ const makeStyles = (m: M) => StyleSheet.create({
     lineHeight: 20,
     color: m.onCanvasMuted,
     textDecorationLine: 'underline',
-  },
-  // Who the app is for — quiet enough not to compete with the button above it.
-  loginNote: {
-    fontFamily: F.regular,
-    fontSize: 13,
-    lineHeight: 20,
-    color: m.onCanvasMuted,
-    textAlign: 'center',
   },
   greetingWrap: {
     flex: 1,
@@ -1948,6 +1928,4 @@ const makeStyles = (m: M) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: m.border,
   },
-
-  // Welcome (unauthenticated)
 });

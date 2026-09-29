@@ -59,7 +59,11 @@ export const TEXT = {
   HOME_GREETING_AFTERNOON: 'สวัสดีตอนบ่าย',
   HOME_GREETING_EVENING: 'สวัสดีตอนเย็น',
   HOME_LOADING_NEWS_TITLE: 'กำลังโหลดข่าวสาร',
-  HOME_LOGIN_NOTE: 'สำหรับบุคลากรคณะวิศวกรรมศาสตร์ มอ. เข้าใช้งานเท่านั้น',
+  HOME_LANDING_EYEBROW: 'FACULTY OF ENGINEERING · PSU',
+  HOME_LANDING_TAGLINE: 'ทุกงานของบุคลากรคณะ\nรวมไว้ในแอปเดียว',
+  HOME_LANDING_TITLE_SUFFIX: 'One',
+  // One line under the login button — keep it short enough not to wrap.
+  HOME_LOGIN_NOTE: 'สำหรับบุคลากรคณะวิศวฯ มอ. เท่านั้น',
   HOME_NOT_ELIGIBLE: 'ท่านไม่มีสิทธิใช้งานแอพพลิเคชั่นนี้',
   HOME_LOGOUT: 'ออกจากระบบ',
   HOME_MENU_SECTION_DESCRIPTION: 'เลือกเมนูที่ต้องการใช้งาน',
