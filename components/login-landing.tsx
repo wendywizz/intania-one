@@ -228,9 +228,19 @@ export function LoginLanding({ onLogin }: LoginLandingProps) {
           {/* On a tall screen the spare height goes above the headline, keeping
               it just over the card; on a short one the page scrolls. */}
           <Animated.View style={[s.hero, { paddingTop: heroTopPad }, riseStyle(heroIn)]}>
-            <Text maxFontSizeMultiplier={TEXT_MAX_SCALE} style={s.title}>
-              {TEXT.HOME_APP_NAME}
-              {'\n'}
+            {/* Both on one line on purpose. Sarabun's font file carries a much
+                taller line box (1.85x its size) than the 1.3x it is drawn
+                with, and on iOS a line break inside a Text opened up to that
+                taller box — two lines of the wordmark sat ~94pt apart. A single
+                line has no gap between lines to open up; shrink-to-fit keeps it
+                on one line on a narrow screen. */}
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+              maxFontSizeMultiplier={TEXT_MAX_SCALE}
+              style={s.title}>
+              {TEXT.HOME_APP_NAME}{' '}
               {/* Capped again: AppText sets its own default cap on every Text,
                   nested ones included, which would let this word outgrow the
                   one it sits beside. */}
@@ -239,7 +249,12 @@ export function LoginLanding({ onLogin }: LoginLandingProps) {
               </Text>
             </Text>
             <View style={s.rule} />
-            <Text maxFontSizeMultiplier={TEXT_MAX_SCALE} style={s.tagline}>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+              maxFontSizeMultiplier={TEXT_MAX_SCALE}
+              style={s.tagline}>
               {TEXT.HOME_LANDING_TAGLINE}
             </Text>
           </Animated.View>
@@ -350,9 +365,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   title: {
     fontFamily: 'Sarabun_Bd',
-    fontSize: 52,
-    lineHeight: 54,
-    letterSpacing: -1,
+    // "Intania One" on one line within the column's 334pt at 390pt wide.
+    fontSize: 44,
+    lineHeight: 56,
+    letterSpacing: -0.8,
     color: c.textOnPrimary,
   },
   titleAccent: {
@@ -367,8 +383,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   tagline: {
     fontFamily: 'Sarabun_Rg',
-    fontSize: 16,
-    lineHeight: 24,
+    // One line at 390pt wide without leaning on shrink-to-fit, which web lacks.
+    fontSize: 15,
+    lineHeight: 22,
     color: 'rgba(255,255,255,0.88)',
   },
 
