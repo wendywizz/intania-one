@@ -1,5 +1,5 @@
 import { ENDPOINTS } from '../constants/endpoints';
-import { requestJson } from './api';
+import { fetchWithTimeout, MESSAGE_SERVER_ERROR } from './api';
 
 /**
  * Computer-lab OT duty roster (เวรห้องคอมพิวเตอร์, scooba-comp-ot — dept 209
@@ -59,6 +59,39 @@ function createCompOtUrl(base: string, query: Record<string, string | number | u
     }
   });
   return url.toString();
+}
+
+/**
+ * One call to the gateway's comp-ot routes.
+ *
+ * Not the shared requestJson(): that turns every non-2xx into
+ * "เซิร์ฟเวอร์ขัดข้อง", and this module's refusals are business answers with a
+ * Thai reason from the PHP API ("ต้องดำเนินการก่อนถึงเวลาเข้าเวรอย่างน้อย 1
+ * ชั่วโมง", "พ้นเวลาที่สามารถลงเวลาได้แล้ว ...") - hiding them made a refused
+ * sale look like a broken server. A 4xx keeps the gateway's wording; a 5xx
+ * still gets the generic message, so internals never reach the screen. Same
+ * rule as submitStaffFaceStamp() in timestampService.ts.
+ */
+async function requestJson(url: string, init?: RequestInit): Promise<unknown> {
+  const response = await fetchWithTimeout(url, {
+    ...init,
+    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+  });
+  const text = await response.text();
+
+  let json: unknown = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+
+  if (!response.ok || json === null) {
+    const reason = extractError(json);
+    throw new Error(response.status < 500 && reason ? reason : MESSAGE_SERVER_ERROR);
+  }
+
+  return json;
 }
 
 function extractObject<T>(json: unknown): T | null {

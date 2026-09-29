@@ -1,8 +1,9 @@
 /**
  * scooba-comp-ot's client-side contracts — the two seams confirmed for this
  * module: `getCompOtStampWindow()` (pure — no mocking needed) and
- * `stampCompOtEvent()` (network, gateway stubbed at `requestJson`, same
- * pattern as staffTimestampService.test.ts).
+ * `stampCompOtEvent()` (network, faked at `fetchWithTimeout` - what the
+ * gateway answers, status included - same pattern as
+ * staffFaceStampService.test.ts).
  *
  * Expected values below are worked examples from the module's own spec (the
  * grilling session this module was built from), not values re-derived by the
@@ -22,14 +23,26 @@ import {
 
 jest.mock('@/services/api', () => ({
   ...jest.requireActual('@/services/api'),
-  requestJson: jest.fn(),
+  fetchWithTimeout: jest.fn(),
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { requestJson } = require('@/services/api') as { requestJson: jest.Mock };
+const { fetchWithTimeout } = require('@/services/api') as { fetchWithTimeout: jest.Mock };
+
+/** What the gateway sends back for the next request: an HTTP status and a JSON body. */
+function gatewayAnswers(status: number, body: unknown) {
+  fetchWithTimeout.mockResolvedValueOnce({
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => JSON.stringify(body),
+  });
+}
+
+/** The (url, init) the service handed to the network for its n-th call. */
+const sent = (n = 0) => fetchWithTimeout.mock.calls[n] as [string, RequestInit & { body: string }];
 
 beforeEach(() => {
-  requestJson.mockReset();
+  fetchWithTimeout.mockReset();
 });
 
 describe('getCompOtStampWindow', () => {
@@ -80,7 +93,7 @@ describe('getCompOtStampWindow', () => {
 
 describe('stampCompOtEvent', () => {
   it('forwards staffId/eventId/flag/amount as staff_id/event_id/flag/amount and returns the upstream result', async () => {
-    requestJson.mockResolvedValueOnce({
+    gatewayAnswers(200, {
       data: { event_id: 'e1', flag: 'in', time: '16:31:02', amount: 0 },
     });
 
@@ -88,7 +101,7 @@ describe('stampCompOtEvent', () => {
 
     expect(result).toEqual({ event_id: 'e1', flag: 'in', time: '16:31:02', amount: 0 });
 
-    const [, options] = requestJson.mock.calls[0];
+    const [, options] = sent();
     expect(options.method).toBe('POST');
     expect(JSON.parse(options.body)).toEqual({
       staff_id: '0024028',
@@ -102,8 +115,11 @@ describe('stampCompOtEvent', () => {
     // The literal message Ot_Controller::stamp() sends for a closed window
     // (Y:\ln_OT\api\controller\ot_controller.php) — this is what a "you
     // missed the window" tap actually looks like end to end.
-    requestJson.mockResolvedValueOnce({
-      error: 'พ้นเวลาที่สามารถลงเวลาได้แล้ว (ปิดรับเวลา 17:00 น.)',
+    gatewayAnswers(409, {
+      error: {
+        message: 'พ้นเวลาที่สามารถลงเวลาได้แล้ว (ปิดรับเวลา 17:00 น.)',
+        details: { success: false, error: 'พ้นเวลาที่สามารถลงเวลาได้แล้ว (ปิดรับเวลา 17:00 น.)' },
+      },
     });
 
     await expect(
@@ -150,80 +166,102 @@ describe('duty exchange / sale requests', () => {
   };
 
   it('lists the requests the caller sent or received', async () => {
-    requestJson.mockResolvedValueOnce({ data: { requests: [request] } });
+    gatewayAnswers(200, { data: { requests: [request] } });
 
     const result = await getCompOtSwaps('0000002');
 
     expect(result).toEqual([request]);
-    expect(requestJson.mock.calls[0][0]).toContain('/api/comp-ot/swaps?staff_id=0000002');
+    expect(sent(0)[0]).toContain('/api/comp-ot/swaps?staff_id=0000002');
   });
 
   it('treats a reply with no requests as an empty list', async () => {
-    requestJson.mockResolvedValueOnce({ data: {} });
+    gatewayAnswers(200, { data: {} });
 
     expect(await getCompOtSwaps('0000002')).toEqual([]);
   });
 
   it('asks for exchange candidates as shifts and sale candidates as colleagues', async () => {
-    requestJson.mockResolvedValueOnce({ data: { type: 'ex', events: [{ event_id: 'e2' }] } });
-    requestJson.mockResolvedValueOnce({ data: { type: 'sell', staff: [{ staff_id: '0000002', staff_name: 'ผู้รับ' }] } });
+    gatewayAnswers(200, { data: { type: 'ex', events: [{ event_id: 'e2' }] } });
+    gatewayAnswers(200, { data: { type: 'sell', staff: [{ staff_id: '0000002', staff_name: 'ผู้รับ' }] } });
 
     const swap = await getCompOtSwapCandidates({ staffId: '0000001', eventId: 'e1', type: 'ex' });
     const sell = await getCompOtSwapCandidates({ staffId: '0000001', eventId: 'e1', type: 'sell' });
 
     expect(swap).toEqual({ type: 'ex', events: [{ event_id: 'e2' }] });
     expect(sell).toEqual({ type: 'sell', staff: [{ staff_id: '0000002', staff_name: 'ผู้รับ' }] });
-    expect(requestJson.mock.calls[0][0]).toMatch(/swaps\/candidates\?.*event_id=e1/);
-    expect(requestJson.mock.calls[0][0]).toContain('type=ex');
+    expect(sent(0)[0]).toMatch(/swaps\/candidates\?.*event_id=e1/);
+    expect(sent(0)[0]).toContain('type=ex');
   });
 
   it('posts an exchange offer naming the shift being asked for', async () => {
-    requestJson.mockResolvedValueOnce({ data: { status: 'offered', request } });
+    gatewayAnswers(200, { data: { status: 'offered', request } });
 
     const result = await offerCompOtSwap({ staffId: '0000001', eventId: 'e1', type: 'ex', targetEventId: 'e2' });
 
     expect(result.status).toBe('offered');
-    const [url, options] = requestJson.mock.calls[0];
+    const [url, options] = sent();
     expect(url).toContain('/api/comp-ot/swaps');
     expect(options.method).toBe('POST');
     expect(JSON.parse(options.body)).toEqual({ staff_id: '0000001', event_id: 'e1', type: 'ex', target_event_id: 'e2' });
   });
 
   it('posts a sale offer naming the colleague it goes to', async () => {
-    requestJson.mockResolvedValueOnce({ data: { status: 'offered', request } });
+    gatewayAnswers(200, { data: { status: 'offered', request } });
 
     await offerCompOtSwap({ staffId: '0000001', eventId: 'e1', type: 'sell', targetStaffId: '0000002' });
 
-    expect(JSON.parse(requestJson.mock.calls[0][1].body)).toEqual({
+    expect(JSON.parse(sent(0)[1].body)).toEqual({
       staff_id: '0000001', event_id: 'e1', type: 'sell', target_staff_id: '0000002',
     });
   });
 
   it('posts an accept or decline against a request id', async () => {
-    requestJson.mockResolvedValue({ data: { status: 'accepted', request } });
+    gatewayAnswers(200, { data: { status: 'accepted', request } });
 
     await respondCompOtSwap({ staffId: '0000002', requestId: '9', action: 'accept' });
 
-    const [url, options] = requestJson.mock.calls[0];
+    const [url, options] = sent();
     expect(url).toContain('/api/comp-ot/swaps/respond');
     expect(JSON.parse(options.body)).toEqual({ staff_id: '0000002', request_id: '9', action: 'accept' });
   });
 
   it('posts a cancel against a request id', async () => {
-    requestJson.mockResolvedValueOnce({ data: { status: 'cancelled', request } });
+    gatewayAnswers(200, { data: { status: 'cancelled', request } });
 
     await cancelCompOtSwap({ staffId: '0000001', requestId: '9' });
 
-    const [url, options] = requestJson.mock.calls[0];
+    const [url, options] = sent();
     expect(url).toContain('/api/comp-ot/swaps/cancel');
     expect(JSON.parse(options.body)).toEqual({ staff_id: '0000001', request_id: '9' });
   });
 
-  it('surfaces the reason the PHP API gives when it refuses an action', async () => {
-    requestJson.mockResolvedValueOnce({ error: { message: 'เวรนี้ไม่ใช่ของท่าน', details: null } });
+  it('shows the reason the PHP API gives when it refuses an offer, not a generic fault', async () => {
+    // Verbatim what production answered for a sale to oneself on 2026-09-29.
+    gatewayAnswers(422, {
+      error: {
+        message: 'ต้องเลือกผู้รับเวรที่ไม่ใช่ตัวท่านเอง',
+        details: { success: false, error: 'ต้องเลือกผู้รับเวรที่ไม่ใช่ตัวท่านเอง' },
+      },
+    });
+
+    await expect(
+      offerCompOtSwap({ staffId: '0000001', eventId: 'e1', type: 'sell', targetStaffId: '0000001' }),
+    ).rejects.toThrow('ต้องเลือกผู้รับเวรที่ไม่ใช่ตัวท่านเอง');
+  });
+
+  it('shows the reason when an answer to a request is refused', async () => {
+    gatewayAnswers(409, { error: { message: 'เวรของผู้เสนอมีการเปลี่ยนแปลงแล้ว คำขอนี้ใช้ไม่ได้', details: null } });
+
+    await expect(
+      respondCompOtSwap({ staffId: '0000002', requestId: '9', action: 'accept' }),
+    ).rejects.toThrow('เวรของผู้เสนอมีการเปลี่ยนแปลงแล้ว คำขอนี้ใช้ไม่ได้');
+  });
+
+  it('shows the generic server message for a gateway fault, not its internals', async () => {
+    gatewayAnswers(500, { error: { message: 'offerSwap: connect ETIMEDOUT 172.31.0.20:443', details: null } });
 
     await expect(
       offerCompOtSwap({ staffId: '0000001', eventId: 'e1', type: 'sell', targetStaffId: '0000002' }),
-    ).rejects.toThrow('เวรนี้ไม่ใช่ของท่าน');
+    ).rejects.toThrow('เซิร์ฟเวอร์ขัดข้อง');
   });
 });
