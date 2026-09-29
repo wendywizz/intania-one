@@ -29,6 +29,10 @@ export type RoomBooking = {
   bgcolor: string;
   term: string;
   year: string;
+  /** UNI_STAFF_ID of whoever made the booking (tb_book.tb_user_id) — the id
+   *  the personnel photo API keys on. Optional: API builds before it was
+   *  added don't send it, and the avatar then falls back to the placeholder. */
+  booker_id?: string;
 };
 
 export type RoomWeekSchedule = {

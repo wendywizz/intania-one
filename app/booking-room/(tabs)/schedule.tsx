@@ -41,6 +41,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { UserAvatar } from '@/components/user-avatar';
 import { EventTimelineItem } from '@/components/ui';
 import { SelectSheet } from '@/components/ui/select-sheet';
 import { AppFonts } from '@/constants/fonts';
@@ -52,6 +53,7 @@ import {
   getRoomWeekSchedule,
   listBookingRooms,
   type BookingRoom,
+  type RoomBooking,
 } from '@/services/bookingRoomService';
 import {
   getMeetingRoomOptions,
@@ -79,6 +81,10 @@ type UnifiedWeekBooking = {
   title: string;
   subtitle: string;
   color?: string;
+  /** Photo id of whoever booked it. Classroom bookings only — meeting-room
+   *  requests carry the requester's name but no id, so they get the
+   *  placeholder portrait. */
+  bookerId?: string;
 };
 
 type UnifiedWeekSchedule = {
@@ -98,6 +104,19 @@ function splitRoomKey(key: string): { kind: RoomKind; nativeId: string } {
 
 function toUnifiedClassroomRoom(room: BookingRoom): UnifiedRoom {
   return { key: roomKey('classroom', room.id), kind: 'classroom', nativeId: room.id, name: room.name, capacity: room.capacity };
+}
+
+function toUnifiedClassroomBooking(b: RoomBooking): UnifiedWeekBooking {
+  return {
+    key: String(b.detail_id),
+    date: b.date,
+    startTime: b.start_time,
+    endTime: b.end_time,
+    title: b.section ? `${b.subject_id} (${b.section})` : b.subject_id,
+    subtitle: b.teacher || b.objective || '',
+    color: bookingColor(b.bgcolor),
+    bookerId: b.booker_id || undefined,
+  };
 }
 
 function toUnifiedMeetingRoom(room: MeetingRoomOption): UnifiedRoom {
@@ -205,15 +224,7 @@ export default function BookingRoomScheduleScreen() {
             data = {
               room: toUnifiedClassroomRoom(week.room),
               week: week.week,
-              bookings: week.bookings.map((b) => ({
-                key: String(b.detail_id),
-                date: b.date,
-                startTime: b.start_time,
-                endTime: b.end_time,
-                title: b.section ? `${b.subject_id} (${b.section})` : b.subject_id,
-                subtitle: b.teacher || b.objective || '',
-                color: bookingColor(b.bgcolor),
-              })),
+              bookings: week.bookings.map(toUnifiedClassroomBooking),
             };
           }
         } else {
@@ -224,15 +235,7 @@ export default function BookingRoomScheduleScreen() {
           data = {
             room: toUnifiedClassroomRoom(week.room),
             week: week.week,
-            bookings: week.bookings.map((b) => ({
-              key: String(b.detail_id),
-              date: b.date,
-              startTime: b.start_time,
-              endTime: b.end_time,
-              title: b.section ? `${b.subject_id} (${b.section})` : b.subject_id,
-              subtitle: b.teacher || b.objective || '',
-              color: bookingColor(b.bgcolor),
-            })),
+            bookings: week.bookings.map(toUnifiedClassroomBooking),
           };
         }
 
@@ -322,14 +325,19 @@ export default function BookingRoomScheduleScreen() {
             : undefined
         }
         dotColor={tint}>
-        <ThemedText style={styles.bookingTitle} numberOfLines={2}>
-          {booking.title}
-        </ThemedText>
-        {booking.subtitle ? (
-          <ThemedText style={styles.bookingNote} numberOfLines={1}>
-            {booking.subtitle}
-          </ThemedText>
-        ) : null}
+        <View style={styles.bookingRow}>
+          <UserAvatar staffId={booking.bookerId} size={40} />
+          <View style={styles.bookingText}>
+            <ThemedText style={styles.bookingTitle} numberOfLines={2}>
+              {booking.title}
+            </ThemedText>
+            {booking.subtitle ? (
+              <ThemedText style={styles.bookingNote} numberOfLines={1}>
+                {booking.subtitle}
+              </ThemedText>
+            ) : null}
+          </View>
+        </View>
       </EventTimelineItem>
     );
   }
@@ -639,8 +647,10 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
       borderColor: c.border,
     },
     dateBadgeActive: { backgroundColor: c.belizeHole, borderColor: c.belizeHole },
-    dateNum: { fontSize: 17, lineHeight: 23, fontFamily: AppFonts.psuBold, color: c.text },
-    dateMonth: { fontSize: 10, lineHeight: 13, color: c.textMuted },
+    // Line boxes trimmed to just clear the glyphs — at the ThemedText
+    // defaults (23 / 13) the day and month read as two separate lines.
+    dateNum: { fontSize: 17, lineHeight: 18, fontFamily: AppFonts.psuBold, color: c.text },
+    dateMonth: { fontSize: 10, lineHeight: 12, color: c.textMuted },
     dateOnActive: { color: c.textOnPrimary },
 
     dayTitleCol: { flex: 1 },
@@ -654,6 +664,8 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
     statusBusy: { backgroundColor: c.surfaceAlt },
     statusText: { fontSize: 11, color: c.textMuted },
     statusTextFree: { color: c.success },
+    bookingRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    bookingText: { flex: 1, minWidth: 0 },
     bookingTitle: { fontSize: 15, lineHeight: 20, color: c.text },
     bookingNote: { fontSize: 12, color: c.textMuted },
   });
