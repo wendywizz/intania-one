@@ -60,6 +60,7 @@ import {
   useThemedStyles,
 } from '@/constants/theme';
 import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
+import { FORM_KEYBOARD_DISMISS_MODE, KeyboardAvoider } from "@/components/keyboard-avoider";
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/toast-provider';
 import { formatFullDate } from '@/utils/date-format';
@@ -884,25 +885,28 @@ export default function TermBookingScreen() {
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scrollFlex}
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: gutter }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        {step === 'details' ? renderDetailsStep() : null}
-        {step === 'days' ? renderDaysStep() : null}
-        {step === 'summary' ? renderSummaryStep() : null}
-      </ScrollView>
+      <KeyboardAvoider>
+        <ScrollView
+          style={styles.scrollFlex}
+          contentContainerStyle={[styles.scroll, { paddingHorizontal: gutter }]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}
+          showsVerticalScrollIndicator={false}>
+          {step === 'details' ? renderDetailsStep() : null}
+          {step === 'days' ? renderDaysStep() : null}
+          {step === 'summary' ? renderSummaryStep() : null}
+        </ScrollView>
 
-      <View style={[styles.bottomBar, { paddingHorizontal: gutter, paddingBottom: bottomBarPadding }]}>
-        <Button title={TEXT.SHARED_BACK_THAI} variant="secondary" onPress={goBack} />
-        <Button
-          title={isLastStep ? TEXT.BOOKING_ROOM_CART_ADD_ACTION : nextLabel[step]}
-          onPress={isLastStep ? requestSubmit : goNext}
-          loading={isLastStep && submitting}
-          style={styles.ctaButton}
-        />
-      </View>
+        <View style={[styles.bottomBar, { paddingHorizontal: gutter, paddingBottom: bottomBarPadding }]}>
+          <Button title={TEXT.SHARED_BACK_THAI} variant="secondary" onPress={goBack} />
+          <Button
+            title={isLastStep ? TEXT.BOOKING_ROOM_CART_ADD_ACTION : nextLabel[step]}
+            onPress={isLastStep ? requestSubmit : goNext}
+            loading={isLastStep && submitting}
+            style={styles.ctaButton}
+          />
+        </View>
+      </KeyboardAvoider>
 
       <SelectSheet
         visible={picker?.kind === 'subject'}

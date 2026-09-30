@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
+import { FORM_KEYBOARD_DISMISS_MODE, KeyboardAvoider } from "@/components/keyboard-avoider";
 
 import { AppToast } from "@/components/app-toast";
 import { LoadingAnimate } from "@/components/loading-animate";
@@ -801,57 +802,59 @@ export default function TimestampDetailScreen() {
         backHref={"/timestamp/forgot-timestamp" as Href}
         tone="primary"
       />
-      <ScrollView contentContainerStyle={styles.content}>
-        {renderContent()}
-      </ScrollView>
-      <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
-        <Pressable
-          accessibilityRole="button"
-          disabled={isSubmitting || isRemoving}
-          onPress={handleSubmit}
-          style={[
-            styles.submitButton,
-            isSubmitting || isRemoving ? styles.disabledButton : undefined,
-          ]}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#FFFFFF" size="small" />
-          ) : null}
-          <ThemedText
-            lightColor="#FFFFFF"
-            darkColor="#FFFFFF"
-            type="defaultSemiBold"
-          >
-            {isSubmitting
-              ? TEXT.TIMESTAMP_SUBMITTING
-              : isEditMode
-                ? TEXT.TIMESTAMP_UPDATE
-                : TEXT.TIMESTAMP_SUBMIT}
-          </ThemedText>
-        </Pressable>
-        {isEditMode ? (
+      <KeyboardAvoider>
+        <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE} contentContainerStyle={styles.content}>
+          {renderContent()}
+        </ScrollView>
+        <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
           <Pressable
             accessibilityRole="button"
             disabled={isSubmitting || isRemoving}
-            onPress={handleRemove}
+            onPress={handleSubmit}
             style={[
-              styles.removeButton,
+              styles.submitButton,
               isSubmitting || isRemoving ? styles.disabledButton : undefined,
             ]}
           >
-            {isRemoving ? (
-              <ActivityIndicator color="#B42318" size="small" />
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
             ) : null}
             <ThemedText
-              lightColor="#B42318"
-              darkColor="#B42318"
+              lightColor="#FFFFFF"
+              darkColor="#FFFFFF"
               type="defaultSemiBold"
             >
-              {isRemoving ? TEXT.TIMESTAMP_REMOVING : TEXT.SHARED_DELETE_THAI}
+              {isSubmitting
+                ? TEXT.TIMESTAMP_SUBMITTING
+                : isEditMode
+                  ? TEXT.TIMESTAMP_UPDATE
+                  : TEXT.TIMESTAMP_SUBMIT}
             </ThemedText>
           </Pressable>
-        ) : null}
-      </View>
+          {isEditMode ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={isSubmitting || isRemoving}
+              onPress={handleRemove}
+              style={[
+                styles.removeButton,
+                isSubmitting || isRemoving ? styles.disabledButton : undefined,
+              ]}
+            >
+              {isRemoving ? (
+                <ActivityIndicator color="#B42318" size="small" />
+              ) : null}
+              <ThemedText
+                lightColor="#B42318"
+                darkColor="#B42318"
+                type="defaultSemiBold"
+              >
+                {isRemoving ? TEXT.TIMESTAMP_REMOVING : TEXT.SHARED_DELETE_THAI}
+              </ThemedText>
+            </Pressable>
+          ) : null}
+        </View>
+      </KeyboardAvoider>
       {/* The app-wide select sheet: same list, same animation, same rows as
           every other picker. Each approver keeps their photo, with the position
           on the first line and the name beneath it. */}

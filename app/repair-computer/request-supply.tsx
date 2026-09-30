@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { type AppColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { FloatingActionBar } from "@/components/floating-action-bar";
+import { FORM_KEYBOARD_DISMISS_MODE, KeyboardAvoider } from "@/components/keyboard-avoider";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -101,37 +102,45 @@ export default function RequestSupplyScreen() {
         tone="primary"
       />
 
-      <View style={styles.content}>
-        <Card style={styles.panel}>
-          <View style={styles.titleBlock}>
-            <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_REQUEST_SUPPLY}</ThemedText>
-            <ThemedText style={styles.titleDescription}>
-              {TEXT.REPAIR_COMPUTER_REQUEST_SUPPLY_DESC}
-            </ThemedText>
-          </View>
+      <KeyboardAvoider>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}
+          showsVerticalScrollIndicator={false}
+        >
+          <Card style={styles.panel}>
+            <View style={styles.titleBlock}>
+              <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_REQUEST_SUPPLY}</ThemedText>
+              <ThemedText style={styles.titleDescription}>
+                {TEXT.REPAIR_COMPUTER_REQUEST_SUPPLY_DESC}
+              </ThemedText>
+            </View>
 
-          <TextField
-            label={TEXT.REPAIR_COMPUTER_REQUEST_DETAIL_LABEL}
-            required
-            multiline
-            numberOfLines={2}
-            style={{ minHeight: 60 }}
-            value={detail}
-            onChangeText={(value) => {
-              setDetail(value);
-              if (validationError) {
-                setValidationError("");
-              }
-            }}
-            placeholder={TEXT.REPAIR_COMPUTER_REQUEST_DETAIL_LABEL}
-            error={validationError}
-          />
-        </Card>
-      </View>
+            <TextField
+              label={TEXT.REPAIR_COMPUTER_REQUEST_DETAIL_LABEL}
+              required
+              multiline
+              numberOfLines={2}
+              style={{ minHeight: 60 }}
+              value={detail}
+              onChangeText={(value) => {
+                setDetail(value);
+                if (validationError) {
+                  setValidationError("");
+                }
+              }}
+              placeholder={TEXT.REPAIR_COMPUTER_REQUEST_DETAIL_LABEL}
+              error={validationError}
+            />
+          </Card>
+        </ScrollView>
 
-      <FloatingActionBar disabled={isSubmitting}>
-        <Button title={TEXT.REPAIR_COMPUTER_SUBMIT} fullWidth onPress={handleOpenConfirm} />
-      </FloatingActionBar>
+        <FloatingActionBar disabled={isSubmitting}>
+          <Button title={TEXT.REPAIR_COMPUTER_SUBMIT} fullWidth onPress={handleOpenConfirm} />
+        </FloatingActionBar>
+      </KeyboardAvoider>
 
       <ConfirmDialog
         visible={isConfirmOpen}
@@ -158,8 +167,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flex: 1,
     backgroundColor: c.background,
   },
-  content: {
+  scroll: {
     flex: 1,
+  },
+  content: {
+    flexGrow: 1,
     padding: 16,
   },
   panel: {

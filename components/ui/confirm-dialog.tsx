@@ -6,7 +6,8 @@
  * cancel (secondary) + confirm (primary/danger) action pair. Themed via
  * useColors().
  */
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect } from 'react';
+import { Keyboard, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { AppText as Text } from '@/components/app-text';
 
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,12 @@ export function ConfirmDialog({
   hideCancel = false,
 }: ConfirmDialogProps) {
   const c = useColors();
+
+  // Usually opened by a form's submit button: the field that was being typed in
+  // would otherwise keep its keyboard up over the dialog.
+  useEffect(() => {
+    if (visible) Keyboard.dismiss();
+  }, [visible]);
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onCancel} statusBarTranslucent>

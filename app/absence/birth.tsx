@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
+import { FORM_KEYBOARD_DISMISS_MODE } from "@/components/keyboard-avoider";
 
 import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
@@ -548,6 +549,7 @@ export default function BirthScreen() {
       <ScrollView
         contentContainerStyle={[styles.content, { paddingHorizontal: gutter, paddingBottom: contentBottomPadding }]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}
       >
         <View style={styles.formCard}>
           <View style={styles.form}>

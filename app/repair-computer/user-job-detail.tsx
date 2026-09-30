@@ -16,6 +16,7 @@ import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { AppToast } from "@/components/app-toast";
 import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { FloatingActionBar } from "@/components/floating-action-bar";
+import { FORM_KEYBOARD_DISMISS_MODE, KeyboardAvoider } from "@/components/keyboard-avoider";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { SectionCard } from "@/components/section-card";
@@ -291,6 +292,7 @@ export default function UserJobDetailScreen() {
         contentContainerStyle={[styles.form, !footerActions && { paddingBottom: contentBottomPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}
       >
         {/* Job info — titled card + icon/label/value rows, like absence detail. */}
         <DetailInfoCard
@@ -453,13 +455,15 @@ export default function UserJobDetailScreen() {
         showBackButton
         tone="primary"
       />
-      <View style={styles.content}>
-        <View style={styles.panel}>
-          {renderContent()}
+      <KeyboardAvoider>
+        <View style={styles.content}>
+          <View style={styles.panel}>
+            {renderContent()}
+          </View>
         </View>
-      </View>
 
-      {footerActions}
+        {footerActions}
+      </KeyboardAvoider>
 
       <ConfirmDialog
         visible={isConfirmOpen}

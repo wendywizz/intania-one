@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
+import { FORM_KEYBOARD_DISMISS_MODE } from "@/components/keyboard-avoider";
 import { boxShadow } from '@/constants/shadows';
 
 export default function AddMaterialScreen() {
@@ -102,6 +103,8 @@ export default function AddMaterialScreen() {
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: contentBottomPadding }]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}
         >
           {/* Form Card */}
           <View style={styles.card}>

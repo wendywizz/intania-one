@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
+import { FORM_KEYBOARD_DISMISS_MODE, KeyboardAvoider } from "@/components/keyboard-avoider";
 
 import { AppToast } from "@/components/app-toast";
 import { ScreenHeader } from "@/components/screen-header";
@@ -112,51 +113,54 @@ export default function TimestampApproveReasonScreen() {
         tone="primary"
       />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.card}>
-          <ThemedText style={styles.label}>
-            {TEXT.TIMESTAMP_APPROVE_NOTE_LABEL}
-            <ThemedText style={styles.required}> *</ThemedText>
-          </ThemedText>
-          <TextInput
-            multiline
-            numberOfLines={2}
-            value={reason}
-            onChangeText={(value) => {
-              setReason(value);
-              if (value.trim()) setFieldError("");
-            }}
-            placeholder={TEXT.TIMESTAMP_APPROVE_NOTE_PLACEHOLDER}
-            placeholderTextColor="#9CA3AF"
-            style={[styles.textArea, fieldError ? styles.inputError : undefined]}
-            textAlignVertical="top"
-          />
-          {fieldError ? (
-            <ThemedText style={styles.fieldError}>{fieldError}</ThemedText>
-          ) : null}
-        </View>
-      </ScrollView>
-
-      <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
-        <Pressable
-          accessibilityRole="button"
-          disabled={isSubmitting}
-          onPress={handleSubmitPress}
-          style={[
-            styles.submitButton,
-            isApprove ? styles.acceptButton : styles.rejectButton,
-            isSubmitting ? styles.disabledButton : undefined,
-          ]}
+      <KeyboardAvoider>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}
         >
-          {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
-          <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-            {TEXT.TIMESTAMP_APPROVE_SUBMIT}
-          </ThemedText>
-        </Pressable>
-      </View>
+          <View style={styles.card}>
+            <ThemedText style={styles.label}>
+              {TEXT.TIMESTAMP_APPROVE_NOTE_LABEL}
+              <ThemedText style={styles.required}> *</ThemedText>
+            </ThemedText>
+            <TextInput
+              multiline
+              numberOfLines={2}
+              value={reason}
+              onChangeText={(value) => {
+                setReason(value);
+                if (value.trim()) setFieldError("");
+              }}
+              placeholder={TEXT.TIMESTAMP_APPROVE_NOTE_PLACEHOLDER}
+              placeholderTextColor="#9CA3AF"
+              style={[styles.textArea, fieldError ? styles.inputError : undefined]}
+              textAlignVertical="top"
+            />
+            {fieldError ? (
+              <ThemedText style={styles.fieldError}>{fieldError}</ThemedText>
+            ) : null}
+          </View>
+        </ScrollView>
+
+        <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isSubmitting}
+            onPress={handleSubmitPress}
+            style={[
+              styles.submitButton,
+              isApprove ? styles.acceptButton : styles.rejectButton,
+              isSubmitting ? styles.disabledButton : undefined,
+            ]}
+          >
+            {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+              {TEXT.TIMESTAMP_APPROVE_SUBMIT}
+            </ThemedText>
+          </Pressable>
+        </View>
+      </KeyboardAvoider>
 
       <Modal
         transparent

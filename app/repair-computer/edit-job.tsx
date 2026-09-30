@@ -14,6 +14,7 @@ import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { FloatingActionBar } from "@/components/floating-action-bar";
+import { FORM_KEYBOARD_DISMISS_MODE, KeyboardAvoider } from "@/components/keyboard-avoider";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
@@ -413,6 +414,7 @@ export default function RepairComputerEditJobScreen() {
       <ScrollView
         contentContainerStyle={styles.form}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}
       >
         {showReadOnlyFields ? (
           <>
@@ -669,36 +671,38 @@ export default function RepairComputerEditJobScreen() {
         tone="primary"
       />
 
-      <View style={styles.content}>
-        <ThemedView
-          style={styles.panel}
-          lightColor="#FFFFFF"
-          darkColor="#1F2B30"
-        >
-          <View style={styles.panelHeader}>
-            <ThemedText type="subtitle" numberOfLines={2}>
-              {repairTypeName ||
-                (isReadOnly
-                  ? TEXT.REPAIR_COMPUTER_JOB_DETAIL
-                  : TEXT.REPAIR_COMPUTER_EDIT_JOB)}
-            </ThemedText>
-            {supplyCode ? (
-              <ThemedText style={styles.panelSubtitle}>
-                {TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL} {supplyCode}
+      <KeyboardAvoider>
+        <View style={styles.content}>
+          <ThemedView
+            style={styles.panel}
+            lightColor="#FFFFFF"
+            darkColor="#1F2B30"
+          >
+            <View style={styles.panelHeader}>
+              <ThemedText type="subtitle" numberOfLines={2}>
+                {repairTypeName ||
+                  (isReadOnly
+                    ? TEXT.REPAIR_COMPUTER_JOB_DETAIL
+                    : TEXT.REPAIR_COMPUTER_EDIT_JOB)}
               </ThemedText>
-            ) : null}
-            {informDate ? (
-              <View style={styles.panelDateRow}>
-                <IconSymbol name="calendar" size={13} color={c.textMuted} />
-                <ThemedText style={styles.panelMeta}>{informDate}</ThemedText>
-              </View>
-            ) : null}
-          </View>
-          {renderContent()}
-        </ThemedView>
-      </View>
+              {supplyCode ? (
+                <ThemedText style={styles.panelSubtitle}>
+                  {TEXT.REPAIR_COMPUTER_SUPPLY_CODE_LABEL} {supplyCode}
+                </ThemedText>
+              ) : null}
+              {informDate ? (
+                <View style={styles.panelDateRow}>
+                  <IconSymbol name="calendar" size={13} color={c.textMuted} />
+                  <ThemedText style={styles.panelMeta}>{informDate}</ThemedText>
+                </View>
+              ) : null}
+            </View>
+            {renderContent()}
+          </ThemedView>
+        </View>
 
-      {renderFooterActions()}
+        {renderFooterActions()}
+      </KeyboardAvoider>
 
       <AppToast
         message={toastMessage}

@@ -14,6 +14,7 @@ import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { AppToast } from "@/components/app-toast";
 import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { FloatingActionBar } from "@/components/floating-action-bar";
+import { FORM_KEYBOARD_DISMISS_MODE, KeyboardAvoider } from "@/components/keyboard-avoider";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { SectionCard } from "@/components/section-card";
@@ -200,141 +201,144 @@ export default function RepairComputerInformScreen() {
         tone="primary"
       />
 
-      {isCheckingCanInform ? (
-        <LoadingAnimate
-          title={TEXT.REPAIR_COMPUTER_CHECKING_REQUEST}
-          desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
-        />
-      ) : canInform ? (
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <TipAlert
-            title={TEXT.REPAIR_COMPUTER_NEW_REQUEST}
-            message={TEXT.REPAIR_COMPUTER_NEW_REQUEST_DESCRIPTION}
-            style={styles.policyCard}
+      <KeyboardAvoider>
+        {isCheckingCanInform ? (
+          <LoadingAnimate
+            title={TEXT.REPAIR_COMPUTER_CHECKING_REQUEST}
+            desc={TEXT.SHARED_PLEASE_WAIT_A_MOMENT}
           />
-
-          {/* Detail */}
-          <SectionCard>
-            <View style={styles.field}>
-              <ThemedText style={styles.fieldLabel}>
-                {TEXT.REPAIR_COMPUTER_DETAIL}
-                <ThemedText style={styles.requiredMark}> *</ThemedText>
-              </ThemedText>
-              <TextInput
-                multiline
-                numberOfLines={2}
-                value={detail}
-                onChangeText={(value) => {
-                  setDetail(value);
-                  clearValidationError("detail");
-                }}
-                placeholder={TEXT.REPAIR_COMPUTER_DETAIL_PLACEHOLDER}
-                placeholderTextColor={c.textFaint}
-                style={[
-                  styles.input,
-                  styles.textArea,
-                  validationErrors.detail ? styles.inputError : undefined,
-                  webNoOutline,
-                ]}
-              />
-              {validationErrors.detail ? (
-                <ThemedText style={styles.fieldError}>
-                  {validationErrors.detail}
-                </ThemedText>
-              ) : null}
-            </View>
-          </SectionCard>
-
-          {/* Supply code */}
-          <SectionCard>
-            <View style={styles.field}>
-              <ThemedText style={styles.fieldLabel}>
-                {TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
-                <ThemedText style={styles.optionalMark}>
-                  {" "}
-                  {TEXT.REPAIR_COMPUTER_OPTIONAL}
-                </ThemedText>
-              </ThemedText>
-              <TextInput
-                value={supplyCode}
-                onChangeText={setSupplyCode}
-                placeholder={TEXT.REPAIR_COMPUTER_SUPPLY_CODE_PLACEHOLDER}
-                placeholderTextColor={c.textFaint}
-                style={[styles.input, webNoOutline]}
-              />
-            </View>
-          </SectionCard>
-
-          {/* Phone */}
-          <SectionCard>
-            <View style={styles.field}>
-              <ThemedText style={styles.fieldLabel}>
-                {TEXT.REPAIR_COMPUTER_PHONE}
-                <ThemedText style={styles.requiredMark}> *</ThemedText>
-              </ThemedText>
-              <TextInput
-                keyboardType="phone-pad"
-                value={phone}
-                onChangeText={(value) => {
-                  setPhone(value);
-                  clearValidationError("phone");
-                }}
-                placeholder={TEXT.REPAIR_COMPUTER_PHONE_PLACEHOLDER}
-                placeholderTextColor={c.textFaint}
-                style={[
-                  styles.input,
-                  validationErrors.phone ? styles.inputError : undefined,
-                  webNoOutline,
-                ]}
-              />
-              {validationErrors.phone ? (
-                <ThemedText style={styles.fieldError}>
-                  {validationErrors.phone}
-                </ThemedText>
-              ) : null}
-            </View>
-          </SectionCard>
-        </ScrollView>
-      ) : (
-        <View style={styles.content}>
-          <ThemedView
-            style={styles.messagePanel}
-            lightColor="#FFFFFF"
-            darkColor="#1F2B30"
+        ) : canInform ? (
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}
           >
-            <ThemedText type="subtitle">
-              {TEXT.REPAIR_COMPUTER_CANNOT_INFORM_JOB}
-            </ThemedText>
-            <ThemedText style={styles.messageText}>
-              {canInformMessage ||
-                "You still have a repair computer job remain."}
-            </ThemedText>
-          </ThemedView>
+            <TipAlert
+              title={TEXT.REPAIR_COMPUTER_NEW_REQUEST}
+              message={TEXT.REPAIR_COMPUTER_NEW_REQUEST_DESCRIPTION}
+              style={styles.policyCard}
+            />
 
-          <Button
-            title={TEXT.REPAIR_COMPUTER_BACK_TO_CURRENT_JOB}
-            variant="secondary"
-            fullWidth
-            onPress={() => navReplace("/repair-computer/current-job")}
-          />
-        </View>
-      )}
+            {/* Detail */}
+            <SectionCard>
+              <View style={styles.field}>
+                <ThemedText style={styles.fieldLabel}>
+                  {TEXT.REPAIR_COMPUTER_DETAIL}
+                  <ThemedText style={styles.requiredMark}> *</ThemedText>
+                </ThemedText>
+                <TextInput
+                  multiline
+                  numberOfLines={2}
+                  value={detail}
+                  onChangeText={(value) => {
+                    setDetail(value);
+                    clearValidationError("detail");
+                  }}
+                  placeholder={TEXT.REPAIR_COMPUTER_DETAIL_PLACEHOLDER}
+                  placeholderTextColor={c.textFaint}
+                  style={[
+                    styles.input,
+                    styles.textArea,
+                    validationErrors.detail ? styles.inputError : undefined,
+                    webNoOutline,
+                  ]}
+                />
+                {validationErrors.detail ? (
+                  <ThemedText style={styles.fieldError}>
+                    {validationErrors.detail}
+                  </ThemedText>
+                ) : null}
+              </View>
+            </SectionCard>
 
-      {!isCheckingCanInform && canInform ? (
-        <FloatingActionBar disabled={isSubmitting} safeAreaBottom={false}>
-          <Button
-            title={TEXT.REPAIR_COMPUTER_SUBMIT_REQUEST}
-            icon="paperplane.fill"
-            size="lg"
-            fullWidth
-            loading={isSubmitting}
-            onPress={handleSubmit}
-          />
-        </FloatingActionBar>
-      ) : null}
+            {/* Supply code */}
+            <SectionCard>
+              <View style={styles.field}>
+                <ThemedText style={styles.fieldLabel}>
+                  {TEXT.REPAIR_COMPUTER_SUPPLY_CODE}
+                  <ThemedText style={styles.optionalMark}>
+                    {" "}
+                    {TEXT.REPAIR_COMPUTER_OPTIONAL}
+                  </ThemedText>
+                </ThemedText>
+                <TextInput
+                  value={supplyCode}
+                  onChangeText={setSupplyCode}
+                  placeholder={TEXT.REPAIR_COMPUTER_SUPPLY_CODE_PLACEHOLDER}
+                  placeholderTextColor={c.textFaint}
+                  style={[styles.input, webNoOutline]}
+                />
+              </View>
+            </SectionCard>
+
+            {/* Phone */}
+            <SectionCard>
+              <View style={styles.field}>
+                <ThemedText style={styles.fieldLabel}>
+                  {TEXT.REPAIR_COMPUTER_PHONE}
+                  <ThemedText style={styles.requiredMark}> *</ThemedText>
+                </ThemedText>
+                <TextInput
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={(value) => {
+                    setPhone(value);
+                    clearValidationError("phone");
+                  }}
+                  placeholder={TEXT.REPAIR_COMPUTER_PHONE_PLACEHOLDER}
+                  placeholderTextColor={c.textFaint}
+                  style={[
+                    styles.input,
+                    validationErrors.phone ? styles.inputError : undefined,
+                    webNoOutline,
+                  ]}
+                />
+                {validationErrors.phone ? (
+                  <ThemedText style={styles.fieldError}>
+                    {validationErrors.phone}
+                  </ThemedText>
+                ) : null}
+              </View>
+            </SectionCard>
+          </ScrollView>
+        ) : (
+          <View style={styles.content}>
+            <ThemedView
+              style={styles.messagePanel}
+              lightColor="#FFFFFF"
+              darkColor="#1F2B30"
+            >
+              <ThemedText type="subtitle">
+                {TEXT.REPAIR_COMPUTER_CANNOT_INFORM_JOB}
+              </ThemedText>
+              <ThemedText style={styles.messageText}>
+                {canInformMessage ||
+                  "You still have a repair computer job remain."}
+              </ThemedText>
+            </ThemedView>
+
+            <Button
+              title={TEXT.REPAIR_COMPUTER_BACK_TO_CURRENT_JOB}
+              variant="secondary"
+              fullWidth
+              onPress={() => navReplace("/repair-computer/current-job")}
+            />
+          </View>
+        )}
+
+        {!isCheckingCanInform && canInform ? (
+          <FloatingActionBar disabled={isSubmitting} safeAreaBottom={false}>
+            <Button
+              title={TEXT.REPAIR_COMPUTER_SUBMIT_REQUEST}
+              icon="paperplane.fill"
+              size="lg"
+              fullWidth
+              loading={isSubmitting}
+              onPress={handleSubmit}
+            />
+          </FloatingActionBar>
+        ) : null}
+      </KeyboardAvoider>
 
       <ConfirmDialog
         visible={showConfirm}

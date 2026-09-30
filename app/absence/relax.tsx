@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
+import { FORM_KEYBOARD_DISMISS_MODE, KeyboardAvoider } from "@/components/keyboard-avoider";
 
 import { AgentSelectField } from "@/components/agent-select-field";
 import { AppToast } from "@/components/app-toast";
@@ -931,180 +932,202 @@ export default function RelaxScreen() {
     <ThemedView style={styles.container}>
       <ScreenHeader title={TEXT.ABSENCE_RELAX_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar tone="primary" />
 
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        {maxRelaxDays !== null ? (
-          <TipAlert
-            title={TEXT.ABSENCE_POLICY_NOTE_LABEL}
-            message={`ท่านสามารถยื่นลาพักผ่อนได้จำนวน ${maxRelaxDays.toLocaleString("th-TH")} วัน`}
-            style={styles.policyCard}
-          />
-        ) : null}
-
-        {/* Approver */}
-        <SectionCard>
-          <SelectField
-            label={TEXT.ABSENCE_APPROVER_LABEL}
-            placeholder={TEXT.ABSENCE_APPROVER_PLACEHOLDER}
-            value={approver}
-            options={approverOptions}
-            isOpen={openSelect === "approver"}
-            hasError={Boolean(validationErrors.approver)}
-            errorMessage={validationErrors.approver}
-            onToggle={() =>
-              setOpenSelect(openSelect === "approver" ? null : "approver")
-            }
-            onSelect={(value, option) => {
-              setApprover(value);
-              setApproverStaffId(option?.staffId ?? "");
-              clearValidationError("approver");
-              setOpenSelect(null);
-            }}
-          />
-        </SectionCard>
-
-        {/* Absence date */}
-        <SectionCard>
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>
-              {TEXT.ABSENCE_LEAVE_DATE_LABEL}
-            </ThemedText>
-            <View style={styles.dateRow}>
-              <DatePickerField
-                label={TEXT.ABSENCE_START_DATE_LABEL}
-                hideLabel
-                value={startDate}
-                minimumDate={minimumStartDate}
-                holidays={holidays.holidaySet}
-                onVisibleMonthChange={holidays.ensureMonth}
-                onChange={(date) => {
-                  setStartDate(date);
-                  if (endDate && startOfDay(endDate) < startOfDay(date)) {
-                    setEndDate(null);
-                  } else if (endDate) {
-                    clearValidationError("date");
-                  }
-                }}
-                hasError={Boolean(displayedDateError)}
-              />
-              <DatePickerField
-                label={TEXT.ABSENCE_END_DATE_LABEL}
-                hideLabel
-                value={endDate}
-                minimumDate={minimumEndDate}
-                highlightedStartDate={startDate}
-                holidays={holidays.holidaySet}
-                onVisibleMonthChange={holidays.ensureMonth}
-                hasError={Boolean(displayedDateError)}
-                onChange={(date) => {
-                  setEndDate(date);
-                  if (startDate) {
-                    clearValidationError("date");
-                  }
-                }}
-              />
-            </View>
-            <ThemedText
-              style={[
-                styles.hint,
-                displayedDateError ? styles.errorText : undefined,
-              ]}
-            >
-              {displayedDateError || TEXT.ABSENCE_SELECT_DATE_HINT}
-            </ThemedText>
-            {leaveDayCount !== null ? (
-              <ThemedText
-                type="defaultSemiBold"
-                style={styles.leaveDaySummary}
-              >
-                {TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL}
-                {leaveDayCount.toLocaleString("th-TH")} {TEXT.ABSENCE_DAY_UNIT}
-              </ThemedText>
-            ) : null}
-          </View>
-        </SectionCard>
-
-        {/* Contact and reason */}
-        <SectionCard>
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>
-              {TEXT.ABSENCE_CONTACT_CHANNEL_LABEL}
-            </ThemedText>
-            <TextInput
-              onChangeText={(value) => {
-                setContact(value);
-                if (value.trim()) {
-                  clearValidationError("contact");
-                }
-              }}
-              placeholder={TEXT.ABSENCE_CONTACT_CHANNEL_PLACEHOLDER}
-              placeholderTextColor="#9CA3AF"
-              style={[
-                styles.input,
-                validationErrors.contact ? styles.inputError : undefined,
-                webNoOutline,
-              ]}
-              value={contact}
+      <KeyboardAvoider>
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}
+        >
+          {maxRelaxDays !== null ? (
+            <TipAlert
+              title={TEXT.ABSENCE_POLICY_NOTE_LABEL}
+              message={`ท่านสามารถยื่นลาพักผ่อนได้จำนวน ${maxRelaxDays.toLocaleString("th-TH")} วัน`}
+              style={styles.policyCard}
             />
-            {validationErrors.contact ? (
-              <ThemedText style={styles.fieldError}>
-                {validationErrors.contact}
+          ) : null}
+
+          {/* Approver */}
+          <SectionCard>
+            <SelectField
+              label={TEXT.ABSENCE_APPROVER_LABEL}
+              placeholder={TEXT.ABSENCE_APPROVER_PLACEHOLDER}
+              value={approver}
+              options={approverOptions}
+              isOpen={openSelect === "approver"}
+              hasError={Boolean(validationErrors.approver)}
+              errorMessage={validationErrors.approver}
+              onToggle={() =>
+                setOpenSelect(openSelect === "approver" ? null : "approver")
+              }
+              onSelect={(value, option) => {
+                setApprover(value);
+                setApproverStaffId(option?.staffId ?? "");
+                clearValidationError("approver");
+                setOpenSelect(null);
+              }}
+            />
+          </SectionCard>
+
+          {/* Absence date */}
+          <SectionCard>
+            <View style={styles.field}>
+              <ThemedText style={styles.fieldLabel}>
+                {TEXT.ABSENCE_LEAVE_DATE_LABEL}
               </ThemedText>
-            ) : null}
-          </View>
-        </SectionCard>
-
-        {/* Agent */}
-        <SectionCard>
-          <AgentSelectField
-            options={availableAgentOptions}
-            selectedAgents={selectedAgents}
-            photoIdForOption={(option) => agentPhotoByLabel[option]}
-            subtitleForOption={(option) => agentDeptByLabel[option]}
-            isOpen={openSelect === "agent"}
-            hasError={Boolean(validationErrors.agent)}
-            errorMessage={validationErrors.agent}
-            onToggle={() =>
-              setOpenSelect(openSelect === "agent" ? null : "agent")
-            }
-            onSelect={handleSelectAgent}
-            onRemove={handleRemoveAgent}
-          />
-        </SectionCard>
-
-        {/* The bar floats over the content and grows by the device's bottom inset. */}
-        <View style={[styles.bottomSpacer, { marginBottom: Math.max(0, bottomBarPadding - 28) }]} />
-      </ScrollView>
-
-      <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
-        {isEditMode ? (
-          <View style={styles.actionRow}>
-            <Pressable
-              accessibilityRole="button"
-              disabled={isSubmitting || isRemoving}
-              onPress={handleRemove}
-              style={[
-                styles.deleteButton,
-                isSubmitting || isRemoving ? styles.disabledButton : undefined,
-              ]}
-            >
-              {isRemoving ? (
-                <ActivityIndicator color={c.textMuted} size="small" />
+              <View style={styles.dateRow}>
+                <DatePickerField
+                  label={TEXT.ABSENCE_START_DATE_LABEL}
+                  hideLabel
+                  value={startDate}
+                  minimumDate={minimumStartDate}
+                  holidays={holidays.holidaySet}
+                  onVisibleMonthChange={holidays.ensureMonth}
+                  onChange={(date) => {
+                    setStartDate(date);
+                    if (endDate && startOfDay(endDate) < startOfDay(date)) {
+                      setEndDate(null);
+                    } else if (endDate) {
+                      clearValidationError("date");
+                    }
+                  }}
+                  hasError={Boolean(displayedDateError)}
+                />
+                <DatePickerField
+                  label={TEXT.ABSENCE_END_DATE_LABEL}
+                  hideLabel
+                  value={endDate}
+                  minimumDate={minimumEndDate}
+                  highlightedStartDate={startDate}
+                  holidays={holidays.holidaySet}
+                  onVisibleMonthChange={holidays.ensureMonth}
+                  hasError={Boolean(displayedDateError)}
+                  onChange={(date) => {
+                    setEndDate(date);
+                    if (startDate) {
+                      clearValidationError("date");
+                    }
+                  }}
+                />
+              </View>
+              <ThemedText
+                style={[
+                  styles.hint,
+                  displayedDateError ? styles.errorText : undefined,
+                ]}
+              >
+                {displayedDateError || TEXT.ABSENCE_SELECT_DATE_HINT}
+              </ThemedText>
+              {leaveDayCount !== null ? (
+                <ThemedText
+                  type="defaultSemiBold"
+                  style={styles.leaveDaySummary}
+                >
+                  {TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL}
+                  {leaveDayCount.toLocaleString("th-TH")} {TEXT.ABSENCE_DAY_UNIT}
+                </ThemedText>
               ) : null}
-              <ThemedText type="defaultSemiBold">
-                {TEXT.SHARED_DELETE_THAI}
+            </View>
+          </SectionCard>
+
+          {/* Contact and reason */}
+          <SectionCard>
+            <View style={styles.field}>
+              <ThemedText style={styles.fieldLabel}>
+                {TEXT.ABSENCE_CONTACT_CHANNEL_LABEL}
               </ThemedText>
-            </Pressable>
+              <TextInput
+                onChangeText={(value) => {
+                  setContact(value);
+                  if (value.trim()) {
+                    clearValidationError("contact");
+                  }
+                }}
+                placeholder={TEXT.ABSENCE_CONTACT_CHANNEL_PLACEHOLDER}
+                placeholderTextColor="#9CA3AF"
+                style={[
+                  styles.input,
+                  validationErrors.contact ? styles.inputError : undefined,
+                  webNoOutline,
+                ]}
+                value={contact}
+              />
+              {validationErrors.contact ? (
+                <ThemedText style={styles.fieldError}>
+                  {validationErrors.contact}
+                </ThemedText>
+              ) : null}
+            </View>
+          </SectionCard>
+
+          {/* Agent */}
+          <SectionCard>
+            <AgentSelectField
+              options={availableAgentOptions}
+              selectedAgents={selectedAgents}
+              photoIdForOption={(option) => agentPhotoByLabel[option]}
+              subtitleForOption={(option) => agentDeptByLabel[option]}
+              isOpen={openSelect === "agent"}
+              hasError={Boolean(validationErrors.agent)}
+              errorMessage={validationErrors.agent}
+              onToggle={() =>
+                setOpenSelect(openSelect === "agent" ? null : "agent")
+              }
+              onSelect={handleSelectAgent}
+              onRemove={handleRemoveAgent}
+            />
+          </SectionCard>
+
+        </ScrollView>
+
+        <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
+          {isEditMode ? (
+            <View style={styles.actionRow}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSubmitting || isRemoving}
+                onPress={handleRemove}
+                style={[
+                  styles.deleteButton,
+                  isSubmitting || isRemoving ? styles.disabledButton : undefined,
+                ]}
+              >
+                {isRemoving ? (
+                  <ActivityIndicator color={c.textMuted} size="small" />
+                ) : null}
+                <ThemedText type="defaultSemiBold">
+                  {TEXT.SHARED_DELETE_THAI}
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSubmitting || isRemoving}
+                onPress={handleSubmit}
+                style={[
+                  styles.submitButton,
+                  styles.updateButton,
+                  styles.actionButton,
+                  isSubmitting || isRemoving ? styles.disabledButton : undefined,
+                ]}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : null}
+                <ThemedText
+                  lightColor="#FFFFFF"
+                  darkColor="#FFFFFF"
+                  type="defaultSemiBold"
+                >
+                  {isEditMode ? TEXT.SHARED_UPDATE : TEXT.ABSENCE_SUBMIT_REQUEST}
+                </ThemedText>
+              </Pressable>
+            </View>
+          ) : (
             <Pressable
               accessibilityRole="button"
               disabled={isSubmitting || isRemoving}
               onPress={handleSubmit}
               style={[
                 styles.submitButton,
-                styles.updateButton,
-                styles.actionButton,
                 isSubmitting || isRemoving ? styles.disabledButton : undefined,
               ]}
             >
@@ -1116,33 +1139,12 @@ export default function RelaxScreen() {
                 darkColor="#FFFFFF"
                 type="defaultSemiBold"
               >
-                {isEditMode ? TEXT.SHARED_UPDATE : TEXT.ABSENCE_SUBMIT_REQUEST}
+                {TEXT.ABSENCE_SUBMIT_REQUEST}
               </ThemedText>
             </Pressable>
-          </View>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            disabled={isSubmitting || isRemoving}
-            onPress={handleSubmit}
-            style={[
-              styles.submitButton,
-              isSubmitting || isRemoving ? styles.disabledButton : undefined,
-            ]}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : null}
-            <ThemedText
-              lightColor="#FFFFFF"
-              darkColor="#FFFFFF"
-              type="defaultSemiBold"
-            >
-              {TEXT.ABSENCE_SUBMIT_REQUEST}
-            </ThemedText>
-          </Pressable>
-        )}
-      </View>
+          )}
+        </View>
+      </KeyboardAvoider>
 
       <Modal
         transparent
@@ -1496,14 +1498,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 16,
     textAlign: "center",
   },
-  bottomSpacer: {
-    height: 100,
-  },
   bottomBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: c.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: c.border,

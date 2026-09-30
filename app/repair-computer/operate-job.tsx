@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { type AppColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
 import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { FloatingActionBar } from "@/components/floating-action-bar";
+import { FORM_KEYBOARD_DISMISS_MODE, KeyboardAvoider } from "@/components/keyboard-avoider";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -134,50 +135,58 @@ export default function OperateJobScreen() {
         tone="primary"
       />
 
-      <View style={styles.content}>
-        <Card style={styles.panel}>
-          <View style={styles.titleBlock}>
-            <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_OPERATE_JOB_TITLE}</ThemedText>
-            <ThemedText style={styles.titleDescription}>
-              {TEXT.REPAIR_COMPUTER_OPERATE_JOB_DESC}
-            </ThemedText>
-          </View>
+      <KeyboardAvoider>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}
+          showsVerticalScrollIndicator={false}
+        >
+          <Card style={styles.panel}>
+            <View style={styles.titleBlock}>
+              <ThemedText type="subtitle">{TEXT.REPAIR_COMPUTER_OPERATE_JOB_TITLE}</ThemedText>
+              <ThemedText style={styles.titleDescription}>
+                {TEXT.REPAIR_COMPUTER_OPERATE_JOB_DESC}
+              </ThemedText>
+            </View>
 
-          <TextField
-            label={TEXT.REPAIR_COMPUTER_PROBLEM_DETAIL}
-            required
-            multiline
-            numberOfLines={2}
-            style={{ minHeight: 60 }}
-            value={jobAudit}
-            onChangeText={(value) => {
-              setJobAudit(value);
-              clearValidationError("jobAudit");
-            }}
-            placeholder={TEXT.REPAIR_COMPUTER_PROBLEM_DETAIL}
-            error={validationErrors.jobAudit}
-          />
+            <TextField
+              label={TEXT.REPAIR_COMPUTER_PROBLEM_DETAIL}
+              required
+              multiline
+              numberOfLines={2}
+              style={{ minHeight: 60 }}
+              value={jobAudit}
+              onChangeText={(value) => {
+                setJobAudit(value);
+                clearValidationError("jobAudit");
+              }}
+              placeholder={TEXT.REPAIR_COMPUTER_PROBLEM_DETAIL}
+              error={validationErrors.jobAudit}
+            />
 
-          <TextField
-            label={TEXT.REPAIR_COMPUTER_SOLVE_METHOD}
-            required
-            multiline
-            numberOfLines={2}
-            style={{ minHeight: 60 }}
-            value={solveMethod}
-            onChangeText={(value) => {
-              setSolveMethod(value);
-              clearValidationError("solveMethod");
-            }}
-            placeholder={TEXT.REPAIR_COMPUTER_SOLVE_METHOD}
-            error={validationErrors.solveMethod}
-          />
-        </Card>
-      </View>
+            <TextField
+              label={TEXT.REPAIR_COMPUTER_SOLVE_METHOD}
+              required
+              multiline
+              numberOfLines={2}
+              style={{ minHeight: 60 }}
+              value={solveMethod}
+              onChangeText={(value) => {
+                setSolveMethod(value);
+                clearValidationError("solveMethod");
+              }}
+              placeholder={TEXT.REPAIR_COMPUTER_SOLVE_METHOD}
+              error={validationErrors.solveMethod}
+            />
+          </Card>
+        </ScrollView>
 
-      <FloatingActionBar disabled={isSubmitting}>
-        <Button title={TEXT.REPAIR_COMPUTER_SUBMIT} fullWidth onPress={handleOpenConfirm} />
-      </FloatingActionBar>
+        <FloatingActionBar disabled={isSubmitting}>
+          <Button title={TEXT.REPAIR_COMPUTER_SUBMIT} fullWidth onPress={handleOpenConfirm} />
+        </FloatingActionBar>
+      </KeyboardAvoider>
 
       <ConfirmDialog
         visible={isConfirmOpen}
@@ -204,8 +213,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flex: 1,
     backgroundColor: c.background,
   },
-  content: {
+  scroll: {
     flex: 1,
+  },
+  content: {
+    flexGrow: 1,
     padding: 16,
   },
   panel: {

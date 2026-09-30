@@ -94,18 +94,41 @@ function toEpochMs(value: number) {
   return value < 1e11 ? value * 1000 : value;
 }
 
+const FOREIGN_NOTIFICATION_PREFIX = "expo-notifications://foreign_notifications";
+
+/**
+ * One id per push, however the app came to see it.
+ *
+ * A push Android drew itself (app in the background) comes back from the tray
+ * as `expo-notifications://foreign_notifications?tag=<tag>&id=0`, while the
+ * same push seen by the listener or a tap is identified by that FCM `tag` - so
+ * the tag is the id.
+ */
+function historyIdOf(identifier: string) {
+  if (!identifier.startsWith(FOREIGN_NOTIFICATION_PREFIX)) {
+    return identifier;
+  }
+
+  const tag = /[?&]tag=([^&]+)/.exec(identifier)?.[1];
+  return tag ? decodeURIComponent(tag) : identifier;
+}
+
 function getNotificationHistoryItem(notification: ExpoNotifications.Notification, status: PushNotificationHistoryItem["status"]) {
   const content = notification.request.content;
   const receivedAt = new Date(notification.date ? toEpochMs(notification.date) : Date.now()).toISOString();
   const fallbackId = `${receivedAt}:${textValue(content.title)}:${textValue(content.body)}`;
+  const identifier = textValue(notification.request.identifier);
+  // A push the system drew carries Android's notification extras where the
+  // data would be, not anything the app can route on.
+  const data = identifier.startsWith(FOREIGN_NOTIFICATION_PREFIX) ? undefined : normalizeNotificationData(content.data);
 
   return {
-    id: textValue(notification.request.identifier) || fallbackId,
+    id: identifier ? historyIdOf(identifier) : fallbackId,
     title: textValue(content.title) || "Notification",
     body: textValue(content.body),
     receivedAt,
     status,
-    data: normalizeNotificationData(content.data),
+    data,
   };
 }
 
@@ -350,11 +373,44 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return status.granted || status.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
 }
 
+/**
+ * Add what is still in the notification tray to the history.
+ *
+ * The listener only runs while the app is open, so a push that arrived in the
+ * background and was never tapped was shown to the person but never listed.
+ * Only adds: an item already listed keeps its status and its data.
+ */
+async function syncPresentedNotifications() {
+  try {
+    const Notifications = await loadNotifications();
+    if (!Notifications) {
+      return;
+    }
+
+    const presented = await Notifications.getPresentedNotificationsAsync();
+    const items = await readStoredHistory();
+    const known = new Set(items.map((item) => item.id));
+    const added = presented
+      .filter((notification) => !isLocalDisplayNotification(notification))
+      .map((notification) => getNotificationHistoryItem(notification, "unread"))
+      .filter((item) => !known.has(item.id) && known.add(item.id));
+
+    if (added.length) {
+      const merged = [...added, ...items].sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
+      await writeStoredHistory(merged);
+    }
+  } catch {
+    // The tray is a bonus source; the stored history still reads without it.
+  }
+}
+
 export async function getNotificationHistory() {
+  await syncPresentedNotifications();
   return readStoredHistory();
 }
 
 export async function getUnreadNotificationCount() {
+  await syncPresentedNotifications();
   const items = await readStoredHistory();
   return items.filter((item) => item.status === "unread").length;
 }

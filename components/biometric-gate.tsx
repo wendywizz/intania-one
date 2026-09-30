@@ -6,6 +6,7 @@ import {
   Animated,
   AppState,
   type AppStateStatus,
+  Keyboard,
   Platform,
   Pressable,
   StyleSheet,
@@ -259,6 +260,9 @@ export function BiometricGate({ children }: { children: React.ReactNode }) {
    * unlock button, and pressing it is what starts the check.
    */
   const startLock = useCallback((plan: LockPlan) => {
+    // A field focused in the app underneath keeps its keyboard up over the lock
+    // (the lock has no text input of its own - the passcode is a keypad).
+    Keyboard.dismiss();
     planRef.current = plan;
     failedScansRef.current = 0;
     needsDeviceFallbackRef.current = false;

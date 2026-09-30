@@ -56,6 +56,7 @@ import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
+import { FORM_KEYBOARD_DISMISS_MODE, KeyboardAvoider } from "@/components/keyboard-avoider";
 import { useAuth } from '@/context/AuthContext';
 import {
   createMeetingRoomRequest,
@@ -673,44 +674,46 @@ export default function MeetingRoomFormScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {step === 'basics' ? renderBasicsStep() : null}
-        {step === 'dates' ? renderDatesStep() : null}
-        {step === 'audio'
-          ? renderToggleThingsStep(
-              TEXT.MEETING_ROOM_FORM_AUDIO_TOGGLE,
-              audioEnabled,
-              setAudioEnabledAndClear,
-              options.things_audio,
-              audioQty,
-              setAudioQty,
-            )
-          : null}
-        {step === 'food'
-          ? renderToggleThingsStep(
-              TEXT.MEETING_ROOM_FORM_FOOD_TOGGLE,
-              foodEnabled,
-              setFoodEnabledAndClear,
-              options.things_food,
-              foodQty,
-              setFoodQty,
-            )
-          : null}
-        {step === 'approval' ? renderApprovalStep() : null}
-      </ScrollView>
+      <KeyboardAvoider>
+        <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          {step === 'basics' ? renderBasicsStep() : null}
+          {step === 'dates' ? renderDatesStep() : null}
+          {step === 'audio'
+            ? renderToggleThingsStep(
+                TEXT.MEETING_ROOM_FORM_AUDIO_TOGGLE,
+                audioEnabled,
+                setAudioEnabledAndClear,
+                options.things_audio,
+                audioQty,
+                setAudioQty,
+              )
+            : null}
+          {step === 'food'
+            ? renderToggleThingsStep(
+                TEXT.MEETING_ROOM_FORM_FOOD_TOGGLE,
+                foodEnabled,
+                setFoodEnabledAndClear,
+                options.things_food,
+                foodQty,
+                setFoodQty,
+              )
+            : null}
+          {step === 'approval' ? renderApprovalStep() : null}
+        </ScrollView>
 
-      {/* One fixed bar for every step — Back stays on the left throughout, and
-          the right button is either "next step" or, on the last step, the
-          real submit. Keeping Submit here (not floating inside the scroll
-          content) means it sits in the same fixed place Back always has. */}
-      <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
-        <Button title={TEXT.SHARED_BACK_THAI} variant="secondary" onPress={goBack} />
-        <Button
-          title={isLastStep ? TEXT.MEETING_ROOM_CONFIRM_ACTION : nextLabel[step]}
-          onPress={isLastStep ? requestSubmit : goNext}
-          style={styles.ctaButton}
-        />
-      </View>
+        {/* One fixed bar for every step — Back stays on the left throughout, and
+            the right button is either "next step" or, on the last step, the
+            real submit. Keeping Submit here (not floating inside the scroll
+            content) means it sits in the same fixed place Back always has. */}
+        <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
+          <Button title={TEXT.SHARED_BACK_THAI} variant="secondary" onPress={goBack} />
+          <Button
+            title={isLastStep ? TEXT.MEETING_ROOM_CONFIRM_ACTION : nextLabel[step]}
+            onPress={isLastStep ? requestSubmit : goNext}
+            style={styles.ctaButton}
+          />
+        </View>
+      </KeyboardAvoider>
 
       <ConfirmDialog
         visible={confirmOpen}

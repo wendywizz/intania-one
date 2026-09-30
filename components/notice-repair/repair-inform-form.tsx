@@ -18,6 +18,7 @@ import {
   StyleSheet, TextInput, View,
 } from 'react-native';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
+import { FORM_KEYBOARD_DISMISS_MODE } from '@/components/keyboard-avoider';
 
 // On web a focused TextInput draws the browser's own rectangular outline, which
 // ignores the control's rounded border. Remove it so the focus state can show
@@ -368,7 +369,8 @@ export function RepairInformForm({
       ) : (
         <ScrollView
           contentContainerStyle={[styles.content, { paddingHorizontal: gutter }]}
-          keyboardShouldPersistTaps="handled">
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}>
           <View style={styles.form}>
             {/* Type of request */}
             <SectionCard>

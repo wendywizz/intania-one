@@ -6,6 +6,7 @@ import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { AppToast } from "@/components/app-toast";
 import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { FloatingActionBar } from "@/components/floating-action-bar";
+import { FORM_KEYBOARD_DISMISS_MODE, KeyboardAvoider } from "@/components/keyboard-avoider";
 import { NavTopBar } from "@/components/nav-top-bar";
 import { SectionCard } from "@/components/section-card";
 import { ThemedText } from "@/components/themed-text";
@@ -97,49 +98,52 @@ export default function WorkerRejectJobScreen() {
         tone="primary"
       />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <SectionCard>
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>
-              {TEXT.REPAIR_COMPUTER_REJECT_REASON}
-              <ThemedText style={styles.requiredMark}> *</ThemedText>
-            </ThemedText>
-            <TextInput
-              multiline
-              numberOfLines={2}
-              value={reason}
-              onChangeText={(value) => {
-                setReason(value);
-                if (value.trim()) setReasonError("");
-              }}
-              placeholder={TEXT.REPAIR_COMPUTER_REJECT_REASON_PLACEHOLDER}
-              placeholderTextColor={c.textFaint}
-              style={[
-                styles.input,
-                styles.textArea,
-                reasonError ? styles.inputError : undefined,
-                webNoOutline,
-              ]}
-            />
-            {reasonError ? (
-              <ThemedText style={styles.fieldError}>{reasonError}</ThemedText>
-            ) : null}
-          </View>
-        </SectionCard>
-      </ScrollView>
+      <KeyboardAvoider>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}
+        >
+          <SectionCard>
+            <View style={styles.field}>
+              <ThemedText style={styles.fieldLabel}>
+                {TEXT.REPAIR_COMPUTER_REJECT_REASON}
+                <ThemedText style={styles.requiredMark}> *</ThemedText>
+              </ThemedText>
+              <TextInput
+                multiline
+                numberOfLines={2}
+                value={reason}
+                onChangeText={(value) => {
+                  setReason(value);
+                  if (value.trim()) setReasonError("");
+                }}
+                placeholder={TEXT.REPAIR_COMPUTER_REJECT_REASON_PLACEHOLDER}
+                placeholderTextColor={c.textFaint}
+                style={[
+                  styles.input,
+                  styles.textArea,
+                  reasonError ? styles.inputError : undefined,
+                  webNoOutline,
+                ]}
+              />
+              {reasonError ? (
+                <ThemedText style={styles.fieldError}>{reasonError}</ThemedText>
+              ) : null}
+            </View>
+          </SectionCard>
+        </ScrollView>
 
-      <FloatingActionBar disabled={isSubmitting}>
-        <Button
-          title={TEXT.REPAIR_COMPUTER_REJECT_JOB}
-          variant="primary"
-          fullWidth
-          loading={isSubmitting}
-          onPress={handleConfirmPress}
-        />
-      </FloatingActionBar>
+        <FloatingActionBar disabled={isSubmitting}>
+          <Button
+            title={TEXT.REPAIR_COMPUTER_REJECT_JOB}
+            variant="primary"
+            fullWidth
+            loading={isSubmitting}
+            onPress={handleConfirmPress}
+          />
+        </FloatingActionBar>
+      </KeyboardAvoider>
 
       <ConfirmDialog
         visible={isConfirmOpen}

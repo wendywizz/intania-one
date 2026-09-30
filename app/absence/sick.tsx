@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
+import { FORM_KEYBOARD_DISMISS_MODE, KeyboardAvoider } from "@/components/keyboard-avoider";
 
 import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
@@ -1033,323 +1034,345 @@ export default function SickScreen() {
     <ThemedView style={styles.container}>
       <ScreenHeader title={TEXT.ABSENCE_SICK_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar tone="primary" />
 
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        <TipAlert
-          title={TEXT.ABSENCE_POLICY_NOTE_LABEL}
-          message={TEXT.ABSENCE_POLICY_NOTE_TEXT}
-          style={styles.policyCard}
-        />
-
-        {/* Approver */}
-        <SectionCard>
-          <SelectField
-            label={TEXT.ABSENCE_APPROVER_LABEL}
-            placeholder={TEXT.ABSENCE_APPROVER_PLACEHOLDER}
-            value={approver}
-            options={approverOptions}
-            isOpen={false}
-            hasError={Boolean(validationErrors.approver)}
-            errorMessage={validationErrors.approver}
-            onToggle={() => setOpenSelect("approver")}
-            onSelect={() => {}}
+      <KeyboardAvoider>
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}
+        >
+          <TipAlert
+            title={TEXT.ABSENCE_POLICY_NOTE_LABEL}
+            message={TEXT.ABSENCE_POLICY_NOTE_TEXT}
+            style={styles.policyCard}
           />
 
-          {/* The approver list carries a face, a position and a name, so each
-              option keeps its avatar and leads with the position over the
-              name. */}
-          <SelectSheet
-            visible={openSelect === "approver"}
-            onClose={() => setOpenSelect(null)}
-            title={TEXT.ABSENCE_APPROVER_LABEL}
-            options={approverOptions.map((option) => ({
-              id: option.value,
-              // Position over the name, the name in bold — the same approver
-              // row shape every absence form uses.
-              overline: option.subtitle,
-              label: option.title || option.label,
-              searchText: option.label,
-              leading: option.photoId ? (
-                <UserAvatar staffId={option.photoId} size={40} />
-              ) : undefined,
-            }))}
-            selectedId={approver}
-            onSelect={(picked) => {
-              const option = approverOptions.find((o) => o.value === picked.id);
-              setApprover(picked.id);
-              setApproverStaffId(option?.staffId ?? "");
-              clearValidationError("approver");
-            }}
-          />
-        </SectionCard>
-
-        {/* Absence date */}
-        <SectionCard>
-          <View style={[styles.field, styles.fieldNoBorder]}>
-            <ThemedText style={styles.fieldLabel}>
-              {TEXT.ABSENCE_LEAVE_DATE_LABEL}
-            </ThemedText>
-            <View style={styles.dateRow}>
-              <DatePickerField
-                label={TEXT.ABSENCE_START_DATE_LABEL}
-                hideLabel
-                value={startDate}
-                maximumDate={maximumStartDate}
-                holidays={holidays.holidaySet}
-                onVisibleMonthChange={holidays.ensureMonth}
-                onChange={(date) => {
-                  setStartDate(date);
-                  if (
-                    endDate &&
-                    (startOfDay(endDate) < startOfDay(date) ||
-                      startOfDay(endDate) > maximumStartDate)
-                  ) {
-                    setEndDate(null);
-                  } else if (endDate) {
-                    clearValidationError("date");
-                  }
-                }}
-                hasError={Boolean(displayedDateError)}
-              />
-              <DatePickerField
-                label={TEXT.ABSENCE_END_DATE_LABEL}
-                hideLabel
-                value={endDate}
-                minimumDate={minimumEndDate}
-                maximumDate={maximumStartDate}
-                highlightedStartDate={startDate}
-                holidays={holidays.holidaySet}
-                onVisibleMonthChange={holidays.ensureMonth}
-                hasError={Boolean(displayedDateError)}
-                onChange={(date) => {
-                  setEndDate(date);
-                  if (startDate) {
-                    clearValidationError("date");
-                  }
-                }}
-              />
-            </View>
-            <ThemedText
-              style={[
-                styles.hint,
-                displayedDateError ? styles.errorText : undefined,
-              ]}
-            >
-              {displayedDateError || TEXT.ABSENCE_SELECT_DATE_HINT}
-            </ThemedText>
-            {leaveDayCount !== null ? (
-              <ThemedText
-                type="defaultSemiBold"
-                style={styles.leaveDaySummary}
-              >
-                {TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL}
-                {leaveDayCount.toLocaleString("th-TH")} {TEXT.ABSENCE_DAY_UNIT}
-              </ThemedText>
-            ) : null}
-          </View>
-
-          {/* The field itself stays as it is — only the list moved. It opens the
-              shared SelectSheet instead of expanding in place, so choosing a
-              half-day works like every other choice in the app. `isOpen` is
-              always false because the sheet, not the field, now shows options. */}
-          <SelectField
-            label={TEXT.ABSENCE_HALF_DAY_LABEL}
-            placeholder={TEXT.ABSENCE_HALF_DAY_PLACEHOLDER}
-            value={halfDay}
-            options={halfDayChoices}
-            isOpen={false}
-            onToggle={() => setOpenSelect("halfDay")}
-            onSelect={() => {}}
-          />
-
-          <SelectSheet
-            visible={openSelect === "halfDay"}
-            onClose={() => setOpenSelect(null)}
-            title={TEXT.ABSENCE_HALF_DAY_LABEL}
-            options={halfDayChoices.map((option) => ({
-              id: option.value,
-              label: option.label,
-            }))}
-            selectedId={halfDay}
-            onSelect={(option) => setHalfDay(option.id)}
-          />
-        </SectionCard>
-
-        {/* Contact and reason */}
-        <SectionCard>
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>
-              {TEXT.ABSENCE_REASON_LABEL}
-            </ThemedText>
-            <TextInput
-              multiline
-              numberOfLines={2}
-              onChangeText={(value) => {
-                setReason(value);
-                if (value.trim()) {
-                  clearValidationError("reason");
-                }
-              }}
-              placeholder={TEXT.ABSENCE_REASON_PLACEHOLDER}
-              placeholderTextColor="#9CA3AF"
-              style={[
-                styles.textArea,
-                validationErrors.reason ? styles.inputError : undefined,
-                webNoOutline,
-              ]}
-              textAlignVertical="top"
-              value={reason}
+          {/* Approver */}
+          <SectionCard>
+            <SelectField
+              label={TEXT.ABSENCE_APPROVER_LABEL}
+              placeholder={TEXT.ABSENCE_APPROVER_PLACEHOLDER}
+              value={approver}
+              options={approverOptions}
+              isOpen={false}
+              hasError={Boolean(validationErrors.approver)}
+              errorMessage={validationErrors.approver}
+              onToggle={() => setOpenSelect("approver")}
+              onSelect={() => {}}
             />
-            {validationErrors.reason ? (
-              <ThemedText style={styles.fieldError}>
-                {validationErrors.reason}
-              </ThemedText>
-            ) : null}
-          </View>
 
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>
-              {TEXT.ABSENCE_CONTACT_CHANNEL_LABEL}
-            </ThemedText>
-            <TextInput
-              onChangeText={(value) => {
-                setContact(value);
-                if (value.trim()) {
-                  clearValidationError("contact");
-                }
+            {/* The approver list carries a face, a position and a name, so each
+                option keeps its avatar and leads with the position over the
+                name. */}
+            <SelectSheet
+              visible={openSelect === "approver"}
+              onClose={() => setOpenSelect(null)}
+              title={TEXT.ABSENCE_APPROVER_LABEL}
+              options={approverOptions.map((option) => ({
+                id: option.value,
+                // Position over the name, the name in bold — the same approver
+                // row shape every absence form uses.
+                overline: option.subtitle,
+                label: option.title || option.label,
+                searchText: option.label,
+                leading: option.photoId ? (
+                  <UserAvatar staffId={option.photoId} size={40} />
+                ) : undefined,
+              }))}
+              selectedId={approver}
+              onSelect={(picked) => {
+                const option = approverOptions.find((o) => o.value === picked.id);
+                setApprover(picked.id);
+                setApproverStaffId(option?.staffId ?? "");
+                clearValidationError("approver");
               }}
-              placeholder={TEXT.ABSENCE_CONTACT_CHANNEL_PLACEHOLDER}
-              placeholderTextColor="#9CA3AF"
-              style={[
-                styles.input,
-                validationErrors.contact ? styles.inputError : undefined,
-                webNoOutline,
-              ]}
-              value={contact}
             />
-            {validationErrors.contact ? (
-              <ThemedText style={styles.fieldError}>
-                {validationErrors.contact}
-              </ThemedText>
-            ) : null}
-          </View>
-        </SectionCard>
+          </SectionCard>
 
-        {/* Medical file upload */}
-        <SectionCard>
-          <View style={[styles.field, styles.medicalField]}>
-            <View style={styles.toggleRow}>
+          {/* Absence date */}
+          <SectionCard>
+            <View style={[styles.field, styles.fieldNoBorder]}>
               <ThemedText style={styles.fieldLabel}>
-                {TEXT.ABSENCE_MEDICAL_CERTIFICATE_TOGGLE}
+                {TEXT.ABSENCE_LEAVE_DATE_LABEL}
               </ThemedText>
-              <Toggle
-                value={hasMedicalCert}
-                onValueChange={(value) => {
-                  setHasMedicalCert(value);
-                  if (!value) setSelectedFile(null);
-                }}
-              />
+              <View style={styles.dateRow}>
+                <DatePickerField
+                  label={TEXT.ABSENCE_START_DATE_LABEL}
+                  hideLabel
+                  value={startDate}
+                  maximumDate={maximumStartDate}
+                  holidays={holidays.holidaySet}
+                  onVisibleMonthChange={holidays.ensureMonth}
+                  onChange={(date) => {
+                    setStartDate(date);
+                    if (
+                      endDate &&
+                      (startOfDay(endDate) < startOfDay(date) ||
+                        startOfDay(endDate) > maximumStartDate)
+                    ) {
+                      setEndDate(null);
+                    } else if (endDate) {
+                      clearValidationError("date");
+                    }
+                  }}
+                  hasError={Boolean(displayedDateError)}
+                />
+                <DatePickerField
+                  label={TEXT.ABSENCE_END_DATE_LABEL}
+                  hideLabel
+                  value={endDate}
+                  minimumDate={minimumEndDate}
+                  maximumDate={maximumStartDate}
+                  highlightedStartDate={startDate}
+                  holidays={holidays.holidaySet}
+                  onVisibleMonthChange={holidays.ensureMonth}
+                  hasError={Boolean(displayedDateError)}
+                  onChange={(date) => {
+                    setEndDate(date);
+                    if (startDate) {
+                      clearValidationError("date");
+                    }
+                  }}
+                />
+              </View>
+              <ThemedText
+                style={[
+                  styles.hint,
+                  displayedDateError ? styles.errorText : undefined,
+                ]}
+              >
+                {displayedDateError || TEXT.ABSENCE_SELECT_DATE_HINT}
+              </ThemedText>
+              {leaveDayCount !== null ? (
+                <ThemedText
+                  type="defaultSemiBold"
+                  style={styles.leaveDaySummary}
+                >
+                  {TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL}
+                  {leaveDayCount.toLocaleString("th-TH")} {TEXT.ABSENCE_DAY_UNIT}
+                </ThemedText>
+              ) : null}
             </View>
 
-            {hasMedicalCert ? (
-              <>
-                {selectedFile ? (
-                  <View style={styles.selectedFileCard}>
-                    <Paperclip size={18} color={c.primary} />
-                    <ThemedText style={styles.selectedFileName} numberOfLines={1}>
-                      {getUploadFileName(selectedFile)}
-                    </ThemedText>
-                    <View style={styles.fileActions}>
-                      {activeFileUrl ? (
+            {/* The field itself stays as it is — only the list moved. It opens the
+                shared SelectSheet instead of expanding in place, so choosing a
+                half-day works like every other choice in the app. `isOpen` is
+                always false because the sheet, not the field, now shows options. */}
+            <SelectField
+              label={TEXT.ABSENCE_HALF_DAY_LABEL}
+              placeholder={TEXT.ABSENCE_HALF_DAY_PLACEHOLDER}
+              value={halfDay}
+              options={halfDayChoices}
+              isOpen={false}
+              onToggle={() => setOpenSelect("halfDay")}
+              onSelect={() => {}}
+            />
+
+            <SelectSheet
+              visible={openSelect === "halfDay"}
+              onClose={() => setOpenSelect(null)}
+              title={TEXT.ABSENCE_HALF_DAY_LABEL}
+              options={halfDayChoices.map((option) => ({
+                id: option.value,
+                label: option.label,
+              }))}
+              selectedId={halfDay}
+              onSelect={(option) => setHalfDay(option.id)}
+            />
+          </SectionCard>
+
+          {/* Contact and reason */}
+          <SectionCard>
+            <View style={styles.field}>
+              <ThemedText style={styles.fieldLabel}>
+                {TEXT.ABSENCE_REASON_LABEL}
+              </ThemedText>
+              <TextInput
+                multiline
+                numberOfLines={2}
+                onChangeText={(value) => {
+                  setReason(value);
+                  if (value.trim()) {
+                    clearValidationError("reason");
+                  }
+                }}
+                placeholder={TEXT.ABSENCE_REASON_PLACEHOLDER}
+                placeholderTextColor="#9CA3AF"
+                style={[
+                  styles.textArea,
+                  validationErrors.reason ? styles.inputError : undefined,
+                  webNoOutline,
+                ]}
+                textAlignVertical="top"
+                value={reason}
+              />
+              {validationErrors.reason ? (
+                <ThemedText style={styles.fieldError}>
+                  {validationErrors.reason}
+                </ThemedText>
+              ) : null}
+            </View>
+
+            <View style={styles.field}>
+              <ThemedText style={styles.fieldLabel}>
+                {TEXT.ABSENCE_CONTACT_CHANNEL_LABEL}
+              </ThemedText>
+              <TextInput
+                onChangeText={(value) => {
+                  setContact(value);
+                  if (value.trim()) {
+                    clearValidationError("contact");
+                  }
+                }}
+                placeholder={TEXT.ABSENCE_CONTACT_CHANNEL_PLACEHOLDER}
+                placeholderTextColor="#9CA3AF"
+                style={[
+                  styles.input,
+                  validationErrors.contact ? styles.inputError : undefined,
+                  webNoOutline,
+                ]}
+                value={contact}
+              />
+              {validationErrors.contact ? (
+                <ThemedText style={styles.fieldError}>
+                  {validationErrors.contact}
+                </ThemedText>
+              ) : null}
+            </View>
+          </SectionCard>
+
+          {/* Medical file upload */}
+          <SectionCard>
+            <View style={[styles.field, styles.medicalField]}>
+              <View style={styles.toggleRow}>
+                <ThemedText style={styles.fieldLabel}>
+                  {TEXT.ABSENCE_MEDICAL_CERTIFICATE_TOGGLE}
+                </ThemedText>
+                <Toggle
+                  value={hasMedicalCert}
+                  onValueChange={(value) => {
+                    setHasMedicalCert(value);
+                    if (!value) setSelectedFile(null);
+                  }}
+                />
+              </View>
+
+              {hasMedicalCert ? (
+                <>
+                  {selectedFile ? (
+                    <View style={styles.selectedFileCard}>
+                      <Paperclip size={18} color={c.primary} />
+                      <ThemedText style={styles.selectedFileName} numberOfLines={1}>
+                        {getUploadFileName(selectedFile)}
+                      </ThemedText>
+                      <View style={styles.fileActions}>
+                        {activeFileUrl ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={handleViewFile}
+                            style={styles.fileActionBtn}
+                          >
+                            <Eye size={20} color={c.textMuted} />
+                          </Pressable>
+                        ) : null}
                         <Pressable
                           accessibilityRole="button"
-                          onPress={handleViewFile}
+                          onPress={() => setSelectedFile(null)}
                           style={styles.fileActionBtn}
                         >
-                          <Eye size={20} color={c.textMuted} />
+                          <X size={20} color="#B42318" />
                         </Pressable>
-                      ) : null}
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={() => setSelectedFile(null)}
-                        style={styles.fileActionBtn}
-                      >
-                        <X size={20} color="#B42318" />
-                      </Pressable>
+                      </View>
                     </View>
-                  </View>
-                ) : (
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => setIsSourceMenuOpen(true)}
-                    style={styles.uploadZone}
-                  >
-                    <CloudUpload size={30} color={c.primary} />
-                    <ThemedText style={styles.uploadZoneText}>
-                      {isEditMode && hasUploadedFile
-                        ? FILE_PICKER_REUPLOAD_ACTION
-                        : FILE_PICKER_ACTION}
-                    </ThemedText>
-                    <ThemedText style={styles.uploadZoneHint}>PDF, JPG, PNG</ThemedText>
-                  </Pressable>
-                )}
-                {uploadedFileUrl && !selectedFile ? (
-                  <Pressable
-                    accessibilityRole="link"
-                    onPress={handleViewUploadedFile}
-                    style={styles.uploadedFileLink}
-                  >
-                    <Paperclip size={16} color="#12805C" />
-                    <ThemedText
-                      lightColor="#12805C"
-                      darkColor="#5EC6A3"
-                      type="defaultSemiBold"
-                      style={styles.uploadedFileLinkText}
-                      numberOfLines={1}
+                  ) : (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => setIsSourceMenuOpen(true)}
+                      style={styles.uploadZone}
                     >
-                      Uploaded file
-                    </ThemedText>
-                  </Pressable>
-                ) : null}
-              </>
-            ) : null}
-          </View>
-        </SectionCard>
-
-        {/* The bar floats over the content and grows by the device's bottom inset. */}
-        <View style={[styles.bottomSpacer, { marginBottom: Math.max(0, bottomBarPadding - 28) }]} />
-      </ScrollView>
-
-      <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
-        {isEditMode ? (
-          <View style={styles.actionRow}>
-            <Pressable
-              accessibilityRole="button"
-              disabled={isSubmitting || isRemoving}
-              onPress={handleRemove}
-              style={[
-                styles.deleteButton,
-                isSubmitting || isRemoving ? styles.disabledButton : undefined,
-              ]}
-            >
-              {isRemoving ? (
-                <ActivityIndicator color={c.textMuted} size="small" />
+                      <CloudUpload size={30} color={c.primary} />
+                      <ThemedText style={styles.uploadZoneText}>
+                        {isEditMode && hasUploadedFile
+                          ? FILE_PICKER_REUPLOAD_ACTION
+                          : FILE_PICKER_ACTION}
+                      </ThemedText>
+                      <ThemedText style={styles.uploadZoneHint}>PDF, JPG, PNG</ThemedText>
+                    </Pressable>
+                  )}
+                  {uploadedFileUrl && !selectedFile ? (
+                    <Pressable
+                      accessibilityRole="link"
+                      onPress={handleViewUploadedFile}
+                      style={styles.uploadedFileLink}
+                    >
+                      <Paperclip size={16} color="#12805C" />
+                      <ThemedText
+                        lightColor="#12805C"
+                        darkColor="#5EC6A3"
+                        type="defaultSemiBold"
+                        style={styles.uploadedFileLinkText}
+                        numberOfLines={1}
+                      >
+                        Uploaded file
+                      </ThemedText>
+                    </Pressable>
+                  ) : null}
+                </>
               ) : null}
-              <ThemedText type="defaultSemiBold">
-                {TEXT.SHARED_DELETE_THAI}
-              </ThemedText>
-            </Pressable>
+            </View>
+          </SectionCard>
+
+        </ScrollView>
+
+        <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
+          {isEditMode ? (
+            <View style={styles.actionRow}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSubmitting || isRemoving}
+                onPress={handleRemove}
+                style={[
+                  styles.deleteButton,
+                  isSubmitting || isRemoving ? styles.disabledButton : undefined,
+                ]}
+              >
+                {isRemoving ? (
+                  <ActivityIndicator color={c.textMuted} size="small" />
+                ) : null}
+                <ThemedText type="defaultSemiBold">
+                  {TEXT.SHARED_DELETE_THAI}
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSubmitting || isRemoving}
+                onPress={handleSubmit}
+                style={[
+                  styles.submitButton,
+                  styles.updateButton,
+                  styles.actionButton,
+                  isSubmitting || isRemoving ? styles.disabledButton : undefined,
+                ]}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : null}
+                <ThemedText
+                  lightColor="#FFFFFF"
+                  darkColor="#FFFFFF"
+                  type="defaultSemiBold"
+                >
+                  {isSubmitting ? SUBMITTING_LABEL : TEXT.SHARED_UPDATE}
+                </ThemedText>
+              </Pressable>
+            </View>
+          ) : (
             <Pressable
               accessibilityRole="button"
-              disabled={isSubmitting || isRemoving}
+              disabled={isSubmitting}
               onPress={handleSubmit}
               style={[
                 styles.submitButton,
-                styles.updateButton,
-                styles.actionButton,
-                isSubmitting || isRemoving ? styles.disabledButton : undefined,
+                isSubmitting ? styles.disabledButton : undefined,
               ]}
             >
               {isSubmitting ? (
@@ -1360,33 +1383,12 @@ export default function SickScreen() {
                 darkColor="#FFFFFF"
                 type="defaultSemiBold"
               >
-                {isSubmitting ? SUBMITTING_LABEL : TEXT.SHARED_UPDATE}
+                {isSubmitting ? SUBMITTING_LABEL : TEXT.ABSENCE_SUBMIT_REQUEST}
               </ThemedText>
             </Pressable>
-          </View>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            disabled={isSubmitting}
-            onPress={handleSubmit}
-            style={[
-              styles.submitButton,
-              isSubmitting ? styles.disabledButton : undefined,
-            ]}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : null}
-            <ThemedText
-              lightColor="#FFFFFF"
-              darkColor="#FFFFFF"
-              type="defaultSemiBold"
-            >
-              {isSubmitting ? SUBMITTING_LABEL : TEXT.ABSENCE_SUBMIT_REQUEST}
-            </ThemedText>
-          </Pressable>
-        )}
-      </View>
+          )}
+        </View>
+      </KeyboardAvoider>
 
       <Modal
         transparent
@@ -1978,14 +1980,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   policyCard: {
     marginBottom: 14,
   },
-  bottomSpacer: {
-    height: 100,
-  },
   bottomBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: c.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: c.border,

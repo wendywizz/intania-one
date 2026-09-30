@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
+import { FORM_KEYBOARD_DISMISS_MODE, KeyboardAvoider } from "@/components/keyboard-avoider";
 
 import { AppToast } from "@/components/app-toast";
 import { ScreenHeader } from "@/components/screen-header";
@@ -102,48 +103,51 @@ export default function ApproveReasonScreen() {
         tone="primary"
       />
 
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.card}>
-          <ThemedText style={styles.label}>{TEXT.ABSENCE_APPROVE_NOTE_LABEL}</ThemedText>
-          <TextInput
-            multiline
-            numberOfLines={2}
-            value={reason}
-            onChangeText={(value) => {
-              setReason(value);
-              if (value.trim()) {
-                setError("");
-              }
-            }}
-            placeholder={TEXT.ABSENCE_APPROVE_NOTE_PLACEHOLDER}
-            placeholderTextColor="#9CA3AF"
-            style={[styles.textArea, error ? styles.inputError : undefined]}
-            textAlignVertical="top"
-          />
-          {error ? <ThemedText style={styles.fieldError}>{error}</ThemedText> : null}
-        </View>
-      </ScrollView>
-
-      <View style={[styles.bottomBar, { paddingHorizontal: gutter, paddingBottom: bottomBarPadding }]}>
-        <Pressable
-          accessibilityRole="button"
-          disabled={isSubmitting}
-          onPress={handleSubmitPress}
-          style={[
-            styles.submitButton,
-            isApprove ? styles.acceptButton : styles.rejectButton,
-            isSubmitting ? styles.disabledButton : undefined,
-          ]}
+      <KeyboardAvoider>
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={FORM_KEYBOARD_DISMISS_MODE}
         >
-          {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
-          <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
-            {TEXT.ABSENCE_APPROVE_SUBMIT}
-          </ThemedText>
-        </Pressable>
-      </View>
+          <View style={styles.card}>
+            <ThemedText style={styles.label}>{TEXT.ABSENCE_APPROVE_NOTE_LABEL}</ThemedText>
+            <TextInput
+              multiline
+              numberOfLines={2}
+              value={reason}
+              onChangeText={(value) => {
+                setReason(value);
+                if (value.trim()) {
+                  setError("");
+                }
+              }}
+              placeholder={TEXT.ABSENCE_APPROVE_NOTE_PLACEHOLDER}
+              placeholderTextColor="#9CA3AF"
+              style={[styles.textArea, error ? styles.inputError : undefined]}
+              textAlignVertical="top"
+            />
+            {error ? <ThemedText style={styles.fieldError}>{error}</ThemedText> : null}
+          </View>
+        </ScrollView>
+
+        <View style={[styles.bottomBar, { paddingHorizontal: gutter, paddingBottom: bottomBarPadding }]}>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isSubmitting}
+            onPress={handleSubmitPress}
+            style={[
+              styles.submitButton,
+              isApprove ? styles.acceptButton : styles.rejectButton,
+              isSubmitting ? styles.disabledButton : undefined,
+            ]}
+          >
+            {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+            <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" type="defaultSemiBold">
+              {TEXT.ABSENCE_APPROVE_SUBMIT}
+            </ThemedText>
+          </Pressable>
+        </View>
+      </KeyboardAvoider>
 
       <Modal
         transparent
