@@ -12,6 +12,7 @@ import { UserAvatar } from "@/components/user-avatar";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from "@/constants/theme";
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 import { getApprovalStatusBadge } from "@/constants/approval-status";
 import {
   TYPE_ABSENCE_BIRTH,
@@ -181,6 +182,7 @@ function PersonRow({ name, position, staffId }: StaffEntry) {
 
 export default function ApproveDetailScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
   const params = useLocalSearchParams<{ item?: string }>();
@@ -303,7 +305,7 @@ export default function ApproveDetailScreen() {
             ) : null}
           </ScrollView>
 
-          <View style={styles.bottomBar}>
+          <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
             <Pressable
               accessibilityRole="button"
               onPress={() => goToDecision("1")}

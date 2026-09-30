@@ -25,6 +25,7 @@ import { AppFonts } from '@/constants/fonts';
 import { boxShadow } from '@/constants/shadows';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { useAuth } from '@/context/AuthContext';
 import { getActiveSummary } from '@/services/activeSummaryService';
 
@@ -57,6 +58,7 @@ const repairTypeMenus: RepairTypeMenuItem[] = [
 
 export default function RepairHubScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(32);
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
   const { user: authUser } = useAuth();
@@ -104,7 +106,7 @@ export default function RepairHubScreen() {
       />
 
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter, paddingBottom: contentBottomPadding }]}
         showsVerticalScrollIndicator={false}>
         <View style={styles.intro}>
           <ThemedText style={styles.screenTitle}>{TEXT.REPAIR_HUB_TITLE}</ThemedText>

@@ -11,9 +11,11 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 
 export default function SupplyListScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(16);
   const styles = useThemedStyles(makeStyles);
   const { repair_id, staff_id: paramStaff } = useLocalSearchParams<{ repair_id: string; staff_id: string }>();
   const { user } = useAuth();
@@ -45,7 +47,7 @@ export default function SupplyListScreen() {
           <ThemedText style={styles.errorText}>{error}</ThemedText>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: contentBottomPadding }]} showsVerticalScrollIndicator={false}>
           {detail?.repair_number ? (
             <ThemedText style={styles.subhead}>เลขที่คำร้อง {detail.repair_number}</ThemedText>
           ) : null}

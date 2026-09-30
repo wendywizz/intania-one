@@ -16,10 +16,12 @@ import {
   Platform,
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { boxShadow } from '@/constants/shadows';
 
 export default function AddMaterialScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(20);
   const styles = useThemedStyles(makeStyles);
   const { repair_id, staff_id, role, source } = useLocalSearchParams<{
     repair_id: string;
@@ -98,7 +100,7 @@ export default function AddMaterialScreen() {
         style={styles.flex}
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={[styles.scroll, { paddingBottom: contentBottomPadding }]}
           showsVerticalScrollIndicator={false}
         >
           {/* Form Card */}

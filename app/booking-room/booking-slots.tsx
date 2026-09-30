@@ -25,6 +25,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { fill, groupSlots, SlotGroupCard } from '@/components/booking-room/slot-group-card';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { useAuth } from '@/context/AuthContext';
 import {
   deleteMyBookingSlot,
@@ -35,6 +36,7 @@ import { formatFullDate } from '@/utils/date-format';
 
 export default function BookingSlotsScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(32);
   const styles = useThemedStyles(makeStyles);
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -141,7 +143,7 @@ export default function BookingSlotsScreen() {
     }
 
     return (
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: contentBottomPadding }]} showsVerticalScrollIndicator={false}>
         {groups.length === 0 ? (
           // A booking whose slots have all been removed: the screen is empty,
           // and a grey line at the top of it reads as a loading glitch rather

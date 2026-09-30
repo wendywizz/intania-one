@@ -43,6 +43,7 @@ import { DetailInfoCard, type DetailRow } from '@/components/ui/detail-info-card
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { useAuth } from '@/context/AuthContext';
 import {
   deleteMyBooking,
@@ -53,6 +54,7 @@ import { formatDateRange, formatDateTime, formatFullDate } from '@/utils/date-fo
 
 export default function BookingDetailScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(32);
   const styles = useThemedStyles(makeStyles);
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -206,7 +208,7 @@ export default function BookingDetailScreen() {
     }
 
     return (
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: contentBottomPadding }]} showsVerticalScrollIndicator={false}>
         <DetailInfoCard
           title={TEXT.BOOKING_ROOM_DETAIL_INFO}
           // The booking type as a badge rather than a labelled row: it is one

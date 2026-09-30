@@ -324,7 +324,7 @@ export default function RepairComputerInformScreen() {
       )}
 
       {!isCheckingCanInform && canInform ? (
-        <FloatingActionBar disabled={isSubmitting}>
+        <FloatingActionBar disabled={isSubmitting} safeAreaBottom={false}>
           <Button
             title={TEXT.REPAIR_COMPUTER_SUBMIT_REQUEST}
             icon="paperplane.fill"

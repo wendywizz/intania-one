@@ -55,6 +55,7 @@ import { Toggle } from '@/components/ui/toggle';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 import { useAuth } from '@/context/AuthContext';
 import {
   createMeetingRoomRequest,
@@ -96,6 +97,7 @@ function dateEditHref(roomId: string, id?: string): Href {
 
 export default function MeetingRoomFormScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
   const styles = useThemedStyles(makeStyles);
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -701,7 +703,7 @@ export default function MeetingRoomFormScreen() {
           the right button is either "next step" or, on the last step, the
           real submit. Keeping Submit here (not floating inside the scroll
           content) means it sits in the same fixed place Back always has. */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
         <Button title={TEXT.SHARED_BACK_THAI} variant="secondary" onPress={goBack} />
         <Button
           title={isLastStep ? TEXT.MEETING_ROOM_CONFIRM_ACTION : nextLabel[step]}

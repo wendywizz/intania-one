@@ -2,6 +2,7 @@ import { useFocusEffect, useLocalSearchParams, type Href } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { getApprovalStatusBadge } from '@/constants/approval-status';
 
 import { ErrorState } from "@/components/error-state";
@@ -75,6 +76,7 @@ function PersonRow({
 
 export default function TimestampRecordDetailScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(40);
   const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ forgetId?: string; item?: string }>();
   const forgetId = firstParam(params.forgetId);
@@ -157,7 +159,7 @@ export default function TimestampRecordDetailScreen() {
           onRetry={() => load()}
         />
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: contentBottomPadding }]} showsVerticalScrollIndicator={false}>
           {/* Miss-timestamp info — same titled card + icon/label/value rows as the
               absence detail screen. */}
           <DetailInfoCard

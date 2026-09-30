@@ -11,6 +11,7 @@ import {
     View,
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 
 import { AppToast } from "@/components/app-toast";
 import { SubmittingOverlay } from "@/components/submitting-overlay";
@@ -120,6 +121,7 @@ function PersonSummaryCard({
 export default function UserJobDetailScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const contentBottomPadding = useContentBottomPadding(10);
   const params = useLocalSearchParams<{
     backHref?: string | string[];
     id?: string | string[];
@@ -286,7 +288,7 @@ export default function UserJobDetailScreen() {
 
     return (
       <ScrollView
-        contentContainerStyle={styles.form}
+        contentContainerStyle={[styles.form, !footerActions && { paddingBottom: contentBottomPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -440,6 +442,9 @@ export default function UserJobDetailScreen() {
     );
   };
 
+  // Rendered once: without a bar the content has to clear the navigation bar itself.
+  const footerActions = renderFooterActions();
+
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
@@ -454,7 +459,7 @@ export default function UserJobDetailScreen() {
         </View>
       </View>
 
-      {renderFooterActions()}
+      {footerActions}
 
       <ConfirmDialog
         visible={isConfirmOpen}

@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 
 import { AgentSelectField } from "@/components/agent-select-field";
 import { AppToast } from "@/components/app-toast";
@@ -455,6 +456,7 @@ function SelectField({
 
 export default function BusinessScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
   const { user: authUser } = useAuth();
@@ -1177,10 +1179,11 @@ export default function BusinessScreen() {
           />
         </SectionCard>
 
-        <View style={styles.bottomSpacer} />
+        {/* The bar floats over the content and grows by the device's bottom inset. */}
+        <View style={[styles.bottomSpacer, { marginBottom: Math.max(0, bottomBarPadding - 28) }]} />
       </ScrollView>
 
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
         {isEditMode ? (
           <View style={styles.actionRow}>
             <Pressable

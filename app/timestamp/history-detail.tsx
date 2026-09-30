@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { getApprovalStatusBadge } from '@/constants/approval-status';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 
 import { ScreenHeader } from "@/components/screen-header";
 import { SectionCard } from "@/components/section-card";
@@ -118,6 +119,7 @@ function DecisionRows({
 
 export default function TimestampHistoryDetailScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(40);
   const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ item?: string }>();
   const item = useMemo(() => parseItem(params.item), [params.item]);
@@ -163,7 +165,7 @@ export default function TimestampHistoryDetailScreen() {
         tone="primary"
       />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: contentBottomPadding }]} showsVerticalScrollIndicator={false}>
         {/* Miss-timestamp info — same titled card + icon/label/value rows as the
             absence detail screen. */}
         <DetailInfoCard

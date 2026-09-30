@@ -25,6 +25,7 @@ import { Sheet } from '@/components/ui/sheet';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { getAccount, isMailComposeEnabled, isMailReauthRequiredText } from '@/services/mailAuthService';
 import {
   bodyAsPlainText,
@@ -89,6 +90,7 @@ function isReauth(error: unknown) {
  */
 export default function MailComposeScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(40);
   const styles = useThemedStyles(makeStyles);
   const navigation = useNavigation();
   const { showToast } = useToast();
@@ -325,7 +327,7 @@ export default function MailComposeScreen() {
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+          <ScrollView contentContainerStyle={[styles.form, { paddingBottom: contentBottomPadding }]} keyboardShouldPersistTaps="handled">
             <RecipientField label={TEXT.MAIL_COMPOSE_TO} recipients={to} onChange={setTo} onEdited={markEdited} />
             <View style={styles.divider} />
             <RecipientField label={TEXT.MAIL_COMPOSE_CC} recipients={cc} onChange={setCc} onEdited={markEdited} />

@@ -13,6 +13,7 @@ import { DetailInfoCard } from '@/components/ui/detail-info-card';
 import { UserAvatar } from '@/components/user-avatar';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { getApprovalStatusBadge } from '@/constants/approval-status';
 import { TEXT } from '@/constants/text';
 import { USER_ID } from '@/constants/user';
@@ -300,6 +301,7 @@ function PersonRow({ name, position, staffId }: StaffEntry) {
 export default function absenceDetailScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const contentBottomPadding = useContentBottomPadding(40);
   const gutter = useScreenGutter();
   const { user: authUser } = useAuth();
   const viewerStaffId = authUser?.staffId || USER_ID;
@@ -412,7 +414,7 @@ export default function absenceDetailScreen() {
     <ThemedView style={styles.container}>
       <ScreenHeader title={typeLabel} backHref={backHref} titleInNavBar tone="primary" />
 
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter, paddingBottom: contentBottomPadding }]} showsVerticalScrollIndicator={false}>
         {/* Leave-info section */}
         <DetailInfoCard
           title={TEXT.ABSENCE_DETAIL_INFO_SECTION}

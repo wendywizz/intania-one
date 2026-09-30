@@ -10,6 +10,7 @@ import {
 import { type AppColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 import { EmptyState } from "@/components/empty-state";
 import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { LoadingAnimate } from "@/components/loading-animate";
@@ -120,6 +121,7 @@ function ForemanSelectRow({
 
 export default function SelectForemanScreen() {
   const styles = useThemedStyles(makeStyles);
+  const bottomBarPadding = useActionBarBottomPadding();
   const params = useLocalSearchParams<{
     backHref?: string | string[];
     id?: string | string[];
@@ -274,7 +276,7 @@ export default function SelectForemanScreen() {
       </View>
 
       {!isLoading && !error && visibleForemen.length > 0 ? (
-        <View style={styles.bottomBar}>
+        <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
           <Button title={TEXT.SHARED_BACK_THAI} variant="secondary" onPress={handleBackPress} />
           <Button
             title={TEXT.REPAIR_COMPUTER_FORWARD_FOREMAN}

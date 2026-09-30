@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 
 import { NavTopBar } from '@/components/nav-top-bar';
 import { EmptyState } from '@/components/empty-state';
@@ -192,6 +193,7 @@ function PersonSearchListItem({ item }: { item: Person }) {
 
 export default function PersonSearchScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(16);
   const { isDarkMode } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const [keyword, setKeyword] = useState('');
@@ -393,7 +395,7 @@ export default function PersonSearchScreen() {
         {/* Results — each person is its own card, listed one by one */}
         <FlatList
           style={styles.flatList}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: contentBottomPadding }]}
           data={visibleResults}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           keyboardDismissMode="on-drag"

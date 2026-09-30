@@ -59,6 +59,7 @@ import {
   useScreenGutter,
   useThemedStyles,
 } from '@/constants/theme';
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/toast-provider';
 import { formatFullDate } from '@/utils/date-format';
@@ -110,6 +111,7 @@ function toISODate(date: Date) {
 
 export default function GeneralBookingScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
   const { user } = useAuth();
@@ -887,7 +889,7 @@ export default function GeneralBookingScreen() {
         {step === 'summary' ? renderSummaryStep() : null}
       </ScrollView>
 
-      <View style={[styles.bottomBar, { paddingHorizontal: gutter }]}>
+      <View style={[styles.bottomBar, { paddingHorizontal: gutter, paddingBottom: bottomBarPadding }]}>
         <Button title={TEXT.SHARED_BACK_THAI} variant="secondary" onPress={goBack} />
         <Button
           // "ใส่ตะกร้า", not "บันทึกการจอง": the tap does not book the room,

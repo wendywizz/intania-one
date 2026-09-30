@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 
 import { AppToast } from "@/components/app-toast";
 import { LoadingAnimate } from "@/components/loading-animate";
@@ -303,6 +304,7 @@ function getTimestampItem(rawItem: unknown): Timestamp {
 
 export default function TimestampDetailScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
   const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const { item: rawItem } = useLocalSearchParams<{
@@ -802,7 +804,7 @@ export default function TimestampDetailScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {renderContent()}
       </ScrollView>
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
         <Pressable
           accessibilityRole="button"
           disabled={isSubmitting || isRemoving}

@@ -25,6 +25,7 @@ import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 import { useBookingCart } from '@/hooks/use-booking-cart';
 import {
   confirmCartItem,
@@ -56,6 +57,7 @@ function fill(template: string, values: Record<string, string | number>) {
 
 export default function BookingCartScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
   const { showToast } = useToast();
@@ -253,7 +255,11 @@ export default function BookingCartScreen() {
         data={items}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={[styles.list, { paddingHorizontal: gutter }]}
+        // The bottom bar floats over the list and grows by the device's bottom inset.
+        contentContainerStyle={[
+          styles.list,
+          { paddingHorizontal: gutter, paddingBottom: 120 + Math.max(0, bottomBarPadding - 28) },
+        ]}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.notice}>
@@ -267,7 +273,7 @@ export default function BookingCartScreen() {
           with a single draft the button on the card is the same action, and two
           buttons saying it would read as two different ones. */}
       {bookable.length > 1 ? (
-        <View style={[styles.bottomBar, { paddingHorizontal: gutter }]}>
+        <View style={[styles.bottomBar, { paddingHorizontal: gutter, paddingBottom: bottomBarPadding }]}>
           <Button
             title={fill(TEXT.BOOKING_ROOM_CART_CONFIRM_ALL, { count: bookable.length })}
             onPress={() => setConfirming('all')}

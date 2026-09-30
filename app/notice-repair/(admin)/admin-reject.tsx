@@ -13,9 +13,11 @@ import {
   Pressable, ScrollView, StyleSheet, TextInput, View,
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 
 export default function NoticeRepairAdminRejectScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
   const styles = useThemedStyles(makeStyles);
   const { repair_id, staff_id: paramStaff } = useLocalSearchParams<{ repair_id: string; staff_id: string }>();
   const { user } = useAuth();
@@ -85,7 +87,7 @@ export default function NoticeRepairAdminRejectScreen() {
           )}
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: bottomBarPadding }]}>
           <Pressable
             accessibilityRole="button"
             disabled={submitting}

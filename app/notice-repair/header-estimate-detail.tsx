@@ -18,6 +18,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 import { boxShadow } from '@/constants/shadows';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -102,6 +103,7 @@ function RadioOption({ selected, label, onPress }: { selected: boolean; label: s
 
 export default function HeaderEstimateDetailScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
   const styles = useThemedStyles(makeStyles);
   const { repair_id, staff_id: paramStaff } = useLocalSearchParams<{
     repair_id: string; staff_id: string; role?: string; source?: string;
@@ -201,7 +203,13 @@ export default function HeaderEstimateDetailScreen() {
     const technicians = (detail.technicians ?? []).filter((t) => !!t.name?.trim());
 
     return (
-      <ScrollView contentContainerStyle={[styles.scroll, styles.scrollWithActions]} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          // The action bar floats over the content and grows by the device's bottom inset.
+          { paddingBottom: 128 + Math.max(0, bottomBarPadding - 18) },
+        ]}
+        showsVerticalScrollIndicator={false}>
 
         {/* ── Repair Summary Card ── */}
         <Card>
@@ -362,7 +370,7 @@ export default function HeaderEstimateDetailScreen() {
       {renderContent()}
 
       {!isLoading && !error && (
-        <View style={styles.actionBar}>
+        <View style={[styles.actionBar, { paddingBottom: bottomBarPadding }]}>
           <Pressable
             accessibilityRole="button" disabled={submitting} onPress={handleSave}
             style={[styles.actionBtn, styles.approveBtn, styles.approveFlex, submitting && styles.actionBtnDisabled]}>
@@ -397,7 +405,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   errorText: { color: c.primary, fontSize: 14, lineHeight: 20, textAlign: 'center' },
 
   scroll: { padding: 20, gap: 24 },
-  scrollWithActions: { paddingBottom: 128 },
 
   card: {
     borderRadius: 24,

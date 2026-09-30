@@ -18,6 +18,7 @@ import {
   Pressable, ScrollView, StyleSheet, TextInput, View,
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 
 function todayISO() {
   const d = new Date();
@@ -28,6 +29,7 @@ function todayISO() {
 
 export default function RequisitionScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
   const styles = useThemedStyles(makeStyles);
   const { repair_id, staff_id: paramStaff, role, source } = useLocalSearchParams<{
     repair_id: string; staff_id: string; role?: string; source?: string;
@@ -191,7 +193,7 @@ export default function RequisitionScreen() {
             </View>
           </ScrollView>
 
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: bottomBarPadding }]}>
             <Pressable
               accessibilityRole="button"
               disabled={submitting}

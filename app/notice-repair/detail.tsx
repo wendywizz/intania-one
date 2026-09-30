@@ -27,6 +27,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
+import { useActionBarBottomPadding, useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { boxShadow } from '@/constants/shadows';
 
 // New job awaiting approval — the only status where the approver's
@@ -126,6 +127,8 @@ function SecondaryActionMenu({ actions, disabled }: { actions: MenuAction[]; dis
 
 export default function NoticeRepairDetailScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
+  const contentBottomPadding = useContentBottomPadding(40);
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
   const { repair_id, staff_id: paramStaff, role, source } = useLocalSearchParams<{
@@ -438,8 +441,11 @@ export default function NoticeRepairDetailScreen() {
         contentContainerStyle={[
           styles.scrollContent,
           { paddingHorizontal: gutter },
+          // The action bar floats over the content and grows by the device's bottom
+          // inset; with no bar the content clears the navigation bar itself.
           (canApprove || canAdminReceive || canInformerEdit || canViewSupply || canViewSupplyList || hasDrafts)
-            && styles.scrollWithActions,
+            ? { paddingBottom: 128 + Math.max(0, bottomBarPadding - 18) }
+            : { paddingBottom: contentBottomPadding },
         ]}
         showsVerticalScrollIndicator={false}>
 
@@ -599,7 +605,7 @@ export default function NoticeRepairDetailScreen() {
 
       {/* Bottom action bar — approver only, on a new (001) job */}
       {canApprove && (
-        <View style={styles.actionBar}>
+        <View style={[styles.actionBar, { paddingBottom: bottomBarPadding }]}>
           <Pressable
             accessibilityRole="button" disabled={submitting} onPress={onApprove}
             style={[styles.actionBtn, styles.approveBtn, styles.approveFlex, submitting && styles.actionBtnDisabled]}>
@@ -631,7 +637,7 @@ export default function NoticeRepairDetailScreen() {
 
       {/* Bottom action bar — admin only, on a รอรับเรื่อง (admin_pending) job */}
       {canAdminReceive && (
-        <View style={styles.actionBar}>
+        <View style={[styles.actionBar, { paddingBottom: bottomBarPadding }]}>
           <Pressable
             accessibilityRole="button" disabled={submitting} onPress={onAdminAccept}
             style={[styles.actionBtn, styles.approveBtn, styles.approveFlex, submitting && styles.actionBtnDisabled]}>
@@ -662,7 +668,7 @@ export default function NoticeRepairDetailScreen() {
 
       {/* Bottom action bar — informer editing/removing their own pending (001) request */}
       {canInformerEdit && (
-        <View style={styles.actionBar}>
+        <View style={[styles.actionBar, { paddingBottom: bottomBarPadding }]}>
           <Pressable
             accessibilityRole="button" disabled={submitting} onPress={onEdit}
             style={[styles.actionBtn, styles.approveBtn, styles.threeQuarterFlex, submitting && styles.actionBtnDisabled]}>
@@ -678,7 +684,7 @@ export default function NoticeRepairDetailScreen() {
 
       {/* Bottom action bar — admin supply: open the full requisition list */}
       {canViewSupply && (
-        <View style={styles.actionBar}>
+        <View style={[styles.actionBar, { paddingBottom: bottomBarPadding }]}>
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push({
@@ -693,7 +699,7 @@ export default function NoticeRepairDetailScreen() {
 
       {/* Bottom action bar — head of category: open the read-only supply list */}
       {canViewSupplyList && (
-        <View style={styles.actionBar}>
+        <View style={[styles.actionBar, { paddingBottom: bottomBarPadding }]}>
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push({
@@ -708,7 +714,7 @@ export default function NoticeRepairDetailScreen() {
 
       {/* Bottom action bar — save staged (unsaved) materials */}
       {draftMaterials.length > 0 && (
-        <View style={styles.actionBar}>
+        <View style={[styles.actionBar, { paddingBottom: bottomBarPadding }]}>
           <Pressable
             accessibilityRole="button"
             disabled={savingMaterials}
@@ -754,7 +760,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
 
   // Same scroll rhythm as the absence detail screen (gutter applied inline).
   scrollContent: { paddingTop: 28, paddingBottom: 40, gap: 12 },
-  scrollWithActions: { paddingBottom: 128 },
   scrollTopAnchor: { position: 'absolute', top: 0, left: 0, width: 0, height: 0 },
 
   statusBadge: { borderRadius: 9999, paddingHorizontal: 12, paddingVertical: 5, flexShrink: 0, maxWidth: '52%' },

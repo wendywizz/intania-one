@@ -9,6 +9,7 @@ import { FlatList,
   View,
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 
 import { ErrorState } from '@/components/error-state';
 import { EmptyState } from '@/components/empty-state';
@@ -83,6 +84,7 @@ function NewsListItem({ item, onPress }: NewsListItemProps) {
 
 export default function NewsScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(16);
   const styles = useThemedStyles(makeStyles);
   const [newsItems, setNewsItems] = useState<News[]>([]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -172,7 +174,7 @@ export default function NewsScreen() {
     return (
       <FlatList
         style={styles.flatList}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: contentBottomPadding }]}
         data={visibleNews}
         keyExtractor={getNewsKey}
         refreshControl={

@@ -22,6 +22,7 @@ import { AppFonts } from '@/constants/fonts';
 import { boxShadow } from '@/constants/shadows';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 
 type RoomTypeMenuItem = {
   title: string;
@@ -47,6 +48,7 @@ const roomTypeMenus: RoomTypeMenuItem[] = [
 
 export default function SelectRoomTypeScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(32);
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
 
@@ -60,7 +62,7 @@ export default function SelectRoomTypeScreen() {
       />
 
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter, paddingBottom: contentBottomPadding }]}
         showsVerticalScrollIndicator={false}>
         <View style={styles.intro}>
           <ThemedText style={styles.screenTitle}>{TEXT.MEETING_ROOM_HUB_TITLE}</ThemedText>

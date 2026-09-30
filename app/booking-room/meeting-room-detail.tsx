@@ -30,6 +30,7 @@ import { getMeetingRoomStatusBadge } from '@/components/meeting-room/status-badg
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { useAuth } from '@/context/AuthContext';
 import {
   cancelMeetingRoomRequest,
@@ -45,6 +46,7 @@ const HARD_DELETE_STATUS_MAX = 3;
 
 export default function MeetingRoomDetailScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(32);
   const styles = useThemedStyles(makeStyles);
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -138,7 +140,7 @@ export default function MeetingRoomDetailScreen() {
     const badge = request.status_label ? getMeetingRoomStatusBadge(request.status_label) : null;
 
     return (
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: contentBottomPadding }]} showsVerticalScrollIndicator={false}>
         <DetailInfoCard
           title={request.detail || TEXT.MEETING_ROOM_DETAIL_INFO}
           trailing={

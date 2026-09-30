@@ -6,6 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useMemo, useState } from 'react';
 import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -160,6 +161,7 @@ function sameNewsItem(news: News, selected: News) {
 
 export default function NewsDetailScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(40);
   const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{
     title?: string;
@@ -223,7 +225,7 @@ export default function NewsDetailScreen() {
           <LoadingAnimate fill={false} title={TEXT.HOME_LOADING_NEWS_TITLE} desc={TEXT.SHARED_LOADING_DESCRIPTION} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: contentBottomPadding }]}>
           <View style={styles.card}>
             {/* Date / category meta row */}
             <View style={styles.metaRow}>

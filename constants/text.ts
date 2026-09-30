@@ -743,6 +743,10 @@ export const TEXT = {
   REPAIR_COMPUTER_PRINT_REQUISITION: 'พิมพ์ใบเบิก',
   REPAIR_COMPUTER_REQUISITION: 'ใบเบิก',
   REPAIR_COMPUTER_SUPPLY_RESULT_ACTION: 'ผลการจัดหา',
+  // Worker acknowledges a refused supply request (7.2 → working 4), as the website's "รับทราบ".
+  REPAIR_COMPUTER_SUPPLY_ACKNOWLEDGE: 'รับทราบ',
+  REPAIR_COMPUTER_SUPPLY_ACKNOWLEDGE_CONFIRM_TITLE: 'รับทราบผลการไม่อนุมัติ',
+  REPAIR_COMPUTER_SUPPLY_ACKNOWLEDGE_CONFIRM_MESSAGE: 'รับทราบว่าคำขอเบิกไม่ได้รับอนุมัติ และดำเนินการซ่อมต่อหรือไม่?',
   REPAIR_COMPUTER_REQUEST_SUBMITTED_SUCCESS_MESSAGE: 'ส่งคำขอแจ้งซ่อมคอมพิวเตอร์สำเร็จ',
   REPAIR_COMPUTER_SELECT_ROLE: 'เลือกบทบาท',
   REPAIR_COMPUTER_STATUS_LABEL: 'สถานะ:',

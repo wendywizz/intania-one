@@ -2,6 +2,7 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 import { getApprovalStatusBadge } from '@/constants/approval-status';
 
 import { ErrorState } from "@/components/error-state";
@@ -67,6 +68,7 @@ function PersonRow({
 
 export default function TimestampApproveDetailScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
   const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ forgetId?: string; item?: string }>();
   const forgetId = firstParam(params.forgetId);
@@ -188,7 +190,7 @@ export default function TimestampApproveDetailScreen() {
 
           </ScrollView>
 
-          <View style={styles.bottomBar}>
+          <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
             <Pressable
               accessibilityRole="button"
               onPress={() => goToDecision("1")}

@@ -11,6 +11,7 @@ import {
     View,
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 
 import { AppToast } from "@/components/app-toast";
 import { FloatingActionBar } from "@/components/floating-action-bar";
@@ -38,6 +39,7 @@ import {
     getRequisitionPdfUrl,
     submitJob,
     workerReceiveJob,
+    workerSupplyResult,
 } from "@/services/repairComputerService";
 import { formatDateTime } from "@/utils/date-format";
 import { getRepairStatusBadgeStyle } from "@/utils/repair-computer-status";
@@ -120,6 +122,7 @@ function PersonSummaryCard({
 export default function WorkerJobDetailScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const contentBottomPadding = useContentBottomPadding(10);
   const params = useLocalSearchParams<{
     backHref?: string | string[];
     id?: string | string[];
@@ -134,6 +137,7 @@ export default function WorkerJobDetailScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAcceptConfirmOpen, setIsAcceptConfirmOpen] = useState(false);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
+  const [isAcknowledgeConfirmOpen, setIsAcknowledgeConfirmOpen] = useState(false);
   const [isPdfOpen, setIsPdfOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "">("");
@@ -226,6 +230,34 @@ export default function WorkerJobDetailScreen() {
     } as Parameters<typeof navPush>[0]);
   };
 
+  // Refused supply request (7.2): acknowledge it and resume work (→ working 4).
+  // Same write as the website's "รับทราบ"; the job stays open here, so reload it
+  // to show the working-state actions.
+  const handleAcknowledgeRefusal = async () => {
+    if (!jobId || isSubmitting) return;
+    setIsSubmitting(true);
+    setToastMessage("");
+    setToastType("");
+    try {
+      const result = await workerSupplyResult(jobId, "");
+      setToastType("success");
+      setToastMessage(
+        result.message || TEXT.REPAIR_COMPUTER_JOB_UPDATED_SUCCESS_MESSAGE,
+      );
+      await loadDetail();
+    } catch (err) {
+      setToastType("error");
+      setToastMessage(
+        err instanceof Error
+          ? err.message
+          : TEXT.REPAIR_COMPUTER_UNABLE_TO_UPDATE_JOB,
+      );
+    } finally {
+      setIsSubmitting(false);
+      setIsAcknowledgeConfirmOpen(false);
+    }
+  };
+
   const handlePrintRequisition = () => {
     if (!jobId) return;
     // Show the requisition PDF in an in-app viewer.
@@ -300,10 +332,13 @@ export default function WorkerJobDetailScreen() {
   const hasApprovalResult = isApproved || isApprovalRejected;
   // A supply request already exists for this job (equipment flag set upstream, or
   // a request detail is present) → the worker can't request supply again.
+  // Only an approved request has a requisition to print; after a refusal is
+  // acknowledged the worker is back at working (4) and may ask again.
   const hasRequestedSupply =
-    Boolean(data?.needEquipment) ||
-    Boolean(data?.need_equipment) ||
-    Boolean(requestSupplyDetail);
+    (Boolean(data?.needEquipment) ||
+      Boolean(data?.need_equipment) ||
+      Boolean(requestSupplyDetail)) &&
+    (Boolean(data?.approvedEquipment) || Boolean(data?.approved_equipment));
 
   const isFromNewJob = backHref === "/repair-computer/worker-new-job";
   const isFromCurrentJob = backHref === "/repair-computer/worker-current-job";
@@ -313,6 +348,8 @@ export default function WorkerJobDetailScreen() {
   const showCloseJob = isFromCurrentJob && statusId === REPAIR_STATUS_WORKING;
   // Supply request approved (7.1) → worker reports the procurement result and resumes work.
   const showSupplyResult = isFromCurrentJob && isApproved;
+  // Supply request refused (7.2) → worker acknowledges and resumes work.
+  const showAcknowledgeRefusal = isFromCurrentJob && isApprovalRejected;
 
   const pageTitle = isFromNewJob
     ? TEXT.REPAIR_COMPUTER_NEW_JOB
@@ -347,7 +384,7 @@ export default function WorkerJobDetailScreen() {
     }
 
     return (
-      <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.form, !footerActions && { paddingBottom: contentBottomPadding }]} showsVerticalScrollIndicator={false}>
         {/* Job info — titled card + icon/label/value rows, like absence detail. */}
         <DetailInfoCard
           title={TEXT.REPAIR_COMPUTER_JOB_DETAIL}
@@ -505,6 +542,23 @@ export default function WorkerJobDetailScreen() {
       );
     }
 
+    if (showAcknowledgeRefusal) {
+      return (
+        <FloatingActionBar disabled={isSubmitting}>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isSubmitting}
+            onPress={() => setIsAcknowledgeConfirmOpen(true)}
+            style={[styles.operateButton, isSubmitting ? styles.disabledButton : undefined]}
+          >
+            <ThemedText lightColor={c.textOnPrimary} darkColor={c.textOnPrimary} type="defaultSemiBold">
+              {TEXT.REPAIR_COMPUTER_SUPPLY_ACKNOWLEDGE}
+            </ThemedText>
+          </Pressable>
+        </FloatingActionBar>
+      );
+    }
+
     if (showCloseJob) {
       return (
         <FloatingActionBar disabled={isSubmitting}>
@@ -549,6 +603,9 @@ export default function WorkerJobDetailScreen() {
     return null;
   };
 
+  // Rendered once: without a bar the content has to clear the navigation bar itself.
+  const footerActions = renderFooterActions();
+
   return (
     <ThemedView style={styles.container}>
       <NavTopBar
@@ -563,7 +620,7 @@ export default function WorkerJobDetailScreen() {
         </View>
       </View>
 
-      {renderFooterActions()}
+      {footerActions}
 
       <AppToast
         message={toastMessage}
@@ -590,6 +647,17 @@ export default function WorkerJobDetailScreen() {
         loading={isSubmitting}
         onConfirm={handleCloseJob}
         onCancel={() => setIsCloseConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        visible={isAcknowledgeConfirmOpen}
+        title={TEXT.REPAIR_COMPUTER_SUPPLY_ACKNOWLEDGE_CONFIRM_TITLE}
+        message={TEXT.REPAIR_COMPUTER_SUPPLY_ACKNOWLEDGE_CONFIRM_MESSAGE}
+        confirmLabel={TEXT.SHARED_YES}
+        cancelLabel={TEXT.SHARED_NO}
+        loading={isSubmitting}
+        onConfirm={handleAcknowledgeRefusal}
+        onCancel={() => setIsAcknowledgeConfirmOpen(false)}
       />
 
       {isPdfOpen && jobId ? (

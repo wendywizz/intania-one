@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 
 import { LoadingAnimate } from '@/components/loading-animate';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -160,6 +161,7 @@ function SubjectItem({ subject, isFirst }: { subject: ExamSubject; isFirst: bool
 
 export default function ExaminarDetailScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(40);
   const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
   const authStaffId = authUser?.staffId ?? '';
@@ -258,7 +260,7 @@ export default function ExaminarDetailScreen() {
       <StatusBar style="light" />
       <NavTopBar title={TEXT.EXAMINAR_DETAIL_HEADER_TITLE} showBackButton onBackPress={() => router.back()} tone="primary" />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: contentBottomPadding }]}>
         <View style={styles.section}>
           <HeroSection detail={detail} year={year} term={term} period={period} />
         </View>

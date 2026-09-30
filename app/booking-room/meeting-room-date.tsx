@@ -23,6 +23,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 import { checkMeetingRoomAvailability } from '@/services/meetingRoomService';
 import {
   addDraftMeetingRoomDate,
@@ -67,6 +68,7 @@ function goBackToForm() {
 
 export default function MeetingRoomDateScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
   const styles = useThemedStyles(makeStyles);
   const { room_id, id } = useLocalSearchParams<{ room_id?: string; id?: string }>();
   const isEdit = Boolean(id);
@@ -219,7 +221,7 @@ export default function MeetingRoomDateScreen() {
         ) : null}
       </ScrollView>
 
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
         <Button title={TEXT.SHARED_BACK_THAI} variant="secondary" onPress={goBackToForm} />
         <Button title={TEXT.MEETING_ROOM_DATE_SAVE_ACTION} onPress={handleSave} style={styles.ctaButton} />
       </View>

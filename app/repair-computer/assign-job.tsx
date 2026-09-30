@@ -11,6 +11,7 @@ import {
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { AppToast } from "@/components/app-toast";
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 import { SubmittingOverlay } from "@/components/submitting-overlay";
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
@@ -269,6 +270,7 @@ function WorkerSelectRow({
 export default function AssignJobScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
+  const bottomBarPadding = useActionBarBottomPadding();
   const params = useLocalSearchParams<{
     backHref?: string | string[];
     id?: string | string[];
@@ -657,7 +659,7 @@ export default function AssignJobScreen() {
       </View>
 
       {/* Fixed CTA bar */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: bottomBarPadding }]}>
         <Button title={TEXT.SHARED_BACK_THAI} variant="secondary" onPress={handleBackPress} />
         <Button
           title={ctaLabel}

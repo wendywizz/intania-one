@@ -10,6 +10,7 @@ import {
     View,
 } from "react-native";
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 
 import { LoadingAnimate } from "@/components/loading-animate";
 import { NavTopBar } from "@/components/nav-top-bar";
@@ -120,6 +121,7 @@ function PersonSummaryCard({
 
 export default function JobHistoryDetailScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(10);
   const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{
     backHref?: string | string[];
@@ -221,7 +223,7 @@ export default function JobHistoryDetailScreen() {
     }
 
     return (
-      <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.form, { paddingBottom: contentBottomPadding }]} showsVerticalScrollIndicator={false}>
         {/* Job info — titled card + icon/label/value rows, like absence detail. */}
         <DetailInfoCard
           title={TEXT.REPAIR_COMPUTER_JOB_DETAIL}

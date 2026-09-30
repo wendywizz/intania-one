@@ -14,6 +14,7 @@ import { USER_PLACEHOLDER } from '@/constants/images';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { ENDPOINTS } from '@/constants/endpoints';
 import { TEXT } from '@/constants/text';
@@ -93,6 +94,8 @@ function RowIcon({ name }: { name: string }) {
 }
 
 export default function MyProfileScreen() {
+  // The photo menu sits on the bottom edge; clear the navigation bar like <Sheet> does.
+  const insets = useSafeAreaInsets();
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const { showToast } = useToast();
@@ -324,7 +327,7 @@ export default function MyProfileScreen() {
           >
             <Animated.View style={[styles.menuFill, photoMenuAnim.backdropStyle]}>
               <Pressable style={styles.menuOverlay} onPress={() => setShowPhotoMenu(false)}>
-                <AnimatedPressable accessibilityRole="none" onPress={(e) => e.stopPropagation()} style={[styles.menuSheet, photoMenuAnim.panelStyle]}>
+                <AnimatedPressable accessibilityRole="none" onPress={(e) => e.stopPropagation()} style={[styles.menuSheet, { paddingBottom: insets.bottom + 12 }, photoMenuAnim.panelStyle]}>
                   <View style={styles.menuHandle} />
                   <ThemedText style={styles.menuTitle}>{TEXT.PROFILE_PHOTO_MENU_TITLE}</ThemedText>
 

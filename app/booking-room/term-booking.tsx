@@ -59,6 +59,7 @@ import {
   useScreenGutter,
   useThemedStyles,
 } from '@/constants/theme';
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/toast-provider';
 import { formatFullDate } from '@/utils/date-format';
@@ -110,6 +111,7 @@ function fill(template: string, values: Record<string, string | number>) {
 
 export default function TermBookingScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
   const { user } = useAuth();
@@ -892,7 +894,7 @@ export default function TermBookingScreen() {
         {step === 'summary' ? renderSummaryStep() : null}
       </ScrollView>
 
-      <View style={[styles.bottomBar, { paddingHorizontal: gutter }]}>
+      <View style={[styles.bottomBar, { paddingHorizontal: gutter, paddingBottom: bottomBarPadding }]}>
         <Button title={TEXT.SHARED_BACK_THAI} variant="secondary" onPress={goBack} />
         <Button
           title={isLastStep ? TEXT.BOOKING_ROOM_CART_ADD_ACTION : nextLabel[step]}

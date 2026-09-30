@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 
 import { ErrorState } from '@/components/error-state';
 import { EmptyState } from '@/components/empty-state';
@@ -225,6 +226,7 @@ function ExamCard({
 
 export default function ExaminarListScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(24);
   const { isDarkMode } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { user: authUser } = useAuth();
@@ -301,7 +303,7 @@ export default function ExaminarListScreen() {
         ) : (
           <FlatList<ExamTask>
             style={styles.flatList}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, { paddingBottom: contentBottomPadding }]}
             data={tasks}
             keyExtractor={(item, i) => `${getRoomId(item)}-${i}`}
             ListHeaderComponent={

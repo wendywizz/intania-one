@@ -149,15 +149,6 @@ export function getUserHistory(
   return listRequest<RepairComputer>(url);
 }
 
-export function getUncloseJob(staffId: string, start = 0, length = 10) {
-  const url = createRepairComputerUrl("/inform/unclose_job", {
-    staff_id: staffId,
-    start,
-    length,
-  });
-  return listRequest<RepairComputer>(url);
-}
-
 /* Manage */
 export function listForemanNewJob(start = 0, length = 10) {
   const url = createRepairComputerUrl("/manage/new", {

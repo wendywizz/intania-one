@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
+import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
 
 import { AppToast } from "@/components/app-toast";
 import { ScreenHeader } from "@/components/screen-header";
@@ -25,6 +26,7 @@ function firstParam(value?: string | string[]) {
 
 export default function ApproveReasonScreen() {
   const c = useColors();
+  const bottomBarPadding = useActionBarBottomPadding();
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
   const params = useLocalSearchParams<{
@@ -125,7 +127,7 @@ export default function ApproveReasonScreen() {
         </View>
       </ScrollView>
 
-      <View style={[styles.bottomBar, { paddingHorizontal: gutter }]}>
+      <View style={[styles.bottomBar, { paddingHorizontal: gutter, paddingBottom: bottomBarPadding }]}>
         <Pressable
           accessibilityRole="button"
           disabled={isSubmitting}

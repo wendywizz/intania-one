@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { boxShadow } from '@/constants/shadows';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { Calendar, LocaleConfig, type DateData } from "react-native-calendars";
 import type { MarkedDates } from "react-native-calendars/src/types";
 
@@ -102,6 +103,7 @@ function splitSourceName(name: string) {
 
 export default function CalendarScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(24);
   const { isDarkMode } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const [sources, setSources] = useState<CalendarSource[]>([]);
@@ -501,7 +503,7 @@ export default function CalendarScreen() {
             data={selectedEvents}
             keyExtractor={(item, index) => `${String(item.id || "event")}-${index}`}
             renderItem={renderEvent}
-            contentContainerStyle={styles.eventListContent}
+            contentContainerStyle={[styles.eventListContent, { paddingBottom: contentBottomPadding }]}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}

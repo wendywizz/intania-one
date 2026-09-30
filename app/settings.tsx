@@ -16,6 +16,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import {
@@ -75,6 +76,7 @@ function IconCircle({ name }: { name: string }) {
 
 export default function SettingsScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(48);
   const styles = useThemedStyles(makeStyles);
   const { user: authUser, signOut } = useAuth();
   const { isDarkMode, toggleDarkMode, isAutoTheme, toggleAutoTheme } = useTheme();
@@ -373,7 +375,7 @@ export default function SettingsScreen() {
       <StatusBar style="light" />
       <NavTopBar title={TEXT.SETTINGS_TITLE} tone="primary" showHomeButton={false} />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: contentBottomPadding }]} showsVerticalScrollIndicator={false}>
 
         <View style={styles.section}>
           <View style={styles.card}>

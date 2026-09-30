@@ -14,6 +14,7 @@ import {
     View,
 } from "react-native";
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
+import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 
 import { AppToast } from "@/components/app-toast";
 import { DatePickerField } from "@/components/date-picker-field";
@@ -246,6 +247,7 @@ function SelectField({
 
 export default function BirthScreen() {
   const c = useColors();
+  const contentBottomPadding = useContentBottomPadding(24);
   const styles = useThemedStyles(makeStyles);
   const gutter = useScreenGutter();
   const { user: authUser } = useAuth();
@@ -544,7 +546,7 @@ export default function BirthScreen() {
       <ScreenHeader title={TEXT.ABSENCE_BIRTH_TITLE} backHref={backHref} showHomeButton={false} titleInNavBar tone="primary" />
 
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingHorizontal: gutter }]}
+        contentContainerStyle={[styles.content, { paddingHorizontal: gutter, paddingBottom: contentBottomPadding }]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.formCard}>
