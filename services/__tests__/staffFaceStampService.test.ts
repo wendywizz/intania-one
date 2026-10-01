@@ -39,6 +39,15 @@ jest.mock('expo-network', () => ({
   getNetworkStateAsync: async () => ({ type: mockNetwork.type, isConnected: true }),
   getIpAddressAsync: async () => mockNetwork.ip,
 }));
+// The patched ExpoNetwork module iOS reads the address from (jest-expo runs
+// as iOS); see utils/wifi-ip.ts and patches/expo-network+57.0.2.patch.
+jest.mock('expo-modules-core', () => ({
+  ...jest.requireActual('expo-modules-core'),
+  requireOptionalNativeModule: (name: string) =>
+    name === 'ExpoNetwork'
+      ? { getWifiIpAddressAsync: async () => mockNetwork.ip }
+      : jest.requireActual('expo-modules-core').requireOptionalNativeModule(name),
+}));
 
 /** The value appended under `name`, or undefined when it was not sent. */
 function partOf(name: string): unknown {

@@ -1,0 +1,74 @@
+diff --git a/node_modules/expo-network/ios/NetworkModule.swift b/node_modules/expo-network/ios/NetworkModule.swift
+index c7f70ba..578d6a0 100644
+--- a/node_modules/expo-network/ios/NetworkModule.swift
++++ b/node_modules/expo-network/ios/NetworkModule.swift
+@@ -20,6 +20,13 @@ public final class NetworkModule: Module {
+       return try getIPAddress()
+     }
+ 
++    // intania-one patch: the Wi-Fi (en0) IPv4 address, or nil. Safe where
++    // getIPAddress() is not - see the nil check below. Its presence is also how
++    // the app tells a patched binary from one that would crash.
++    AsyncFunction("getWifiIpAddressAsync") { () -> String? in
++      return getWifiIPAddress()
++    }
++
+     AsyncFunction("getNetworkStateAsync") {
+       return getNetworkStateAsync()
+     }
+@@ -64,7 +71,12 @@ public final class NetworkModule: Module {
+ 
+     for ifptr in sequence(first: firstAddr, next: { $0.pointee.ifa_next }) {
+       let temp = ifptr.pointee
+-      let family = temp.ifa_addr.pointee.sa_family
++      // intania-one patch: some interfaces (utun, awdl, ...) carry no address,
++      // and dereferencing a nil ifa_addr killed the app.
++      guard let ifaAddr = temp.ifa_addr else {
++        continue
++      }
++      let family = ifaAddr.pointee.sa_family
+ 
+       if family == UInt8(AF_INET) {
+         let name = String(cString: temp.ifa_name)
+@@ -87,6 +99,41 @@ public final class NetworkModule: Module {
+     return address
+   }
+ 
++  // intania-one patch: see getWifiIpAddressAsync above.
++  private func getWifiIPAddress() -> String? {
++    var ifaddr: UnsafeMutablePointer<ifaddrs>?
++    guard getifaddrs(&ifaddr) == 0, let firstAddr = ifaddr else {
++      return nil
++    }
++    defer {
++      freeifaddrs(ifaddr)
++    }
++
++    for ifptr in sequence(first: firstAddr, next: { $0.pointee.ifa_next }) {
++      let iface = ifptr.pointee
++      guard let addr = iface.ifa_addr,
++            addr.pointee.sa_family == UInt8(AF_INET),
++            String(cString: iface.ifa_name) == "en0" else {
++        continue
++      }
++
++      var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
++      let status = getnameinfo(
++        addr,
++        socklen_t(addr.pointee.sa_len),
++        &hostname,
++        socklen_t(hostname.count),
++        nil,
++        socklen_t(0),
++        NI_NUMERICHOST)
++      if status == 0 {
++        return String(cString: hostname)
++      }
++    }
++
++    return nil
++  }
++
+   private func getNetworkPathAsync() -> NWPath? {
+     // create a temporary monitor to avoid interfering with the module's monitor
+     // since we want to wait for the result to be updated once:
