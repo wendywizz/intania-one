@@ -8,6 +8,7 @@ export default function BookingRoomLayout() {
       <Stack.Screen name="booking-detail" />
       <Stack.Screen name="booking-slots" />
       <Stack.Screen name="meeting-room-date" />
+      <Stack.Screen name="meeting-room-booked-dates" />
       <Stack.Screen name="meeting-room-detail" />
       {/* Booking forms and pickers — float in from the bottom like a sheet,
           not a deeper drill into content. */}

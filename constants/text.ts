@@ -1180,6 +1180,14 @@ export const TEXT = {
   MEETING_ROOM_DETAIL_THINGS: 'อุปกรณ์และอาหารที่ขอ',
   MEETING_ROOM_DETAIL_STATUS_LABEL: 'สถานะ',
   MEETING_ROOM_DETAIL_LEADER_LABEL: 'ผู้อนุมัติ',
+  MEETING_ROOM_DETAIL_USAGE: 'ห้องและวันเวลาที่ขอใช้',
+  MEETING_ROOM_DETAIL_DATE_SPAN_LABEL: 'ช่วงวันที่ใช้ห้อง',
+  MEETING_ROOM_DETAIL_SHOW_DATES: 'ดูวันที่จอง ({count} วัน)',
+  MEETING_ROOM_DATES_TITLE: 'วันที่จอง',
+  MEETING_ROOM_DATES_TOTAL: 'ทั้งหมด {count} วัน',
+  MEETING_ROOM_DETAIL_DATE_LABEL: 'วันที่ใช้ห้อง',
+  MEETING_ROOM_DETAIL_TIME_LABEL: 'เวลา',
+  MEETING_ROOM_DETAIL_REQUEST_DATE_LABEL: 'วันที่ยื่นคำขอ',
   // Cancellation mirrors the server's own tiered rule (status ≤ 3 deletes the
   // request outright; 4–89 only marks it cancelled, pending staff to see it) —
   // two different messages because the two are genuinely different outcomes,

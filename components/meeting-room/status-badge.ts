@@ -46,10 +46,36 @@ function statusBadgeColors(label: string): { bg: string; color: string } {
   return { bg: ALIZARIN, color: WHITE };
 }
 
+/**
+ * STATUS_DETAIL's wording is a sentence ("รออนุมัติจากผู้อนุมัติประจำหน่วยงานท่าน")
+ * — too long for a pill. Matched on substrings like the colours above, first
+ * hit wins, so the more specific phrases come first. Seen in production
+ * (2026-10-01): 1 รออนุมัติจาก…หน่วยงานท่าน, 3/7 …ไม่อนุมัติ,
+ * 4 เจ้าหน้าอาคารดำเนินการแล้ว, 5 …จัดสรรห้องให้ไม่ได้(ห้องใช้เต็มหมด),
+ * 6 ผู้อนุมัติประจำคณะอนุมัติแล้ว, 91 …รับทราบการยกเลิก.
+ */
+const SHORT_LABELS: [match: string, short: string][] = [
+  ['ไม่อนุมัติ', 'ไม่อนุมัติ'],
+  ['ยกเลิก', 'ยกเลิกแล้ว'],
+  ['จัดสรรห้องให้ไม่ได้', 'ห้องเต็ม'],
+  ['รออนุมัติ', 'รออนุมัติ'],
+  ['ประจำคณะอนุมัติแล้ว', 'อนุมัติแล้ว'],
+  ['หน่วยงานอนุมัติแล้ว', 'หน่วยงานอนุมัติ'],
+  ['ดำเนินการแล้ว', 'ดำเนินการแล้ว'],
+];
+
+/** The badge wording for a status — short form when one is known, else the
+ *  server's own label unchanged. */
+export function shortMeetingRoomStatus(statusLabel: string): string {
+  const label = statusLabel.trim();
+  return SHORT_LABELS.find(([match]) => label.includes(match))?.[1] ?? label;
+}
+
 /** @param statusLabel the label already resolved server-side (STATUS_DETAIL.detail) */
 export function getMeetingRoomStatusBadge(statusLabel: string): ListCardBadge | null {
   const label = statusLabel.trim();
   if (!label) return null;
 
-  return { text: label, ...statusBadgeColors(label) };
+  // Colour from the full label, text from the short one.
+  return { text: shortMeetingRoomStatus(label), ...statusBadgeColors(label) };
 }

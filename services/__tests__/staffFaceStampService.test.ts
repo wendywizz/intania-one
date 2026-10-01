@@ -32,6 +32,21 @@ jest.mock('expo-file-system', () => ({
   },
 }));
 
+// The phone's network as expo-network reports it; each test sets its own.
+const mockNetwork = { type: 'WIFI', ip: '172.30.12.34' };
+jest.mock('expo-network', () => ({
+  NetworkStateType: { WIFI: 'WIFI', CELLULAR: 'CELLULAR' },
+  getNetworkStateAsync: async () => ({ type: mockNetwork.type, isConnected: true }),
+  getIpAddressAsync: async () => mockNetwork.ip,
+}));
+
+/** The value appended under `name`, or undefined when it was not sent. */
+function partOf(name: string): unknown {
+  const call = appendSpy.mock.calls.find(([part]) => part === name);
+
+  return call ? call[1] : undefined;
+}
+
 /**
  * What was appended as `file`, read off FormData.append rather than out of the
  * form: a FormData that is not React Native's turns an unknown object into a
@@ -145,6 +160,22 @@ describe('submitStaffFaceStamp', () => {
     const file = filePartOf();
     expect(typeof file.bytes).toBe('function');
     expect(file.uri).toBe(SCAN.photoUri);
+  });
+
+  it("sends the phone's Wi-Fi address with the scan, and nothing on mobile data", async () => {
+    const answer = { data: { passed: false, reason: 'face_mismatch', message: '' } };
+
+    mockNetwork.type = 'WIFI';
+    gatewayAnswers(200, answer);
+    await submitStaffFaceStamp(SCAN);
+    expect(partOf('wifi_ip')).toBe('172.30.12.34');
+
+    appendSpy.mockClear();
+    mockNetwork.type = 'CELLULAR';
+    gatewayAnswers(200, answer);
+    await submitStaffFaceStamp(SCAN);
+    expect(partOf('wifi_ip')).toBeUndefined();
+    mockNetwork.type = 'WIFI';
   });
 
   it('shows the generic server message for a gateway fault, not its internals', async () => {

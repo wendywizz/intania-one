@@ -226,12 +226,14 @@ export default function BookingDetailScreen() {
           title={TEXT.BOOKING_ROOM_DETAIL_SLOTS}
           trailing={
             booking.slots.length > 0 ? (
-              <ThemedText style={styles.slotTotal}>
-                {fill(TEXT.BOOKING_ROOM_SLOT_TOTAL, { count: booking.slots.length })}
-                {roomCount > 1
-                  ? ` · ${fill(TEXT.BOOKING_ROOM_SLOT_ROOM_COUNT, { count: roomCount })}`
-                  : ''}
-              </ThemedText>
+              <View style={styles.slotTotalBadge}>
+                <ThemedText style={styles.slotTotal}>
+                  {fill(TEXT.BOOKING_ROOM_SLOT_TOTAL, { count: booking.slots.length })}
+                  {roomCount > 1
+                    ? ` · ${fill(TEXT.BOOKING_ROOM_SLOT_ROOM_COUNT, { count: roomCount })}`
+                    : ''}
+                </ThemedText>
+              </View>
             ) : null
           }
           style={styles.slotCard}>
@@ -410,7 +412,16 @@ const makeStyles = (c: AppColors) =>
     },
 
     slotCard: { gap: 16 },
-    slotTotal: { fontSize: 13, lineHeight: 18, color: c.textMuted },
+    // Neutral pill — the same grey chip as the schedule tab's "N รายการ", so a
+    // count never reads like the coloured type badge above it.
+    slotTotalBadge: {
+      borderRadius: 9999,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      backgroundColor: c.surfaceAlt,
+      flexShrink: 0,
+    },
+    slotTotal: { fontSize: 12, lineHeight: 16, color: c.textMuted },
     noSlots: { fontSize: 15, color: c.textMuted, paddingVertical: 12 },
 
     // The one action in the card, spaced off the facts it follows. The shape

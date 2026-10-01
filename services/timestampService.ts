@@ -1,6 +1,7 @@
 import { File } from "expo-file-system";
 
 import { ENDPOINTS } from "../constants/endpoints";
+import { currentWifiIp } from "../utils/wifi-ip";
 import type { JsonMap } from "./api";
 import { ensureSuccess, fetchWithTimeout, MESSAGE_SERVER_ERROR, requestJson } from "./api";
 
@@ -838,6 +839,13 @@ export async function submitStaffFaceStamp({
   if (coords.lat && coords.lon) {
     form.append('lat', coords.lat);
     form.append('lon', coords.lon);
+  }
+
+  // Omitted off Wi-Fi: on mobile data the phone's own address says nothing
+  // about where it is.
+  const wifiIp = await currentWifiIp();
+  if (wifiIp) {
+    form.append('wifi_ip', wifiIp);
   }
 
   // Expo's fetch (the global one since SDK 54) builds the multipart body itself

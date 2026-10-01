@@ -70,19 +70,29 @@ function toUnifiedClassroom(booking: MyBooking, scope: 'current' | 'history'): U
   };
 }
 
+/** MySQL's zero date (web-created orders store 0000-00-00 00:00:00 in
+ *  startdate/enddate) counts as no date at all, so it is never displayed. */
+function realDate(value: string | null | undefined): string {
+  const v = (value ?? '').trim();
+  return v.startsWith('0000-00-00') ? '' : v;
+}
+
 function toUnifiedMeetingRoom(
   request: MyMeetingRoomRequest,
   scope: 'current' | 'history',
 ): UnifiedBooking {
+  const startdate = realDate(request.startdate);
+  const enddate = realDate(request.enddate);
+
   return {
     id: `meeting-room:${request.order_id}`,
     kind: 'meeting-room',
     kindLabel: TEXT.MEETING_ROOM_KIND_LABEL,
     title: request.detail || request.room_name || TEXT.MEETING_ROOM_HUB_CARD_TITLE,
-    sortDate: request.startdate || request.enddate || request.request_date,
+    sortDate: startdate || enddate || request.request_date,
     dateLabel: formatDateRange(
-      request.startdate || request.request_date,
-      request.enddate || request.startdate || request.request_date,
+      startdate || request.request_date,
+      enddate || startdate || request.request_date,
     ),
     badge: request.status_label ? getMeetingRoomStatusBadge(request.status_label) : null,
     icon: 'presentation',

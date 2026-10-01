@@ -169,6 +169,12 @@ function weekLabel(start: string, end: string) {
     : `${a.getDate()} ${THAI_MONTHS[a.getMonth()]} – ${b.getDate()} ${THAI_MONTHS[b.getMonth()]} ${year}`;
 }
 
+/** The picked day — today until the user picks another or steps a week. */
+function dateLabel(iso: string) {
+  const d = parseDate(iso);
+  return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`;
+}
+
 function roomLabel(room?: UnifiedRoom | null) {
   if (!room) return undefined;
   return room.capacity > 0
@@ -483,11 +489,7 @@ export default function BookingRoomScheduleScreen() {
                 label={TEXT.BOOKING_ROOM_SCHEDULE_PICK_DATE}
                 hideLabel
                 value={parseDate(anchorDate)}
-                displayValue={
-                  schedule
-                    ? weekLabel(schedule.week.start, schedule.week.end)
-                    : TEXT.BOOKING_ROOM_SCHEDULE_PICK_DATE
-                }
+                displayValue={dateLabel(anchorDate)}
                 allowWeekends
                 caption={
                   schedule
@@ -598,19 +600,24 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
       borderRightWidth: StyleSheet.hairlineWidth,
       borderColor: c.border,
     },
+    // The text takes the full remaining width (flex: 1). Sized to its content
+    // instead (flexBasis auto), the label rendered blank on a real iPhone — only
+    // the calendar glyph showed — most likely adjustsFontSizeToFit having no
+    // definite width to fit into.
+    // The right padding mirrors the glyph (19) + gap (6) so the centred text
+    // still sits in the middle of the whole field.
     weekField: {
       borderBottomWidth: 0,
       justifyContent: 'center',
       minHeight: 38,
       gap: 6,
+      paddingRight: 25,
     },
     weekFieldText: {
-      flexGrow: 0,
-      flexShrink: 1,
-      flexBasis: 'auto',
+      flex: 1,
       textAlign: 'center',
       fontSize: 15,
-      lineHeight: 19,
+      lineHeight: 20,
       color: c.text,
       fontFamily: AppFonts.psuBold,
     },
@@ -636,9 +643,11 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
       borderBottomColor: c.border,
     },
 
+    // 48 rather than 44: the day and month together are ~30pt tall, and at 44
+    // they ran right up to the top and bottom edges on a real iPhone.
     dateBadge: {
-      width: 44,
-      height: 44,
+      width: 48,
+      height: 48,
       borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
@@ -648,9 +657,23 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
     },
     dateBadgeActive: { backgroundColor: c.belizeHole, borderColor: c.belizeHole },
     // Line boxes trimmed to just clear the glyphs — at the ThemedText
-    // defaults (23 / 13) the day and month read as two separate lines.
-    dateNum: { fontSize: 17, lineHeight: 18, fontFamily: AppFonts.psuBold, color: c.text },
-    dateMonth: { fontSize: 10, lineHeight: 12, color: c.textMuted },
+    // defaults (23 / 13) the day and month read as two separate lines. The
+    // month's small negative margin tucks it up under the digits, which carry
+    // no descender; includeFontPadding off stops Android adding the space back.
+    dateNum: {
+      fontSize: 17,
+      lineHeight: 17,
+      fontFamily: AppFonts.psuBold,
+      color: c.text,
+      includeFontPadding: false,
+    },
+    dateMonth: {
+      fontSize: 10,
+      lineHeight: 11,
+      marginTop: -6,
+      color: c.textMuted,
+      includeFontPadding: false,
+    },
     dateOnActive: { color: c.textOnPrimary },
 
     dayTitleCol: { flex: 1 },

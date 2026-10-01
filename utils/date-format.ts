@@ -59,7 +59,7 @@ function dateStr(m: moment.Moment) {
 }
 
 function dateTimeStr(m: moment.Moment) {
-  return `${m.format('DD MMMM')} ${beYear(m)} - ${m.format('H:mm')}`;
+  return `${m.format('DD MMMM')} ${beYear(m)} - ${m.format('HH:mm')}`;
 }
 
 export function formatDateTime(value: string) {
@@ -189,7 +189,7 @@ export function daysSince(value: string) {
 export function formatTimeOnly(value: string): string {
   if (!value || !/\d{1,2}:\d{2}/.test(value)) return '';
   const m = parseDateTime(value);
-  if (m) return m.format('H:mm');
+  if (m) return m.format('HH:mm');
   const match = value.match(/(\d{1,2}:\d{2})/);
-  return match ? match[1] : '';
+  return match ? match[1].padStart(5, '0') : '';
 }
