@@ -6,6 +6,9 @@ import { Platform } from "react-native";
 const DEFAULT_CHANNEL_ID = "push_alerts";
 const NOTIFICATION_HISTORY_STORAGE_KEY = "PUSH_NOTIFICATION_HISTORY";
 const MAX_NOTIFICATION_HISTORY_ITEMS = 80;
+// Ids the person deleted, so the tray sync does not bring them back.
+const DELETED_NOTIFICATION_IDS_STORAGE_KEY = "PUSH_NOTIFICATION_DELETED_IDS";
+const MAX_DELETED_NOTIFICATION_IDS = 200;
 const LOCAL_DISPLAY_DATA_KEY = "__localNotificationDisplay";
 const SOURCE_NOTIFICATION_ID_DATA_KEY = "__sourceNotificationId";
 // The launch tap already acted on, kept across processes — see deliverLaunchTap.
@@ -389,7 +392,7 @@ async function syncPresentedNotifications() {
 
     const presented = await Notifications.getPresentedNotificationsAsync();
     const items = await readStoredHistory();
-    const known = new Set(items.map((item) => item.id));
+    const known = new Set([...items.map((item) => item.id), ...(await readDeletedIds())]);
     const added = presented
       .filter((notification) => !isLocalDisplayNotification(notification))
       .map((notification) => getNotificationHistoryItem(notification, "unread"))
@@ -422,13 +425,67 @@ export async function markNotificationRead(id: string) {
   );
 }
 
+/**
+ * Ids the person deleted. syncPresentedNotifications() copies anything still
+ * in the system tray back into history, so without this a deleted push came
+ * straight back on the next focus or refresh. The tray copy is dismissed too,
+ * but a dismiss can fail (or the tray id differ), so the tombstone is what
+ * actually keeps it gone.
+ */
+async function readDeletedIds() {
+  try {
+    const parsed = JSON.parse((await AsyncStorage.getItem(DELETED_NOTIFICATION_IDS_STORAGE_KEY)) ?? "[]") as unknown;
+    return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : []);
+  } catch {
+    return new Set<string>();
+  }
+}
+
+async function addDeletedIds(ids: string[]) {
+  const existing = await readDeletedIds();
+  const next = [...ids, ...[...existing].filter((id) => !ids.includes(id))];
+  await AsyncStorage.setItem(
+    DELETED_NOTIFICATION_IDS_STORAGE_KEY,
+    JSON.stringify(next.slice(0, MAX_DELETED_NOTIFICATION_IDS)),
+  );
+}
+
+/** Removes the tray copies of the given history ids (all of them when ids is omitted). */
+async function dismissPresented(ids?: Set<string>) {
+  try {
+    const Notifications = await loadNotifications();
+    if (!Notifications) {
+      return [];
+    }
+
+    const presented = await Notifications.getPresentedNotificationsAsync();
+    const matching = presented.filter((notification) => {
+      const historyId = historyIdOf(textValue(notification.request.identifier));
+      return !ids || ids.has(historyId);
+    });
+    await Promise.all(
+      matching.map((notification) =>
+        Notifications.dismissNotificationAsync(notification.request.identifier).catch(() => undefined),
+      ),
+    );
+    return presented.map((notification) => getNotificationHistoryItem(notification, "unread").id);
+  } catch {
+    return [];
+  }
+}
+
 export async function clearNotificationHistory() {
+  const items = await readStoredHistory();
+  const trayIds = await dismissPresented();
+  await addDeletedIds([...items.map((item) => item.id), ...trayIds]);
   await AsyncStorage.removeItem(NOTIFICATION_HISTORY_STORAGE_KEY);
 }
 
 export async function deleteNotificationHistoryItem(id: string) {
+  await addDeletedIds([id]);
   const items = await readStoredHistory();
   await writeStoredHistory(items.filter((item) => item.id !== id));
+  await dismissPresented(new Set([id]));
 }
 
 export function registerForegroundNotificationHandler() {

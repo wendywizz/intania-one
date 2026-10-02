@@ -2,13 +2,14 @@ import { useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import moment from 'moment';
 import { useCallback, useState } from 'react';
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 
 import { NavTopBar } from '@/components/nav-top-bar';
 import { Bell, ChevronRight } from 'lucide-react-native';
 import { EmptyState } from '@/components/empty-state';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -105,6 +106,7 @@ export default function NotificationScreen() {
   const styles = useThemedStyles(makeStyles);
   const [items, setItems] = useState<PushNotificationHistoryItem[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isClearConfirmVisible, setIsClearConfirmVisible] = useState(false);
 
   const loadHistory = useCallback(() => {
     let isActive = true;
@@ -144,22 +146,12 @@ export default function NotificationScreen() {
     await deleteNotificationHistoryItem(item.id);
   };
 
-  const handleClearAll = () => {
-    Alert.alert(
-      TEXT.NOTIFICATION_CLEAR_CONFIRM_TITLE,
-      TEXT.NOTIFICATION_CLEAR_CONFIRM_MESSAGE,
-      [
-        { text: TEXT.CANCEL, style: 'cancel' },
-        {
-          text: TEXT.NOTIFICATION_CLEAR_ALL,
-          style: 'destructive',
-          onPress: async () => {
-            await clearNotificationHistory();
-            setItems([]);
-          },
-        },
-      ],
-    );
+  // ConfirmDialog, not Alert.alert: on web Alert.alert does nothing, so the
+  // confirm never appeared and nothing was cleared.
+  const handleClearAll = async () => {
+    setIsClearConfirmVisible(false);
+    setItems([]);
+    await clearNotificationHistory();
   };
 
   return (
@@ -174,7 +166,7 @@ export default function NotificationScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={TEXT.NOTIFICATION_CLEAR_ALL_ACCESSIBILITY_LABEL}
-              onPress={handleClearAll}
+              onPress={() => setIsClearConfirmVisible(true)}
               style={({ pressed }) => [styles.clearBtn, pressed && styles.clearBtnPressed]}
             >
               <ThemedText style={styles.clearBtnText}>{TEXT.NOTIFICATION_CLEAR_ALL}</ThemedText>
@@ -198,6 +190,17 @@ export default function NotificationScreen() {
             onDelete={() => handleDelete(item)}
           />
         )}
+      />
+
+      <ConfirmDialog
+        visible={isClearConfirmVisible}
+        title={TEXT.NOTIFICATION_CLEAR_CONFIRM_TITLE}
+        message={TEXT.NOTIFICATION_CLEAR_CONFIRM_MESSAGE}
+        confirmLabel={TEXT.NOTIFICATION_CLEAR_ALL}
+        cancelLabel={TEXT.CANCEL}
+        destructive
+        onConfirm={handleClearAll}
+        onCancel={() => setIsClearConfirmVisible(false)}
       />
     </ThemedView>
   );
