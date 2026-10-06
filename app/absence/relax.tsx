@@ -872,7 +872,7 @@ export default function RelaxScreen() {
     try {
       const result = await removeData(editId, TYPE_ABSENCE_RELAX);
       setToastType("success");
-      setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
+      setToastMessage(result.message || TEXT.SHARED_DELETE_SUCCESS);
       setTimeout(() => {
         router.replace("/absence/pending");
       }, 1500);

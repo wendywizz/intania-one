@@ -17,6 +17,7 @@ import {
 } from "./api";
 import { ENDPOINTS } from "../constants/endpoints";
 import { TEXT } from "../constants/text";
+import { thaiOnly } from "../utils/thai-message";
 
 const DEFAULT_DISPLAY_LENGTH = 10;
 
@@ -157,7 +158,7 @@ export async function uploadMedFile(
 
   return {
     data: jsonData.data,
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 
@@ -190,7 +191,7 @@ export async function addData(
 
   return {
     data: jsonData.data,
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 
@@ -228,7 +229,7 @@ export async function updateData(
 
   return {
     data: jsonData.data,
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 
@@ -252,7 +253,7 @@ export async function removeData(
 
   return {
     data: jsonData.data,
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 
@@ -330,7 +331,7 @@ export async function approvingHistoryData(
   return {
     data,
     totalCount: Number(jsonData.total_count ?? jsonData.totalCount ?? data.length),
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 
@@ -363,7 +364,7 @@ export async function approveSaveData(
 
   return {
     data: jsonData.data,
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 
@@ -384,7 +385,7 @@ export async function historyData(
   return {
     data,
     totalCount: Number(jsonData.total_count ?? jsonData.totalCount ?? data.length),
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 

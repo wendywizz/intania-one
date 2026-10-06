@@ -15,9 +15,11 @@ import {
     type ListResponse,
     type MutationResponse,
     listRequest,
+    MESSAGE_SERVER_ERROR,
     mutationRequest,
     rowRequest,
 } from "./api";
+import { thaiOnly } from "../utils/thai-message";
 
 const SCOOBA_API_KEY = ENV.scoobaApiKey;
 
@@ -108,14 +110,14 @@ export async function removeJob(id: string): Promise<MutationResponse> {
   const text = await response.text();
 
   if (!response.ok || !text) {
-    throw new Error("Server request failed");
+    throw new Error(MESSAGE_SERVER_ERROR);
   }
 
   const json = JSON.parse(text) as { message?: string; success?: boolean };
   ensureSuccess(json);
 
   return {
-    message: json.message ?? "",
+    message: thaiOnly(json.message),
   };
 }
 
@@ -384,7 +386,7 @@ export async function checkPrivilege(
     const body = await response.text();
 
     if (response.status !== 200 || !body) {
-      throw new Error("Server request failed");
+      throw new Error(MESSAGE_SERVER_ERROR);
     }
 
     const json = JSON.parse(body) as { data?: unknown };

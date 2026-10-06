@@ -819,7 +819,7 @@ export default function SickScreen() {
         await Linking.openURL(fileUrl);
       } catch {
         setToastType("error");
-        setToastMessage("Unable to open file.");
+        setToastMessage("ไม่สามารถเปิดไฟล์ได้");
       }
     },
     [],
@@ -972,7 +972,7 @@ export default function SickScreen() {
     try {
       const result = await removeData(editId, TYPE_ABSENCE_SICK);
       setToastType("success");
-      setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
+      setToastMessage(result.message || TEXT.SHARED_DELETE_SUCCESS);
       setTimeout(() => {
         router.replace("/absence/pending");
       }, 1500);

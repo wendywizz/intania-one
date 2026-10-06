@@ -54,7 +54,7 @@ export default function RequestSupplyScreen() {
     setToastType("");
 
     if (!detail.trim()) {
-      setValidationError("Supply request detail is required");
+      setValidationError("กรุณากรอกรายละเอียดการขอจัดหาวัสดุ");
       return;
     }
 

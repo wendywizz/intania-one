@@ -2,6 +2,7 @@ import { File } from "expo-file-system";
 
 import { ENDPOINTS } from "../constants/endpoints";
 import { currentWifiIp } from "../utils/wifi-ip";
+import { thaiOnly } from "../utils/thai-message";
 import type { JsonMap } from "./api";
 import { ensureSuccess, fetchWithTimeout, MESSAGE_SERVER_ERROR, requestJson } from "./api";
 
@@ -176,7 +177,7 @@ export async function getTimestampData(
     data: normalizeTimestampData(raw),
     cycleStart: pickDateField(raw, CYCLE_START_FIELDS),
     cycleEnd: pickDateField(raw, CYCLE_END_FIELDS),
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 
@@ -214,7 +215,7 @@ export async function getTimestampHistoryData(
 
   return {
     data: normalizeTimestampHistoryData(jsonData.data),
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 
@@ -229,7 +230,7 @@ export async function getTimestampViewData(
 
   return {
     data: normalizeTimestampItem(jsonData.data),
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 
@@ -248,7 +249,7 @@ export async function getTimestampInitData(
 
   return {
     data: normalizeTimestampItem(jsonData.data),
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 
@@ -268,7 +269,7 @@ export async function submitTimestamp(
 
   return {
     data: jsonData.data,
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 
@@ -285,7 +286,7 @@ export async function removeTimestamp(id: string) {
 
   return {
     data: jsonData.data,
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 
@@ -381,7 +382,7 @@ export async function getForgetApprovalWaiting(
     data: Array.isArray(jsonData.data)
       ? (jsonData.data as TimestampApproval[])
       : [],
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 
   lastForgetApprovalWaiting = { staffId, value };
@@ -479,7 +480,7 @@ export async function submitForgetApprove(data: SubmitTimestampApproveData) {
 
   return {
     data: jsonData.data,
-    message: String(jsonData.message ?? ""),
+    message: thaiOnly(jsonData.message),
   };
 }
 

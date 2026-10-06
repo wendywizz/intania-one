@@ -487,7 +487,7 @@ export default function BirthScreen() {
     try {
       const result = await removeData(routeEditId, TYPE_ABSENCE_BIRTH);
       setToastType("success");
-      setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
+      setToastMessage(result.message || TEXT.SHARED_DELETE_SUCCESS);
       setTimeout(() => {
         router.replace("/absence/pending");
       }, 1500);

@@ -553,7 +553,7 @@ export default function TimestampDetailScreen() {
 
       setIsConfirmVisible(false);
       setToastType("success");
-      setToastMessage(result.message || TEXT.SHARED_SUCCESS);
+      setToastMessage(result.message || TEXT.TIMESTAMP_FORGET_SUBMIT_SUCCESS);
       await new Promise((resolve) => setTimeout(resolve, REDIRECT_DELAY_MS));
       router.replace("/timestamp/forgot-timestamp" as Parameters<typeof router.replace>[0]);
     } catch (error) {
@@ -588,7 +588,7 @@ export default function TimestampDetailScreen() {
       const result = await removeTimestamp(forgetId);
 
       setToastType("success");
-      setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
+      setToastMessage(result.message || TEXT.SHARED_DELETE_SUCCESS);
       await new Promise((resolve) => setTimeout(resolve, REDIRECT_DELAY_MS));
       router.replace("/timestamp/forgot-timestamp" as Parameters<typeof router.replace>[0]);
     } catch (error) {

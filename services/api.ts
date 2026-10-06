@@ -5,6 +5,7 @@ import {
   moduleDisabledText,
 } from "../constants/module-status";
 import { API_BASE_URL, LOCAL_URL_BASE } from "../constants/endpoints";
+import { thaiOnly } from "../utils/thai-message";
 
 const TIMEOUT_MS = 10000;
 
@@ -298,6 +299,8 @@ export async function mutationRequest<T>(
 
   return {
     data: json.data,
-    message: getMessage(json),
+    // Upstream success text is usually English ("Insert success"); blank it so
+    // the screen's own Thai fallback is what the user sees.
+    message: thaiOnly(getMessage(json)),
   };
 }

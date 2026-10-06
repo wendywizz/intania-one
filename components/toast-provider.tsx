@@ -1,5 +1,6 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ThemedText } from '@/components/themed-text';
+import { toThaiMessage } from '@/utils/thai-message';
 import {
   createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode,
 } from 'react';
@@ -53,7 +54,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     });
   }, [translateY, opacity]);
 
-  const showToast = useCallback((message: string, type: ToastType = 'success') => {
+  const showToast = useCallback((raw: string, type: ToastType = 'success') => {
+    // Screens pass the server's message straight through; upstream APIs often
+    // answer in English, so the toast is the last place to put it into Thai.
+    const message = toThaiMessage(raw, type);
     if (!message) return;
     setToast({ message, type });
     translateY.setValue(HIDDEN_OFFSET);

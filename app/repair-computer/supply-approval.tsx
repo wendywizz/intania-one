@@ -67,7 +67,7 @@ export default function SupplyApprovalScreen() {
     setToastType("");
 
     if (!detail.trim()) {
-      setValidationError("Reason is required");
+      setValidationError("กรุณากรอกเหตุผล");
       return;
     }
 

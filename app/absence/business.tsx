@@ -873,7 +873,7 @@ export default function BusinessScreen() {
     try {
       const result = await removeData(editId, TYPE_ABSENCE_BUSINESS);
       setToastType("success");
-      setToastMessage(result.message || TEXT.SHARED_DELETE_THAI);
+      setToastMessage(result.message || TEXT.SHARED_DELETE_SUCCESS);
       setTimeout(() => {
         router.replace("/absence/pending");
       }, 1500);
