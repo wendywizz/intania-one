@@ -11,7 +11,7 @@ import { APP_ICON } from '@/constants/images';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useThemedStyles } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
-import { pingScoobaService } from '@/services/healthService';
+import { probeScoobaService } from '@/services/healthService';
 
 type ConnectionStatus = 'checking' | 'online' | 'offline';
 
@@ -20,8 +20,9 @@ type ConnectionStatus = 'checking' | 'online' | 'offline';
  *
  * Every module here is a thin UI over that gateway, so a gateway that is not
  * answering means nothing in the app works. Without this the user gets in, taps
- * a menu, and meets a different failure on every screen. Instead: one probe,
- * one answer, and — when it fails — one screen that says so.
+ * a menu, and meets a different failure on every screen. Instead: one probe
+ * (retried briefly, so a passing network hiccup does not count), one answer,
+ * and — when it fails — one screen that says so.
  *
  * Both outcomes are shown on *this* screen, by swapping its content. Routing to
  * a separate screen for the failure meant mounting the navigator first, and the
@@ -36,8 +37,10 @@ export function ConnectionGate({ children }: { children: React.ReactNode }) {
   const [retrying, setRetrying] = useState(false);
   const didStartupCheckRef = useRef(false);
 
+  // A few attempts, not one: a single dropped request on a flaky WiFi moment
+  // used to put up the notice while the gateway was fine. See healthService.
   const runProbe = useCallback(async () => {
-    const reachable = await pingScoobaService();
+    const reachable = await probeScoobaService();
     setStatus(reachable ? 'online' : 'offline');
     return reachable;
   }, []);

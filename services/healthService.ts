@@ -12,6 +12,20 @@ const PING_TIMEOUT_MS = 6000;
 /** What `/api/health` names itself as. See scooba-service's health controller. */
 const HEALTH_SERVICE_NAME = 'scooba-service';
 
+/**
+ * Pauses before the second and third attempt of `probeScoobaService`.
+ *
+ * One probe was not enough. On PSU WiFi (802.1x) a phone that has just joined,
+ * or just roamed to another access point, can drop the first request of a
+ * launch while the network itself is fine — on 2026-10-07 an Android 10 phone
+ * showed the "cannot connect" notice on PSU WiFi, then opened normally on four
+ * cold launches in a row on the same network, same gateway, same build. A
+ * failure that clears in a second or two should not cost the person the app.
+ * A network that is really gone fails fast (no timeout), so the extra attempts
+ * add only these pauses — about three seconds — before the notice.
+ */
+const PROBE_RETRY_GAPS_MS = [1000, 2000] as const;
+
 type HealthResponse = {
   data?: { status?: string; service?: string };
 };
@@ -55,4 +69,26 @@ export async function pingScoobaService(): Promise<boolean> {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/**
+ * `pingScoobaService`, tried again after each pause in `gapsMs` until one
+ * attempt succeeds. Resolves `false` only when every attempt failed. This is
+ * what the startup gate asks — see PROBE_RETRY_GAPS_MS for why once is not
+ * enough. Never throws, like the single ping.
+ *
+ * `wait` is a parameter so tests can skip the real pauses.
+ */
+export async function probeScoobaService(
+  gapsMs: readonly number[] = PROBE_RETRY_GAPS_MS,
+  wait: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+): Promise<boolean> {
+  if (await pingScoobaService()) return true;
+
+  for (const gap of gapsMs) {
+    await wait(gap);
+    if (await pingScoobaService()) return true;
+  }
+
+  return false;
 }
