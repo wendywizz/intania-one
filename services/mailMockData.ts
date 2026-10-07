@@ -325,6 +325,16 @@ export async function mockDeleteDraft(draftId: string): Promise<void> {
   return delay(undefined, 300);
 }
 
+/** Outlook's rule: anywhere else it goes to Deleted Items, from there it is gone. */
+export async function mockDeleteMessage(id: string): Promise<void> {
+  const found = locate(id);
+  if (found) {
+    const [message] = store[found.folder].splice(found.index, 1);
+    if (found.folder !== 'deleteditems' && message) store.deleteditems.unshift(message);
+  }
+  return delay(undefined, 300);
+}
+
 export async function mockSuggestRecipients(term: string): Promise<MailRecipient[]> {
   const q = term.trim().toLowerCase();
   if (!q) return [];

@@ -10,6 +10,7 @@ import {
 } from '@/services/mailAuthService';
 import {
   mockDeleteDraft,
+  mockDeleteMessage,
   mockGetMessage,
   mockInboxUnreadCount,
   mockListMessages,
@@ -404,6 +405,17 @@ export async function deleteDraft(draftId: string): Promise<void> {
   if (MAIL_MOCK_ENABLED) return mockDeleteDraft(draftId);
 
   await graphFetch(`${GRAPH}/me/messages/${encodeURIComponent(draftId)}`, { method: 'DELETE' });
+}
+
+/**
+ * Deletes any message, as Outlook does: from every folder but Deleted Items it
+ * moves there (Graph's DELETE does this itself), and from Deleted Items it is
+ * gone for good — so callers confirm that case first. Needs Mail.ReadWrite.
+ */
+export async function deleteMessage(id: string): Promise<void> {
+  if (MAIL_MOCK_ENABLED) return mockDeleteMessage(id);
+
+  await graphFetch(`${GRAPH}/me/messages/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
 // ─── Recipients ─────────────────────────────────────────────────────────────

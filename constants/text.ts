@@ -1696,6 +1696,11 @@ export const TEXT = {
   MAIL_COMPOSE_DRAFT_SAVED: 'บันทึกฉบับร่างแล้ว',
   MAIL_COMPOSE_DRAFT_SAVE_FAILED: 'บันทึกฉบับร่างไม่สำเร็จ',
   MAIL_COMPOSE_DRAFT_DELETED: 'ลบฉบับร่างแล้ว',
+  MAIL_DELETE: 'ลบ',
+  MAIL_DELETED: 'ลบอีเมลแล้ว',
+  MAIL_DELETE_FAILED: 'ลบอีเมลไม่สำเร็จ',
+  MAIL_DELETE_FOREVER_TITLE: 'ลบอีเมลถาวร',
+  MAIL_DELETE_FOREVER_MESSAGE: 'อีเมลนี้จะถูกลบออกจากกล่องจดหมายอย่างถาวร และกู้คืนไม่ได้',
   MAIL_COMPOSE_UNAVAILABLE: 'ยังไม่เปิดให้เขียนอีเมลในแอป',
   MAIL_COMPOSE_HTML_DRAFT_NOTE:
     'ฉบับร่างนี้มีการจัดรูปแบบ หากแก้ไขเนื้อหาในแอป รูปแบบจะถูกแปลงเป็นข้อความธรรมดา',

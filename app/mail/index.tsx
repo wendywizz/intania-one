@@ -2,6 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/empty-state';
@@ -16,6 +17,9 @@ import { SenderAvatar } from '@/components/mail/sender-avatar';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useToast } from '@/components/toast-provider';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import { AppFonts } from '@/constants/fonts';
 import {
@@ -30,6 +34,7 @@ import * as mailAuthService from '@/services/mailAuthService';
 import {
   applyReadFilter,
   checkMailModule,
+  deleteMessage,
   getInboxUnreadCount,
   listMessages,
   searchMessages,
@@ -47,10 +52,13 @@ function MailCard({
   message,
   showsRecipients,
   onPress,
+  onDelete,
 }: {
   message: MailMessage;
   showsRecipients: boolean;
   onPress: () => void;
+  /** Omitted when deleting isn't available (compose switch off): no swipe. */
+  onDelete?: () => void;
 }) {
   const c = useColors();
   const recipientNames = message.toRecipients.map((r) => r.name || r.address).filter(Boolean);
@@ -62,8 +70,9 @@ function MailCard({
   // Something you sent or are still writing can't be "unread".
   const showUnread = !message.isRead && !showsRecipients;
 
-  return (
+  const card = (
     <ListCard
+      style={onDelete ? staticStyles.swipeCard : undefined}
       onPress={onPress}
       icon={<SenderAvatar name={person.name} address={person.address} size={40} />}
       iconBackground="transparent"
@@ -82,12 +91,44 @@ function MailCard({
       ]}
     />
   );
+
+  if (!onDelete) return card;
+
+  // The row's own bottom margin moves to this wrapper so the red action is as
+  // tall as the card, not card plus the gap under it.
+  return (
+    <View style={staticStyles.swipeRow}>
+      <Swipeable
+        overshootRight={false}
+        renderRightActions={() => (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={TEXT.MAIL_DELETE}
+            onPress={onDelete}
+            style={({ pressed }) => [
+              staticStyles.deleteAction,
+              { backgroundColor: c.danger },
+              pressed ? { opacity: 0.8 } : null,
+            ]}
+          >
+            <IconSymbol name="trash.fill" size={20} color={c.textOnPrimary} />
+            <ThemedText lightColor={c.textOnPrimary} darkColor={c.textOnPrimary} style={staticStyles.deleteText}>
+              {TEXT.MAIL_DELETE}
+            </ThemedText>
+          </Pressable>
+        )}
+      >
+        {card}
+      </Swipeable>
+    </View>
+  );
 }
 
 export default function MailInboxScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const { showToast } = useToast();
 
   // --- module state ------------------------------------------------------------
   const [isReady, setIsReady] = useState(false);
@@ -317,9 +358,49 @@ export default function MailInboxScreen() {
         setSearchResults((prev) => (prev ? markRead(prev) : prev));
         if (folderRef.current === 'inbox') setInboxUnread((count) => Math.max(0, count - 1));
       }
-      router.push({ pathname: '/mail/detail', params: { id: message.id } });
+      // `folder` tells the detail screen whether a delete is permanent.
+      router.push({ pathname: '/mail/detail', params: { id: message.id, folder: folderRef.current } });
     },
     [composeEnabled],
+  );
+
+  // --- delete ---------------------------------------------------------------------
+  // Outlook's rule: from any folder but Deleted Items a delete moves the message
+  // there, so it is undoable and goes straight through; from Deleted Items it is
+  // permanent, so that asks first.
+  const [pendingPurge, setPendingPurge] = useState<MailMessage | null>(null);
+
+  const performDelete = useCallback(
+    async (message: MailMessage) => {
+      const fromFolder = folderRef.current;
+      const without = (list: MailMessage[]) => list.filter((m) => m.id !== message.id);
+      // Optimistic: the row leaves at once; a failure puts it back.
+      setMessages(without);
+      setSearchResults((prev) => (prev ? without(prev) : prev));
+      if (fromFolder === 'inbox' && !message.isRead) setInboxUnread((count) => Math.max(0, count - 1));
+
+      try {
+        await deleteMessage(message.id);
+        showToast(TEXT.MAIL_DELETED, 'success');
+      } catch (err) {
+        if (isReauth(err)) {
+          router.replace('/mail/connect');
+          return;
+        }
+        showToast(TEXT.MAIL_DELETE_FAILED, 'error');
+        loadMessages(fromFolder, filterRef.current, 'quiet');
+        refreshUnread();
+      }
+    },
+    [loadMessages, refreshUnread, showToast],
+  );
+
+  const requestDelete = useCallback(
+    (message: MailMessage) => {
+      if (folderRef.current === 'deleteditems') setPendingPurge(message);
+      else void performDelete(message);
+    },
+    [performDelete],
   );
 
   const openCompose = useCallback(() => {
@@ -368,6 +449,7 @@ export default function MailInboxScreen() {
             message={item}
             showsRecipients={folderInfo.showsRecipients}
             onPress={() => openMessage(item)}
+            onDelete={composeEnabled ? () => requestDelete(item) : undefined}
           />
         )}
         keyboardShouldPersistTaps="handled"
@@ -452,6 +534,21 @@ export default function MailInboxScreen() {
             onPressCompose={composeEnabled ? openCompose : undefined}
           />
 
+          <ConfirmDialog
+            visible={pendingPurge !== null}
+            title={TEXT.MAIL_DELETE_FOREVER_TITLE}
+            message={TEXT.MAIL_DELETE_FOREVER_MESSAGE}
+            confirmLabel={TEXT.MAIL_DELETE}
+            icon="trash.fill"
+            destructive
+            onCancel={() => setPendingPurge(null)}
+            onConfirm={() => {
+              const target = pendingPurge;
+              setPendingPurge(null);
+              if (target) void performDelete(target);
+            }}
+          />
+
           <MailFilterSheet
             visible={isFilterSheetVisible}
             value={filter}
@@ -466,6 +563,17 @@ export default function MailInboxScreen() {
 
 const staticStyles = StyleSheet.create({
   unreadDot: { width: 7, height: 7, borderRadius: 3.5 },
+  swipeRow: { marginBottom: 12 },
+  swipeCard: { marginBottom: 0 },
+  deleteAction: {
+    width: 84,
+    marginLeft: 8,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  deleteText: { fontSize: 12.5, fontWeight: '600' },
 });
 
 const makeStyles = (c: AppColors) => StyleSheet.create({

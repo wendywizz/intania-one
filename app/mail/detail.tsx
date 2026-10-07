@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import WebView from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,12 +10,15 @@ import { SenderAvatar } from '@/components/mail/sender-avatar';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useToast } from '@/components/toast-provider';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { isMailComposeEnabled, isMailReauthRequiredText } from '@/services/mailAuthService';
 import {
+  deleteMessage,
   getMessage,
   markMessageRead,
   type ComposeMode,
@@ -86,10 +89,34 @@ export default function MailDetailScreen() {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; folder?: string }>();
   const id = params.id ?? '';
   // Read once: the list screen has already asked scooba on its way here.
   const composeEnabled = isMailComposeEnabled();
+  const { showToast } = useToast();
+  // Deleting from Deleted Items is permanent, so only that asks first. The list
+  // passes the folder along; with none, assume the safe (recoverable) case.
+  const isInDeletedItems = params.folder === 'deleteditems';
+  const [isConfirmVisible, setConfirmVisible] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = useCallback(async () => {
+    setConfirmVisible(false);
+    setIsDeleting(true);
+    try {
+      await deleteMessage(id);
+      showToast(TEXT.MAIL_DELETED, 'success');
+      // The list reloads on focus, so it drops the row by itself.
+      router.back();
+    } catch (err) {
+      if (err instanceof Error && isMailReauthRequiredText(err.message)) {
+        router.replace('/mail/connect');
+        return;
+      }
+      showToast(TEXT.MAIL_DELETE_FAILED, 'error');
+      setIsDeleting(false);
+    }
+  }, [id, showToast]);
 
   const [message, setMessage] = useState<MailMessage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -177,7 +204,26 @@ export default function MailDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
-      <NavTopBar title={TEXT.MAIL_DETAIL_HEADER_TITLE} showBackButton onBackPress={() => router.back()} tone="primary" />
+      <NavTopBar
+        title={TEXT.MAIL_DETAIL_HEADER_TITLE}
+        showBackButton
+        onBackPress={() => router.back()}
+        tone="primary"
+        rightContent={
+          composeEnabled ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={TEXT.MAIL_DELETE}
+              disabled={isDeleting}
+              hitSlop={8}
+              onPress={() => (isInDeletedItems ? setConfirmVisible(true) : handleDelete())}
+              style={({ pressed }) => [styles.trashButton, pressed || isDeleting ? styles.actionPressed : null]}
+            >
+              <IconSymbol name="trash.fill" size={21} color={c.textOnPrimary} />
+            </Pressable>
+          ) : undefined
+        }
+      />
 
       <View style={styles.header}>
         <ThemedText style={styles.subject} numberOfLines={4}>
@@ -268,6 +314,17 @@ export default function MailDetailScreen() {
           ))}
         </View>
       ) : null}
+
+      <ConfirmDialog
+        visible={isConfirmVisible}
+        title={TEXT.MAIL_DELETE_FOREVER_TITLE}
+        message={TEXT.MAIL_DELETE_FOREVER_MESSAGE}
+        confirmLabel={TEXT.MAIL_DELETE}
+        icon="trash.fill"
+        destructive
+        onCancel={() => setConfirmVisible(false)}
+        onConfirm={handleDelete}
+      />
     </ThemedView>
   );
 }
@@ -335,6 +392,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 10,
   },
   actionPressed: { backgroundColor: c.surfaceAlt },
+  trashButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
   actionLabel: {
     fontFamily: AppFonts.psuBold,
     fontSize: 12,
