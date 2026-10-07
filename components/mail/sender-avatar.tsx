@@ -1,8 +1,11 @@
+import { Image } from 'expo-image';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors } from '@/constants/theme';
+import { getSenderPhoto } from '@/services/mailSenderPhoto';
 
 /** Stable per-sender palette, so the same address always lands on the same
  * colour across the inbox list and the detail screen — no lookup, no
@@ -40,6 +43,17 @@ export function SenderAvatar({
   size?: number;
 }) {
   const c = useColors();
+  const [photo, setPhoto] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setPhoto(null);
+    getSenderPhoto(address).then((uri) => {
+      if (!cancelled) setPhoto(uri);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
   const label = (name || address || '').trim();
   const initial = label ? label[0]!.toUpperCase() : '?';
   const key = (address || name || '').trim().toLowerCase() || initial;
@@ -56,11 +70,19 @@ export function SenderAvatar({
       <ThemedText style={[styles.initial, { fontSize: size * 0.42, color: c.textOnPrimary }]}>
         {initial}
       </ThemedText>
+      {photo ? (
+        <Image
+          source={{ uri: photo }}
+          onError={() => setPhoto(null)}
+          style={[StyleSheet.absoluteFill, { borderRadius: size / 2 }]}
+          contentFit="cover"
+        />
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  circle: { alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  circle: { overflow: "hidden", alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   initial: { fontFamily: AppFonts.psuBold },
 });

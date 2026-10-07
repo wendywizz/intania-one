@@ -1,10 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import WebView from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AttachmentViewer } from '@/components/mail/attachment-viewer';
+import { MailBody } from '@/components/mail/mail-body';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { SenderAvatar } from '@/components/mail/sender-avatar';
 import { NavTopBar } from '@/components/nav-top-bar';
@@ -20,6 +21,8 @@ import { isMailComposeEnabled, isMailReauthRequiredText } from '@/services/mailA
 import {
   deleteMessage,
   getMessage,
+  listAttachments,
+  type MailAttachment,
   markMessageRead,
   type ComposeMode,
   type MailMessage,
@@ -35,54 +38,6 @@ const RESPONSE_ACTIONS: { mode: ComposeMode; label: string; icon: IconSymbolName
 
 function recipientNames(list: MailRecipient[]) {
   return list.map((recipient) => recipient.name || recipient.address).filter(Boolean).join(', ');
-}
-
-/**
- * Threads the app's own theme colours into whatever HTML Graph handed back,
- * without running a single line of the message's own script — the `<style>`
- * block below is plain CSS, so `javaScriptEnabled={false}` on the WebView
- * stays exactly as strict as it was.
- *
- * Deliberately *defaults*, not `!important` overrides: an email that sets its
- * own explicit colours (a designed newsletter, an official letter meant to
- * look a particular way on paper) keeps looking the way its author intended —
- * this only fills in for the common case of a plain message with no styling
- * of its own, so it doesn't flash white-on-white in dark mode. The one
- * genuine `!important` is images/tables never exceeding the screen width:
- * there is no reading in which a fixed-pixel Outlook table should be allowed
- * to force the whole message into horizontal scrolling on a phone.
- *
- * The viewport meta tag is the other half of "looks like a webview" — most
- * exported mail HTML has none, so a WKWebView renders it at desktop width and
- * the phone shows a zoomed-out postage stamp of text. Injected here rather
- * than assumed present, and only when the document doesn't already carry one
- * of its own.
- */
-function withThemedStyle(html: string, c: AppColors): string {
-  const styleBlock = `<style>
-    html, body { margin: 0; }
-    body {
-      padding: 16px;
-      font-size: 15px;
-      line-height: 1.65;
-      background: ${c.background};
-      color: ${c.text};
-    }
-    img, table { max-width: 100% !important; height: auto !important; }
-    td, th { word-break: break-word; }
-  </style>`;
-  const viewportTag = /<meta[^>]+name=["']viewport["']/i.test(html)
-    ? ''
-    : '<meta name="viewport" content="width=device-width, initial-scale=1">';
-  const head = `${viewportTag}${styleBlock}`;
-
-  if (/<head[^>]*>/i.test(html)) {
-    return html.replace(/<head[^>]*>/i, (match) => `${match}${head}`);
-  }
-  if (/<html[^>]*>/i.test(html)) {
-    return html.replace(/<html[^>]*>/i, (match) => `${match}<head>${head}</head>`);
-  }
-  return `<!DOCTYPE html><html><head>${head}</head><body>${html}</body></html>`;
 }
 
 export default function MailDetailScreen() {
@@ -119,17 +74,10 @@ export default function MailDetailScreen() {
   }, [id, showToast]);
 
   const [message, setMessage] = useState<MailMessage | null>(null);
+  const [attachments, setAttachments] = useState<MailAttachment[]>([]);
+  const [openAttachment, setOpenAttachment] = useState<MailAttachment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-
-  // Computed unconditionally (Rules of Hooks) even though it is only used
-  // past the loading/error returns below — recomputed only when the message
-  // or the theme actually changes, not on every render of a body that can run
-  // to tens of KB of HTML.
-  const styledHtml = useMemo(() => {
-    if (!message?.body?.content || message.body.contentType !== 'html') return '';
-    return withThemedStyle(message.body.content, c);
-  }, [message, c]);
 
   useEffect(() => {
     let cancelled = false;
@@ -142,6 +90,12 @@ export default function MailDetailScreen() {
 
     setIsLoading(true);
     setError('');
+    // Best effort: a failure here just means no attachment list.
+    listAttachments(id)
+      .then((list) => {
+        if (!cancelled) setAttachments(list);
+      })
+      .catch(() => undefined);
     getMessage(id)
       .then((data) => {
         if (cancelled) return;
@@ -200,6 +154,7 @@ export default function MailDetailScreen() {
 
   const senderName = message.from.name || message.from.address || TEXT.MAIL_UNKNOWN_SENDER;
   const isHtmlBody = message.body?.contentType === 'html';
+  const bodyContent = message.body?.content;
 
   return (
     <ThemedView style={styles.container}>
@@ -225,94 +180,108 @@ export default function MailDetailScreen() {
         }
       />
 
-      <View style={styles.header}>
-        <ThemedText style={styles.subject} numberOfLines={4}>
-          {message.subject || TEXT.MAIL_NO_SUBJECT}
-        </ThemedText>
-        <View style={styles.senderRow}>
-          <SenderAvatar name={message.from.name} address={message.from.address} size={36} />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <ThemedText style={styles.subject}>{message.subject || TEXT.MAIL_NO_SUBJECT}</ThemedText>
+        </View>
+        <View style={styles.senderCard}>
+          <SenderAvatar name={message.from.name} address={message.from.address} size={44} />
           <View style={styles.senderTextCol}>
-            <ThemedText style={styles.senderName} numberOfLines={1}>
-              {senderName}
-            </ThemedText>
+            <View style={styles.senderTopRow}>
+              <ThemedText style={styles.senderName} numberOfLines={1}>
+                {senderName}
+              </ThemedText>
+              {message.receivedDateTime ? (
+                <ThemedText style={styles.date}>{formatNewsDateTime(message.receivedDateTime)}</ThemedText>
+              ) : null}
+            </View>
             {message.from.address ? (
               <ThemedText style={styles.senderAddress} numberOfLines={1}>
                 {message.from.address}
               </ThemedText>
             ) : null}
+            {message.toRecipients.length > 0 || message.ccRecipients.length > 0 ? (
+              <View style={styles.recipients}>
+                {message.toRecipients.length > 0 ? (
+                  <ThemedText style={styles.recipientLine} numberOfLines={2}>
+                    <ThemedText style={styles.recipientLabel}>{TEXT.MAIL_TO_PREFIX} </ThemedText>
+                    {recipientNames(message.toRecipients)}
+                  </ThemedText>
+                ) : null}
+                {message.ccRecipients.length > 0 ? (
+                  <ThemedText style={styles.recipientLine} numberOfLines={2}>
+                    <ThemedText style={styles.recipientLabel}>{TEXT.MAIL_CC_PREFIX} </ThemedText>
+                    {recipientNames(message.ccRecipients)}
+                  </ThemedText>
+                ) : null}
+              </View>
+            ) : null}
           </View>
-          {message.receivedDateTime ? (
-            <ThemedText style={styles.date}>{formatNewsDateTime(message.receivedDateTime)}</ThemedText>
-          ) : null}
         </View>
-        {message.toRecipients.length > 0 || message.ccRecipients.length > 0 ? (
-          <View style={styles.recipients}>
-            {message.toRecipients.length > 0 ? (
-              <ThemedText style={styles.recipientLine} numberOfLines={2}>
-                <ThemedText style={styles.recipientLabel}>{TEXT.MAIL_TO_PREFIX} </ThemedText>
-                {recipientNames(message.toRecipients)}
-              </ThemedText>
-            ) : null}
-            {message.ccRecipients.length > 0 ? (
-              <ThemedText style={styles.recipientLine} numberOfLines={2}>
-                <ThemedText style={styles.recipientLabel}>{TEXT.MAIL_CC_PREFIX} </ThemedText>
-                {recipientNames(message.ccRecipients)}
-              </ThemedText>
-            ) : null}
+        <View style={styles.bodyWrap}>
+          {bodyContent ? (
+            isHtmlBody ? <MailBody html={bodyContent} /> : <MailBody text={bodyContent} />
+          ) : (
+            <MailBody text={message.bodyPreview} />
+          )}
+        </View>
+        {attachments.length > 0 ? (
+          <View style={styles.attachments}>
+            <ThemedText style={styles.attachmentsTitle}>
+              {TEXT.MAIL_ATTACHMENTS} ({attachments.length})
+            </ThemedText>
+            {attachments.map((file) => (
+              <Pressable
+                key={file.id}
+                accessibilityRole="button"
+                onPress={() => setOpenAttachment(file)}
+                style={({ pressed }) => [styles.attachmentRow, pressed ? styles.actionPressed : null]}
+              >
+                <IconSymbol name="doc.text.fill" size={22} color={c.primary} />
+                <View style={styles.senderTextCol}>
+                  <ThemedText style={styles.attachmentName} numberOfLines={1}>
+                    {file.name}
+                  </ThemedText>
+                  {file.size > 0 ? (
+                    <ThemedText style={styles.attachmentSize}>
+                      {file.size >= 1048576 ? (file.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(file.size / 1024)) + ' KB'}
+                    </ThemedText>
+                  ) : null}
+                </View>
+              </Pressable>
+            ))}
           </View>
         ) : null}
-      </View>
-
-      {message.body?.content ? (
-        isHtmlBody ? (
-          <WebView
-            source={{ html: styledHtml }}
-            style={styles.webview}
-            javaScriptEnabled={false}
-            sharedCookiesEnabled={false}
-            thirdPartyCookiesEnabled={false}
-            // Android-only: without it a WebView with no viewport meta shrinks
-            // to fit desktop width, which is exactly the "tiny zoomed-out
-            // text" look this screen is trying to get away from. The `<meta
-            // viewport>` withThemedStyle() injects is what actually fixes it
-            // on iOS; this is the Android half of the same fix.
-            scalesPageToFit={false}
-            // v1 offers no "open in browser" — a tapped link or remote image
-            // inside the body does nothing rather than navigating somewhere
-            // this screen has no chrome to get back from. The initial
-            // `source={{html}}` load itself resolves as "about:blank"; only
-            // that one is let through.
-            onShouldStartLoadWithRequest={(request) => request.url === 'about:blank'}
-          />
-        ) : (
-          <ScrollView contentContainerStyle={styles.textBodyContent}>
-            <ThemedText style={styles.textBody}>{message.body.content}</ThemedText>
-          </ScrollView>
-        )
-      ) : (
-        <ScrollView contentContainerStyle={styles.textBodyContent}>
-          <ThemedText style={styles.textBody}>{message.bodyPreview}</ThemedText>
-        </ScrollView>
-      )}
+      </ScrollView>
 
       {/* iOS Mail keeps these in a bar under the message, where the thumb is.
           Not on a draft: that is carried on writing from the Drafts list. */}
       {composeEnabled && !message.isDraft ? (
-        <View style={[styles.actionBar, { paddingBottom: insets.bottom + 8 }]}>
-          {RESPONSE_ACTIONS.map((action) => (
+        <View style={[styles.actionBar, { paddingBottom: insets.bottom + 10 }]}>
+          {RESPONSE_ACTIONS.map((action, index) => (
             <Pressable
               key={action.mode}
               accessibilityRole="button"
               onPress={() =>
                 router.push({ pathname: '/mail/compose', params: { mode: action.mode, id: message.id } })
               }
-              style={({ pressed }) => [styles.action, pressed ? styles.actionPressed : null]}
+              style={({ pressed }) => [
+                styles.action,
+                index === 0 ? styles.actionPrimary : null,
+                pressed ? styles.actionBtnPressed : null,
+              ]}
             >
-              <IconSymbol name={action.icon} size={21} color={c.primary} />
-              <ThemedText style={styles.actionLabel}>{action.label}</ThemedText>
+              <IconSymbol name={action.icon} size={18} color={index === 0 ? c.textOnPrimary : c.primary} />
+              <ThemedText style={[styles.actionLabel, index === 0 ? styles.actionLabelPrimary : null]} numberOfLines={1}>
+                {action.label}
+              </ThemedText>
             </Pressable>
           ))}
         </View>
+      ) : null}
+
+      {openAttachment ? (
+        <AttachmentViewer messageId={message.id} attachment={openAttachment} onClose={() => setOpenAttachment(null)} />
       ) : null}
 
       <ConfirmDialog
@@ -331,80 +300,78 @@ export default function MailDetailScreen() {
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: c.border,
-    gap: 12,
-  },
+  scrollContent: { paddingBottom: 24 },
+  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 14 },
   subject: {
     fontFamily: AppFonts.psuBold,
-    fontSize: 19,
-    lineHeight: 26,
+    fontSize: 21,
+    lineHeight: 28,
     color: c.text,
   },
-  senderRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  senderCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginHorizontal: 20,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: c.border,
+  },
   senderTextCol: { flex: 1, gap: 1 },
-  senderName: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 14.5,
-    color: c.text,
-  },
-  senderAddress: {
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 12.5,
-    color: c.textMuted,
-  },
-  date: {
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 12,
-    color: c.textFaint,
-    flexShrink: 0,
-    alignSelf: 'flex-start',
-  },
-  recipients: { gap: 2 },
-  recipientLine: {
-    fontFamily: AppFonts.psuRegular,
-    fontSize: 12.5,
-    lineHeight: 18,
-    color: c.textMuted,
-  },
-  recipientLabel: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 12.5,
-    color: c.textMuted,
-  },
+  senderTopRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
+  senderName: { flexShrink: 1, fontFamily: AppFonts.psuBold, fontSize: 15, lineHeight: 22, color: c.text },
+  senderAddress: { fontFamily: AppFonts.psuRegular, fontSize: 13, lineHeight: 19, color: c.textMuted },
+  date: { fontFamily: AppFonts.psuRegular, fontSize: 12, lineHeight: 18, color: c.textFaint, flexShrink: 0 },
+  recipients: { gap: 2, marginTop: 6 },
+  recipientLine: { fontFamily: AppFonts.psuRegular, fontSize: 13, lineHeight: 19, color: c.textMuted },
+  recipientLabel: { fontFamily: AppFonts.psuBold, fontSize: 13, color: c.textFaint },
+  bodyWrap: { paddingHorizontal: 20, paddingTop: 18 },
   actionBar: {
     flexDirection: 'row',
-    paddingTop: 8,
-    paddingHorizontal: 8,
+    gap: 8,
+    paddingTop: 10,
+    paddingHorizontal: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: c.border,
     backgroundColor: c.surface,
   },
   action: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingVertical: 6,
-    borderRadius: 10,
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: c.primary,
+    backgroundColor: c.surface,
   },
+  actionPrimary: { backgroundColor: c.primary },
+  actionBtnPressed: { opacity: 0.7 },
+  actionLabelPrimary: { color: c.textOnPrimary },
+  attachments: { marginHorizontal: 20, marginTop: 8, gap: 8 },
+  attachmentsTitle: { fontFamily: AppFonts.psuBold, fontSize: 14, lineHeight: 20, color: c.textMuted },
+  attachmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.surface,
+  },
+  attachmentName: { fontFamily: AppFonts.psuBold, fontSize: 14, lineHeight: 20, color: c.text },
+  attachmentSize: { fontFamily: AppFonts.psuRegular, fontSize: 12, lineHeight: 18, color: c.textMuted },
   actionPressed: { backgroundColor: c.surfaceAlt },
   trashButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
   actionLabel: {
     fontFamily: AppFonts.psuBold,
-    fontSize: 12,
-    color: c.primary,
-  },
-  webview: { flex: 1 },
-  textBodyContent: { padding: 16 },
-  textBody: {
-    fontFamily: AppFonts.psuRegular,
     fontSize: 14,
-    lineHeight: 21,
-    color: c.text,
+    color: c.primary,
   },
   centerWrap: { flex: 1, padding: 16, justifyContent: 'center' },
   errorCard: {

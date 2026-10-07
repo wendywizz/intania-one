@@ -1,6 +1,6 @@
 import { ChevronRight } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts } from '@/constants/fonts';
@@ -33,6 +33,8 @@ type ListCardProps = {
   iconBackground?: string;
   title: string;
   titleNumberOfLines?: number;
+  /** Per-screen override of the title text (e.g. a smaller size). */
+  titleStyle?: StyleProp<TextStyle>;
   /** Small muted line directly under the title (e.g. a date). */
   date?: string;
   /** Secondary lines under the title, all rendered with one canonical style so
@@ -57,6 +59,7 @@ export function ListCard({
   iconBackground,
   title,
   titleNumberOfLines = 2,
+  titleStyle,
   date,
   meta,
   children,
@@ -77,7 +80,7 @@ export function ListCard({
         </View>
       ) : null}
       <View style={styles.info}>
-        <ThemedText style={styles.title} numberOfLines={titleNumberOfLines}>
+        <ThemedText style={[styles.title, titleStyle]} numberOfLines={titleNumberOfLines}>
           {title}
         </ThemedText>
         {date ? <ThemedText style={styles.date}>{date}</ThemedText> : null}

@@ -343,3 +343,8 @@ export async function mockSuggestRecipients(term: string): Promise<MailRecipient
     200,
   );
 }
+
+export async function mockMarkAllRead(folder: MailFolderKey): Promise<void> {
+  store[folder] = store[folder].map((message) => ({ ...message, isRead: true }));
+  return delay(undefined, 300);
+}

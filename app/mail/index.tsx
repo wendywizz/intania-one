@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { AppState, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -36,6 +36,7 @@ import {
   checkMailModule,
   deleteMessage,
   getInboxUnreadCount,
+  markAllRead,
   listMessages,
   searchMessages,
   type MailMessage,
@@ -77,7 +78,8 @@ function MailCard({
       icon={<SenderAvatar name={person.name} address={person.address} size={40} />}
       iconBackground="transparent"
       title={message.subject || TEXT.MAIL_NO_SUBJECT}
-      titleNumberOfLines={1}
+      titleNumberOfLines={2}
+      titleStyle={staticStyles.subjectTitle}
       date={message.receivedDateTime ? formatNewsDateTime(message.receivedDateTime) : undefined}
       badge={message.isDraft ? { text: TEXT.MAIL_DRAFT_BADGE, bg: c.dangerSoft, color: c.dangerOnSoft } : null}
       meta={[
@@ -87,7 +89,6 @@ function MailCard({
           icon: showUnread ? <View style={[staticStyles.unreadDot, { backgroundColor: c.primary }]} /> : undefined,
           text: personLine,
         },
-        { text: message.bodyPreview },
       ]}
     />
   );
@@ -322,6 +323,65 @@ export default function MailInboxScreen() {
     [loadMessages],
   );
 
+  // New-mail check while this screen is open and the app is in the foreground.
+  // The newest received time is the watermark: the first look only sets it, so
+  // opening the app never announces mail that was already there.
+  const newestSeenRef = useRef<string | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      if (!isReady) return undefined;
+      let cancelled = false;
+      const check = async () => {
+        if (AppState.currentState !== 'active') return;
+        try {
+          const { messages: latest } = await listMessages('inbox', { top: 5 });
+          if (cancelled || latest.length === 0) return;
+          const newest = latest.reduce((a, b) => (a.receivedDateTime >= b.receivedDateTime ? a : b)).receivedDateTime;
+          const seen = newestSeenRef.current;
+          newestSeenRef.current = seen && seen > newest ? seen : newest;
+          if (!seen) return;
+          const fresh = latest.filter((m) => !m.isRead && m.receivedDateTime > seen);
+          if (fresh.length === 0) return;
+          refreshUnread();
+          if (folderRef.current === 'inbox' && filterRef.current !== 'read') {
+            loadMessages('inbox', filterRef.current, 'quiet');
+          }
+          const first = fresh[0]!;
+          showToast(
+            fresh.length === 1
+              ? TEXT.MAIL_NEW_ONE.replace('{sender}', first.from.name || first.from.address || TEXT.MAIL_UNKNOWN_SENDER)
+              : TEXT.MAIL_NEW_MANY.replace('{count}', String(fresh.length)),
+            'success',
+          );
+        } catch {
+          // A missed check is harmless; the next one tries again.
+        }
+      };
+      check();
+      const timer = setInterval(check, 60000);
+      return () => {
+        cancelled = true;
+        clearInterval(timer);
+      };
+    }, [isReady, loadMessages, refreshUnread, showToast]),
+  );
+
+  const handleMarkAllRead = useCallback(async () => {
+    setFilterSheetVisible(false);
+    try {
+      await markAllRead(folderRef.current);
+      showToast(TEXT.MAIL_MARKED_ALL_READ, 'success');
+      loadMessages(folderRef.current, filterRef.current, 'quiet');
+      refreshUnread();
+    } catch (err) {
+      if (isReauth(err)) {
+        router.replace('/mail/connect');
+        return;
+      }
+      showToast(TEXT.MAIL_MARK_ALL_READ_FAILED, 'error');
+    }
+  }, [loadMessages, refreshUnread, showToast]);
+
   const handleLoadMore = useCallback(async () => {
     if (!nextLink || isLoadingMore) return;
     const id = listRequestId.current;
@@ -485,8 +545,8 @@ export default function MailInboxScreen() {
     <ThemedView style={styles.container}>
       <StatusBar style="light" />
       <NavTopBar
-        title={accountEmail || TEXT.MAIL_HEADER_TITLE}
-        titleStyle={accountEmail ? styles.accountTitle : undefined}
+        title={TEXT.MAIL_APP_TITLE}
+        subtitle={accountEmail || undefined}
         backHref="/"
         showHomeButton={false}
         tone="primary"
@@ -553,6 +613,7 @@ export default function MailInboxScreen() {
             visible={isFilterSheetVisible}
             value={filter}
             onSelect={selectFilter}
+            onMarkAllRead={composeEnabled ? handleMarkAllRead : undefined}
             onClose={() => setFilterSheetVisible(false)}
           />
         </>
@@ -563,6 +624,7 @@ export default function MailInboxScreen() {
 
 const staticStyles = StyleSheet.create({
   unreadDot: { width: 7, height: 7, borderRadius: 3.5 },
+  subjectTitle: { fontSize: 14, lineHeight: 20 },
   swipeRow: { marginBottom: 12 },
   swipeCard: { marginBottom: 0 },
   deleteAction: {
@@ -580,7 +642,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
   // An address is longer than any screen title; a size down keeps most of it
   // on one line before the ellipsis.
-  accountTitle: { fontSize: 16.5, lineHeight: 22 },
   content: { flex: 1, paddingHorizontal: 16 },
   header: { gap: 10, paddingTop: 12, paddingBottom: 10 },
   filterLine: {

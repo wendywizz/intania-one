@@ -23,7 +23,7 @@ import { ThemedText } from "@/components/themed-text";
 
 // Renders a PDF's pages to canvases with pdf.js — used on Android, whose WebView
 // can't display a raw PDF inline.
-function buildPdfViewerHtml(base64: string): string {
+export function buildPdfViewerHtml(base64: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>

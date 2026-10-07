@@ -14,6 +14,7 @@ import {
   mockGetMessage,
   mockInboxUnreadCount,
   mockListMessages,
+  mockMarkAllRead,
   mockMarkRead,
   mockSaveDraft,
   mockSearchMessages,
@@ -259,6 +260,15 @@ export async function listMessages(
  * top 25 already answers "did I find it", so the caller applies the read
  * filter to those in memory (see `applyReadFilter`).
  */
+/**
+ * Names and addresses are matched explicitly (from/to) alongside the subject
+ * and body — Graph's bare phrase search tokenises an address like
+ * "a.b@psu.ac.th" badly and misses the sender.
+ */
+function searchExpression(term: string): string {
+  return `"from:(${term}) OR to:(${term}) OR subject:(${term}) OR body:(${term})"`;
+}
+
 export async function searchMessages(
   folder: MailFolderKey,
   query: string,
@@ -276,7 +286,7 @@ export async function searchMessages(
 
   const url =
     `${folderMessagesUrl(folder)}` +
-    `?$search=${encodeURIComponent(`"${safeQuery}"`)}&$top=${top}&$select=${LIST_SELECT}`;
+    `?$search=${encodeURIComponent(searchExpression(safeQuery))}&$top=${top}&$select=${LIST_SELECT}`;
 
   const json = await graphFetch<GraphListResponse>(url);
   return { messages: (json.value ?? []).map(toMailMessage) };
@@ -485,4 +495,79 @@ export function bodyAsPlainText(message: MailMessage): string {
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+// ─── Attachments ────────────────────────────────────────────────────────────
+
+export type MailAttachment = { id: string; name: string; contentType: string; size: number };
+
+type GraphAttachment = {
+  id: string;
+  name?: string;
+  contentType?: string;
+  size?: number;
+  isInline?: boolean;
+  contentBytes?: string;
+  '@odata.type'?: string;
+};
+
+/** File attachments only (not inline images, not attached messages/items). */
+export async function listAttachments(messageId: string): Promise<MailAttachment[]> {
+  if (MAIL_MOCK_ENABLED) return [];
+
+  const json = await graphFetch<{ value?: GraphAttachment[] }>(
+    `${GRAPH}/me/messages/${encodeURIComponent(messageId)}/attachments?$select=id,name,contentType,size,isInline`,
+  );
+  return (json.value ?? [])
+    .filter((a) => !a.isInline && (!a['@odata.type'] || a['@odata.type'].endsWith('fileAttachment')))
+    .map((a) => ({
+      id: a.id,
+      name: a.name ?? 'attachment',
+      contentType: a.contentType ?? 'application/octet-stream',
+      size: a.size ?? 0,
+    }));
+}
+
+/** The file itself, base64-encoded. */
+export async function getAttachmentBase64(messageId: string, attachmentId: string): Promise<string> {
+  if (MAIL_MOCK_ENABLED) return '';
+
+  const json = await graphFetch<GraphAttachment>(
+    `${GRAPH}/me/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
+  );
+  if (!json.contentBytes) throw new Error('ไม่สามารถเปิดไฟล์แนบได้');
+  return json.contentBytes;
+}
+
+/**
+ * Marks every unread message in a folder as read. Graph has no bulk call, so
+ * this pages through the unread ids and PATCHes them 20 at a time with $batch
+ * (its per-request cap). Needs Mail.ReadWrite, like any single mark-as-read.
+ */
+export async function markAllRead(folder: MailFolderKey): Promise<void> {
+  if (MAIL_MOCK_ENABLED) return mockMarkAllRead(folder);
+
+  const ids: string[] = [];
+  let url: string | undefined =
+    `${folderMessagesUrl(folder)}?$filter=${encodeURIComponent('isRead eq false')}&$select=id&$top=100`;
+  while (url && ids.length < 1000) {
+    const json: { value?: { id: string }[]; '@odata.nextLink'?: string } = await graphFetch(url);
+    for (const item of json.value ?? []) ids.push(item.id);
+    url = json['@odata.nextLink'];
+  }
+
+  for (let i = 0; i < ids.length; i += 20) {
+    await graphFetch(`${GRAPH}/$batch`, {
+      method: 'POST',
+      body: {
+        requests: ids.slice(i, i + 20).map((id, index) => ({
+          id: String(index + 1),
+          method: 'PATCH',
+          url: `/me/messages/${encodeURIComponent(id)}`,
+          headers: { 'Content-Type': 'application/json' },
+          body: { isRead: true },
+        })),
+      },
+    });
+  }
 }

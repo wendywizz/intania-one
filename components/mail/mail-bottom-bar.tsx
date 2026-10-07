@@ -124,9 +124,9 @@ export function MailBottomBar({
           accessibilityRole="button"
           accessibilityLabel={TEXT.MAIL_COMPOSE_BUTTON_LABEL}
           onPress={onPressCompose}
-          style={({ pressed }) => [styles.circle, pressed ? styles.pressed : null]}
+          style={({ pressed }) => [styles.circle, styles.circleActive, pressed ? styles.pressed : null]}
         >
-          <IconSymbol name="square.and.pencil" size={20} color={c.primary} />
+          <IconSymbol name="square.and.pencil" size={20} color={c.textOnPrimary} />
         </Pressable>
       ) : null}
     </View>

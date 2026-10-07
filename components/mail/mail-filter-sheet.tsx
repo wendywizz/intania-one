@@ -20,11 +20,14 @@ export function MailFilterSheet({
   visible,
   value,
   onSelect,
+  onMarkAllRead,
   onClose,
 }: {
   visible: boolean;
   value: MailReadFilter;
   onSelect: (filter: MailReadFilter) => void;
+  /** Omitted when it is unavailable (compose switch off): no row. */
+  onMarkAllRead?: () => void;
   onClose: () => void;
 }) {
   const c = useColors();
@@ -51,6 +54,16 @@ export function MailFilterSheet({
             </Pressable>
           );
         })}
+        {onMarkAllRead ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={onMarkAllRead}
+            style={({ pressed }) => [styles.row, styles.actionRow, pressed ? styles.pressed : null]}
+          >
+            <IconSymbol name="envelope.open" size={19} color={c.primary} />
+            <ThemedText style={[styles.label, { color: c.primary }]}>{TEXT.MAIL_MARK_ALL_READ}</ThemedText>
+          </Pressable>
+        ) : null}
       </View>
     </Sheet>
   );
@@ -67,6 +80,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderRadius: 12,
     backgroundColor: c.surfaceAlt,
   },
+  actionRow: { marginTop: 8, backgroundColor: c.surface, borderWidth: 1, borderColor: c.primary },
   rowSelected: { backgroundColor: c.primarySoft },
   pressed: { opacity: 0.75 },
   label: {
