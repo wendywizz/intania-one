@@ -1359,7 +1359,7 @@ export const TEXT = {
   STAFF_FACE_CONFIRM_SCAN: 'สแกนใบหน้า',
   // เก็บใบหน้าเองในแอป — ลงทะเบียนครั้งแรก และเก็บใบหน้าใหม่หลังสแกนไม่ผ่าน ใช้สิทธิ์ร่วมกัน
   STAFF_FACE_ENROLL_SELF: 'ลงทะเบียนใบหน้าในแอปได้ด้วยตนเอง โดยถ่ายภาพหน้าตรง 2 ภาพ',
-  STAFF_FACE_ENROLL_NO_QUOTA: 'ใช้สิทธิ์เก็บใบหน้าในแอปครบแล้ว กรุณาติดต่อ กลุ่มงานคอมพิวเตอร์ฯ เพื่อขอเพิ่มสิทธิ์',
+  STAFF_FACE_ENROLL_NO_QUOTA: 'ใช้สิทธิ์เก็บใบหน้าในแอปครบแล้ว กรุณาติดต่อ กลุ่มงานคอมพิวเตอร์ฯ โทร 7091 เพื่อขอเพิ่มสิทธิ์',
   STAFF_FACE_ENROLL_START: 'ลงทะเบียนใบหน้า',
   STAFF_FACE_RENEW_START: 'เก็บใบหน้าใหม่',
   STAFF_FACE_ENROLL_CONFIRM:
@@ -1373,7 +1373,7 @@ export const TEXT = {
   STAFF_FACE_BARE_FACE: 'ไม่สวมแว่นตา หมวก และหน้ากาก',
   STAFF_FACE_HINT_TURNED: 'มองตรงที่กล้อง',
   STAFF_FACE_ENROLL_HINT_BLINK: 'มองตรงแล้วกะพริบตา (ภาพที่ {i}/2)',
-  STAFF_FACE_ENROLL_SAVING: 'กำลังบันทึกใบหน้า...',
+  STAFF_FACE_ENROLL_SAVING: 'กำลังบันทึกใบหน้า กรุณาถือโทรศัพท์ค้างไว้',
   // สแกนไม่ผ่านซ้ำแล้ว (ลองได้อีก 1 ครั้งหลังพลาดครั้งแรก) กล้องหยุดและเสนอเก็บใบหน้าใหม่
   STAFF_FACE_MISMATCH_STOPPED: 'สแกนไม่ผ่าน หากต้องการเก็บใบหน้าใหม่ ให้ไปที่ ตั้งค่า > เก็บข้อมูลใบหน้า',
   STAFF_FACE_GO_SETTINGS: 'ไปที่ตั้งค่า',
@@ -1386,7 +1386,7 @@ export const TEXT = {
   SETTINGS_FACE_SECTION: 'การลงเวลา',
   SETTINGS_FACE_TITLE: 'เก็บข้อมูลใบหน้า',
   SETTINGS_FACE_SUB: 'ลงทะเบียนหรือเก็บใบหน้าใหม่ สำหรับลงเวลาด้วยการสแกนหน้า',
-  SETTINGS_FACE_NO_QUOTA: 'ใช้สิทธิ์เก็บใบหน้าครบแล้ว กรุณาติดต่อ กลุ่มงานคอมพิวเตอร์ฯ',
+  SETTINGS_FACE_NO_QUOTA: 'ใช้สิทธิ์เก็บใบหน้าครบแล้ว กรุณาติดต่อ กลุ่มงานคอมพิวเตอร์ฯ โทร 7091',
   STAFF_TIMESTAMP_LOAD_ERROR: 'ไม่สามารถโหลดสถานะการลงเวลาได้',
   LECT_TIMESTAMP_BUTTON: 'ลงเวลาวันนี้',
   LECT_TIMESTAMP_STAMPED_HEADLINE: 'วันนี้ลงเวลาแล้ว',
