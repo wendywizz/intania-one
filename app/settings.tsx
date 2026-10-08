@@ -453,9 +453,16 @@ export default function SettingsScreen() {
                 disabled={cameraLoading}
               />
             </View>
+          </View>
+        </View>
 
-            {/* Always on until the quota is used up; then it says who to ask. */}
-            {faceEnroll ? (
+        {/* ── Face for stamping: its own section, only for general staff ───── */}
+        {faceEnroll ? (
+          <View style={styles.section}>
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <ThemedText style={styles.sectionTitle}>{TEXT.SETTINGS_FACE_SECTION}</ThemedText>
+              </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ disabled: faceEnroll.exhausted }}
@@ -472,9 +479,9 @@ export default function SettingsScreen() {
                 </View>
                 <ChevronRight size={18} color={c.textFaint} />
               </Pressable>
-            ) : null}
+            </View>
           </View>
-        </View>
+        ) : null}
 
         {/* ── App lock: the password here is deliberately not the device's ──── */}
         <View style={styles.section}>
