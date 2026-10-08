@@ -381,6 +381,16 @@ export default function FaceEnrollScreen() {
           {mode === 'renew' ? TEXT.STAFF_FACE_RENEW_CONFIRM : TEXT.STAFF_FACE_ENROLL_CONFIRM}
         </ThemedText>
 
+        <View style={styles.tips}>
+          <ThemedText style={styles.tipsTitle}>{TEXT.STAFF_FACE_ENROLL_TIPS_TITLE}</ThemedText>
+          {TEXT.STAFF_FACE_ENROLL_TIPS.map((tip) => (
+            <View key={tip} style={styles.tipRow}>
+              <View style={styles.tipDot} />
+              <ThemedText style={styles.tipText}>{tip}</ThemedText>
+            </View>
+          ))}
+        </View>
+
         {outcome ? <TipAlert message={outcome} /> : null}
         {exhausted ? <TipAlert message={TEXT.STAFF_FACE_ENROLL_NO_QUOTA} /> : null}
 
@@ -449,6 +459,28 @@ const makeStyles = (c: AppColors) =>
       fontSize: scaleFont(15),
       lineHeight: scaleFont(22),
       textAlign: 'center',
+    },
+    tips: {
+      alignSelf: 'stretch',
+      backgroundColor: c.infoSoft,
+      borderRadius: 12,
+      gap: 6,
+      padding: 14,
+    },
+    tipsTitle: {
+      color: c.text,
+      fontFamily: AppFonts.psuBold,
+      fontSize: scaleFont(15),
+      lineHeight: scaleFont(21),
+    },
+    tipRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
+    tipDot: { backgroundColor: c.info, borderRadius: 3, height: 6, width: 6 },
+    tipText: {
+      color: c.text,
+      flex: 1,
+      fontFamily: AppFonts.psuBold,
+      fontSize: scaleFont(15),
+      lineHeight: scaleFont(21),
     },
     notice: {
       alignSelf: 'stretch',
