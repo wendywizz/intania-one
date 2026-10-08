@@ -712,10 +712,10 @@ export type StaffTimestampStatus = {
   /** ลงทะเบียนใบหน้าแล้วหรือยัง; null = ตรวจไม่ได้ในตอนนี้ ให้การสแกนเป็นตัวตัดสิน */
   faceRegistered: boolean | null;
   /**
-   * สิทธิ์เก็บใบหน้าเองในแอป — allowed = เปิดให้ผู้ใช้คนนี้ลงทะเบียนเองแล้ว (ตอนนี้เปิดให้ทดลองทีละคน); (ลงทะเบียนครั้งแรก + เก็บใบหน้าใหม่ ใช้ร่วมกัน)
+   * สิทธิ์เก็บใบหน้าเองในแอป (ลงทะเบียนครั้งแรก + เก็บใบหน้าใหม่ ใช้ร่วมกัน)
    * remaining = null เมื่อตรวจไม่ได้ ให้ server ตัดสินตอนกดเอง; dryRun = ยังไม่บันทึกใบหน้าจริง
    */
-  faceEnroll: { allowed: boolean; remaining: number | null; dryRun: boolean };
+  faceEnroll: { remaining: number | null; dryRun: boolean };
   /** เฉพาะผลการลงเวลา: ครั้งนี้บันทึกจริง */
   created: boolean;
   serverDate: string;
@@ -756,9 +756,7 @@ function faceEnrollFrom(value: unknown): StaffTimestampStatus['faceEnroll'] {
   const data = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
   const remaining = typeof data.remaining === 'number' && Number.isFinite(data.remaining) ? data.remaining : null;
 
-  // allowed is false unless the gateway says true: an older gateway that has
-  // never heard of the feature must not make the button appear.
-  return { allowed: data.allowed === true, remaining, dryRun: data.dryRun === true };
+  return { remaining, dryRun: data.dryRun === true };
 }
 
 function staffStatusFrom(data: Record<string, unknown>): StaffTimestampStatus {

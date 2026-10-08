@@ -1,4 +1,4 @@
-import { useFocusEffect, useIsFocused, useNavigation } from 'expo-router';
+import { router, useFocusEffect, useIsFocused, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
@@ -68,6 +68,13 @@ const MIN_RELOAD_GAP_MS = 2000;
 const SCAN_WINDOW_MS = 30000;
 
 /**
+ * Scans of the person's own face that may fail before the camera stops: the
+ * first miss and one more try. Then the screen offers "เก็บใบหน้าใหม่" rather
+ * than letting a face that will not match keep trying for the full window.
+ */
+const MISMATCH_SCAN_LIMIT = 2;
+
+/**
  * What the screen is waiting on, named under the loader. Nothing is rendered
  * until every one of these is in: the card is a single verdict — whether a
  * stamp can be made, from where, how far away — and half of one, shown early
@@ -117,7 +124,6 @@ function canEnrollFace(status: StaffTimestampStatus | null) {
   return (
     FACE_SCAN_SUPPORTED &&
     status?.isStaff === true &&
-    status.faceEnroll.allowed &&
     status.faceEnroll.remaining !== 0
   );
 }
@@ -229,9 +235,8 @@ export default function StaffTimestampScreen() {
   // Registering a face: which kind, and how many of the two pictures are in.
   const [enrollMode, setEnrollMode] = useState<StaffFaceEnrollMode>('first');
   const [enrollShots, setEnrollShots] = useState(0);
-  // A scan of this person's own face failed during this visit - the moment
-  // "เก็บใบหน้าใหม่" is offered. The server checks its own log for the same.
-  const [mismatchSeen, setMismatchSeen] = useState(false);
+  // The camera stopped because the face failed MISMATCH_SCAN_LIMIT scans.
+  const [scanStopped, setScanStopped] = useState(false);
   // True while the first fix is still coming. The card is already on screen by
   // then, so it says so rather than showing the server's "no location yet".
   const [locating, setLocating] = useState(true);
@@ -268,8 +273,18 @@ export default function StaffTimestampScreen() {
   const lastLoadAtRef = useRef(0);
   const enrollModeRef = useRef<StaffFaceEnrollMode>('first');
   const enrollShotsRef = useRef<string[]>([]);
+  const mismatchCountRef = useRef(0);
+  // Settings sent the person here to register (?enroll=1): asked once, as soon
+  // as the status says which kind - first or renew - and whether they may.
+  const { enroll: enrollParam } = useLocalSearchParams<{ enroll?: string }>();
+  const enrollRequestRef = useRef(false);
+  useEffect(() => {
+    if (enrollParam) enrollRequestRef.current = true;
+  }, [enrollParam]);
 
   const startScanning = useCallback(() => {
+    mismatchCountRef.current = 0;
+    setScanStopped(false);
     scanStartedAtRef.current = Date.now();
     lastSubmitAtRef.current = 0;
     setSimilarity(null);
@@ -358,6 +373,19 @@ export default function StaffTimestampScreen() {
         setStatus(next);
         setError('');
 
+        if (enrollRequestRef.current) {
+          enrollRequestRef.current = false;
+          router.setParams({ enroll: undefined });
+
+          // Which kind depends on whether a face is on file; unknown (null)
+          // means the registry could not be read, so there is nothing to ask.
+          if (canEnrollFace(next) && next.faceRegistered !== null) {
+            setPhase('idle');
+            askToEnroll(next.faceRegistered ? 'renew' : 'first');
+            return;
+          }
+        }
+
         decide(next);
       } catch (err) {
         setError(err instanceof Error ? err.message : MESSAGE_CANNOT_CONNECT_TO_SERVER);
@@ -370,7 +398,7 @@ export default function StaffTimestampScreen() {
         setRefreshing(false);
       }
     },
-    [staffId, decide],
+    [staffId, decide, askToEnroll],
   );
 
   useFocusEffect(
@@ -496,7 +524,6 @@ export default function StaffTimestampScreen() {
 
         if (result.enrolled) {
           setPhase('idle');
-          setMismatchSeen(false);
           showToast(result.message, 'success');
           // The registry has the face now: start over from a fresh status, which
           // opens the scan for the stamp itself.
@@ -561,7 +588,16 @@ export default function StaffTimestampScreen() {
         if (!result.passed) {
           // Not this person's face, or no face at all: keep scanning.
           setScanMessage(result.message);
-          if (result.reason === 'face_mismatch') setMismatchSeen(true);
+          if (result.reason === 'face_mismatch') {
+            mismatchCountRef.current += 1;
+
+            // One retry is enough: stop here and point to Settings, where the
+            // face is registered again.
+            if (mismatchCountRef.current >= MISMATCH_SCAN_LIMIT) {
+              setScanStopped(true);
+              setPhase('paused');
+            }
+          }
           return;
         }
 
@@ -649,11 +685,8 @@ export default function StaffTimestampScreen() {
     // is missing, which the permission notice below asks for first.
     if (status.faceRegistered === false && !(cameraWanted && !hasPermission)) {
       if (!canEnrollFace(status)) {
-        // Registering from the app is open to a few people so far; for everyone
-        // else this is the notice the screen always had.
-        const message = status.faceEnroll.allowed ? TEXT.STAFF_FACE_ENROLL_NO_QUOTA : TEXT.STAFF_FACE_NOT_REGISTERED;
-
-        return <TipAlert title={TEXT.STAFF_FACE_NOT_REGISTERED_TITLE} message={message} />;
+        // No registrations left: ask the computer group for more.
+        return <TipAlert title={TEXT.STAFF_FACE_NOT_REGISTERED_TITLE} message={TEXT.STAFF_FACE_ENROLL_NO_QUOTA} />;
       }
 
       return (
@@ -723,10 +756,6 @@ export default function StaffTimestampScreen() {
         ? scanMessage || okHint
         : FRAMING_HINT[framing];
 
-    // Offered once this person's own face has failed a scan on this visit.
-    const offerRenew =
-      !enrolling && mismatchSeen && status?.faceRegistered === true && canEnrollFace(status) && !checking;
-
     const ringColor = checking ? c.primary : framing === 'ok' ? c.success : c.textOnPrimary;
 
     // Just under the oval — the same oval the mask draws, so the two can never
@@ -763,7 +792,9 @@ export default function StaffTimestampScreen() {
         {phase === 'paused' ? (
           <View style={styles.pausedCover}>
             <IconSymbol size={36} name="clock.fill" color={c.textOnPrimary} />
-            <ThemedText style={styles.pausedText}>{TEXT.STAFF_FACE_PAUSED}</ThemedText>
+            <ThemedText style={styles.pausedText}>
+              {scanStopped ? TEXT.STAFF_FACE_MISMATCH_STOPPED : TEXT.STAFF_FACE_PAUSED}
+            </ThemedText>
             <Button
               title={TEXT.STAFF_FACE_SCAN_AGAIN}
               icon="arrow.triangle.2.circlepath"
@@ -771,19 +802,15 @@ export default function StaffTimestampScreen() {
               loading={refreshing}
               onPress={() => void load('refresh')}
             />
-          </View>
-        ) : null}
-
-        {offerRenew ? (
-          <View style={[styles.renewBar, { bottom: insets.bottom + 24 }]}>
-            <Button
-              title={TEXT.STAFF_FACE_RENEW_START}
-              icon="faceid"
-              variant="primaryOutline"
-              size="md"
-              fullWidth
-              onPress={() => askToEnroll('renew')}
-            />
+            {scanStopped ? (
+              <Button
+                title={TEXT.STAFF_FACE_GO_SETTINGS}
+                icon="gearshape.fill"
+                variant="primaryOutline"
+                size="md"
+                onPress={() => router.push('/settings')}
+              />
+            ) : null}
           </View>
         ) : null}
 
@@ -1162,11 +1189,6 @@ const makeStyles = (c: AppColors) =>
     },
     // The not-registered notice: something to do, not something wrong.
     noticeInfo: { backgroundColor: c.infoSoft },
-    renewBar: {
-      left: 24,
-      position: 'absolute',
-      right: 24,
-    },
     noticeHeader: { alignItems: 'center', flexDirection: 'row', gap: 8 },
     noticeTitle: {
       color: c.warningOnSoft,

@@ -1,13 +1,14 @@
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { Bell, Camera, ChevronRight, KeyRound, LockKeyhole, MapPin, ScanFace, Moon, SunMoon } from 'lucide-react-native';
+import { Bell, Camera, ChevronRight, KeyRound, LockKeyhole, MapPin, ScanFace, Moon, SunMoon, UserCheck } from 'lucide-react-native';
 import { Alert, AppState, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import type React from 'react';
 
 import { NavTopBar } from '@/components/nav-top-bar';
+import { FACE_SCAN_SUPPORTED } from '@/components/timestamp/face-scan-camera';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Toggle } from '@/components/ui/toggle';
@@ -26,6 +27,7 @@ import {
   setNotificationEnabled,
 } from '@/services/notificationService';
 import { setDevicePushEnabled } from '@/services/deviceService';
+import { getStaffTimestampStatus } from '@/services/timestampService';
 import { disconnect as disconnectMail } from '@/services/mailAuthService';
 import {
   getPasswordUnlockEnabled,
@@ -58,6 +60,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ size: number; color: string
   // Distinct from `password`: the two sit next to each other in the password
   // section, so the same key glyph twice would read as one repeated row.
   'password-change': LockKeyhole,
+  'face-enroll': UserCheck,
   'dark-mode': Moon,
   'auto-theme': SunMoon,
 };
@@ -78,7 +81,7 @@ export default function SettingsScreen() {
   const c = useColors();
   const contentBottomPadding = useContentBottomPadding(48);
   const styles = useThemedStyles(makeStyles);
-  const { user: authUser, signOut } = useAuth();
+  const { user: authUser, signOut, isLecturer } = useAuth();
   const { isDarkMode, toggleDarkMode, isAutoTheme, toggleAutoTheme } = useTheme();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -99,6 +102,36 @@ export default function SettingsScreen() {
   const [passwordEnabled, setPasswordEnabledState] = useState(false);
   const [passwordExists, setPasswordExists] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  // Registering a face for the stamping scan: null = not on offer to this person
+  // (not general staff, not allowed yet, or still being read).
+  const [faceEnroll, setFaceEnroll] = useState<{ exhausted: boolean } | null>(null);
+  const staffId = authUser?.staffId;
+
+  // Read on every visit, so a quota an admin just raised - or the person just
+  // used up - is what the row says.
+  useFocusEffect(
+    useCallback(() => {
+      if (!FACE_SCAN_SUPPORTED || isLecturer || !staffId) return undefined;
+
+      let cancelled = false;
+      getStaffTimestampStatus(staffId)
+        .then((status) => {
+          if (cancelled) return;
+          setFaceEnroll(
+            status.isStaff
+              ? { exhausted: status.faceEnroll.remaining === 0 }
+              : null,
+          );
+        })
+        .catch(() => {
+          if (!cancelled) setFaceEnroll(null);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [staffId, isLecturer]),
+  );
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // The OS permission is the real switch — ours only narrows it. Re-read both
@@ -420,6 +453,26 @@ export default function SettingsScreen() {
                 disabled={cameraLoading}
               />
             </View>
+
+            {/* Always on until the quota is used up; then it says who to ask. */}
+            {faceEnroll ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: faceEnroll.exhausted }}
+                disabled={faceEnroll.exhausted}
+                style={[styles.row, faceEnroll.exhausted ? styles.rowDisabled : null]}
+                onPress={() => router.push('/timestamp/staff-stamp?enroll=1')}
+              >
+                <IconCircle name="face-enroll" />
+                <View style={styles.rowBody}>
+                  <ThemedText style={styles.rowTitle}>{TEXT.SETTINGS_FACE_TITLE}</ThemedText>
+                  <ThemedText style={styles.rowSub}>
+                    {faceEnroll.exhausted ? TEXT.SETTINGS_FACE_NO_QUOTA : TEXT.SETTINGS_FACE_SUB}
+                  </ThemedText>
+                </View>
+                <ChevronRight size={18} color={c.textFaint} />
+              </Pressable>
+            ) : null}
           </View>
         </View>
 
@@ -604,6 +657,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 14,
     gap: 12,
   },
+  rowDisabled: { opacity: 0.5 },
   rowDivider: {
     borderBottomWidth: 1,
     borderBottomColor: c.border,

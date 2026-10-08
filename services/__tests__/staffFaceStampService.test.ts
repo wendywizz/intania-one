@@ -124,20 +124,20 @@ describe('getStaffTimestampStatus', () => {
     // null, not false: false would hide the camera behind "go and register".
     expect(status.faceRegistered).toBeNull();
     // An unreadable quota is unknown too - the button stays, the server decides.
-    expect(status.faceEnroll).toEqual({ allowed: false, remaining: null, dryRun: false });
+    expect(status.faceEnroll).toEqual({ remaining: null, dryRun: false });
   });
 
   it('reads how many face registrations are left', async () => {
     api.requestJson.mockResolvedValueOnce({
       data: {
         role: 'staff', isStaff: true, faceRegistered: false,
-        faceEnroll: { allowed: true, remaining: 2, dryRun: true },
+        faceEnroll: { remaining: 2, dryRun: true },
       },
     });
 
     const status = await getStaffTimestampStatus('0042764');
 
-    expect(status.faceEnroll).toEqual({ allowed: true, remaining: 2, dryRun: true });
+    expect(status.faceEnroll).toEqual({ remaining: 2, dryRun: true });
   });
 });
 

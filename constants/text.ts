@@ -1370,6 +1370,13 @@ export const TEXT = {
   STAFF_FACE_HINT_TURNED: 'มองตรงที่กล้อง',
   STAFF_FACE_ENROLL_HINT_BLINK: 'มองตรงแล้วกะพริบตา (ภาพที่ {i}/2)',
   STAFF_FACE_ENROLL_SAVING: 'กำลังบันทึกใบหน้า...',
+  // สแกนไม่ผ่านซ้ำแล้ว (ลองได้อีก 1 ครั้งหลังพลาดครั้งแรก) กล้องหยุดและเสนอเก็บใบหน้าใหม่
+  STAFF_FACE_MISMATCH_STOPPED: 'สแกนไม่ผ่าน หากต้องการเก็บใบหน้าใหม่ ให้ไปที่ ตั้งค่า > เก็บข้อมูลใบหน้า',
+  STAFF_FACE_GO_SETTINGS: 'ไปที่ตั้งค่า',
+  // ตั้งค่า: เก็บใบหน้าเองได้ตลอด จนกว่าสิทธิ์จะครบ
+  SETTINGS_FACE_TITLE: 'เก็บข้อมูลใบหน้า',
+  SETTINGS_FACE_SUB: 'ลงทะเบียนหรือเก็บใบหน้าใหม่ สำหรับลงเวลาด้วยการสแกนหน้า',
+  SETTINGS_FACE_NO_QUOTA: 'ใช้สิทธิ์เก็บใบหน้าครบแล้ว กรุณาติดต่อ กลุ่มงานคอมพิวเตอร์ฯ',
   STAFF_TIMESTAMP_LOAD_ERROR: 'ไม่สามารถโหลดสถานะการลงเวลาได้',
   LECT_TIMESTAMP_BUTTON: 'ลงเวลาวันนี้',
   LECT_TIMESTAMP_STAMPED_HEADLINE: 'วันนี้ลงเวลาแล้ว',
