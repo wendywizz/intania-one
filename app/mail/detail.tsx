@@ -9,6 +9,7 @@ import { MailBody } from '@/components/mail/mail-body';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { SenderAvatar } from '@/components/mail/sender-avatar';
 import { NavTopBar } from '@/components/nav-top-bar';
+import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useToast } from '@/components/toast-provider';
@@ -178,55 +179,53 @@ export default function MailDetailScreen() {
           composeEnabled ? { paddingBottom: TOOLBAR_HEIGHT + TOOLBAR_GAP * 2 + insets.bottom + 16 } : null,
         ]}
       >
-        <View style={styles.header}>
+        <SectionCard>
           <ThemedText style={styles.subject}>{message.subject || TEXT.MAIL_NO_SUBJECT}</ThemedText>
-        </View>
-        <View style={styles.senderCard}>
-          <SenderAvatar name={message.from.name} address={message.from.address} size={44} />
-          <View style={styles.senderTextCol}>
-            <View style={styles.senderTopRow}>
-              <ThemedText style={styles.senderName} numberOfLines={1}>
-                {senderName}
-              </ThemedText>
-              {message.receivedDateTime ? (
-                <ThemedText style={styles.date}>{formatNewsDateTime(message.receivedDateTime)}</ThemedText>
-              ) : null}
-            </View>
-            {message.from.address ? (
-              <ThemedText style={styles.senderAddress} numberOfLines={1}>
-                {message.from.address}
-              </ThemedText>
-            ) : null}
-            {message.toRecipients.length > 0 || message.ccRecipients.length > 0 ? (
-              <View style={styles.recipients}>
-                {message.toRecipients.length > 0 ? (
-                  <ThemedText style={styles.recipientLine} numberOfLines={2}>
-                    <ThemedText style={styles.recipientLabel}>{TEXT.MAIL_TO_PREFIX} </ThemedText>
-                    {recipientNames(message.toRecipients)}
-                  </ThemedText>
-                ) : null}
-                {message.ccRecipients.length > 0 ? (
-                  <ThemedText style={styles.recipientLine} numberOfLines={2}>
-                    <ThemedText style={styles.recipientLabel}>{TEXT.MAIL_CC_PREFIX} </ThemedText>
-                    {recipientNames(message.ccRecipients)}
-                  </ThemedText>
+          <View style={styles.divider} />
+          <View style={styles.senderRow}>
+            <SenderAvatar name={message.from.name} address={message.from.address} size={44} />
+            <View style={styles.senderTextCol}>
+              <View style={styles.senderTopRow}>
+                <ThemedText style={styles.senderName} numberOfLines={1}>
+                  {senderName}
+                </ThemedText>
+                {message.receivedDateTime ? (
+                  <ThemedText style={styles.date}>{formatNewsDateTime(message.receivedDateTime)}</ThemedText>
                 ) : null}
               </View>
-            ) : null}
+              {message.from.address ? (
+                <ThemedText style={styles.senderAddress} numberOfLines={1}>
+                  {message.from.address}
+                </ThemedText>
+              ) : null}
+              {message.toRecipients.length > 0 || message.ccRecipients.length > 0 ? (
+                <View style={styles.recipients}>
+                  {message.toRecipients.length > 0 ? (
+                    <ThemedText style={styles.recipientLine} numberOfLines={2}>
+                      <ThemedText style={styles.recipientLabel}>{TEXT.MAIL_TO_PREFIX} </ThemedText>
+                      {recipientNames(message.toRecipients)}
+                    </ThemedText>
+                  ) : null}
+                  {message.ccRecipients.length > 0 ? (
+                    <ThemedText style={styles.recipientLine} numberOfLines={2}>
+                      <ThemedText style={styles.recipientLabel}>{TEXT.MAIL_CC_PREFIX} </ThemedText>
+                      {recipientNames(message.ccRecipients)}
+                    </ThemedText>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
           </View>
-        </View>
-        <View style={styles.bodyWrap}>
+        </SectionCard>
+        <SectionCard>
           {bodyContent ? (
             isHtmlBody ? <MailBody html={bodyContent} /> : <MailBody text={bodyContent} />
           ) : (
             <MailBody text={message.bodyPreview} />
           )}
-        </View>
+        </SectionCard>
         {attachments.length > 0 ? (
-          <View style={styles.attachments}>
-            <ThemedText style={styles.attachmentsTitle}>
-              {TEXT.MAIL_ATTACHMENTS} ({attachments.length})
-            </ThemedText>
+          <SectionCard title={`${TEXT.MAIL_ATTACHMENTS} (${attachments.length})`} style={styles.attachments}>
             {attachments.map((file) => (
               <Pressable
                 key={file.id}
@@ -247,7 +246,7 @@ export default function MailDetailScreen() {
                 </View>
               </Pressable>
             ))}
-          </View>
+          </SectionCard>
         ) : null}
       </ScrollView>
 
@@ -353,24 +352,15 @@ export default function MailDetailScreen() {
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
-  scrollContent: { paddingBottom: 24 },
-  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 14 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, gap: 12 },
   subject: {
     fontFamily: AppFonts.psuBold,
     fontSize: 21,
     lineHeight: 28,
     color: c.text,
   },
-  senderCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginHorizontal: 20,
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: c.border,
-  },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border },
+  senderRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   senderTextCol: { flex: 1, gap: 1 },
   senderTopRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
   senderName: { flexShrink: 1, fontFamily: AppFonts.psuBold, fontSize: 15, lineHeight: 22, color: c.text },
@@ -379,7 +369,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   recipients: { gap: 2, marginTop: 6 },
   recipientLine: { fontFamily: AppFonts.psuRegular, fontSize: 13, lineHeight: 19, color: c.textMuted },
   recipientLabel: { fontFamily: AppFonts.psuBold, fontSize: 13, color: c.textFaint },
-  bodyWrap: { paddingHorizontal: 20, paddingTop: 18 },
   toolbarWrap: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
   toolbar: {
     flexDirection: 'row',
@@ -410,17 +399,14 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 50, paddingHorizontal: 16 },
   menuItemDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
   menuLabel: { fontFamily: AppFonts.psuRegular, fontSize: 16, color: c.text },
-  attachments: { marginHorizontal: 20, marginTop: 8, gap: 8 },
-  attachmentsTitle: { fontFamily: AppFonts.psuBold, fontSize: 14, lineHeight: 20, color: c.textMuted },
+  attachments: { gap: 8 },
   attachmentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     padding: 12,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: c.border,
-    backgroundColor: c.surface,
+    backgroundColor: c.surfaceAlt,
   },
   attachmentName: { fontFamily: AppFonts.psuBold, fontSize: 14, lineHeight: 20, color: c.text },
   attachmentSize: { fontFamily: AppFonts.psuRegular, fontSize: 12, lineHeight: 18, color: c.textMuted },

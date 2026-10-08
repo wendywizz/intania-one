@@ -16,6 +16,7 @@ import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { COMPOSE_LABEL_WIDTH, RecipientField } from '@/components/mail/recipient-field';
 import { NavTopBar } from '@/components/nav-top-bar';
+import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useToast } from '@/components/toast-provider';
@@ -342,69 +343,71 @@ export default function MailComposeScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <ScrollView contentContainerStyle={[styles.form, { paddingBottom: contentBottomPadding }]} keyboardShouldPersistTaps="handled">
-            {fromAddress ? (
-              <>
-                <View style={styles.fromLine}>
-                  <ThemedText style={styles.fieldLabel}>{TEXT.MAIL_COMPOSE_FROM}</ThemedText>
-                  <ThemedText style={styles.fromValue} numberOfLines={1}>
-                    {fromAddress}
-                  </ThemedText>
-                </View>
-                <View style={styles.divider} />
-              </>
-            ) : null}
-            <RecipientField label={TEXT.MAIL_COMPOSE_TO} recipients={to} onChange={setTo} onEdited={markEdited} />
-            <View style={styles.divider} />
-            <RecipientField label={TEXT.MAIL_COMPOSE_CC} recipients={cc} onChange={setCc} onEdited={markEdited} />
-            <View style={styles.divider} />
+            <SectionCard style={styles.card}>
+              {fromAddress ? (
+                <>
+                  <View style={styles.fromLine}>
+                    <ThemedText style={styles.fieldLabel}>{TEXT.MAIL_COMPOSE_FROM}</ThemedText>
+                    <ThemedText style={styles.fromValue} numberOfLines={1}>
+                      {fromAddress}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.divider} />
+                </>
+              ) : null}
+              <RecipientField label={TEXT.MAIL_COMPOSE_TO} recipients={to} onChange={setTo} onEdited={markEdited} />
+              <View style={styles.divider} />
+              <RecipientField label={TEXT.MAIL_COMPOSE_CC} recipients={cc} onChange={setCc} onEdited={markEdited} />
+              <View style={styles.divider} />
 
-            <View style={styles.subjectLine}>
-              <ThemedText style={styles.fieldLabel}>{TEXT.MAIL_COMPOSE_SUBJECT}</ThemedText>
+              <View style={styles.subjectLine}>
+                <ThemedText style={styles.fieldLabel}>{TEXT.MAIL_COMPOSE_SUBJECT}</ThemedText>
+                <TextInput
+                  value={subject}
+                  onChangeText={(value) => {
+                    setSubject(value);
+                    markEdited();
+                  }}
+                  placeholderTextColor={c.textFaint}
+                  style={[styles.subjectInput, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]}
+                />
+              </View>
+              <View style={styles.divider} />
+
+              {isHtmlDraft ? (
+                <View style={styles.note}>
+                  <IconSymbol name="info.circle.fill" size={16} color={c.infoOnSoft} />
+                  <ThemedText style={styles.noteText}>{TEXT.MAIL_COMPOSE_HTML_DRAFT_NOTE}</ThemedText>
+                </View>
+              ) : null}
+
               <TextInput
-                value={subject}
+                multiline
+                value={body}
                 onChangeText={(value) => {
-                  setSubject(value);
+                  setBody(value);
+                  setBodyEdited(true);
                   markEdited();
                 }}
+                placeholder={TEXT.MAIL_COMPOSE_BODY_PLACEHOLDER}
                 placeholderTextColor={c.textFaint}
-                style={[styles.subjectInput, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]}
+                textAlignVertical="top"
+                style={[styles.bodyInput, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]}
               />
-            </View>
-            <View style={styles.divider} />
 
-            {isHtmlDraft ? (
-              <View style={styles.note}>
-                <IconSymbol name="info.circle.fill" size={16} color={c.infoOnSoft} />
-                <ThemedText style={styles.noteText}>{TEXT.MAIL_COMPOSE_HTML_DRAFT_NOTE}</ThemedText>
-              </View>
-            ) : null}
-
-            <TextInput
-              multiline
-              value={body}
-              onChangeText={(value) => {
-                setBody(value);
-                setBodyEdited(true);
-                markEdited();
-              }}
-              placeholder={TEXT.MAIL_COMPOSE_BODY_PLACEHOLDER}
-              placeholderTextColor={c.textFaint}
-              textAlignVertical="top"
-              style={[styles.bodyInput, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]}
-            />
-
-            {original ? (
-              <View style={styles.original}>
-                <ThemedText style={styles.originalLabel}>{TEXT.MAIL_COMPOSE_ORIGINAL_MESSAGE}</ThemedText>
-                <ThemedText style={styles.originalMeta} numberOfLines={1}>
-                  {original.from.name || original.from.address}
-                  {original.receivedDateTime ? ` · ${formatNewsDateTime(original.receivedDateTime)}` : ''}
-                </ThemedText>
-                <ThemedText style={styles.originalPreview} numberOfLines={6}>
-                  {original.bodyPreview}
-                </ThemedText>
-              </View>
-            ) : null}
+              {original ? (
+                <View style={styles.original}>
+                  <ThemedText style={styles.originalLabel}>{TEXT.MAIL_COMPOSE_ORIGINAL_MESSAGE}</ThemedText>
+                  <ThemedText style={styles.originalMeta} numberOfLines={1}>
+                    {original.from.name || original.from.address}
+                    {original.receivedDateTime ? ` · ${formatNewsDateTime(original.receivedDateTime)}` : ''}
+                  </ThemedText>
+                  <ThemedText style={styles.originalPreview} numberOfLines={6}>
+                    {original.bodyPreview}
+                  </ThemedText>
+                </View>
+              ) : null}
+            </SectionCard>
           </ScrollView>
         </KeyboardAvoidingView>
       )}
@@ -448,11 +451,14 @@ export default function MailComposeScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
   flex: { flex: 1 },
-  form: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 40 },
+  form: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
+  // The rows space themselves out and are split by dividers, so the card's own
+  // gap would only double up around every divider.
+  card: { gap: 0, paddingVertical: 6 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border },
-  fromLine: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 40, paddingVertical: 5 },
+  fromLine: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 50, paddingVertical: 10 },
   fromValue: { flex: 1, fontFamily: AppFonts.psuRegular, fontSize: 15, color: c.textMuted },
-  subjectLine: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 40, paddingVertical: 5 },
+  subjectLine: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 50, paddingVertical: 10 },
   fieldLabel: {
     width: COMPOSE_LABEL_WIDTH,
     flexShrink: 0,
@@ -495,6 +501,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   original: {
     marginTop: 8,
+    marginBottom: 10,
     padding: 12,
     gap: 4,
     borderRadius: 12,

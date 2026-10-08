@@ -202,8 +202,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    minHeight: 40,
-    paddingVertical: 5,
+    minHeight: 50,
+    paddingVertical: 10,
   },
   label: {
     width: COMPOSE_LABEL_WIDTH,

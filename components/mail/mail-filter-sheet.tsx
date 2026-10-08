@@ -86,7 +86,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   label: {
     flex: 1,
     fontFamily: AppFonts.psuBold,
-    fontSize: 15,
+    fontSize: 14,
+    // Explicit, not inherited from ThemedText's 20: the app-wide 1.5x floor in
+    // utils/font-scale.ts only applies when a style sets both metrics, and at
+    // 20 the tone mark stacked on "ทั้ง" (ทั้งหมด) was clipped on iPhone.
+    lineHeight: 21,
     color: c.text,
   },
 });

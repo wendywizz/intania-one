@@ -26,6 +26,7 @@ import {
   type FaceScanCameraHandle,
 } from '@/components/timestamp/face-scan-camera';
 import { FRAMING_HINT } from '@/components/timestamp/face-framing-hint';
+import { SavingDots } from '@/components/timestamp/saving-dots';
 import { SitePill, distanceLabel } from '@/components/timestamp/site-pill';
 import { LocatingPin } from '@/components/timestamp/locating-pin';
 import { LocationNoticeBanner } from '@/components/timestamp/location-notice';
@@ -652,7 +653,13 @@ export default function StaffTimestampScreen() {
 
         <View style={[styles.hintBar, hintPlacement]} pointerEvents="none">
           <ThemedText style={styles.hintText}>{hint}</ThemedText>
-          <ThemedText style={styles.bareText}>{TEXT.STAFF_FACE_BARE_FACE}</ThemedText>
+          {checking ? (
+            <View style={styles.dotsPlate}>
+              <SavingDots color={c.textOnPrimary} />
+            </View>
+          ) : (
+            <ThemedText style={styles.bareText}>{TEXT.STAFF_FACE_BARE_FACE}</ThemedText>
+          )}
         </View>
 
         {phase === 'paused' ? (
@@ -1017,6 +1024,12 @@ const makeStyles = (c: AppColors) =>
       paddingHorizontal: 14,
       paddingVertical: 6,
       textAlign: 'center',
+    },
+    dotsPlate: {
+      backgroundColor: c.overlay,
+      borderRadius: 999,
+      paddingHorizontal: 18,
+      paddingVertical: 10,
     },
     bareText: {
       backgroundColor: c.overlay,

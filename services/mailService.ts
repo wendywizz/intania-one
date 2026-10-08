@@ -540,46 +540,86 @@ export async function getAttachmentBase64(messageId: string, attachmentId: strin
 }
 
 /**
+ * Graph lets an app run only 4 requests at once against one mailbox, and a
+ * $batch runs its parts in parallel — so a batch of 20 (the $batch cap) is
+ * refused with "Application is over its MailboxConcurrency limit". Batches of
+ * 4, sent one after another, stay under it.
+ */
+const MARK_READ_BATCH = 4;
+const MARK_READ_MAX_ATTEMPTS = 5;
+const MARK_READ_DEFAULT_WAIT_MS = 2000;
+const MARK_READ_MAX_WAIT_MS = 15000;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
  * Marks every unread message in a folder as read. Graph has no bulk call, so
- * this pages through the unread ids and PATCHes them 20 at a time with $batch
- * (its per-request cap). Needs Mail.ReadWrite, like any single mark-as-read.
+ * this pages through the unread ids and PATCHes them with $batch, a few at a
+ * time (see MARK_READ_BATCH). A part that comes back throttled is retried after
+ * the wait Graph asks for; anything else refused stops with Graph's own reason.
+ * Needs Mail.ReadWrite, like any single mark-as-read.
  */
 export async function markAllRead(folder: MailFolderKey): Promise<void> {
   if (MAIL_MOCK_ENABLED) return mockMarkAllRead(folder);
 
   const ids: string[] = [];
+  // Same filter + order the list uses: a bare `isRead eq false` against
+  // Graph's default newest-first order is refused as an inefficient filter,
+  // which surfaced as "mark all read" failing before touching anything.
   let url: string | undefined =
-    `${folderMessagesUrl(folder)}?$filter=${encodeURIComponent('isRead eq false')}&$select=id&$top=100`;
+    `${folderMessagesUrl(folder)}?$filter=${encodeURIComponent(readFilterClause('unread'))}` +
+    `&$orderby=${encodeURIComponent('receivedDateTime desc')}&$select=id&$top=100`;
   while (url && ids.length < 1000) {
     const json: { value?: { id: string }[]; '@odata.nextLink'?: string } = await graphFetch(url);
     for (const item of json.value ?? []) ids.push(item.id);
     url = json['@odata.nextLink'];
   }
 
-  for (let i = 0; i < ids.length; i += 20) {
-    const result = await graphFetch<GraphBatchResponse>(`${GRAPH}/$batch`, {
-      method: 'POST',
-      body: {
-        requests: ids.slice(i, i + 20).map((id, index) => ({
-          id: String(index + 1),
-          method: 'PATCH',
-          url: `/me/messages/${id}`,
-          headers: { 'Content-Type': 'application/json' },
-          body: { isRead: true },
-        })),
-      },
-    });
+  for (let i = 0; i < ids.length; i += MARK_READ_BATCH) {
+    let pending = ids.slice(i, i + MARK_READ_BATCH);
 
-    // $batch answers 200 even when every request inside it was refused (no
-    // Mail.ReadWrite yet, throttling), so the outcome is in the parts. Say why,
-    // rather than letting the person see a bare "it failed".
-    const refused = (result?.responses ?? []).find((part) => part.status >= 400);
-    if (refused) {
-      throw new Error(refused.body?.error?.message || `HTTP ${refused.status}`);
+    for (let attempt = 1; pending.length > 0; attempt += 1) {
+      const result = await graphFetch<GraphBatchResponse>(`${GRAPH}/$batch`, {
+        method: 'POST',
+        body: {
+          requests: pending.map((id, index) => ({
+            id: String(index + 1),
+            method: 'PATCH',
+            url: `/me/messages/${encodeURIComponent(id)}`,
+            headers: { 'Content-Type': 'application/json' },
+            body: { isRead: true },
+          })),
+        },
+      });
+
+      // $batch answers 200 even when every request inside it was refused (no
+      // Mail.ReadWrite yet, throttling), so the outcome is in the parts. Say
+      // why, rather than letting the person see a bare "it failed".
+      const parts = result?.responses ?? [];
+      const hardFailure = parts.find((part) => part.status >= 400 && part.status !== 429 && part.status !== 503);
+      if (hardFailure) {
+        throw new Error(hardFailure.body?.error?.message || `HTTP ${hardFailure.status}`);
+      }
+
+      const throttled = parts.filter((part) => part.status === 429 || part.status === 503);
+      if (throttled.length === 0) break;
+      if (attempt >= MARK_READ_MAX_ATTEMPTS) {
+        throw new Error(throttled[0]!.body?.error?.message || `HTTP ${throttled[0]!.status}`);
+      }
+
+      // Only the throttled parts go again; the rest already went through.
+      pending = throttled.map((part) => pending[Number(part.id) - 1]!).filter(Boolean);
+      const asked = Math.max(...throttled.map((part) => Number(part.headers?.['Retry-After']) || 0)) * 1000;
+      await sleep(Math.min(asked || MARK_READ_DEFAULT_WAIT_MS, MARK_READ_MAX_WAIT_MS));
     }
   }
 }
 
 type GraphBatchResponse = {
-  responses?: { id: string; status: number; body?: { error?: { message?: string } } }[];
+  responses?: {
+    id: string;
+    status: number;
+    headers?: Record<string, string>;
+    body?: { error?: { message?: string } };
+  }[];
 };
