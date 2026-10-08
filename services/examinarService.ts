@@ -1,5 +1,5 @@
 import { ENDPOINTS } from '../constants/endpoints';
-import type { ExamDetail, ExamTask } from '../models/types';
+import type { ExamDetail, ExamRounds, ExamTask } from '../models/types';
 import { createApiUrl, requestJson } from './api';
 
 function createExaminarUrl(
@@ -31,15 +31,28 @@ function extractObject<T>(json: unknown): T | null {
   return json as T;
 }
 
+/**
+ * One person's duties in a round. `announced` is false when the round's roster
+ * has not been released yet; the list is then always empty. Absent (an older
+ * gateway) counts as announced.
+ */
 export async function listExamTasks(params: {
   staff_id: string;
   year: string;
   term: string;
   period: string;
-}): Promise<ExamTask[]> {
+}): Promise<{ tasks: ExamTask[]; announced: boolean }> {
   const url = createExaminarUrl(ENDPOINTS.examinar, params);
   const json = await requestJson(url);
-  return extractArray<ExamTask>(json);
+  const announced = !(json && typeof json === 'object' && (json as { announced?: unknown }).announced === false);
+  return { tasks: extractArray<ExamTask>(json), announced };
+}
+
+/** The rounds this person may pick, and the one the filter should open on. */
+export async function listExamRounds(staffId: string): Promise<ExamRounds | null> {
+  const url = createExaminarUrl(ENDPOINTS.examinarRounds, { staff_id: staffId });
+  const json = await requestJson(url);
+  return extractObject<ExamRounds>(json);
 }
 
 export async function getExamDetail(params: {

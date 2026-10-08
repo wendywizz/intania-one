@@ -106,6 +106,7 @@ export const ENDPOINTS = {
   // --- examinar ------------------------------------------------------------
   examinar: `${API_BASE_URL}/api/examinar`,
   examinarDetail: `${API_BASE_URL}/api/examinar/detail`,
+  examinarRounds: `${API_BASE_URL}/api/examinar/rounds`,
 
   // --- mail ------------------------------------------------------------------
   // No mail traffic actually runs through the gateway (OAuth and Inbox reads

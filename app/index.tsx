@@ -900,7 +900,7 @@ export default function HomeScreen() {
         }
 
         setUpcomingExams(
-          examResult.status === 'fulfilled' ? examResult.value.filter(isExamUpcoming) : [],
+          examResult.status === 'fulfilled' ? examResult.value.tasks.filter(isExamUpcoming) : [],
         );
         setAbsenceApproval(
           absenceResult.status === 'fulfilled'
@@ -990,7 +990,7 @@ export default function HomeScreen() {
         : Promise.resolve(),
       staffId
         ? listExamTasks({ staff_id: staffId, ...getCurrentExamParams() })
-            .then((tasks) => setUpcomingExams(tasks.filter(isExamUpcoming)))
+            .then(({ tasks }) => setUpcomingExams(tasks.filter(isExamUpcoming)))
             .catch(() => setUpcomingExams([]))
         : Promise.resolve(),
       staffId

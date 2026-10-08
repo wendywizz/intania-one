@@ -1230,6 +1230,10 @@ export const TEXT = {
   // reads as "you have no exam duty at all" when it only means "not in this
   // period" — the one thing the reader can do something about.
   EXAMINAR_NO_EXAMS: 'ไม่มีตารางคุมสอบในช่วงที่เลือก',
+  // The round exists on the exam site but its roster has not been released
+  // (or was withdrawn). Not "no duties": the reader may well have some, they
+  // just cannot be read yet.
+  EXAMINAR_NOT_ANNOUNCED: 'ยังไม่ประกาศตารางคุมสอบรอบนี้',
   EXAMINAR_UNABLE_TO_LOAD: 'ไม่สามารถโหลดข้อมูลตารางคุมสอบได้',
   EXAMINAR_TERM_1: 'เทอม 1',
   EXAMINAR_TERM_2: 'เทอม 2',

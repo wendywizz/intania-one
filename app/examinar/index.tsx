@@ -24,7 +24,7 @@ import { TEXT } from '@/constants/text';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import type { ExamTask } from '@/models/types';
-import { listExamTasks } from '@/services/examinarService';
+import { listExamRounds, listExamTasks } from '@/services/examinarService';
 import { toBuddhistYear } from '@/utils/date-format';
 import { boxShadow } from '@/constants/shadows';
 
@@ -237,28 +237,55 @@ export default function ExaminarListScreen() {
   const [period, setPeriod] = useState('mid');
 
   const [tasks, setTasks] = useState<ExamTask[]>([]);
+  const [announced, setAnnounced] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
+  // The filter opens on the round the gateway picks (the current one when this
+  // person is on it, else their latest released one), so a duty reminder lands
+  // on the duty. Nothing loads until that answer is in; if it fails, the
+  // built-in default above stands.
+  const [filtersReady, setFiltersReady] = useState(false);
+
+  useEffect(() => {
+    if (!staffId) return;
+    let cancelled = false;
+    listExamRounds(staffId)
+      .then((rounds) => {
+        const start = rounds?.default;
+        // A year the bar cannot show would leave the field blank.
+        if (cancelled || !start || !YEAR_OPTIONS.some((o) => o.value === start.year)) return;
+        setYear(start.year);
+        setTerm(start.term);
+        setPeriod(start.period);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setFiltersReady(true);
+      });
+    return () => { cancelled = true; };
+  }, [staffId]);
 
   const loadTasks = useCallback(
     async (showRefreshing = false) => {
-      if (!staffId) return;
+      if (!staffId || !filtersReady) return;
       if (showRefreshing) setIsRefreshing(true);
       else setIsLoading(true);
       setError('');
       try {
         const result = await listExamTasks({ staff_id: staffId, year, term, period });
-        setTasks(result);
+        setTasks(result.tasks);
+        setAnnounced(result.announced);
       } catch (err) {
         setTasks([]);
+        setAnnounced(true);
         setError(err instanceof Error ? err.message : TEXT.EXAMINAR_UNABLE_TO_LOAD);
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);
       }
     },
-    [staffId, year, term, period],
+    [staffId, filtersReady, year, term, period],
   );
 
   useFocusEffect(useCallback(() => { loadTasks(); }, [loadTasks]));
@@ -326,7 +353,10 @@ export default function ExaminarListScreen() {
               <ExamCard task={item} year={year} term={term} period={period} />
             )}
             ListEmptyComponent={
-              <EmptyState preset="exam" message={TEXT.EXAMINAR_NO_EXAMS} />
+              <EmptyState
+                preset="exam"
+                message={announced ? TEXT.EXAMINAR_NO_EXAMS : TEXT.EXAMINAR_NOT_ANNOUNCED}
+              />
             }
           />
         )}

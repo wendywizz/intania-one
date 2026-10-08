@@ -121,6 +121,30 @@ export type ExamDetail = {
   [key: string]: unknown;
 };
 
+/** One exam round as `/api/examinar/rounds` names it. */
+export type ExamRound = {
+  time_id: number;
+  /** Common era, the value the year filter holds. */
+  year: string;
+  year_be: string;
+  term: string;
+  period: 'mid' | 'final';
+  label: string;
+  /** Released to invigilators (or closed) - may be read. */
+  announced: boolean;
+  /** This person has at least one duty in it (only ever true when announced). */
+  has_duty: boolean;
+};
+
+export type ExamRounds = {
+  /** The round being worked on, released or not. */
+  current: ExamRound | null;
+  /** The round the filter should open on. */
+  default: ExamRound | null;
+  /** Every round that may be read, newest first. */
+  rounds: ExamRound[];
+};
+
 export type NoticeRepairPrivilege = {
   success?: boolean;
   staff_id?: number;

@@ -275,7 +275,11 @@ There are eleven, listed in the order they appear on the home grid.
     The exam-invigilation duties assigned to the signed-in person.
     # Functional
     - User can list their invigilation duties for a year / term / exam period
-      (`index.tsx`)
+      (`index.tsx`). The filter opens on `/api/examinar/rounds`' `default` (the
+      current round when they are on it, else their latest released one)
+    - Only rounds the exam site has released on its `/checkstaff` screen (or
+      closed) can be read; an unreleased one answers `announced: false` and the
+      list says "ยังไม่ประกาศตารางคุมสอบรอบนี้" instead of "no duties"
     - User can open one duty: subject, date, time, room and co-invigilators
       (`detail.tsx`)
     - The home summary surfaces the next upcoming duty
