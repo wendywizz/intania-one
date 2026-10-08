@@ -629,7 +629,7 @@ export default function StaffTimestampScreen() {
     // foot of the screen, which is one frame.
     const oval = scanSize.height > 0 ? guideOval(scanSize) : null;
     const hintPlacement = oval
-      ? { top: Math.min(oval.cy + oval.ry + 20, scanSize.height - 96) }
+      ? { top: Math.min(oval.cy + oval.ry + 20, scanSize.height - 136) }
       : { bottom: insets.bottom + 28 };
 
     return (
@@ -652,6 +652,7 @@ export default function StaffTimestampScreen() {
 
         <View style={[styles.hintBar, hintPlacement]} pointerEvents="none">
           <ThemedText style={styles.hintText}>{hint}</ThemedText>
+          <ThemedText style={styles.bareText}>{TEXT.STAFF_FACE_BARE_FACE}</ThemedText>
         </View>
 
         {phase === 'paused' ? (
@@ -1000,6 +1001,7 @@ const makeStyles = (c: AppColors) =>
     },
     hintBar: {
       alignItems: 'center',
+      gap: 8,
       left: 16,
       position: 'absolute',
       right: 16,
@@ -1010,9 +1012,22 @@ const makeStyles = (c: AppColors) =>
       color: c.textOnPrimary,
       fontFamily: AppFonts.psuBold,
       fontSize: scaleFont(15),
+      lineHeight: scaleFont(21),
       overflow: 'hidden',
       paddingHorizontal: 14,
       paddingVertical: 6,
+      textAlign: 'center',
+    },
+    bareText: {
+      backgroundColor: c.overlay,
+      borderRadius: 999,
+      color: c.textOnPrimary,
+      fontFamily: AppFonts.psuRegular,
+      fontSize: scaleFont(13),
+      lineHeight: scaleFont(19),
+      overflow: 'hidden',
+      paddingHorizontal: 12,
+      paddingVertical: 4,
       textAlign: 'center',
     },
     pausedCover: {

@@ -238,7 +238,7 @@ export default function FaceEnrollScreen() {
     // been measured; until then at the foot of the screen, which is one frame.
     const oval = scanSize.height > 0 ? guideOval(scanSize) : null;
     const hintPlacement = oval
-      ? { top: Math.min(oval.cy + oval.ry + 20, scanSize.height - 96) }
+      ? { top: Math.min(oval.cy + oval.ry + 20, scanSize.height - 136) }
       : { bottom: insets.bottom + 28 };
 
     return (
@@ -262,6 +262,7 @@ export default function FaceEnrollScreen() {
 
         <View style={[styles.hintBar, hintPlacement]} pointerEvents="none">
           <ThemedText style={styles.hintText}>{hint}</ThemedText>
+          <ThemedText style={styles.bareText}>{TEXT.STAFF_FACE_BARE_FACE}</ThemedText>
         </View>
 
         <View style={[styles.scanTopBar, { paddingTop: insets.top + 8 }]}>
@@ -438,6 +439,7 @@ const makeStyles = (c: AppColors) =>
       color: c.text,
       fontFamily: AppFonts.psuBold,
       fontSize: scaleFont(20),
+      lineHeight: scaleFont(28),
       textAlign: 'center',
     },
     cardMessage: {
@@ -445,6 +447,7 @@ const makeStyles = (c: AppColors) =>
       color: c.textMuted,
       fontFamily: AppFonts.psuRegular,
       fontSize: scaleFont(15),
+      lineHeight: scaleFont(22),
       textAlign: 'center',
     },
     notice: {
@@ -461,11 +464,13 @@ const makeStyles = (c: AppColors) =>
       color: c.warningOnSoft,
       fontFamily: AppFonts.psuBold,
       fontSize: scaleFont(15),
+      lineHeight: scaleFont(21),
     },
     noticeMessage: {
       color: c.text,
       fontFamily: AppFonts.psuRegular,
       fontSize: scaleFont(14),
+      lineHeight: scaleFont(20),
     },
     scanner: { backgroundColor: c.inverse, flex: 1 },
     scanTopBar: {
@@ -496,9 +501,11 @@ const makeStyles = (c: AppColors) =>
       color: c.textOnPrimary,
       fontFamily: AppFonts.psuRegular,
       fontSize: scaleFont(12),
+      lineHeight: scaleFont(17),
     },
     hintBar: {
       alignItems: 'center',
+      gap: 8,
       left: 16,
       position: 'absolute',
       right: 16,
@@ -509,9 +516,22 @@ const makeStyles = (c: AppColors) =>
       color: c.textOnPrimary,
       fontFamily: AppFonts.psuBold,
       fontSize: scaleFont(15),
+      lineHeight: scaleFont(21),
       overflow: 'hidden',
       paddingHorizontal: 14,
       paddingVertical: 6,
+      textAlign: 'center',
+    },
+    bareText: {
+      backgroundColor: c.overlay,
+      borderRadius: 999,
+      color: c.textOnPrimary,
+      fontFamily: AppFonts.psuRegular,
+      fontSize: scaleFont(13),
+      lineHeight: scaleFont(19),
+      overflow: 'hidden',
+      paddingHorizontal: 12,
+      paddingVertical: 4,
       textAlign: 'center',
     },
   });
