@@ -15,6 +15,7 @@ import { useToast } from '@/components/toast-provider';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
+import { boxShadow } from '@/constants/shadows';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { isMailComposeEnabled, isMailReauthRequiredText } from '@/services/mailAuthService';
@@ -30,11 +31,15 @@ import {
 } from '@/services/mailService';
 import { formatNewsDateTime } from '@/utils/date-format';
 
-const RESPONSE_ACTIONS: { mode: ComposeMode; label: string; icon: IconSymbolName }[] = [
+// Reply and reply-all share one toolbar button that opens a small menu, the
+// way iOS Mail does; forward and delete are single taps.
+const REPLY_MENU: { mode: ComposeMode; label: string; icon: IconSymbolName }[] = [
   { mode: 'reply', label: TEXT.MAIL_REPLY, icon: 'arrowshape.turn.up.left' },
   { mode: 'replyAll', label: TEXT.MAIL_REPLY_ALL, icon: 'arrowshape.turn.up.left.2' },
-  { mode: 'forward', label: TEXT.MAIL_FORWARD, icon: 'arrowshape.turn.up.right' },
 ];
+
+const TOOLBAR_HEIGHT = 56;
+const TOOLBAR_GAP = 10;
 
 function recipientNames(list: MailRecipient[]) {
   return list.map((recipient) => recipient.name || recipient.address).filter(Boolean).join(', ');
@@ -54,6 +59,7 @@ export default function MailDetailScreen() {
   const isInDeletedItems = params.folder === 'deleteditems';
   const [isConfirmVisible, setConfirmVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isReplyMenuVisible, setReplyMenuVisible] = useState(false);
 
   const handleDelete = useCallback(async () => {
     setConfirmVisible(false);
@@ -164,23 +170,14 @@ export default function MailDetailScreen() {
         showBackButton
         onBackPress={() => router.back()}
         tone="primary"
-        rightContent={
-          composeEnabled ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={TEXT.MAIL_DELETE}
-              disabled={isDeleting}
-              hitSlop={8}
-              onPress={() => (isInDeletedItems ? setConfirmVisible(true) : handleDelete())}
-              style={({ pressed }) => [styles.trashButton, pressed || isDeleting ? styles.actionPressed : null]}
-            >
-              <IconSymbol name="trash.fill" size={21} color={c.textOnPrimary} />
-            </Pressable>
-          ) : undefined
-        }
       />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          composeEnabled ? { paddingBottom: TOOLBAR_HEIGHT + TOOLBAR_GAP * 2 + insets.bottom + 16 } : null,
+        ]}
+      >
         <View style={styles.header}>
           <ThemedText style={styles.subject}>{message.subject || TEXT.MAIL_NO_SUBJECT}</ThemedText>
         </View>
@@ -254,30 +251,86 @@ export default function MailDetailScreen() {
         ) : null}
       </ScrollView>
 
-      {/* iOS Mail keeps these in a bar under the message, where the thumb is.
-          Not on a draft: that is carried on writing from the Drafts list. */}
-      {composeEnabled && !message.isDraft ? (
-        <View style={[styles.actionBar, { paddingBottom: insets.bottom + 10 }]}>
-          {RESPONSE_ACTIONS.map((action, index) => (
-            <Pressable
-              key={action.mode}
-              accessibilityRole="button"
-              onPress={() =>
-                router.push({ pathname: '/mail/compose', params: { mode: action.mode, id: message.id } })
-              }
-              style={({ pressed }) => [
-                styles.action,
-                index === 0 ? styles.actionPrimary : null,
-                pressed ? styles.actionBtnPressed : null,
-              ]}
-            >
-              <IconSymbol name={action.icon} size={18} color={index === 0 ? c.textOnPrimary : c.primary} />
-              <ThemedText style={[styles.actionLabel, index === 0 ? styles.actionLabelPrimary : null]} numberOfLines={1}>
-                {action.label}
-              </ThemedText>
-            </Pressable>
-          ))}
-        </View>
+      {/* iOS Mail's floating toolbar: reply (a menu), forward in the middle,
+          delete. A draft has nothing to reply to — it is carried on writing
+          from the Drafts list — so only delete is left on it. */}
+      {composeEnabled ? (
+        <>
+          {isReplyMenuVisible ? (
+            <>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={TEXT.CANCEL}
+                onPress={() => setReplyMenuVisible(false)}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={[styles.menu, { bottom: insets.bottom + TOOLBAR_GAP * 2 + TOOLBAR_HEIGHT }]}>
+                {REPLY_MENU.map((item, index) => (
+                  <Pressable
+                    key={item.mode}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setReplyMenuVisible(false);
+                      router.push({ pathname: '/mail/compose', params: { mode: item.mode, id: message.id } });
+                    }}
+                    style={({ pressed }) => [
+                      styles.menuItem,
+                      index > 0 ? styles.menuItemDivider : null,
+                      pressed ? styles.actionPressed : null,
+                    ]}
+                  >
+                    <IconSymbol name={item.icon} size={20} color={c.text} />
+                    <ThemedText style={styles.menuLabel}>{item.label}</ThemedText>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          ) : null}
+
+          <View pointerEvents="box-none" style={[styles.toolbarWrap, { bottom: insets.bottom + TOOLBAR_GAP }]}>
+            <View style={[styles.toolbar, message.isDraft ? styles.toolbarSingle : null]}>
+              {!message.isDraft ? (
+                <>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={TEXT.MAIL_REPLY_MENU_LABEL}
+                    accessibilityState={{ expanded: isReplyMenuVisible }}
+                    onPress={() => setReplyMenuVisible((open) => !open)}
+                    style={({ pressed }) => [styles.toolbarButton, pressed ? styles.toolbarPressed : null]}
+                  >
+                    <IconSymbol name="arrowshape.turn.up.left" size={24} color={c.text} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={TEXT.MAIL_FORWARD_LABEL}
+                    onPress={() => {
+                      setReplyMenuVisible(false);
+                      router.push({ pathname: '/mail/compose', params: { mode: 'forward', id: message.id } });
+                    }}
+                    style={({ pressed }) => [styles.toolbarButton, pressed ? styles.toolbarPressed : null]}
+                  >
+                    <IconSymbol name="arrowshape.turn.up.right" size={24} color={c.text} />
+                  </Pressable>
+                </>
+              ) : null}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={TEXT.MAIL_DELETE}
+                disabled={isDeleting}
+                onPress={() => {
+                  setReplyMenuVisible(false);
+                  setConfirmVisible(true);
+                }}
+                style={({ pressed }) => [
+                  styles.toolbarButton,
+                  pressed || isDeleting ? styles.toolbarPressed : null,
+                ]}
+              >
+                <IconSymbol name="trash.fill" size={24} color={c.danger} />
+              </Pressable>
+            </View>
+          </View>
+        </>
       ) : null}
 
       {openAttachment ? (
@@ -286,8 +339,8 @@ export default function MailDetailScreen() {
 
       <ConfirmDialog
         visible={isConfirmVisible}
-        title={TEXT.MAIL_DELETE_FOREVER_TITLE}
-        message={TEXT.MAIL_DELETE_FOREVER_MESSAGE}
+        title={isInDeletedItems ? TEXT.MAIL_DELETE_FOREVER_TITLE : TEXT.MAIL_DELETE_CONFIRM_TITLE}
+        message={isInDeletedItems ? TEXT.MAIL_DELETE_FOREVER_MESSAGE : TEXT.MAIL_DELETE_CONFIRM_MESSAGE}
         confirmLabel={TEXT.MAIL_DELETE}
         icon="trash.fill"
         destructive
@@ -327,31 +380,36 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   recipientLine: { fontFamily: AppFonts.psuRegular, fontSize: 13, lineHeight: 19, color: c.textMuted },
   recipientLabel: { fontFamily: AppFonts.psuBold, fontSize: 13, color: c.textFaint },
   bodyWrap: { paddingHorizontal: 20, paddingTop: 18 },
-  actionBar: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingTop: 10,
-    paddingHorizontal: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: c.border,
-    backgroundColor: c.surface,
-  },
-  action: {
-    flex: 1,
+  toolbarWrap: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
+  toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    minHeight: 44,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: c.primary,
+    width: '100%',
+    height: TOOLBAR_HEIGHT,
+    borderRadius: TOOLBAR_HEIGHT / 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
     backgroundColor: c.surface,
+    boxShadow: boxShadow(c.shadow, { y: 4, blur: 16, opacity: 0.12 }),
   },
-  actionPrimary: { backgroundColor: c.primary },
-  actionBtnPressed: { opacity: 0.7 },
-  actionLabelPrimary: { color: c.textOnPrimary },
+  toolbarSingle: { width: 96 },
+  // Equal thirds put forward in the exact middle, reply and delete at the ends.
+  toolbarButton: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'center' },
+  toolbarPressed: { opacity: 0.55 },
+  menu: {
+    position: 'absolute',
+    left: 16,
+    minWidth: 220,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    backgroundColor: c.surface,
+    overflow: 'hidden',
+    boxShadow: boxShadow(c.shadow, { y: 6, blur: 20, opacity: 0.18 }),
+  },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 50, paddingHorizontal: 16 },
+  menuItemDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  menuLabel: { fontFamily: AppFonts.psuRegular, fontSize: 16, color: c.text },
   attachments: { marginHorizontal: 20, marginTop: 8, gap: 8 },
   attachmentsTitle: { fontFamily: AppFonts.psuBold, fontSize: 14, lineHeight: 20, color: c.textMuted },
   attachmentRow: {
@@ -367,12 +425,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   attachmentName: { fontFamily: AppFonts.psuBold, fontSize: 14, lineHeight: 20, color: c.text },
   attachmentSize: { fontFamily: AppFonts.psuRegular, fontSize: 12, lineHeight: 18, color: c.textMuted },
   actionPressed: { backgroundColor: c.surfaceAlt },
-  trashButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
-  actionLabel: {
-    fontFamily: AppFonts.psuBold,
-    fontSize: 14,
-    color: c.primary,
-  },
   centerWrap: { flex: 1, padding: 16, justifyContent: 'center' },
   errorCard: {
     backgroundColor: c.surface,

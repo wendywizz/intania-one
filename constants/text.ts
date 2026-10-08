@@ -1357,6 +1357,19 @@ export const TEXT = {
   // ถามก่อนเปิดกล้อง สำหรับการลงเวลาที่ผิดปกติ (ข้อความคำถามมาจาก gateway)
   STAFF_FACE_CONFIRM_TITLE: 'ยืนยันการลงเวลา',
   STAFF_FACE_CONFIRM_SCAN: 'สแกนใบหน้า',
+  // เก็บใบหน้าเองในแอป — ลงทะเบียนครั้งแรก และเก็บใบหน้าใหม่หลังสแกนไม่ผ่าน ใช้สิทธิ์ร่วมกัน
+  STAFF_FACE_ENROLL_SELF: 'ลงทะเบียนใบหน้าในแอปได้ด้วยตนเอง โดยถ่ายภาพหน้าตรง 2 ภาพ',
+  STAFF_FACE_ENROLL_NO_QUOTA: 'ใช้สิทธิ์เก็บใบหน้าในแอปครบแล้ว กรุณาติดต่อ กลุ่มงานคอมพิวเตอร์ฯ เพื่อขอเพิ่มสิทธิ์',
+  STAFF_FACE_ENROLL_START: 'ลงทะเบียนใบหน้า',
+  STAFF_FACE_RENEW_START: 'เก็บใบหน้าใหม่',
+  STAFF_FACE_ENROLL_CONFIRM:
+    'ถ่ายภาพหน้าตรง 2 ภาพในที่แสงสว่างพอ ไม่สวมแว่นกันแดดหรือหน้ากาก ใบหน้านี้จะใช้กับเครื่องสแกนหน้าประตูด้วย',
+  STAFF_FACE_RENEW_CONFIRM:
+    'ระบบจะแทนที่ใบหน้าเดิมด้วยภาพใหม่ 2 ภาพ ซึ่งใช้กับเครื่องสแกนหน้าประตูด้วย กรุณาถ่ายในที่แสงสว่างพอ ไม่สวมแว่นกันแดดหรือหน้ากาก',
+  STAFF_FACE_ENROLL_BEGIN: 'เริ่มถ่ายภาพ',
+  STAFF_FACE_HINT_TURNED: 'มองตรงที่กล้อง',
+  STAFF_FACE_ENROLL_HINT_BLINK: 'มองตรงแล้วกะพริบตา (ภาพที่ {i}/2)',
+  STAFF_FACE_ENROLL_SAVING: 'กำลังบันทึกใบหน้า...',
   STAFF_TIMESTAMP_LOAD_ERROR: 'ไม่สามารถโหลดสถานะการลงเวลาได้',
   LECT_TIMESTAMP_BUTTON: 'ลงเวลาวันนี้',
   LECT_TIMESTAMP_STAMPED_HEADLINE: 'วันนี้ลงเวลาแล้ว',
@@ -1682,6 +1695,7 @@ export const TEXT = {
   MAIL_COMPOSE_TITLE_REPLY: 'ตอบกลับ',
   MAIL_COMPOSE_TITLE_FORWARD: 'ส่งต่อ',
   MAIL_COMPOSE_TITLE_DRAFT: 'ฉบับร่าง',
+  MAIL_COMPOSE_FROM: 'จาก',
   MAIL_COMPOSE_TO: 'ถึง',
   MAIL_COMPOSE_CC: 'สำเนา',
   MAIL_COMPOSE_SUBJECT: 'หัวเรื่อง',
@@ -1709,6 +1723,10 @@ export const TEXT = {
   MAIL_ATTACHMENT_LOADING: 'กำลังโหลดเอกสาร...',
   MAIL_ATTACHMENT_OPEN_FAILED: 'ไม่สามารถเปิดไฟล์แนบได้',
   MAIL_ATTACHMENT_UNSUPPORTED: 'ไฟล์ชนิดนี้ยังเปิดดูในแอปไม่ได้',
+  MAIL_DELETE_CONFIRM_TITLE: 'ลบอีเมลนี้?',
+  MAIL_DELETE_CONFIRM_MESSAGE: 'อีเมลนี้จะถูกย้ายไปที่ Deleted Items และยังกู้คืนได้จากที่นั่น',
+  MAIL_REPLY_MENU_LABEL: 'ตอบกลับ',
+  MAIL_FORWARD_LABEL: 'ส่งต่อ',
   MAIL_DELETE_FOREVER_TITLE: 'ลบอีเมลถาวร',
   MAIL_DELETE_FOREVER_MESSAGE: 'อีเมลนี้จะถูกลบออกจากกล่องจดหมายอย่างถาวร และกู้คืนไม่ได้',
   MAIL_COMPOSE_UNAVAILABLE: 'ยังไม่เปิดให้เขียนอีเมลในแอป',

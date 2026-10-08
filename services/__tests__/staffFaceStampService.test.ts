@@ -6,7 +6,11 @@
  * network; URL building, the multipart body and the mapping are the real code.
  * Payloads are the shapes /api/timestamp/staff and /staff/stamp answer with.
  */
-import { getStaffTimestampStatus, submitStaffFaceStamp } from '@/services/timestampService';
+import {
+  getStaffTimestampStatus,
+  submitStaffFaceEnroll,
+  submitStaffFaceStamp,
+} from '@/services/timestampService';
 
 jest.mock('@/services/api', () => ({
   ...jest.requireActual('@/services/api'),
@@ -119,6 +123,21 @@ describe('getStaffTimestampStatus', () => {
     expect(status.stampKind).toBe('');
     // null, not false: false would hide the camera behind "go and register".
     expect(status.faceRegistered).toBeNull();
+    // An unreadable quota is unknown too - the button stays, the server decides.
+    expect(status.faceEnroll).toEqual({ allowed: false, remaining: null, dryRun: false });
+  });
+
+  it('reads how many face registrations are left', async () => {
+    api.requestJson.mockResolvedValueOnce({
+      data: {
+        role: 'staff', isStaff: true, faceRegistered: false,
+        faceEnroll: { allowed: true, remaining: 2, dryRun: true },
+      },
+    });
+
+    const status = await getStaffTimestampStatus('0042764');
+
+    expect(status.faceEnroll).toEqual({ allowed: true, remaining: 2, dryRun: true });
   });
 });
 
@@ -197,5 +216,51 @@ describe('submitStaffFaceStamp', () => {
     gatewayAnswers(400, { error: { code: 'bad_request', message: 'file must be a JPEG or PNG image' } });
 
     await expect(submitStaffFaceStamp(SCAN)).rejects.toThrow('file must be a JPEG or PNG image');
+  });
+});
+
+describe('submitStaffFaceEnroll', () => {
+  const ENROLL = {
+    staffId: '0042764',
+    mode: 'first' as const,
+    photoUris: ['file:///cache/a.jpg', 'file:///cache/b.jpg'] as [string, string],
+  };
+
+  it('posts both pictures and the mode, and reads the quota left', async () => {
+    gatewayAnswers(200, {
+      data: { enrolled: true, reason: 'enrolled', message: 'บันทึกใบหน้าเรียบร้อยแล้ว', remaining: 1, dryRun: false },
+    });
+
+    const result = await submitStaffFaceEnroll({ ...ENROLL, position: { lat: 7.0067544, lon: 100.5011083 } });
+
+    expect(api.fetchWithTimeout.mock.calls[0][0]).toMatch(/\/staff\/face-enroll$/);
+    expect(partOf('mode')).toBe('first');
+    expect(partOf('staff_id')).toBe('0042764');
+    expect((partOf('file1') as { uri: string }).uri).toBe('file:///cache/a.jpg');
+    expect((partOf('file2') as { uri: string }).uri).toBe('file:///cache/b.jpg');
+    expect(result).toEqual({
+      enrolled: true,
+      reason: 'enrolled',
+      message: 'บันทึกใบหน้าเรียบร้อยแล้ว',
+      remaining: 1,
+      dryRun: false,
+    });
+  });
+
+  it('resolves a refusal rather than throwing, so the screen can say why', async () => {
+    gatewayAnswers(200, {
+      data: { enrolled: false, reason: 'no_quota', message: 'ใช้สิทธิ์เก็บใบหน้าครบแล้ว', remaining: 0, dryRun: false },
+    });
+
+    const result = await submitStaffFaceEnroll({ ...ENROLL, mode: 'renew' });
+
+    expect(partOf('mode')).toBe('renew');
+    expect(result).toMatchObject({ enrolled: false, reason: 'no_quota', remaining: 0 });
+  });
+
+  it('passes on the gateway wording for somebody who is not general staff', async () => {
+    gatewayAnswers(403, { error: { code: 'not_staff', message: 'เฉพาะบุคลากรสายสนับสนุน' } });
+
+    await expect(submitStaffFaceEnroll(ENROLL)).rejects.toThrow('เฉพาะบุคลากรสายสนับสนุน');
   });
 });

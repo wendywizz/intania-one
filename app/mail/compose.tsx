@@ -14,7 +14,7 @@ import {
 
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
-import { RecipientField } from '@/components/mail/recipient-field';
+import { COMPOSE_LABEL_WIDTH, RecipientField } from '@/components/mail/recipient-field';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -99,6 +99,7 @@ export default function MailComposeScreen() {
   const id = params.id ?? '';
   const composeEnabled = isMailComposeEnabled();
 
+  const [fromAddress, setFromAddress] = useState('');
   const [to, setTo] = useState<MailRecipient[]>([]);
   const [cc, setCc] = useState<MailRecipient[]>([]);
   const [subject, setSubject] = useState('');
@@ -120,6 +121,19 @@ export default function MailComposeScreen() {
   const pendingLeaveRef = useRef<unknown>(null);
   const markEdited = useCallback(() => {
     hasUnsavedRef.current = true;
+  }, []);
+
+  // The connected account, shown read-only as the From line.
+  useEffect(() => {
+    let cancelled = false;
+    getAccount()
+      .then((account) => {
+        if (!cancelled) setFromAddress(account?.mail ?? '');
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // --- prefill -------------------------------------------------------------------
@@ -289,11 +303,11 @@ export default function MailComposeScreen() {
             ]}
           >
             {isSending ? (
-              <ActivityIndicator size="small" color={c.textOnPrimary} />
+              <ActivityIndicator size="small" color={c.primary} />
             ) : (
-              <IconSymbol name="paperplane.fill" size={16} color={c.textOnPrimary} />
+              <IconSymbol name="paperplane.fill" size={16} color={c.primary} />
             )}
-            <ThemedText lightColor={c.textOnPrimary} darkColor={c.textOnPrimary} style={styles.sendText}>
+            <ThemedText lightColor={c.primary} darkColor={c.primary} style={styles.sendText}>
               {TEXT.MAIL_COMPOSE_SEND}
             </ThemedText>
           </Pressable>
@@ -328,13 +342,24 @@ export default function MailComposeScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <ScrollView contentContainerStyle={[styles.form, { paddingBottom: contentBottomPadding }]} keyboardShouldPersistTaps="handled">
+            {fromAddress ? (
+              <>
+                <View style={styles.fromLine}>
+                  <ThemedText style={styles.fieldLabel}>{TEXT.MAIL_COMPOSE_FROM}</ThemedText>
+                  <ThemedText style={styles.fromValue} numberOfLines={1}>
+                    {fromAddress}
+                  </ThemedText>
+                </View>
+                <View style={styles.divider} />
+              </>
+            ) : null}
             <RecipientField label={TEXT.MAIL_COMPOSE_TO} recipients={to} onChange={setTo} onEdited={markEdited} />
             <View style={styles.divider} />
             <RecipientField label={TEXT.MAIL_COMPOSE_CC} recipients={cc} onChange={setCc} onEdited={markEdited} />
             <View style={styles.divider} />
 
             <View style={styles.subjectLine}>
-              <ThemedText style={styles.fieldLabel}>{TEXT.MAIL_COMPOSE_SUBJECT}:</ThemedText>
+              <ThemedText style={styles.fieldLabel}>{TEXT.MAIL_COMPOSE_SUBJECT}</ThemedText>
               <TextInput
                 value={subject}
                 onChangeText={(value) => {
@@ -425,8 +450,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   flex: { flex: 1 },
   form: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 40 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border },
-  subjectLine: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 },
+  fromLine: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 40, paddingVertical: 5 },
+  fromValue: { flex: 1, fontFamily: AppFonts.psuRegular, fontSize: 15, color: c.textMuted },
+  subjectLine: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 40, paddingVertical: 5 },
   fieldLabel: {
+    width: COMPOSE_LABEL_WIDTH,
+    flexShrink: 0,
     fontFamily: AppFonts.psuRegular,
     fontSize: 15,
     color: c.textMuted,
@@ -437,7 +466,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 0,
     color: c.text,
     fontFamily: AppFonts.psuBold,
-    fontSize: 15,
+    fontSize: 16,
   },
   note: {
     flexDirection: 'row',
@@ -469,8 +498,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     padding: 12,
     gap: 4,
     borderRadius: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: c.borderStrong,
     backgroundColor: c.surfaceAlt,
   },
   originalLabel: { fontFamily: AppFonts.psuBold, fontSize: 12.5, color: c.textMuted },
@@ -483,8 +510,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     height: 34,
     paddingHorizontal: 14,
     borderRadius: 17,
-    borderWidth: 1,
-    borderColor: c.textOnPrimary,
+    backgroundColor: c.textOnPrimary,
   },
   sendText: { fontFamily: AppFonts.psuBold, fontSize: 14 },
   pressed: { opacity: 0.7 },

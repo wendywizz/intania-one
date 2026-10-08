@@ -378,7 +378,11 @@ export default function MailInboxScreen() {
         router.replace('/mail/connect');
         return;
       }
-      showToast(TEXT.MAIL_MARK_ALL_READ_FAILED, 'error');
+      const detail = err instanceof Error && err.message ? `: ${err.message}` : '';
+      showToast(`${TEXT.MAIL_MARK_ALL_READ_FAILED}${detail}`, 'error');
+      // The list may be partly marked already (some batches went through).
+      loadMessages(folderRef.current, filterRef.current, 'quiet');
+      refreshUnread();
     }
   }, [loadMessages, refreshUnread, showToast]);
 

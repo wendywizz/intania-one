@@ -2,7 +2,7 @@
  * Face placement against the guide oval, on a 390 × 700 camera view (a common
  * phone width). The oval is 281 px wide, centred at (195, 308).
  */
-import { judgeFraming } from '@/utils/face-framing';
+import { isFrontal, judgeFraming } from '@/utils/face-framing';
 
 const VIEW = { width: 390, height: 700 };
 
@@ -30,5 +30,21 @@ describe('judgeFraming', () => {
 
   it('asks a face at the edge of the view to move into the oval', () => {
     expect(judgeFraming([{ x: 200, y: 170, width: 200, height: 240 }], VIEW)).toBe('off_center');
+  });
+});
+
+describe('isFrontal', () => {
+  it('accepts a face looking straight at the camera', () => {
+    expect(isFrontal({ yawAngle: 3, rollAngle: -4, pitchAngle: 8 })).toBe(true);
+  });
+
+  it('refuses a head turned, tilted or nodded too far', () => {
+    expect(isFrontal({ yawAngle: 20, rollAngle: 0, pitchAngle: 0 })).toBe(false);
+    expect(isFrontal({ yawAngle: 0, rollAngle: -15, pitchAngle: 0 })).toBe(false);
+    expect(isFrontal({ yawAngle: 0, rollAngle: 0, pitchAngle: 18 })).toBe(false);
+  });
+
+  it('does not hold a missing angle against the face', () => {
+    expect(isFrontal({})).toBe(true);
   });
 });

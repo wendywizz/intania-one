@@ -18,6 +18,11 @@ export type FaceScanCameraProps = {
   ringColor: string;
   /** The dim layer around the oval. */
   scrimColor: string;
+  /**
+   * Also require the face to look straight at the camera (framing 'turned'
+   * otherwise) — for registering a face, not for stamping.
+   */
+  requireFrontal?: boolean;
   /** Called when the placement verdict changes, not on every frame. */
   onFramingChange: (framing: FramingVerdict) => void;
   /** Called once per completed blink of a well-placed face. */

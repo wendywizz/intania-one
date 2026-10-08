@@ -711,6 +711,11 @@ export type StaffTimestampStatus = {
   message: string;
   /** ลงทะเบียนใบหน้าแล้วหรือยัง; null = ตรวจไม่ได้ในตอนนี้ ให้การสแกนเป็นตัวตัดสิน */
   faceRegistered: boolean | null;
+  /**
+   * สิทธิ์เก็บใบหน้าเองในแอป — allowed = เปิดให้ผู้ใช้คนนี้ลงทะเบียนเองแล้ว (ตอนนี้เปิดให้ทดลองทีละคน); (ลงทะเบียนครั้งแรก + เก็บใบหน้าใหม่ ใช้ร่วมกัน)
+   * remaining = null เมื่อตรวจไม่ได้ ให้ server ตัดสินตอนกดเอง; dryRun = ยังไม่บันทึกใบหน้าจริง
+   */
+  faceEnroll: { allowed: boolean; remaining: number | null; dryRun: boolean };
   /** เฉพาะผลการลงเวลา: ครั้งนี้บันทึกจริง */
   created: boolean;
   serverDate: string;
@@ -747,6 +752,15 @@ function isMissingTime(value: unknown): boolean {
   return text === "" || text === "00:00:00" || text === "00:00";
 }
 
+function faceEnrollFrom(value: unknown): StaffTimestampStatus['faceEnroll'] {
+  const data = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
+  const remaining = typeof data.remaining === 'number' && Number.isFinite(data.remaining) ? data.remaining : null;
+
+  // allowed is false unless the gateway says true: an older gateway that has
+  // never heard of the feature must not make the button appear.
+  return { allowed: data.allowed === true, remaining, dryRun: data.dryRun === true };
+}
+
 function staffStatusFrom(data: Record<string, unknown>): StaffTimestampStatus {
   const stamp = data.stamp as Record<string, unknown> | null | undefined;
   const str = (value: unknown) => (value == null ? "" : String(value));
@@ -779,6 +793,7 @@ function staffStatusFrom(data: Record<string, unknown>): StaffTimestampStatus {
     reason: str(data.reason),
     message: str(data.message),
     faceRegistered: typeof data.faceRegistered === 'boolean' ? data.faceRegistered : null,
+    faceEnroll: faceEnrollFrom(data.faceEnroll),
     created: data.created === true,
     serverDate: str(data.serverDate),
     serverTime: str(data.serverTime),
@@ -895,6 +910,100 @@ export async function submitStaffFaceStamp({
       ? staffStatusFrom(data.status as Record<string, unknown>)
       : null,
     created: data.created === true,
+    dryRun: data.dryRun === true,
+  };
+}
+
+/** ลงทะเบียนครั้งแรก หรือเก็บใบหน้าใหม่หลังสแกนไม่ผ่าน */
+export type StaffFaceEnrollMode = 'first' | 'renew';
+
+/** ผลการเก็บใบหน้าเองในแอป */
+export type StaffFaceEnrollResult = {
+  /** บันทึกแล้ว (หรือในโหมดทดสอบ: ผ่านการตรวจ) */
+  enrolled: boolean;
+  /**
+   * 'enrolled' | 'dry_run' เมื่อสำเร็จ; ไม่สำเร็จ: 'no_face' | 'inconsistent' |
+   * 'unverified' | 'too_fast' (ถ่ายใหม่ได้เลย) หรือ 'face_taken' | 'no_quota' |
+   * 'already_registered' | 'not_registered' | 'no_mismatch' (ต้องหยุด)
+   */
+  reason: string;
+  message: string;
+  /** สิทธิ์เก็บใบหน้าที่เหลือหลังครั้งนี้ */
+  remaining: number | null;
+  dryRun: boolean;
+};
+
+/** Refusals worth another two pictures straight away; the rest end the attempt. */
+export const STAFF_ENROLL_RETRY_REASONS: readonly string[] = ['no_face', 'inconsistent', 'unverified', 'too_fast'];
+
+/**
+ * ส่งภาพใบหน้า 2 ภาพเพื่อลงทะเบียนใบหน้าของตัวเอง
+ *
+ * The server decides everything — whether this person may, whether the quota
+ * allows it, whether the pictures are theirs — and answers 200 with a reason
+ * for each refusal. Only a broken request, somebody who is not general staff,
+ * or an unreachable gateway rejects.
+ */
+export async function submitStaffFaceEnroll({
+  staffId,
+  mode,
+  photoUris,
+  position,
+}: {
+  staffId: string;
+  mode: StaffFaceEnrollMode;
+  photoUris: [string, string];
+  position?: LectPosition | null;
+}): Promise<StaffFaceEnrollResult> {
+  const form = new FormData();
+  form.append('staff_id', staffId);
+  form.append('mode', mode);
+
+  const coords = positionQuery(position);
+  if (coords.lat && coords.lon) {
+    form.append('lat', coords.lat);
+    form.append('lon', coords.lon);
+  }
+
+  const wifiIp = await currentWifiIp();
+  if (wifiIp) {
+    form.append('wifi_ip', wifiIp);
+  }
+
+  // expo-file-system Files, as in submitStaffFaceStamp - see the note there.
+  form.append('file1', new File(photoUris[0]) as unknown as Blob);
+  form.append('file2', new File(photoUris[1]) as unknown as Blob);
+
+  const response = await fetchWithTimeout(createTimestampUrl('/staff/face-enroll'), {
+    method: 'POST',
+    body: form,
+  });
+  const text = await response.text();
+
+  let json: JsonMap | null = null;
+  try {
+    json = text ? (JSON.parse(text) as JsonMap) : null;
+  } catch {
+    json = null;
+  }
+
+  if (!response.ok || !json) {
+    const serverMessage = ((json?.error ?? {}) as { message?: unknown }).message;
+    throw new Error(
+      response.status < 500 && typeof serverMessage === 'string' && serverMessage
+        ? serverMessage
+        : MESSAGE_SERVER_ERROR,
+    );
+  }
+  ensureSuccess(json);
+
+  const data = (json.data ?? {}) as Record<string, unknown>;
+
+  return {
+    enrolled: data.enrolled === true,
+    reason: String(data.reason ?? ''),
+    message: String(data.message ?? ''),
+    remaining: typeof data.remaining === 'number' && Number.isFinite(data.remaining) ? data.remaining : null,
     dryRun: data.dryRun === true,
   };
 }

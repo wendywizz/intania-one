@@ -10,6 +10,12 @@ import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { suggestRecipients, type MailRecipient } from '@/services/mailService';
 
 const SUGGEST_DEBOUNCE_MS = 300;
+
+/** One label column for every row of the composer (From, To, Cc, Subject), so
+ * all their values start on the same vertical line. */
+export const COMPOSE_LABEL_WIDTH = 64;
+/** Height of a chip or input line inside a row. */
+const LINE_HEIGHT = 30;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function isValidEmail(value: string) {
@@ -122,7 +128,7 @@ export function RecipientField({
   return (
     <View>
       <View style={styles.line}>
-        <ThemedText style={styles.label}>{label}:</ThemedText>
+        <ThemedText style={styles.label}>{label}</ThemedText>
         <View style={styles.chips}>
           {recipients.map((recipient) => (
             <View key={recipient.address} style={styles.chip}>
@@ -151,7 +157,11 @@ export function RecipientField({
             returnKeyType="next"
             blurOnSubmit={false}
             value={text}
-            style={[styles.input, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]}
+            style={[
+              styles.input,
+              recipients.length > 0 ? styles.inputAfterChips : null,
+              Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null,
+            ]}
           />
         </View>
         {isLoading ? <ActivityIndicator size="small" color={c.primary} /> : null}
@@ -192,12 +202,15 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    paddingVertical: 10,
+    minHeight: 40,
+    paddingVertical: 5,
   },
   label: {
+    width: COMPOSE_LABEL_WIDTH,
+    flexShrink: 0,
     fontFamily: AppFonts.psuRegular,
     fontSize: 15,
-    lineHeight: 30,
+    lineHeight: LINE_HEIGHT,
     color: c.textMuted,
   },
   chips: {
@@ -212,9 +225,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     maxWidth: '100%',
-    height: 30,
-    paddingHorizontal: 10,
-    borderRadius: 15,
+    height: LINE_HEIGHT,
+    paddingHorizontal: 12,
+    borderRadius: LINE_HEIGHT / 2,
     backgroundColor: c.primarySoft,
   },
   chipText: {
@@ -225,13 +238,17 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   input: {
     flexGrow: 1,
-    minWidth: 120,
-    height: 30,
+    minWidth: 110,
+    height: LINE_HEIGHT,
     paddingVertical: 0,
     color: c.text,
     fontFamily: AppFonts.psuRegular,
     fontSize: 15,
   },
+  // With a chip already on the line the field only needs room to start typing.
+  // The full minWidth pushed it onto a second line, which is what made a row
+  // with recipients taller than the others.
+  inputAfterChips: { minWidth: 40 },
   error: {
     fontFamily: AppFonts.psuRegular,
     fontSize: 12.5,

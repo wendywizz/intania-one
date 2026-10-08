@@ -15,7 +15,7 @@ import type {
   FaceScanPermission,
 } from '@/components/timestamp/face-scan-camera.types';
 import { createBlinkDetector } from '@/utils/blink-detector';
-import { guideOval, judgeFraming, type FramingVerdict, type ViewSize } from '@/utils/face-framing';
+import { guideOval, isFrontal, judgeFraming, type FramingVerdict, type ViewSize } from '@/utils/face-framing';
 
 export type { FaceScanCameraHandle, FaceScanCameraProps, FaceScanPermission } from '@/components/timestamp/face-scan-camera.types';
 
@@ -69,6 +69,7 @@ type PipelineProps = Omit<FaceScanCameraProps, 'ringColor' | 'scrimColor'> & { s
 const CameraPipeline = memo(function CameraPipeline({
   active,
   size,
+  requireFrontal = false,
   onFramingChange,
   onBlink,
   onError,
@@ -76,8 +77,8 @@ const CameraPipeline = memo(function CameraPipeline({
 }: PipelineProps) {
   // Read through a ref so a frame always reaches the latest handler without
   // the handler itself being a reason to rebuild the pipeline.
-  const handlers = useRef({ onFramingChange, onBlink, onError });
-  handlers.current = { onFramingChange, onBlink, onError };
+  const handlers = useRef({ onFramingChange, onBlink, onError, requireFrontal });
+  handlers.current = { onFramingChange, onBlink, onError, requireFrontal };
 
   const blink = useMemo(() => createBlinkDetector(), []);
   const lastFraming = useRef<FramingVerdict | null>(null);
@@ -99,10 +100,12 @@ const CameraPipeline = memo(function CameraPipeline({
     windowHeight: size.height,
     minFaceSize: 0.15,
     onFacesDetected(faces: Face[]) {
-      const framing = judgeFraming(
+      const placed = judgeFraming(
         faces.map((face) => face.bounds),
         size,
       );
+      const framing: FramingVerdict =
+        placed === 'ok' && handlers.current.requireFrontal && !isFrontal(faces[0]) ? 'turned' : placed;
 
       if (framing !== lastFraming.current) {
         lastFraming.current = framing;

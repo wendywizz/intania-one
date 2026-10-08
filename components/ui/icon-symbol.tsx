@@ -59,6 +59,7 @@ import Send from 'lucide-react-native/dist/cjs/icons/send';
 import Settings from 'lucide-react-native/dist/cjs/icons/settings';
 import Sun from 'lucide-react-native/dist/cjs/icons/sun';
 import UserMinus from 'lucide-react-native/dist/cjs/icons/user-minus';
+import ScanFace from 'lucide-react-native/dist/cjs/icons/scan-face';
 import UserRoundSearch from 'lucide-react-native/dist/cjs/icons/user-round-search';
 import User from 'lucide-react-native/dist/cjs/icons/user';
 import Users from 'lucide-react-native/dist/cjs/icons/users';
@@ -134,6 +135,8 @@ const MAPPING = {
   'person.2.fill': Users,
   'person.circle.fill': CircleUser,
   'person.crop.circle.badge.minus': UserMinus,
+  // Registering one's face for the face-scan stamp.
+  'faceid': ScanFace,
   // Time & Calendar
   'calendar': Calendar,
   'calendar-clock': CalendarClock,

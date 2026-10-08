@@ -557,17 +557,29 @@ export async function markAllRead(folder: MailFolderKey): Promise<void> {
   }
 
   for (let i = 0; i < ids.length; i += 20) {
-    await graphFetch(`${GRAPH}/$batch`, {
+    const result = await graphFetch<GraphBatchResponse>(`${GRAPH}/$batch`, {
       method: 'POST',
       body: {
         requests: ids.slice(i, i + 20).map((id, index) => ({
           id: String(index + 1),
           method: 'PATCH',
-          url: `/me/messages/${encodeURIComponent(id)}`,
+          url: `/me/messages/${id}`,
           headers: { 'Content-Type': 'application/json' },
           body: { isRead: true },
         })),
       },
     });
+
+    // $batch answers 200 even when every request inside it was refused (no
+    // Mail.ReadWrite yet, throttling), so the outcome is in the parts. Say why,
+    // rather than letting the person see a bare "it failed".
+    const refused = (result?.responses ?? []).find((part) => part.status >= 400);
+    if (refused) {
+      throw new Error(refused.body?.error?.message || `HTTP ${refused.status}`);
+    }
   }
 }
+
+type GraphBatchResponse = {
+  responses?: { id: string; status: number; body?: { error?: { message?: string } } }[];
+};

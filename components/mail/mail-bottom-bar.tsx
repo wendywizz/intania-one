@@ -83,7 +83,8 @@ export function MailBottomBar({
         onPress={onPressFilter}
         style={({ pressed }) => [
           styles.circle,
-          isFilterActive ? styles.circleActive : null,
+          styles.circleFilter,
+          isFilterActive ? styles.circleFilterActive : null,
           pressed ? styles.pressed : null,
         ]}
       >
@@ -161,6 +162,17 @@ const makeStyles = (c: AppColors) => {
     circleActive: {
       backgroundColor: c.primary,
       borderColor: c.primary,
+    },
+    // The filter is not the primary action (that is compose, in brand red), so
+    // it gets its own look: a filled grey when idle — the plain white circle
+    // vanished into the list — and the info blue while a filter is applied.
+    circleFilter: {
+      backgroundColor: c.surfaceMuted,
+      borderColor: c.borderStrong,
+    },
+    circleFilterActive: {
+      backgroundColor: c.info,
+      borderColor: c.info,
     },
     pressed: { opacity: 0.7 },
     search: {

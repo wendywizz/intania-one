@@ -21,7 +21,26 @@ export type FramingVerdict =
   | 'many'
   | 'off_center'
   | 'too_far'
-  | 'too_close';
+  | 'too_close'
+  /** Placed well but not looking straight at the camera (face registration only). */
+  | 'turned';
+
+/** Head angles as ML Kit reports them, in degrees; 0 is straight at the camera. */
+export type FaceAngles = { yawAngle?: number; rollAngle?: number; pitchAngle?: number };
+
+/**
+ * How far the head may turn, tilt or nod and still count as a frontal picture.
+ * Only registration asks for this: the registered picture is what every later
+ * scan — on the phone and at the door — is measured against, so it should be
+ * the plain, straight-on face the kiosks see.
+ */
+export const FRONTAL_MAX_DEG = 12;
+
+export function isFrontal(angles: FaceAngles): boolean {
+  return [angles.yawAngle, angles.rollAngle, angles.pitchAngle].every(
+    (angle) => typeof angle !== 'number' || !Number.isFinite(angle) || Math.abs(angle) <= FRONTAL_MAX_DEG,
+  );
+}
 
 /**
  * The guide oval, in view coordinates. Also used to draw it, so what the
