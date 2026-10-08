@@ -1,4 +1,4 @@
-import { router, useFocusEffect, useIsFocused, useLocalSearchParams, useNavigation } from 'expo-router';
+import { router, useFocusEffect, useIsFocused, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
@@ -25,6 +25,7 @@ import {
   useFaceScanPermission,
   type FaceScanCameraHandle,
 } from '@/components/timestamp/face-scan-camera';
+import { FRAMING_HINT } from '@/components/timestamp/face-framing-hint';
 import { SitePill, distanceLabel } from '@/components/timestamp/site-pill';
 import { LocatingPin } from '@/components/timestamp/locating-pin';
 import { LocationNoticeBanner } from '@/components/timestamp/location-notice';
@@ -41,10 +42,7 @@ import { MESSAGE_CANNOT_CONNECT_TO_SERVER } from '@/services/api';
 import { readDevicePosition, type LocationReading } from '@/services/deviceLocation';
 import {
   getStaffTimestampStatus,
-  STAFF_ENROLL_RETRY_REASONS,
-  submitStaffFaceEnroll,
   submitStaffFaceStamp,
-  type StaffFaceEnrollMode,
   type StaffTimestampStatus,
 } from '@/services/timestampService';
 import { formatFullDate, formatWeekday } from '@/utils/date-format';
@@ -94,30 +92,17 @@ const POSITION_MAX_AGE_MS = 60000;
  */
 const COARSE_FIX_M = 150;
 
-const FRAMING_HINT: Record<FramingVerdict, string> = {
-  ok: TEXT.STAFF_FACE_HINT_BLINK,
-  none: TEXT.STAFF_FACE_HINT_NONE,
-  many: TEXT.STAFF_FACE_HINT_MANY,
-  off_center: TEXT.STAFF_FACE_HINT_OFF_CENTER,
-  too_far: TEXT.STAFF_FACE_HINT_TOO_FAR,
-  too_close: TEXT.STAFF_FACE_HINT_TOO_CLOSE,
-  turned: TEXT.STAFF_FACE_HINT_TURNED,
-};
-
 /**
  *   idle      nothing to scan for (or the person declined to)
  *   confirm   an unusual stamp is waiting for a yes before the camera opens
  *   scanning  camera on, sending a picture on each blink
  *   paused    30 s without a stamp, or an error — camera off until asked again
  *   done      a matched face got its answer; the card shows it
- *   enroll_confirm  the person asked to register their face; waiting for a yes
- *   enrolling camera on, taking a frontal picture on each of two blinks, then
- *             sending both to be registered
  */
-type Phase = 'idle' | 'confirm' | 'scanning' | 'paused' | 'done' | 'enroll_confirm' | 'enrolling';
+type Phase = 'idle' | 'confirm' | 'scanning' | 'paused' | 'done';
 
 /**
- * Whether this person may register their face from the app now. `remaining`
+ * Whether this person may register their face from the app (app/face-enroll.tsx). `remaining`
  * null means the quota could not be read: offer it and let the server decide.
  */
 function canEnrollFace(status: StaffTimestampStatus | null) {
@@ -233,8 +218,6 @@ export default function StaffTimestampScreen() {
   const [scanMessage, setScanMessage] = useState('');
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   // Registering a face: which kind, and how many of the two pictures are in.
-  const [enrollMode, setEnrollMode] = useState<StaffFaceEnrollMode>('first');
-  const [enrollShots, setEnrollShots] = useState(0);
   // The camera stopped because the face failed MISMATCH_SCAN_LIMIT scans.
   const [scanStopped, setScanStopped] = useState(false);
   // True while the first fix is still coming. The card is already on screen by
@@ -271,17 +254,7 @@ export default function StaffTimestampScreen() {
   // A load in flight, and when the last one finished. See MIN_RELOAD_GAP_MS.
   const loadingRef = useRef(false);
   const lastLoadAtRef = useRef(0);
-  const enrollModeRef = useRef<StaffFaceEnrollMode>('first');
-  const enrollShotsRef = useRef<string[]>([]);
   const mismatchCountRef = useRef(0);
-  // Settings sent the person here to register (?enroll=1): asked once, as soon
-  // as the status says which kind - first or renew - and whether they may.
-  const { enroll: enrollParam } = useLocalSearchParams<{ enroll?: string }>();
-  const enrollRequestRef = useRef(false);
-  useEffect(() => {
-    if (enrollParam) enrollRequestRef.current = true;
-  }, [enrollParam]);
-
   const startScanning = useCallback(() => {
     mismatchCountRef.current = 0;
     setScanStopped(false);
@@ -292,21 +265,6 @@ export default function StaffTimestampScreen() {
     setFraming('none');
     setPhase('scanning');
   }, []);
-
-  const askToEnroll = useCallback((mode: StaffFaceEnrollMode) => {
-    setEnrollMode(mode);
-    setPhase('enroll_confirm');
-  }, []);
-
-  const startEnrolling = useCallback(() => {
-    enrollModeRef.current = enrollMode;
-    enrollShotsRef.current = [];
-    lastSubmitAtRef.current = 0;
-    setEnrollShots(0);
-    setScanMessage('');
-    setFraming('none');
-    setPhase('enrolling');
-  }, [enrollMode]);
 
   /** What the screen does with a fresh status. */
   const decide = useCallback(
@@ -373,19 +331,6 @@ export default function StaffTimestampScreen() {
         setStatus(next);
         setError('');
 
-        if (enrollRequestRef.current) {
-          enrollRequestRef.current = false;
-          router.setParams({ enroll: undefined });
-
-          // Which kind depends on whether a face is on file; unknown (null)
-          // means the registry could not be read, so there is nothing to ask.
-          if (canEnrollFace(next) && next.faceRegistered !== null) {
-            setPhase('idle');
-            askToEnroll(next.faceRegistered ? 'renew' : 'first');
-            return;
-          }
-        }
-
         decide(next);
       } catch (err) {
         setError(err instanceof Error ? err.message : MESSAGE_CANNOT_CONNECT_TO_SERVER);
@@ -398,7 +343,7 @@ export default function StaffTimestampScreen() {
         setRefreshing(false);
       }
     },
-    [staffId, decide, askToEnroll],
+    [staffId, decide],
   );
 
   useFocusEffect(
@@ -440,7 +385,7 @@ export default function StaffTimestampScreen() {
   // Ask for the camera once, when scanning first needs it. After a refusal the
   // OS will not ask again and the banner below points to Settings instead.
   useEffect(() => {
-    if ((phase !== 'scanning' && phase !== 'enrolling') || hasPermission || !canRequestPermission || permissionAskedRef.current) {
+    if (phase !== 'scanning' || hasPermission || !canRequestPermission || permissionAskedRef.current) {
       return;
     }
     permissionAskedRef.current = true;
@@ -482,81 +427,7 @@ export default function StaffTimestampScreen() {
     return reading;
   }, []);
 
-  /**
-   * One blink while registering: one picture. The second sends both. A refusal
-   * the person can fix by trying again (no face, the two did not match) keeps
-   * the camera on for a fresh pair; any other ends the attempt.
-   */
-  const onEnrollBlink = useCallback(() => {
-    const startedAt = Date.now();
-    if (busyRef.current || startedAt - lastSubmitAtRef.current < MIN_SCAN_GAP_MS) return;
-
-    busyRef.current = true;
-    lastSubmitAtRef.current = startedAt;
-
-    void (async () => {
-      try {
-        const photoUri = await cameraRef.current?.capture();
-        if (!photoUri) return;
-
-        const shots = [...enrollShotsRef.current, photoUri];
-        enrollShotsRef.current = shots;
-        setEnrollShots(shots.length);
-        if (shots.length === 1) setScanMessage('');
-        if (shots.length < 2) return;
-
-        setChecking(true);
-        const reading = await freshPosition();
-        const result = await submitStaffFaceEnroll({
-          staffId,
-          mode: enrollModeRef.current,
-          photoUris: [shots[0], shots[1]],
-          position: reading.position,
-        });
-
-        enrollShotsRef.current = [];
-        setEnrollShots(0);
-        setStatus((previous) =>
-          previous && result.remaining != null
-            ? { ...previous, faceEnroll: { ...previous.faceEnroll, remaining: result.remaining } }
-            : previous,
-        );
-
-        if (result.enrolled) {
-          setPhase('idle');
-          showToast(result.message, 'success');
-          // The registry has the face now: start over from a fresh status, which
-          // opens the scan for the stamp itself.
-          void load('initial');
-          return;
-        }
-
-        if (STAFF_ENROLL_RETRY_REASONS.includes(result.reason)) {
-          setScanMessage(result.message);
-          return;
-        }
-
-        setPhase('idle');
-        setScanResult({ message: result.message, tone: 'warning' });
-        showToast(result.message, 'error');
-      } catch (err) {
-        enrollShotsRef.current = [];
-        setEnrollShots(0);
-        setPhase('idle');
-        showToast(err instanceof Error ? err.message : MESSAGE_CANNOT_CONNECT_TO_SERVER, 'error');
-      } finally {
-        busyRef.current = false;
-        setChecking(false);
-      }
-    })();
-  }, [staffId, showToast, freshPosition, load]);
-
   const onBlink = useCallback(() => {
-    if (phaseRef.current === 'enrolling') {
-      onEnrollBlink();
-      return;
-    }
-
     const current = statusRef.current;
     if (phaseRef.current !== 'scanning' || busyRef.current || !current?.stampKind) return;
 
@@ -632,9 +503,9 @@ export default function StaffTimestampScreen() {
         }
       }
     })();
-  }, [staffId, showToast, freshPosition, onEnrollBlink]);
+  }, [staffId, showToast, freshPosition]);
 
-  const cameraActive = isFocused && appActive && (phase === 'scanning' || phase === 'enrolling') && hasPermission;
+  const cameraActive = isFocused && appActive && phase === 'scanning' && hasPermission;
 
   // While the camera is on it has the screen to itself: a face fills a whole
   // phone the way it fills the kiosk at the door, and nothing else on this
@@ -645,7 +516,8 @@ export default function StaffTimestampScreen() {
     FACE_SCAN_SUPPORTED &&
     hasPermission &&
     status?.isStaff === true &&
-    (phase === 'enrolling' || (status.faceRegistered !== false && (phase === 'scanning' || phase === 'paused')));
+    status.faceRegistered !== false &&
+    (phase === 'scanning' || phase === 'paused');
 
   useEffect(() => {
     navigation.setOptions({
@@ -679,7 +551,7 @@ export default function StaffTimestampScreen() {
       return <TipAlert message={TEXT.STAFF_FACE_WEB_ONLY} />;
     }
 
-    const cameraWanted = phase === 'scanning' || phase === 'paused' || phase === 'enrolling';
+    const cameraWanted = phase === 'scanning' || phase === 'paused';
 
     // Not registered: register from here - unless the camera it needs is what
     // is missing, which the permission notice below asks for first.
@@ -703,7 +575,7 @@ export default function StaffTimestampScreen() {
             icon="faceid"
             size="md"
             fullWidth
-            onPress={() => askToEnroll('first')}
+            onPress={() => router.push('/face-enroll')}
           />
         </View>
       );
@@ -744,16 +616,10 @@ export default function StaffTimestampScreen() {
 
   /** The camera, filling the screen, with the scan's own controls over it. */
   const renderFullScreenScanner = () => {
-    const enrolling = phase === 'enrolling';
-    const okHint = enrolling
-      ? TEXT.STAFF_FACE_ENROLL_HINT_BLINK.replace('{i}', String(Math.min(enrollShots + 1, 2)))
-      : FRAMING_HINT.ok;
     const hint = checking
-      ? enrolling
-        ? TEXT.STAFF_FACE_ENROLL_SAVING
-        : TEXT.STAFF_FACE_CHECKING
+      ? TEXT.STAFF_FACE_CHECKING
       : framing === 'ok'
-        ? scanMessage || okHint
+        ? scanMessage || FRAMING_HINT.ok
         : FRAMING_HINT[framing];
 
     const ringColor = checking ? c.primary : framing === 'ok' ? c.success : c.textOnPrimary;
@@ -777,7 +643,6 @@ export default function StaffTimestampScreen() {
         <FaceScanCamera
           ref={cameraRef}
           active={cameraActive}
-          requireFrontal={enrolling}
           ringColor={ringColor}
           scrimColor={c.overlay}
           onFramingChange={onFramingChange}
@@ -829,9 +694,7 @@ export default function StaffTimestampScreen() {
               the thing to watch while scanning. */}
           <View style={styles.similarityPill} pointerEvents="none">
             <ThemedText style={styles.similarityText}>
-              {enrolling
-                ? TEXT.STAFF_FACE_ENROLL_START
-                : `${TEXT.STAFF_FACE_SIMILARITY} ${similarity == null ? '—' : `${similarity}%`}`}
+              {`${TEXT.STAFF_FACE_SIMILARITY} ${similarity == null ? '—' : `${similarity}%`}`}
             </ThemedText>
           </View>
         </View>
@@ -1091,17 +954,6 @@ export default function StaffTimestampScreen() {
         onConfirm={startScanning}
         onCancel={() => setPhase('idle')}
       />
-
-      <ConfirmDialog
-        visible={phase === 'enroll_confirm' && isFocused}
-        title={enrollMode === 'renew' ? TEXT.STAFF_FACE_RENEW_START : TEXT.STAFF_FACE_ENROLL_START}
-        message={enrollMode === 'renew' ? TEXT.STAFF_FACE_RENEW_CONFIRM : TEXT.STAFF_FACE_ENROLL_CONFIRM}
-        confirmLabel={TEXT.STAFF_FACE_ENROLL_BEGIN}
-        icon="faceid"
-        onConfirm={startEnrolling}
-        onCancel={() => setPhase('idle')}
-      />
-
     </ThemedView>
   );
 }

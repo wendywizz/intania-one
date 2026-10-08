@@ -1374,6 +1374,11 @@ export const TEXT = {
   STAFF_FACE_MISMATCH_STOPPED: 'สแกนไม่ผ่าน หากต้องการเก็บใบหน้าใหม่ ให้ไปที่ ตั้งค่า > เก็บข้อมูลใบหน้า',
   STAFF_FACE_GO_SETTINGS: 'ไปที่ตั้งค่า',
   // ตั้งค่า: เก็บใบหน้าเองได้ตลอด จนกว่าสิทธิ์จะครบ
+  // หน้าเก็บข้อมูลใบหน้า (app/face-enroll.tsx)
+  FACE_ENROLL_NOT_STAFF: 'เมนูนี้ใช้ได้เฉพาะบุคลากรสายสนับสนุน',
+  FACE_ENROLL_REGISTRY_UNREADABLE: 'ตรวจสอบข้อมูลใบหน้าที่ลงทะเบียนไว้ไม่ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง',
+  FACE_ENROLL_DONE_TITLE: 'บันทึกใบหน้าแล้ว',
+  FACE_ENROLL_DONE_BUTTON: 'เสร็จสิ้น',
   SETTINGS_FACE_SECTION: 'ใบหน้าสำหรับลงเวลา',
   SETTINGS_FACE_TITLE: 'เก็บข้อมูลใบหน้า',
   SETTINGS_FACE_SUB: 'ลงทะเบียนหรือเก็บใบหน้าใหม่ สำหรับลงเวลาด้วยการสแกนหน้า',

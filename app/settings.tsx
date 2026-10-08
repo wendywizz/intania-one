@@ -468,7 +468,7 @@ export default function SettingsScreen() {
                 accessibilityState={{ disabled: faceEnroll.exhausted }}
                 disabled={faceEnroll.exhausted}
                 style={[styles.row, faceEnroll.exhausted ? styles.rowDisabled : null]}
-                onPress={() => router.push('/timestamp/staff-stamp?enroll=1')}
+                onPress={() => router.push('/face-enroll')}
               >
                 <IconCircle name="face-enroll" />
                 <View style={styles.rowBody}>
