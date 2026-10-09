@@ -27,7 +27,7 @@
  * the app.
  */
 import { useCallback, useRef, useState } from 'react';
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 import { useFocusEffect } from 'expo-router';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
@@ -176,7 +176,7 @@ export default function BookingRoomHistoryScreen() {
     if (loadingMore || hasMore) {
       return (
         <View style={styles.footer}>
-          <InfinityLoader size={44} strokeWidth={4} />
+          <OrbitLoader size={24} />
         </View>
       );
     }
@@ -201,7 +201,7 @@ export default function BookingRoomHistoryScreen() {
           showHomeButton={false}
         />
         <View style={styles.centered}>
-          <InfinityLoader size={60} />
+          <OrbitLoader size={32} />
         </View>
       </ThemedView>
     );

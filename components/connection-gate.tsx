@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ErrorState } from '@/components/error-state';
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts } from '@/constants/fonts';
 import { APP_ICON } from '@/constants/images';
@@ -74,7 +74,7 @@ export function ConnectionGate({ children }: { children: React.ReactNode }) {
           <View style={styles.iconTile}>
             <Image source={APP_ICON} style={styles.appIcon} contentFit="cover" />
           </View>
-          <InfinityLoader size={64} />
+          <OrbitLoader size={34} />
           <ThemedText style={styles.caption}>{TEXT.SERVICE_CHECK_CONNECTING}</ThemedText>
         </View>
       ) : (

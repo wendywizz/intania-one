@@ -24,7 +24,7 @@
  * screen needs no permission logic of its own.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -192,7 +192,7 @@ export default function BookingDetailScreen() {
     if (loading) {
       return (
         <View style={styles.centered}>
-          <InfinityLoader size={60} />
+          <OrbitLoader size={32} />
         </View>
       );
     }

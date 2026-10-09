@@ -12,7 +12,7 @@
  * lets the detail stay a page you read and this stay a list you work in.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 
@@ -127,7 +127,7 @@ export default function BookingSlotsScreen() {
     if (loading) {
       return (
         <View style={styles.centered}>
-          <InfinityLoader size={60} />
+          <OrbitLoader size={32} />
         </View>
       );
     }

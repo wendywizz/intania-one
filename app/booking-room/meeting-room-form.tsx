@@ -39,7 +39,7 @@ import {
 } from 'react-native';
 
 import { ErrorState } from '@/components/error-state';
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 import { ScreenHeader } from '@/components/screen-header';
 import { UserAvatar } from '@/components/user-avatar';
 import { SectionCard } from '@/components/section-card';
@@ -596,7 +596,7 @@ export default function MeetingRoomFormScreen() {
           tone="primary"
         />
         <View style={styles.centered}>
-          <InfinityLoader size={60} />
+          <OrbitLoader size={32} />
         </View>
       </ThemedView>
     );

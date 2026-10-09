@@ -1,6 +1,6 @@
 ﻿import { ArrowRight, Calendar, Newspaper } from 'lucide-react-native';
 import { useFocusEffect } from 'expo-router';
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 import { useCallback, useMemo, useState } from 'react';
 import { FlatList,
   Pressable,
@@ -191,7 +191,7 @@ export default function NewsScreen() {
         ListFooterComponent={
           hasMore ? (
             <View style={styles.footerLoader}>
-              <InfinityLoader size={44} strokeWidth={4} />
+              <OrbitLoader size={24} />
             </View>
           ) : null
         }

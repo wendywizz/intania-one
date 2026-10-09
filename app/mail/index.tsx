@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { MAIL_BOTTOM_BAR_SPACE, MailBottomBar } from '@/components/mail/mail-bottom-bar';
 import { MailFilterSheet } from '@/components/mail/mail-filter-sheet';
@@ -536,7 +536,7 @@ export default function MailInboxScreen() {
         ListFooterComponent={
           isLoadingMore ? (
             <View style={styles.footer}>
-              <InfinityLoader size={44} strokeWidth={4} />
+              <OrbitLoader size={24} />
             </View>
           ) : null
         }

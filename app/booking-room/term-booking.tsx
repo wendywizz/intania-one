@@ -30,7 +30,7 @@
  *   3. สีและสรุป  — colour, then the real "ใส่ตะกร้า" button
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 import { router } from 'expo-router';
 import {
   Platform,
@@ -505,7 +505,7 @@ export default function TermBookingScreen() {
       <ThemedView style={styles.container}>
         <Header />
         <View style={styles.centered}>
-          <InfinityLoader size={60} />
+          <OrbitLoader size={32} />
         </View>
       </ThemedView>
     );

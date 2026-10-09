@@ -24,7 +24,7 @@
  * like a day of meetings rather than like a third kind of list.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 import {
   Pressable,
   RefreshControl,
@@ -352,7 +352,7 @@ export default function BookingRoomScheduleScreen() {
     if (loading) {
       return (
         <View style={styles.centered}>
-          <InfinityLoader size={60} />
+          <OrbitLoader size={32} />
         </View>
       );
     }

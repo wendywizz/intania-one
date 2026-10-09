@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 
 import { useColors } from '@/constants/theme';
 
@@ -24,7 +24,7 @@ export function SubmittingOverlay({ visible }: SubmittingOverlayProps) {
       onMoveShouldSetResponder={() => true}
       style={[StyleSheet.absoluteFill, styles.scrim, { backgroundColor: `${c.background}B3` }]}
     >
-      <InfinityLoader size={60} />
+      <OrbitLoader size={32} />
     </View>
   );
 }

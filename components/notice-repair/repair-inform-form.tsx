@@ -1,5 +1,5 @@
 import { ConfirmModal } from '@/components/notice-repair/confirm-modal';
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 import { ScreenHeader } from '@/components/screen-header';
 import { SectionCard } from '@/components/section-card';
 import { useToast } from '@/components/toast-provider';
@@ -361,7 +361,7 @@ export function RepairInformForm({
       />
 
       {isLoading ? (
-        <InfinityLoader size={60} style={styles.loader} />
+        <OrbitLoader size={32} style={styles.loader} />
       ) : loadError ? (
         <View style={styles.center}>
           <ThemedText style={styles.errorText}>{loadError}</ThemedText>
@@ -498,7 +498,7 @@ export function RepairInformForm({
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
   // Centred both ways: ActivityIndicator centred itself inside a flex:1 box,
-  // the infinity mark is a plain view and has to be told.
+  // the orbit loader is a plain view and has to be told.
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   errorText: { fontSize: 15, color: c.danger, textAlign: 'center' },

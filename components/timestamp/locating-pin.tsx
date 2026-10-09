@@ -9,14 +9,14 @@ import { useColors } from '@/constants/theme';
  * hovering over a spot on the ground, dropping to it and lifting away again
  * while a ring spreads out underneath.
  *
- * The app's usual loader is its infinity mark, which says "something is
+ * The app's usual loader is its orbit ring, which says "something is
  * happening" and nothing else. On the ลงเวลา screens the first wait is
  * specifically for the phone to find itself — often the slowest part, indoors —
  * so the picture may as well say which.
  *
  * Animated with transforms and opacity only. Animating an SVG attribute breaks
- * on web (see components/infinity-loader.tsx, which steps its dash offset by
- * hand for that reason); a View that moves and fades behaves everywhere.
+ * on web (react-native-svg's web build can't take one from Animated or
+ * Reanimated); a View that moves and fades behaves everywhere.
  */
 
 /** The native driver cannot take these off the JS thread on web. */

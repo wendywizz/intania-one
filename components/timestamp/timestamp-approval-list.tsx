@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from "expo-router";
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 import { CalendarDays, Clock, LogIn, LogOut } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
@@ -165,7 +165,7 @@ export function TimestampApprovalList() {
       ListFooterComponent={
         canLoadMore ? (
           <View style={styles.footer}>
-            <InfinityLoader size={44} strokeWidth={4} />
+            <OrbitLoader size={24} />
           </View>
         ) : null
       }

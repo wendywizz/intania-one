@@ -22,7 +22,7 @@
  * requested.
  */
 import { useCallback, useState } from 'react';
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 import { useFocusEffect } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -134,7 +134,7 @@ export default function BookingRoomCurrentScreen() {
     if (loading || (authLoading && !staffId)) {
       return (
         <View style={styles.centered}>
-          <InfinityLoader size={60} />
+          <OrbitLoader size={32} />
         </View>
       );
     }

@@ -101,6 +101,7 @@ export type AppColors = {
   primary: string;         // brand accent / primary actions
   primarySoft: string;     // soft brand tint (icon circles, chips)
   primaryDeep: string;     // deep brand red (home news cards, calendar nav buttons)
+  brandAmber: string;      // the app icon's amber tile (loader dot) — same in both themes
   // Top navigation bar
   navBar: string;
   navBarText: string;
@@ -169,6 +170,7 @@ export const LightColors: AppColors = {
   primary: '#B33939',
   primarySoft: '#F7EBEB',
   primaryDeep: '#8A2626',
+  brandAmber: '#F2B33D',
   navBar: '#FFFFFF',
   navBarText: '#141414',
   success: Defo.emerald,    successSoft: '#E9F9F0', successOnSoft: '#065F46',
@@ -206,6 +208,7 @@ export const DarkColors: AppColors = {
   primary: '#B33939',
   primarySoft: 'rgba(179,57,57,0.22)',
   primaryDeep: '#7A2E2E',
+  brandAmber: '#F2B33D',
   navBar: '#161C21',
   navBarText: '#F3F4F6',
   success: Defo.emerald,    successSoft: 'rgba(46,204,113,0.16)',  successOnSoft: '#34D399',

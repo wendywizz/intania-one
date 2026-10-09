@@ -1,5 +1,5 @@
 import { AppToast } from '@/components/app-toast';
-import { InfinityLoader } from '@/components/infinity-loader';
+import { OrbitLoader } from '@/components/orbit-loader';
 import { ModalSelectField, type ModalSelectOption } from '@/components/modal-select-field';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -176,7 +176,7 @@ export default function HeaderEstimateDetailScreen() {
   };
 
   const renderContent = () => {
-    if (isLoading) return <InfinityLoader size={60} style={styles.loader} />;
+    if (isLoading) return <OrbitLoader size={32} style={styles.loader} />;
     if (error) {
       return (
         <View style={styles.stateContent}>
@@ -399,7 +399,7 @@ export default function HeaderEstimateDetailScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.surfaceAlt },
   // Centred both ways: ActivityIndicator centred itself inside a flex:1 box,
-  // the infinity mark is a plain view and has to be told.
+  // the orbit loader is a plain view and has to be told.
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   stateContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   errorText: { color: c.primary, fontSize: 14, lineHeight: 20, textAlign: 'center' },
