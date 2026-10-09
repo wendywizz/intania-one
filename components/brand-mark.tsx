@@ -6,10 +6,9 @@
  * Shared by ColdStartSplash and UpdateGate so the two red-branded "please
  * wait" screens read as one family instead of two separately-invented looks.
  *
- * Renders APP_ICON_MARK — the icon's own linework with its red backing
- * colour-keyed out — rather than APP_ICON, so the mark sits bare on the
- * splash's red the way the source design has it, with nothing behind it to
- * ring or tile.
+ * Renders APP_ICON_MARK — the icon's mark on a transparent background —
+ * rather than APP_ICON, so the mark sits bare on the splash's red the way the
+ * source design has it, with nothing behind it to ring or tile.
  */
 import { Image } from 'expo-image';
 import { useEffect, useRef } from 'react';
@@ -133,8 +132,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.55)',
   },
-  // No background/border here on purpose — the mark is transparent PNG
-  // linework, meant to sit bare on the red behind it.
+  // No background/border here on purpose — the mark is a transparent PNG,
+  // meant to sit bare on the red behind it.
   markWrap: { position: 'absolute' },
   icon: { width: '100%', height: '100%' },
 });

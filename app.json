@@ -35,7 +35,7 @@
         "ACCESS_COARSE_LOCATION"
       ],
       "adaptiveIcon": {
-        "backgroundColor": "#AD1C28",
+        "backgroundColor": "#B33939",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
@@ -51,7 +51,7 @@
         "expo-notifications",
         {
           "icon": "./assets/images/notification-icon.png",
-          "color": "#AD1C28",
+          "color": "#B33939",
           "defaultChannel": "push_alerts"
         }
       ],

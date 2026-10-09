@@ -62,8 +62,9 @@ const TOP_GAP = 28;
 /** Height of the eyebrow row (its line height). */
 const EYEBROW_HEIGHT = 18;
 
-/** How far down the mark artwork its linework ends — the PNG carries padding. */
-const MARK_INK_BOTTOM = 0.8;
+/** How far down the mark artwork its ink ends — the PNG carries padding
+ *  (app-icon-mark.png: the bar's foot sits at 0.19 + 0.62 × 0.82 ≈ 0.70). */
+const MARK_INK_BOTTOM = 0.7;
 
 type LoginLandingProps = {
   onLogin: () => void;

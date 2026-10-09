@@ -13,11 +13,10 @@ export const USER_PLACEHOLDER = require('../assets/images/user-placeholder.jpg')
 export const APP_ICON = require('../assets/images/app-icon.png');
 
 /**
- * The same mark as APP_ICON, with its red backing colour-keyed out to
- * transparent (see the "update the icon" work in git history for how).
- * BrandMark uses this instead of APP_ICON so the logo can sit bare on the
- * splash's own red — a flat red square from the icon file, ringed in white
- * to hide the seam, was the earlier approach; this drops the ring entirely.
+ * The same "Module One" mark as APP_ICON (amber tile + white bar) on a
+ * transparent background. BrandMark and the login landing use this instead of
+ * APP_ICON so the logo sits bare on the brand red behind it — the white bar
+ * disappears on a light surface, so never place it on one.
  */
 export const APP_ICON_MARK = require('../assets/images/app-icon-mark.png');
 
