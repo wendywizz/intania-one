@@ -58,6 +58,9 @@ body { font-family: Sarabun, sans-serif; -webkit-font-smoothing: antialiased; }
   background: linear-gradient(150deg, #3A3A3C, #131315 55%, #2A2A2C);
   box-shadow: 0 40px 90px rgba(40,4,4,.45), 0 0 0 1px rgba(255,255,255,.12);
 }
+.phone.real { width: 412px; height: 866px; }
+.real-img { width: 100%; height: 100%; display: block; }
+.statusbar.over { position: absolute; top: 0; left: 0; right: 0; height: 47px; z-index: 4; }
 .screen {
   width: 100%; height: 100%; border-radius: 44px; overflow: hidden;
   background: var(--bg); color: var(--text); position: relative;
@@ -531,11 +534,11 @@ const screenBooking = () => `
 
 // ── The five store panels ──────────────────────────────────────────────────
 const SHOTS = [
-  { h: 'ทุกงานของบุคลากร<br>รวมอยู่ในแอปเดียว', s: 'ลงเวลา ลา แจ้งซ่อม ประชุม จองห้อง คุมสอบ', screen: screenHome },
-  { h: 'ลงเวลาปฏิบัติงาน<br>ดูย้อนหลังได้ทั้งเดือน', s: 'รู้ทันทีว่าวันไหนสาย วันไหนลืมลงเวลา', screen: screenTimestamp },
-  { h: 'แจ้งซ่อม<br>ติดตามสถานะได้ทันที', s: 'ตั้งแต่แจ้งเรื่อง จนช่างปิดงาน', screen: screenRepair },
-  { h: 'ยื่นใบลา<br>ได้จากมือถือ', s: 'นับวันทำการให้อัตโนมัติ ข้ามวันหยุดให้เอง', screen: screenLeave },
-  { h: 'จองห้องประชุม<br>และดูตารางคุมสอบ', s: 'ตารางของวันนี้ อยู่บนหน้าจอเดียว', screen: screenBooking },
+  { h: 'ทุกงานของบุคลากร<br>รวมอยู่ในแอปเดียว', s: 'ลงเวลา ลา แจ้งซ่อม ประชุม จองห้อง คุมสอบ', img: '01-home', screen: screenHome },
+  { h: 'ลงเวลาปฏิบัติงาน<br>ดูย้อนหลังได้ทั้งเดือน', s: 'รู้ทันทีว่าวันไหนสาย วันไหนลืมลงเวลา', img: '02-timestamp', screen: screenTimestamp },
+  { h: 'แจ้งซ่อม<br>ติดตามสถานะได้ทันที', s: 'ตั้งแต่แจ้งเรื่อง จนช่างปิดงาน', img: '03-repair', screen: screenRepair },
+  { h: 'เช็กสิทธิ์วันลา<br>ได้ทุกที่ทุกเวลา', s: 'จำนวนครั้งและวันลาคงเหลือ แยกตามประเภท', img: '04-leave', screen: screenLeave },
+  { h: 'จองห้อง<br>ดูตารางการใช้ห้องได้ทันที', s: 'ตารางของวันนี้ อยู่บนหน้าจอเดียว', img: '05-booking', screen: screenBooking },
 ];
 
 // ── Render ────────────────────────────────────────────────────────────────
@@ -544,6 +547,8 @@ const idx = Math.max(0, Math.min(SHOTS.length - 1, Number(q.get('i') ?? 0)));
 const W = Number(q.get('w') ?? 1290);
 const H = Number(q.get('h') ?? 2796);
 const shot = SHOTS[idx];
+const useReal = Boolean(shot.img) && q.get('mock') !== '1';
+const PW = useReal ? 412 : 390, PH = useReal ? 866 : 844;
 
 const root = document.getElementById('shot');
 // Everything scales off the canvas width so both store sizes stay in proportion.
@@ -560,7 +565,7 @@ root.innerHTML = `
     <div class="headline" style="font-size:${Math.round(W*0.062)}px;line-height:1.28">${shot.h}</div>
     <div class="sub" style="font-size:${Math.round(W*0.031)}px;line-height:1.5;margin-top:${Math.round(W*0.022)}px">${shot.s}</div>
   </div>
-  <div class="stage"><div class="phone-scaler"><div class="phone"><div class="screen">${shot.screen()}</div></div></div></div>`;
+  <div class="stage"><div class="phone-scaler"><div class="phone${useReal ? ' real' : ''}"><div class="screen">${useReal ? `<img class="real-img" src="capture/raw/${shot.img}.png">${statusbar().replace('class="statusbar"', 'class="statusbar over"')}` : shot.screen()}</div></div></div></div>`;
 
 // Fit the 390×844 device into whatever height the headline left behind.
 // Must wait for Sarabun: measured against the fallback face the headline is a
@@ -568,11 +573,11 @@ root.innerHTML = `
 // bottom of the canvas.
 const stage = root.querySelector('.stage');
 const scaler = root.querySelector('.phone-scaler');
-scaler.style.width = '390px';
-scaler.style.height = '844px';
+scaler.style.width = PW + 'px';
+scaler.style.height = PH + 'px';
 
 function fitPhone() {
-  const k = Math.min(stage.clientWidth / 390, stage.clientHeight / 844);
+  const k = Math.min(stage.clientWidth / PW, stage.clientHeight / PH);
   scaler.style.transform = `scale(${k})`;
   document.documentElement.dataset.ready = '1';
   document.body.dataset.debug = JSON.stringify({

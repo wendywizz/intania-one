@@ -1,11 +1,37 @@
 # Store screenshots
 
 Marketing screenshots for the App Store and Google Play. Everything on them is
-**mock data** — no real staff account, no live news feed. The device screens are
-hand-built HTML replicas of the app, not captures of a running build, so they can
-be regenerated without a signed-in session.
+**mock data** — no real staff account, no live news feed.
 
-## Data masking
+Since 2026-10-12 the device screens are **captures of the app's real web build**
+(`capture/`), run in headless Chrome with every network call answered by invented
+fixtures, then placed in the phone frame by `screenshots.html`. They are the real
+components, fonts, colours and layout; only the data is made up. The older
+hand-built HTML replicas are still in `screenshots.html` — open it with `&mock=1`
+to get them (the "Data masking" section below describes that mode).
+
+## Real captures (`capture/`)
+
+Nothing reaches a real server: `mock-api.js` replaces `fetch` before the app
+loads, and Chrome is started with a host-resolver rule that only resolves
+localhost. Fixtures live in `capture/fixtures.js`; the signed-in session is
+seeded into localStorage by `capture/capture.mjs`.
+
+    # 1. start the web build (leave running)
+    npx expo start --web --port 8081
+    # 2. capture the five screens -> capture/raw/*.png (1170 x 2532)
+    cd store-assets/capture && node capture.mjs [screen ...]
+    # 3. compose + export every store size (loop below)
+    # 4. stop Metro afterwards
+
+A new screen = a route + a "wait for this text" entry in `SCREENS` in
+`capture.mjs`, plus whatever fixtures its service needs (watch the
+`unhandled=[...]` line the script prints — those are requests that got the empty
+default). Set `SCHEME=dark` for dark-mode captures. The status bar (9:41, signal,
+battery) is drawn by the template; the capture itself has only a 47 px safe-area
+gap at the top.
+
+## Data masking (mock mode only)
 
 Every data-bearing string — names, record titles, dates, times, locations — is
 written as an `Example …` placeholder and then masked character-by-character to
@@ -42,7 +68,15 @@ and put real wording in the `Example …` slots.
 | --- | --- | --- |
 | `ios-6.9/` | 1290 × 2796 | App Store Connect **6.9"** slot (iPhone 16 Pro Max) |
 | `ios-6.7/` | 1284 × 2778 | App Store Connect **6.7"** slot (iPhone 14/15 Plus) |
+| `ios-dynamic-island-medium/` | 1206 × 2622 | App Store Connect **iPhone with Dynamic Island (medium display)** slot — the required iPhone set |
+| `ios-ipad-13/` | 2064 × 2752 | App Store Connect **iPad 13"** slot (needed while `supportsTablet` is true) |
 | `android/` | 1080 × 1920 | Google Play phone screenshots |
+| `google-play/feature-graphic.png` | 1024 × 500 | Google Play feature graphic (source: `feature-graphic.html`) |
+
+Google Play text, icon and Play Console answers are in `GOOGLE_PLAY_METADATA.md`.
+
+Store text (name, subtitle, description, keywords, review notes) is in
+`APP_STORE_METADATA.md`.
 
 App Store Connect validates per slot and rejects anything not matching that
 slot's list, so a 6.9" image uploaded into the 6.7" box fails with *"The

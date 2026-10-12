@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Intania One — Play feature graphic</title>
+<style>
+@font-face { font-family: Sarabun; src: url('../assets/fonts/Sarabun/Sarabun-Regular.ttf');  font-weight: 400; }
+@font-face { font-family: Sarabun; src: url('../assets/fonts/Sarabun/Sarabun-Bold.ttf');     font-weight: 700; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1024px; height: 500px; background: #A83232; overflow: hidden; }
+body { font-family: Sarabun, sans-serif; -webkit-font-smoothing: antialiased; }
+/* Same red gradient and soft glow as the screenshot panels. */
+.fg {
+  position: relative; width: 1024px; height: 500px; display: flex; align-items: center; gap: 56px;
+  padding: 0 96px; background: linear-gradient(168deg, #C24747 0%, #A83232 42%, #7A2020 100%);
+}
+.fg::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(120% 90% at 85% 0%, rgba(255,255,255,.18), transparent 62%);
+}
+.fg > * { position: relative; }
+.icon { width: 236px; height: 236px; border-radius: 54px; flex-shrink: 0; box-shadow: 0 24px 50px rgba(40,4,4,.42), 0 0 0 1px rgba(255,255,255,.14); }
+.title { font-weight: 700; font-size: 92px; line-height: 1.05; color: #fff; letter-spacing: -.01em; text-shadow: 0 2px 18px rgba(60,8,8,.28); }
+.sub { margin-top: 20px; font-size: 38px; line-height: 1.4; color: rgba(255,255,255,.88); }
+.rule { width: 72px; height: 5px; border-radius: 3px; background: #F2B33D; margin-top: 22px; }
+</style>
+</head>
+<body>
+<div class="fg">
+  <img class="icon" src="../assets/images/icon.png" alt="">
+  <div>
+    <div class="title">Intania One</div>
+    <div class="rule"></div>
+    <div class="sub">ทุกงานของบุคลากร<br>คณะวิศวกรรมศาสตร์ ม.อ.</div>
+  </div>
+</div>
+</body>
+</html>
