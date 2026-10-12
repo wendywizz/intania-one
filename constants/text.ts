@@ -872,6 +872,7 @@ export const TEXT = {
   BOOKING_ROOM_SCHEDULE_WEEK_FREE: 'สัปดาห์นี้ยังไม่มีการจอง',
   BOOKING_ROOM_SCHEDULE_CAPACITY: 'ความจุ',
   BOOKING_ROOM_SCHEDULE_SEAT_UNIT: 'ที่นั่ง',
+  BOOKING_ROOM_SCHEDULE_BOOKER: 'ผู้จอง',
   BOOKING_ROOM_SCHEDULE_LOAD_ERROR: 'โหลดตารางจองไม่สำเร็จ',
   BOOKING_ROOM_COMPLETED_EMPTY: 'ยังไม่มีการจองที่เสร็จสิ้น',
   BOOKING_ROOM_COMPLETED_ERROR: 'โหลดการจองที่เสร็จสิ้นไม่สำเร็จ',

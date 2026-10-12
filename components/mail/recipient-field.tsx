@@ -16,6 +16,8 @@ const SUGGEST_DEBOUNCE_MS = 300;
 export const COMPOSE_LABEL_WIDTH = 64;
 /** Height of a chip or input line inside a row. */
 const LINE_HEIGHT = 30;
+/** Photo circle at the left end of a chip; sits 4px inside the pill. */
+const CHIP_AVATAR = 22;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function isValidEmail(value: string) {
@@ -132,6 +134,7 @@ export function RecipientField({
         <View style={styles.chips}>
           {recipients.map((recipient) => (
             <View key={recipient.address} style={styles.chip}>
+              <SenderAvatar name={recipient.name} address={recipient.address} size={CHIP_AVATAR} />
               <ThemedText style={styles.chipText} numberOfLines={1}>
                 {recipient.name || recipient.address}
               </ThemedText>
@@ -226,7 +229,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 6,
     maxWidth: '100%',
     height: LINE_HEIGHT,
-    paddingHorizontal: 12,
+    paddingLeft: 4,
+    paddingRight: 12,
     borderRadius: LINE_HEIGHT / 2,
     backgroundColor: c.primarySoft,
   },

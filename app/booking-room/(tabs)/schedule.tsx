@@ -85,6 +85,10 @@ type UnifiedWeekBooking = {
    *  requests carry the requester's name but no id, so they get the
    *  placeholder portrait. */
   bookerId?: string;
+  /** Who booked it — tb_user.fullname for classrooms, the requester for
+   *  meeting rooms. Its own labelled line, apart from `subtitle`, because a
+   *  classroom's teacher is often not the person who booked the room. */
+  bookerName?: string;
 };
 
 type UnifiedWeekSchedule = {
@@ -116,6 +120,7 @@ function toUnifiedClassroomBooking(b: RoomBooking): UnifiedWeekBooking {
     subtitle: b.teacher || b.objective || '',
     color: bookingColor(b.bgcolor),
     bookerId: b.booker_id || undefined,
+    bookerName: b.booker_name?.trim() || undefined,
   };
 }
 
@@ -222,7 +227,8 @@ export default function BookingRoomScheduleScreen() {
                 startTime: b.start_time,
                 endTime: b.end_time,
                 title: b.title,
-                subtitle: b.requester ?? '',
+                subtitle: '',
+                bookerName: b.requester?.trim() || undefined,
               })),
             };
           } else {
@@ -341,6 +347,14 @@ export default function BookingRoomScheduleScreen() {
               <ThemedText style={styles.bookingNote} numberOfLines={1}>
                 {booking.subtitle}
               </ThemedText>
+            ) : null}
+            {booking.bookerName ? (
+              <View style={styles.bookerRow}>
+                <IconSymbol name="person.fill" size={13} color={c.textMuted} />
+                <ThemedText style={styles.bookerText} numberOfLines={1}>
+                  {`${TEXT.BOOKING_ROOM_SCHEDULE_BOOKER} ${booking.bookerName}`}
+                </ThemedText>
+              </View>
             ) : null}
           </View>
         </View>
@@ -691,4 +705,6 @@ const createStyles = (c: ReturnType<typeof useColors>) =>
     bookingText: { flex: 1, minWidth: 0 },
     bookingTitle: { fontSize: 15, lineHeight: 20, color: c.text },
     bookingNote: { fontSize: 12, color: c.textMuted },
+    bookerRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+    bookerText: { flex: 1, fontSize: 12, lineHeight: 17, color: c.text },
   });

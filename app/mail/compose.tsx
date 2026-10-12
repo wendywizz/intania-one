@@ -15,6 +15,7 @@ import {
 import { ErrorState } from '@/components/error-state';
 import { LoadingAnimate } from '@/components/loading-animate';
 import { COMPOSE_LABEL_WIDTH, RecipientField } from '@/components/mail/recipient-field';
+import { SenderAvatar } from '@/components/mail/sender-avatar';
 import { NavTopBar } from '@/components/nav-top-bar';
 import { SectionCard } from '@/components/section-card';
 import { ThemedText } from '@/components/themed-text';
@@ -101,6 +102,7 @@ export default function MailComposeScreen() {
   const composeEnabled = isMailComposeEnabled();
 
   const [fromAddress, setFromAddress] = useState('');
+  const [fromName, setFromName] = useState('');
   const [to, setTo] = useState<MailRecipient[]>([]);
   const [cc, setCc] = useState<MailRecipient[]>([]);
   const [subject, setSubject] = useState('');
@@ -129,7 +131,9 @@ export default function MailComposeScreen() {
     let cancelled = false;
     getAccount()
       .then((account) => {
-        if (!cancelled) setFromAddress(account?.mail ?? '');
+        if (cancelled) return;
+        setFromAddress(account?.mail ?? '');
+        setFromName(account?.displayName ?? '');
       })
       .catch(() => undefined);
     return () => {
@@ -342,12 +346,16 @@ export default function MailComposeScreen() {
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <ScrollView contentContainerStyle={[styles.form, { paddingBottom: contentBottomPadding }]} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={[styles.form, { paddingBottom: contentBottomPadding }]}
+            keyboardShouldPersistTaps="handled"
+          >
             <SectionCard style={styles.card}>
               {fromAddress ? (
                 <>
                   <View style={styles.fromLine}>
                     <ThemedText style={styles.fieldLabel}>{TEXT.MAIL_COMPOSE_FROM}</ThemedText>
+                    <SenderAvatar name={fromName} address={fromAddress} size={26} />
                     <ThemedText style={styles.fromValue} numberOfLines={1}>
                       {fromAddress}
                     </ThemedText>
@@ -451,10 +459,11 @@ export default function MailComposeScreen() {
 const makeStyles = (c: AppColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
   flex: { flex: 1 },
-  form: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
+  // flexGrow lets the card below stretch to the bottom of the screen.
+  form: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
   // The rows space themselves out and are split by dividers, so the card's own
   // gap would only double up around every divider.
-  card: { gap: 0, paddingVertical: 6 },
+  card: { flex: 1, gap: 0, paddingVertical: 6 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border },
   fromLine: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 50, paddingVertical: 10 },
   fromValue: { flex: 1, fontFamily: AppFonts.psuRegular, fontSize: 15, color: c.textMuted },
@@ -491,6 +500,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     color: c.infoOnSoft,
   },
   bodyInput: {
+    flex: 1,
     minHeight: 220,
     paddingTop: 14,
     paddingBottom: 14,

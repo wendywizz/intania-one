@@ -29,9 +29,10 @@ function hashString(value: string) {
 }
 
 /**
- * A colored initial circle for an email sender — the same idea as iOS Mail's
- * per-contact avatar colour, standing in for a photo this app has no way to
- * fetch for an arbitrary external sender.
+ * An email sender's avatar: their staff photo when the directory knows them
+ * (see services/mailSenderPhoto.ts), otherwise a coloured initial circle —
+ * the same idea as iOS Mail's per-contact colour. The initial is drawn first
+ * and the photo laid over it, so a slow or failed photo never leaves a blank.
  */
 export function SenderAvatar({
   name,
@@ -47,12 +48,15 @@ export function SenderAvatar({
   useEffect(() => {
     let cancelled = false;
     setPhoto(null);
-    getSenderPhoto(address).then((uri) => {
+    getSenderPhoto(address, name).then((uri) => {
       if (!cancelled) setPhoto(uri);
     });
     return () => {
       cancelled = true;
     };
+    // Keyed on the address alone: getSenderPhoto caches per address, and the
+    // name only helps the first lookup.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address]);
   const label = (name || address || '').trim();
   const initial = label ? label[0]!.toUpperCase() : '?';

@@ -33,6 +33,9 @@ export type RoomBooking = {
    *  the personnel photo API keys on. Optional: API builds before it was
    *  added don't send it, and the avatar then falls back to the placeholder. */
   booker_id?: string;
+  /** The booker's name as the booking website knows it (tb_user.fullname).
+   *  Optional for the same reason as booker_id. */
+  booker_name?: string;
 };
 
 export type RoomWeekSchedule = {
