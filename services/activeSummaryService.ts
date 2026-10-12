@@ -92,13 +92,20 @@ type ApiResponse = {
   message: string;
 };
 
+/**
+ * `fresh` asks the gateway to rebuild instead of answering from the few seconds
+ * it keeps a person's last summary. Pass it when the person has just done
+ * something that moves the counts, or pulled to refresh.
+ */
 export async function getActiveSummary(
   staffId: string,
   userId?: string,
+  options: { fresh?: boolean } = {},
 ): Promise<ActiveSummaryData> {
   const url = createApiUrl('/api/active-summary', {
     staff_id: staffId,
     user_id: userId || staffId,
+    fresh: options.fresh ? 1 : undefined,
   });
   const json = await requestJson<ApiResponse>(url);
   return json.data;

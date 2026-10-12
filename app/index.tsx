@@ -31,6 +31,7 @@ import type { AuthUser, ExamTask, News } from '@/models/types';
 import { getUnreadNotificationCount } from '@/services/notificationService';
 import { staffNewsFeed } from '@/services/newsService';
 import { getActiveSummary, type ActiveSummaryData } from '@/services/activeSummaryService';
+import { getWriteEpoch } from '@/services/api';
 import { approvingWaitingData } from '@/services/absenceService';
 import { getForgetApprovalWaiting } from '@/services/timestampService';
 import { listExamTasks } from '@/services/examinarService';
@@ -733,6 +734,18 @@ const makeShiftStyles = (m: M) => StyleSheet.create({
   },
 });
 
+/**
+ * Coming back to Home from a module used to refetch everything - the news feed,
+ * the active summary (seven upstream apps behind it), exams and both approval
+ * counts - every single time, so a person moving between screens fired about
+ * six requests per hop. Within these windows the page keeps what it has. A
+ * pull-to-refresh always reloads, and so does any return after the person has
+ * written something (see getWriteEpoch), so a badge never outlives the action
+ * that cleared it.
+ */
+const SUMMARY_REFRESH_MIN_MS = 30 * 1000;
+const NEWS_REFRESH_MIN_MS = 5 * 60 * 1000;
+
 export default function HomeScreen() {
   const m = useMinimal();
   const { isDarkMode } = useTheme();
@@ -780,6 +793,11 @@ export default function HomeScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const processedCallbackRef = useRef('');
+  // When the news band and the shift-tile group last loaded successfully, for
+  // the refresh windows above. The summary entry also remembers whose it was
+  // and how many writes had happened by then.
+  const newsLoadedAtRef = useRef(0);
+  const summaryLoadedRef = useRef<{ key: string; at: number; epoch: number } | null>(null);
   const { completeWebSignIn, eligibility, isCompOtEligible, loading: isAuthLoading, signIn, signOut, user: authUser } = useAuth();
   const completeWebSignInRef = useRef(completeWebSignIn);
 
@@ -831,6 +849,12 @@ export default function HomeScreen() {
         if (isActive) setUnreadCount(count);
       });
 
+      // The feed is the same for everyone and changes a few times a day, so a
+      // revisit inside the window keeps the cards it has.
+      if (Date.now() - newsLoadedAtRef.current < NEWS_REFRESH_MIN_MS) {
+        return () => { isActive = false; };
+      }
+
       // Reset on every focus (not just first mount) so coming back from
       // another screen swaps the last visit's cards for the news band's own
       // small spinner while this refetches — the page itself stays up; only
@@ -838,6 +862,9 @@ export default function HomeScreen() {
       setIsNewsReady(false);
       void staffNewsFeed().then((items) => {
         if (!isActive) return;
+        // staffNewsFeed answers [] on any failure, so only a non-empty feed
+        // counts as loaded; an empty one is tried again on the next focus.
+        newsLoadedAtRef.current = items.length > 0 ? Date.now() : 0;
         setNewsItems(items);
         setIsNewsError(false);
       }).catch(() => {
@@ -877,6 +904,21 @@ export default function HomeScreen() {
         return;
       }
 
+      // Loaded for this same person a moment ago and nothing written since:
+      // keep it. Only the first look, a different account, a stale one or a
+      // failed one goes on to fetch.
+      const loadKey = `${staffId}|${userId}`;
+      const epoch = getWriteEpoch();
+      const last = summaryLoadedRef.current;
+      const sameAccount = last?.key === loadKey;
+      if (sameAccount && last.epoch === epoch && Date.now() - last.at < SUMMARY_REFRESH_MIN_MS) {
+        setIsSummaryReady(true);
+        return;
+      }
+      // Something was written since the last look, so the gateway's own short
+      // cache of the summary may predate it too.
+      const fresh = sameAccount && last.epoch !== epoch;
+
       setIsActiveSummaryLoading(true);
       setIsActiveSummaryError(false);
 
@@ -884,7 +926,7 @@ export default function HomeScreen() {
       // All four settle together — the page-level gate waits for this whole
       // group, so it must not lift on whichever call happens to answer first.
       void Promise.allSettled([
-        getActiveSummary(staffId, userId),
+        getActiveSummary(staffId, userId, { fresh }),
         listExamTasks({ staff_id: staffId, ...examParams }),
         approvingWaitingData(staffId),
         getForgetApprovalWaiting(staffId),
@@ -894,9 +936,13 @@ export default function HomeScreen() {
         if (summaryResult.status === 'fulfilled') {
           setActiveSummary(summaryResult.value);
           setIsActiveSummaryError(false);
+          // Taken at the start of the load, not now: a write that finished while
+          // this was in flight must still trigger a reload on the next focus.
+          summaryLoadedRef.current = { key: loadKey, at: Date.now(), epoch };
         } else {
           setActiveSummary(null);
           setIsActiveSummaryError(true);
+          summaryLoadedRef.current = null;
         }
 
         setUpcomingExams(
@@ -958,7 +1004,7 @@ export default function HomeScreen() {
 
     setIsActiveSummaryLoading(true);
     setIsActiveSummaryError(false);
-    getActiveSummary(staffId, userId)
+    getActiveSummary(staffId, userId, { fresh: true })
       .then((data) => {
         setActiveSummary(data);
         setIsActiveSummaryError(false);
@@ -984,8 +1030,12 @@ export default function HomeScreen() {
         ? getUnreadNotificationCount().then(setUnreadCount).catch(() => {})
         : Promise.resolve(),
       staffId
-        ? getActiveSummary(staffId, userId)
-            .then((data) => { setActiveSummary(data); setIsActiveSummaryError(false); })
+        ? getActiveSummary(staffId, userId, { fresh: true })
+            .then((data) => {
+              setActiveSummary(data);
+              setIsActiveSummaryError(false);
+              summaryLoadedRef.current = { key: `${staffId}|${userId}`, at: Date.now(), epoch: getWriteEpoch() };
+            })
             .catch(() => { setActiveSummary(null); setIsActiveSummaryError(true); })
         : Promise.resolve(),
       staffId

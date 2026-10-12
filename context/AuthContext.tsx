@@ -89,12 +89,30 @@ function resolveStaffId(user: AuthUser | null): string | undefined {
   return __DEV__ && DEV_STAFF_ID ? DEV_STAFF_ID : user.staffId;
 }
 
-function registerDeviceInBackground(user: AuthUser | null) {
+/**
+ * How often coming back to the app may re-register this phone. Registration
+ * refreshes the push token and `last_visited`; it was sent on every return to
+ * the foreground, so a person flicking between apps posted it dozens of times a
+ * day for nothing. A token change has its own listener
+ * (subscribeToLoggedInDevicePushTokenChanges), so this is only the heartbeat.
+ */
+const FOREGROUND_REGISTER_INTERVAL_MS = 30 * 60 * 1000;
+let lastDeviceRegisterAt = 0;
+
+function registerDeviceInBackground(user: AuthUser | null, options: {onlyIfStale?: boolean} = {}) {
   if (!user) {
     return;
   }
 
+  const now = Date.now();
+  if (options.onlyIfStale && now - lastDeviceRegisterAt < FOREGROUND_REGISTER_INTERVAL_MS) {
+    return;
+  }
+  lastDeviceRegisterAt = now;
+
   registerLoggedInDevice(user).catch((error) => {
+    // A failed attempt must not hold the next foreground back for half an hour.
+    lastDeviceRegisterAt = 0;
     if (process.env.NODE_ENV !== 'production') {
       console.warn('[push] device registration failed', error);
     }
@@ -207,7 +225,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        registerDeviceInBackground(userRef.current);
+        registerDeviceInBackground(userRef.current, {onlyIfStale: true});
       }
     });
 

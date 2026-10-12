@@ -53,7 +53,30 @@ export type UploadableFile =
  * 4xx text matters. Everything that just wants JSON should use requestJson.
  */
 export async function fetchApi(input: RequestInfo | URL, init?: RequestInit) {
-  return fetch(input, withApiToken(input, init));
+  try {
+    return await fetch(input, withApiToken(input, init));
+  } finally {
+    noteWrite(init);
+  }
+}
+
+/**
+ * Counts every write (anything but GET/HEAD) the app has finished sending.
+ *
+ * Screens that skip a refetch because they loaded a moment ago compare this to
+ * the value they saw then: if it moved, the person did something in between
+ * (approved, cancelled, submitted) and what the screen holds may be out of date,
+ * so it loads again after all. See the home screen's summary.
+ */
+let writeEpoch = 0;
+
+export function getWriteEpoch() {
+  return writeEpoch;
+}
+
+function noteWrite(init?: RequestInit) {
+  const method = (init?.method ?? "GET").toUpperCase();
+  if (method !== "GET" && method !== "HEAD") writeEpoch += 1;
 }
 
 function createUrl(
@@ -165,6 +188,17 @@ async function fetchOnce(input: RequestInfo | URL, init?: RequestInit) {
 }
 
 export async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+) {
+  try {
+    return await fetchWithRetry(input, init);
+  } finally {
+    noteWrite(init);
+  }
+}
+
+async function fetchWithRetry(
   input: RequestInfo | URL,
   init?: RequestInit,
 ) {
