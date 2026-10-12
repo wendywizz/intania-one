@@ -481,6 +481,39 @@ export async function clearNotificationHistory() {
   await AsyncStorage.removeItem(NOTIFICATION_HISTORY_STORAGE_KEY);
 }
 
+/**
+ * Sign-out: forget everything this phone holds that belongs to the person who
+ * just left. Stopping the gateway sending (unregisterLoggedInDevice) only covers
+ * what has not arrived yet - what already did sits in the history list and in the
+ * system tray, where the next person to sign in would read it.
+ *
+ * Unlike clearNotificationHistory this leaves no tombstones: they exist to keep
+ * a deleted push from being synced back from the tray, and the tray is emptied
+ * here, so they would only pile up ids that mean nothing to the next owner.
+ * Never throws - signing out must not fail because of a tray that won't clear.
+ */
+export async function clearNotificationsForSignOut() {
+  await dismissPresented();
+  await Promise.all(
+    [
+      NOTIFICATION_HISTORY_STORAGE_KEY,
+      DELETED_NOTIFICATION_IDS_STORAGE_KEY,
+      LAST_LAUNCH_TAP_STORAGE_KEY,
+    ].map((key) => AsyncStorage.removeItem(key).catch(() => undefined)),
+  );
+  heldTapItem = null;
+  lastDeliveredTapKey = "";
+
+  try {
+    const Notifications = await loadNotifications();
+    // Nothing of ours is scheduled locally today, but a reminder queued for the
+    // previous owner would name them just the same.
+    await Notifications?.cancelAllScheduledNotificationsAsync();
+  } catch {
+    // Same as above: best effort.
+  }
+}
+
 export async function deleteNotificationHistoryItem(id: string) {
   await addDeletedIds([id]);
   const items = await readStoredHistory();

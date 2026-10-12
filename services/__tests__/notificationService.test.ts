@@ -33,6 +33,11 @@ jest.mock('expo-notifications', () => ({
   }),
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   getLastNotificationResponseAsync: jest.fn().mockResolvedValue(null),
+  dismissNotificationAsync: jest.fn(async (identifier: string) => {
+    const index = presented.findIndex((n) => (n as { request: { identifier: string } }).request.identifier === identifier);
+    if (index >= 0) presented.splice(index, 1);
+  }),
+  cancelAllScheduledNotificationsAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
 // 2026-09-22 09:30 in Bangkok.
@@ -179,5 +184,32 @@ describe('a push that arrived while the app was in the background', () => {
     const [again] = await service.getNotificationHistory();
 
     expect(again.status).toBe('read');
+  });
+});
+
+describe('signing out', () => {
+  it('leaves the next person neither the history nor the tray of the one who left', async () => {
+    const service = await loadService('android');
+    received.forEach((listener) => listener(push(ARRIVED_MS)));
+    presented.push(push(ARRIVED_MS + 60_000));
+    await flush();
+    expect((await service.getNotificationHistory()).length).toBe(2);
+
+    await service.clearNotificationsForSignOut();
+
+    expect(presented).toHaveLength(0);
+    expect(await service.getNotificationHistory()).toEqual([]);
+    expect(await service.getUnreadNotificationCount()).toBe(0);
+  });
+
+  it('does not leave deletion tombstones behind for the next owner', async () => {
+    const service = await loadService('android');
+    received.forEach((listener) => listener(push(ARRIVED_MS)));
+    await flush();
+    await service.deleteNotificationHistoryItem(`push-${ARRIVED_MS}`);
+
+    await service.clearNotificationsForSignOut();
+
+    expect(await AsyncStorage.getItem('PUSH_NOTIFICATION_DELETED_IDS')).toBeNull();
   });
 });

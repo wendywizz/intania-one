@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { AUTH } from '@/constants/auth';
 import * as authService from '@/services/authService';
 import { unregisterLoggedInDevice } from '@/services/deviceService';
+import { clearNotificationsForSignOut } from '@/services/notificationService';
 
 const authKeys = [
   AUTH.storageKeys.user,
@@ -59,7 +60,7 @@ export default function ClearAuthScreen() {
 
     async function clearAuth() {
       try {
-        await unregisterLoggedInDevice();
+        await Promise.all([unregisterLoggedInDevice(), clearNotificationsForSignOut()]);
         await authService.logout();
         await AsyncStorage.multiRemove(authKeys);
         await clearBrowserAuthStorage();

@@ -8,7 +8,7 @@ import {
   subscribeToLoggedInDevicePushTokenChanges,
   unregisterLoggedInDevice,
 } from '../services/deviceService';
-import {setNotificationEnabled} from '../services/notificationService';
+import {clearNotificationsForSignOut, setNotificationEnabled} from '../services/notificationService';
 import {
   fetchStaffEligibility,
   readCachedEligibility,
@@ -290,7 +290,12 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         // Before the session goes, or this phone keeps receiving the signed-out
         // person's notifications. The gateway resets its Settings switch too,
         // so the next person starts from "on" on both sides.
-        await Promise.all([unregisterLoggedInDevice(), setNotificationEnabled(true)]);
+        await Promise.all([
+          unregisterLoggedInDevice(),
+          setNotificationEnabled(true),
+          // What already arrived: the history list and the system tray.
+          clearNotificationsForSignOut(),
+        ]);
         await authService.logout();
         setUser(null);
         // Abandon any check still in flight, so its late reply cannot stamp a
