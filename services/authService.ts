@@ -6,8 +6,10 @@ import * as WebBrowser from 'expo-web-browser';
 import {Platform} from 'react-native';
 import {AUTH} from '../constants/auth';
 import {METRO_PROXY_ENDPOINTS} from '../constants/endpoints';
+import {TEXT} from '../constants/text';
 import type {AuthUser} from '../models/types';
 import {fetchApi} from './api';
+import {DEMO_MODE_ENABLED, DEMO_USER, enterDemoMode, exitDemoMode, isDemoUser, matchesDemoCredentials} from './demo/demoMode';
 
 type TokenResponse = {
   access_token?: string;
@@ -642,10 +644,35 @@ export async function completeWebLogin(params: {
   return user;
 }
 
+/**
+ * Signs in the App Review demo account (services/demo/demoMode.ts). No
+ * network: the credentials are checked here and the session is stored like a
+ * real one, without tokens, so restoreSession brings it back.
+ */
+export async function loginDemo(username: string, password: string): Promise<AuthUser> {
+  if (!matchesDemoCredentials(username, password)) {
+    throw new Error(TEXT.AUTH_DEMO_INVALID);
+  }
+
+  enterDemoMode();
+  await persistSession(DEMO_USER);
+  return DEMO_USER;
+}
+
 export async function restoreSession(): Promise<AuthUser | null> {
   const refreshToken = await AsyncStorage.getItem(AUTH.storageKeys.refreshToken);
   if (!refreshToken) {
-    return getCurrentUser();
+    const stored = await getCurrentUser();
+    if (isDemoUser(stored)) {
+      // Demo switched off since this session began: sign it out.
+      if (!DEMO_MODE_ENABLED) {
+        await logout();
+        return null;
+      }
+      // Before anything else can fetch for this session.
+      enterDemoMode();
+    }
+    return stored;
   }
 
   try {
@@ -662,6 +689,7 @@ export async function getAccessToken() {
 export async function logout() {
   completedAuthCallback = null;
   pendingAuthStates = [];
+  exitDemoMode();
   await AsyncStorage.multiRemove([
     AUTH.storageKeys.user,
     AUTH.storageKeys.accessToken,

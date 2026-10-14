@@ -238,6 +238,19 @@ export const TEXT = {
   AUTH_LOGIN_FAILED: 'เข้าสู่ระบบไม่สำเร็จ',
   AUTH_SIGNING_IN_TITLE: 'กำลังเข้าสู่ระบบ',
   AUTH_LOGIN_PAGE_TIMEOUT: 'โหลดหน้าเข้าสู่ระบบ PSU Passport ไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่อีกครั้ง',
+  // Visitor mode: the login page's "เข้าใช้งาน" button and the home it opens.
+  AUTH_VISITOR_ENTER: 'เข้าใช้งาน',
+  AUTH_VISITOR_ENTER_HINT: 'ดูข่าว ปฏิทิน และค้นหาบุคลากร',
+  HOME_VISITOR_LOGIN: 'เข้าสู่ระบบ',
+  HOME_VISITOR_NOTE: 'ฟีเจอร์อื่นสำหรับบุคลากรคณะวิศวฯ มอ. เข้าสู่ระบบด้วยบัญชี PSU Passport',
+  // Demo account (App Review). Bilingual on purpose: the reviewer reads English.
+  AUTH_DEMO_TITLE: 'บัญชีทดสอบ (Demo account)',
+  AUTH_DEMO_HINT: 'ใช้ข้อมูลจำลองทั้งหมด ไม่เชื่อมต่อข้อมูลบุคลากรจริง',
+  AUTH_DEMO_HINT_EN: 'All data in demo mode is sample data.',
+  AUTH_DEMO_USERNAME: 'ชื่อผู้ใช้ (Username)',
+  AUTH_DEMO_PASSWORD: 'รหัสผ่าน (Password)',
+  AUTH_DEMO_SUBMIT: 'เข้าสู่ระบบ (Sign in)',
+  AUTH_DEMO_INVALID: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (Incorrect username or password)',
 
   // absence
   ABSENCE_APPROVER_LABEL: 'ผู้อนุมัติ',

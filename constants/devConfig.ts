@@ -1,3 +1,16 @@
+// Demo mode — the App Review account (services/demo/demoMode.ts). Unlike the
+// dev overrides below this one DOES ship: keep it true in any build sent to App
+// Review, or the reviewer has no way to sign in. false hides the
+// "บัญชีทดสอบ (Demo account)" link and signs out a stored demo session.
+export const DEMO_MODE_ENABLED: boolean = true;
+
+// Visitor mode — the "เข้าใช้งาน" button on the login page, which opens a home
+// with only the faculty news, the calendar and the staff search, no sign-in
+// needed (context/AuthContext.tsx). Ships in the build like DEMO_MODE_ENABLED.
+// false removes the button; a visitor session is in memory only, so there is
+// nothing stored to clean up. Flip it with an EAS Update (it is plain JS).
+export const VISITOR_MODE_ENABLED: boolean = true;
+
 // Dev overrides — must be empty/null before building for production.
 // Set DEV_STAFF_ID to a UNI_STAFF_ID to impersonate that user across ALL features.
 //

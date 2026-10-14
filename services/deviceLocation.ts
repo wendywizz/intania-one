@@ -1,6 +1,13 @@
 import * as Location from 'expo-location';
 
 import { DEV_LOCATION } from '../constants/devConfig';
+import { isDemoActive } from './demo/demoMode';
+
+/**
+ * The fence centre (staff.php/lecturer.php), reported in demo mode — App Review
+ * is nowhere near the faculty, and the demo stamp is sample data anyway.
+ */
+const DEMO_POSITION: DevicePosition = { lat: 7.006754432048102, lon: 100.50110828545463, accuracyM: 12 };
 
 /**
  * Where the phone says it is — for the anti-fraud checks on ลงเวลา.
@@ -109,6 +116,11 @@ export async function readDevicePosition(): Promise<LocationReading> {
 
     if (permission.status !== 'granted') {
       return fail('denied', permission.canAskAgain !== false);
+    }
+
+    // Asked for all the same, so the reviewer sees the real permission prompt.
+    if (isDemoActive()) {
+      return { outcome: 'ok', position: DEMO_POSITION, canAskAgain: true };
     }
 
     // Checked separately from the permission, because on Android the two are

@@ -12,7 +12,7 @@
 import Constants from 'expo-constants';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -28,7 +28,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Path, Pattern, Rect } from 'react-native-svg';
 
 import { AppText as Text } from '@/components/app-text';
+import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Sheet } from '@/components/ui/sheet';
+import { TextField } from '@/components/ui/text-field';
+import { DEMO_MODE_ENABLED, VISITOR_MODE_ENABLED } from '@/constants/devConfig';
 import { APP_ICON_MARK, PSU_PASSPORT_BUTTON, PSU_PASSPORT_BUTTON_ASPECT } from '@/constants/images';
 import { boxShadow } from '@/constants/shadows';
 import { TEXT } from '@/constants/text';
@@ -66,15 +70,38 @@ const EYEBROW_HEIGHT = 18;
  *  (app-icon-mark.png: the bar's foot sits at 0.19 + 0.62 × 0.82 ≈ 0.70). */
 const MARK_INK_BOTTOM = 0.7;
 
+/** Taps on the version line that open the demo sheet, and the longest pause between two of them. */
+const DEMO_TAPS = 5;
+const DEMO_TAP_WINDOW_MS = 1500;
+
 type LoginLandingProps = {
   onLogin: () => void;
+  /** Signs in the App Review demo account; rejects with a message to show. */
+  onDemoLogin: (username: string, password: string) => Promise<void>;
+  /** Opens the visitor home (news, calendar, staff search) with no sign-in. */
+  onVisitor: () => void;
 };
 
-export function LoginLanding({ onLogin }: LoginLandingProps) {
+export function LoginLanding({ onLogin, onDemoLogin, onVisitor }: LoginLandingProps) {
   const s = useThemedStyles(makeStyles);
   const c = useColors();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
+  const [demoOpen, setDemoOpen] = useState(false);
+  const versionTaps = useRef({ count: 0, last: 0 });
+
+  const onVersionPress = () => {
+    if (!DEMO_MODE_ENABLED) return;
+    const now = Date.now();
+    const taps = versionTaps.current;
+    // Taps must come in one run; a pause starts the count over.
+    taps.count = now - taps.last > DEMO_TAP_WINDOW_MS ? 1 : taps.count + 1;
+    taps.last = now;
+    if (taps.count >= DEMO_TAPS) {
+      taps.count = 0;
+      setDemoOpen(true);
+    }
+  };
 
   // The mark, as drawn on the 390pt artboard: a faint watermark on a disc a
   // shade darker than the field, circled by one hairline ring, centred where
@@ -271,6 +298,23 @@ export function LoginLanding({ onLogin }: LoginLandingProps) {
                 style={({ pressed }) => [s.loginBtn, pressed && s.pressed]}>
                 <Image source={PSU_PASSPORT_BUTTON} style={s.loginBtnImage} contentFit="contain" />
               </Pressable>
+              {VISITOR_MODE_ENABLED ? (
+                <View style={s.visitorBlock}>
+                  <Button
+                    title={TEXT.AUTH_VISITOR_ENTER}
+                    variant="secondary"
+                    size="md"
+                    fullWidth
+                    onPress={onVisitor}
+                  />
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.85}
+                    maxFontSizeMultiplier={TEXT_MAX_SCALE}
+                    style={s.note}>{TEXT.AUTH_VISITOR_ENTER_HINT}</Text>
+                </View>
+              ) : null}
               <View style={s.noteRow}>
                 <IconSymbol name="checkmark.shield" size={14} color={c.textMuted} />
                 <Text
@@ -281,13 +325,91 @@ export function LoginLanding({ onLogin }: LoginLandingProps) {
                   style={s.note}>{TEXT.HOME_LOGIN_NOTE}</Text>
               </View>
             </View>
-            <Text maxFontSizeMultiplier={TEXT_MAX_SCALE} style={s.version}>
-              {`${TEXT.HOME_APP_NAME} ${TEXT.HOME_LANDING_TITLE_SUFFIX} · v${APP_VERSION}`}
-            </Text>
+            {/* App Review cannot get a PSU Passport, so it signs in through the
+                demo sheet — see services/demo/demoMode.ts. TestFlight testers
+                run the same binary and must not see it, so there is no visible
+                control: tapping this version line DEMO_TAPS times opens it. The
+                gesture is written in the App Review notes. */}
+            <Pressable onPress={onVersionPress} accessible={false}>
+              <Text maxFontSizeMultiplier={TEXT_MAX_SCALE} style={s.version}>
+                {`${TEXT.HOME_APP_NAME} ${TEXT.HOME_LANDING_TITLE_SUFFIX} · v${APP_VERSION}`}
+              </Text>
+            </Pressable>
           </Animated.View>
         </View>
       </ScrollView>
+
+      <DemoLoginSheet visible={demoOpen} onClose={() => setDemoOpen(false)} onSubmit={onDemoLogin} />
     </View>
+  );
+}
+
+function DemoLoginSheet({
+  visible,
+  onClose,
+  onSubmit,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (username: string, password: string) => Promise<void>;
+}) {
+  const s = useThemedStyles(makeStyles);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    setSubmitting(true);
+    setError('');
+    try {
+      await onSubmit(username, password);
+      // Signed in: this page unmounts with the sheet in it.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : TEXT.AUTH_DEMO_INVALID);
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Sheet visible={visible} onClose={onClose} title={TEXT.AUTH_DEMO_TITLE}>
+      <View style={s.demoForm}>
+        {/* Two Texts, not one with a line break: Sarabun opens a break inside
+            one Text far wider on iOS (see the wordmark note above). */}
+        <View>
+          <Text style={s.demoHint}>{TEXT.AUTH_DEMO_HINT}</Text>
+          <Text style={s.demoHint}>{TEXT.AUTH_DEMO_HINT_EN}</Text>
+        </View>
+        <TextField
+          label={TEXT.AUTH_DEMO_USERNAME}
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="username"
+          textContentType="username"
+        />
+        <TextField
+          label={TEXT.AUTH_DEMO_PASSWORD}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="password"
+          textContentType="password"
+          onSubmitEditing={submit}
+          error={error || undefined}
+        />
+        <Button
+          title={TEXT.AUTH_DEMO_SUBMIT}
+          onPress={submit}
+          loading={submitting}
+          disabled={!username.trim() || !password}
+          fullWidth
+        />
+      </View>
+    </Sheet>
   );
 }
 
@@ -421,6 +543,13 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  visitorBlock: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    gap: 8,
+    maxWidth: 300,
+    width: '100%',
+  },
   noteRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -429,6 +558,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   note: {
     flexShrink: 1,
+    fontFamily: 'Sarabun_Rg',
+    fontSize: 13,
+    lineHeight: 20,
+    color: c.textMuted,
+  },
+  demoForm: {
+    gap: 14,
+    paddingBottom: 8,
+  },
+  demoHint: {
     fontFamily: 'Sarabun_Rg',
     fontSize: 13,
     lineHeight: 20,

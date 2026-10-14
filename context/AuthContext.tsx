@@ -22,6 +22,8 @@ import {
 } from '../services/staffInfoService';
 import type {StaffStampRole} from '../services/timestampService';
 import {DEV_STAFF_ID} from '../constants/devConfig';
+import {isDemoUser} from '../services/demo/demoMode';
+import {VISITOR_MODE_ENABLED} from '../constants/devConfig';
 
 /**
  * Whether the signed-in person is Faculty of Engineering staff.
@@ -71,6 +73,18 @@ type AuthContextValue = {
   isCompOtEligible: boolean;
   completeWebSignIn: (params: Parameters<typeof authService.completeWebLogin>[0]) => Promise<void>;
   signIn: () => Promise<void>;
+  /** The App Review demo account — see services/demo/demoMode.ts. */
+  signInDemo: (username: string, password: string) => Promise<void>;
+  /** Signed in with the demo account: every screen runs on sample data. */
+  isDemo: boolean;
+  /**
+   * Browsing without an account: the home shows only the public parts (news,
+   * calendar, staff search). In memory only — a relaunch is back at the login
+   * page — and always false while VISITOR_MODE_ENABLED is off.
+   */
+  isVisitor: boolean;
+  enterVisitor: () => void;
+  exitVisitor: () => void;
   signOut: () => Promise<void>;
 };
 
@@ -100,7 +114,8 @@ const FOREGROUND_REGISTER_INTERVAL_MS = 30 * 60 * 1000;
 let lastDeviceRegisterAt = 0;
 
 function registerDeviceInBackground(user: AuthUser | null, options: {onlyIfStale?: boolean} = {}) {
-  if (!user) {
+  // A demo session has no real staff id to send pushes to.
+  if (!user || isDemoUser(user)) {
     return;
   }
 
@@ -123,6 +138,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(true);
+  const [visitorRequested, setVisitorRequested] = useState(false);
   const [eligibility, setEligibility] = useState<StaffEligibilityStatus>('unknown');
   // Resolved by the same call as `eligibility` — one request answers both, so
   // they can never disagree about which account they describe.
@@ -237,6 +253,10 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       return undefined;
     }
 
+    if (isDemoUser(user)) {
+      return undefined;
+    }
+
     return subscribeToLoggedInDevicePushTokenChanges(user);
   }, [user]);
 
@@ -286,17 +306,31 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
         return signInPromiseRef.current;
       },
+      // No `loading` here, unlike the other sign-ins: it is instant (no network),
+      // and `loading` swaps the login page out, which would throw away the demo
+      // sheet and the "wrong password" message it is showing.
+      signInDemo: async (username, password) => {
+        const demoUser = await authService.loginDemo(username, password);
+        setUser(demoUser);
+        await verifyEligibility(resolveStaffId(demoUser));
+      },
+      isDemo: isDemoUser(user),
+      // Signing in wins over browsing: the flag is ignored once there is a user.
+      isVisitor: VISITOR_MODE_ENABLED && visitorRequested && !user,
+      enterVisitor: () => setVisitorRequested(VISITOR_MODE_ENABLED),
+      exitVisitor: () => setVisitorRequested(false),
       signOut: async () => {
         // Before the session goes, or this phone keeps receiving the signed-out
         // person's notifications. The gateway resets its Settings switch too,
         // so the next person starts from "on" on both sides.
         await Promise.all([
-          unregisterLoggedInDevice(),
+          isDemoUser(userRef.current) ? Promise.resolve() : unregisterLoggedInDevice(),
           setNotificationEnabled(true),
           // What already arrived: the history list and the system tray.
           clearNotificationsForSignOut(),
         ]);
         await authService.logout();
+        setVisitorRequested(false);
         setUser(null);
         // Abandon any check still in flight, so its late reply cannot stamp a
         // verdict onto the signed-out state.
@@ -304,7 +338,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         setEligibility('unknown');
       },
     }),
-    [loading, initializing, effectiveUser, eligibility, isLecturer, stampRole, isCompOtEligible, verifyEligibility],
+    [loading, initializing, visitorRequested, user, effectiveUser, eligibility, isLecturer, stampRole, isCompOtEligible, verifyEligibility],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

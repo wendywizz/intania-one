@@ -216,6 +216,11 @@ const MENU_ITEMS: readonly { title: string; href: string; icon: IconName }[] = [
   { title: TEXT.PERSON_SEARCH_TITLE, href: MODULE_HREF.person, icon: 'user-round-search' },
 ];
 
+// What a visitor (no account) can open: the two tools that read public data.
+const VISITOR_MENU_ITEMS = MENU_ITEMS.filter(
+  (item) => item.href === MODULE_HREF.calendar || item.href === MODULE_HREF.person,
+);
+
 function getDateString() {
   const n = new Date();
   // Buddhist year, as every other date in the app is shown — the greeting was
@@ -798,7 +803,7 @@ export default function HomeScreen() {
   // and how many writes had happened by then.
   const newsLoadedAtRef = useRef(0);
   const summaryLoadedRef = useRef<{ key: string; at: number; epoch: number } | null>(null);
-  const { completeWebSignIn, eligibility, isCompOtEligible, loading: isAuthLoading, signIn, signOut, user: authUser } = useAuth();
+  const { completeWebSignIn, eligibility, enterVisitor, exitVisitor, isCompOtEligible, isVisitor, loading: isAuthLoading, signIn, signInDemo, signOut, user: authUser } = useAuth();
   const completeWebSignInRef = useRef(completeWebSignIn);
 
   useEffect(() => {
@@ -840,14 +845,17 @@ export default function HomeScreen() {
       // Signed out there is nothing here to fill: the visitor gets LoginLanding,
       // which has no bell and no news band. Leaving isNewsReady false also keeps
       // the first-load gate armed for the signed-in home that follows a login.
-      if (!authUser) {
+      // A visitor has no account but does have the news band, so it falls through.
+      if (!authUser && !isVisitor) {
         setUnreadCount(0);
         return () => { isActive = false; };
       }
 
-      void getUnreadNotificationCount().then((count) => {
-        if (isActive) setUnreadCount(count);
-      });
+      if (authUser) {
+        void getUnreadNotificationCount().then((count) => {
+          if (isActive) setUnreadCount(count);
+        });
+      }
 
       // The feed is the same for everyone and changes a few times a day, so a
       // revisit inside the window keeps the cards it has.
@@ -876,7 +884,7 @@ export default function HomeScreen() {
       });
 
       return () => { isActive = false; };
-    }, [authUser]),
+    }, [authUser, isVisitor]),
   );
 
   useFocusEffect(
@@ -1147,10 +1155,10 @@ export default function HomeScreen() {
   // Nothing on the home applies to a visitor — no header, no news, no pending
   // work, no menu — so they get a landing page of its own with the PSU Passport
   // button, and nothing below this line runs for them.
-  if (!authUser) {
+  if (!authUser && !isVisitor) {
     return (
       <>
-        <LoginLanding onLogin={handleLogin} />
+        <LoginLanding onLogin={handleLogin} onDemoLogin={signInDemo} onVisitor={enterVisitor} />
         {authErrorModal}
       </>
     );
@@ -1178,7 +1186,9 @@ export default function HomeScreen() {
   // greeting, no settings or notifications, no pending work and no module menu —
   // with an explanation where those would be.
   const isDenied = eligibility === 'denied';
-  const isGuest = isDenied;
+  // A visitor gets the same stripped home as an account from another faculty, plus
+  // the two public tools below and a way back to the login page.
+  const isGuest = isDenied || isVisitor;
   const displayedNews = newsItems.slice(0, 3);
   const menuCardWidth = Math.floor((screenWidth - D.pad * 2 - D.gap * 2) / 3);
   const newsCardWidth = Math.floor(screenWidth * 0.72);
@@ -1234,7 +1244,9 @@ export default function HomeScreen() {
 
             {/* Settings and notifications are for staff — an account from
                 another faculty gets a header with no actions at all. */}
-            {isGuest ? null : (
+            {isVisitor ? (
+              <PillButton label={TEXT.HOME_VISITOR_LOGIN} variant="solid" onPress={exitVisitor} />
+            ) : isGuest ? null : (
               <View style={styles.headerRight}>
                 <Pressable
                   accessibilityRole="button"
@@ -1351,6 +1363,26 @@ export default function HomeScreen() {
                 style={({ pressed }) => [styles.deniedLogoutBtn, pressed && styles.pressed]}>
                 <Text style={styles.deniedLogoutText}>{TEXT.HOME_LOGOUT}</Text>
               </Pressable>
+            </View>
+          ) : null}
+
+          {/* Visitor: only what needs no account. */}
+          {isVisitor ? (
+            <View style={styles.menuSection}>
+              <View style={styles.menuGrid}>
+                {VISITOR_MENU_ITEMS.map((item) => (
+                  <Pressable
+                    key={item.href}
+                    accessibilityRole="button"
+                    accessibilityLabel={item.title}
+                    style={({ pressed }) => [styles.menuCard, { width: menuCardWidth }, pressed && styles.pressed]}
+                    onPress={() => navPush(item.href as Parameters<typeof navPush>[0])}>
+                    <IconSymbol name={item.icon} size={30} color={m.icon} />
+                    <Text numberOfLines={2} style={styles.menuLabel}>{item.title}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={[styles.deniedText, styles.visitorNote]}>{TEXT.HOME_VISITOR_NOTE}</Text>
             </View>
           ) : null}
 
@@ -1589,6 +1621,13 @@ const makeStyles = (m: M) => StyleSheet.create({
   // for staff the block is already taller than the screen.
   innerContentGuest: {
     flexGrow: 1,
+  },
+  visitorNote: {
+    marginTop: 18,
+    fontFamily: F.regular,
+    fontSize: 14,
+    lineHeight: 22,
+    color: m.textMuted,
   },
   deniedIcon: {
     width: 64,

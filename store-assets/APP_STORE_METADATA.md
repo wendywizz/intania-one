@@ -84,14 +84,25 @@ Sign-in is PSU Passport only, so the reviewer needs a working account.
 ### Notes for the reviewer
 
 ```
-Intania One is an internal staff app for the Faculty of Engineering, Prince of Songkla University. Sign-in uses the university's PSU Passport (OpenID); please use the demo account above.
+Intania One is the staff app for the Faculty of Engineering, Prince of Songkla University. Staff sign in with the university's PSU Passport (OpenID); a public area and a demo account are described below.
 
 Camera: used by Timestamp (lecturer stamping) and face verification, and to attach photos to repair requests.
 Location: used by Timestamp to confirm the user is within the faculty area when stamping attendance.
 Face ID / fingerprint: optional app lock, set up in Settings.
 Notifications: reminders and work that is waiting on the user.
 
-News on the home screen is public and visible before sign-in.
+PUBLIC AREA (no account): on the login screen tap "เข้าใช้งาน" (Enter). It opens a
+home with the faculty news, the executive calendar and the staff directory search,
+which anyone can use.
+
+FULL FEATURES (demo account): the staff features need a PSU Passport, which the
+university issues only to its own staff, so for review please use the demo mode:
+1. On the login screen, tap the version text at the bottom
+   ("Intania One · v1.1.2") 5 times in a row.
+2. A "Demo account" form opens. Username: appreview   Password: <see demoMode.ts>
+Everything in demo mode is sample data; nothing is saved or sent to real systems.
+Attendance stamping normally requires being inside the faculty campus; in demo
+mode the location check is simulated and the face scan always succeeds.
 ```
 
 ## Other required answers
