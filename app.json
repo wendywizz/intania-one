@@ -67,9 +67,9 @@
       ],
       [
         "expo-image-picker",
-        {
-          "photosPermission": "Allow Intania One to access your photos so you can attach a medical certificate image.",
-          "cameraPermission": "Allow Intania One to use the camera to photograph a medical certificate and to scan your face when you clock in."
+        {          
+          "photosPermission": "แอปใช้รูปภาพของคุณเพื่อแนบหลักฐานรับรองการลาป่วย",
+          "cameraPermission": "แอปใช้กล้องของคุณเพื่อเก็บข้อมูลภาพถ่ายสำหรับเป็นหลักฐานการลงเวลาเข้าและออกงาน"
         }
       ],
       "@react-native-community/datetimepicker",

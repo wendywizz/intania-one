@@ -49,6 +49,10 @@ import {
 import { formatFullDate, formatWeekday } from '@/utils/date-format';
 import { guideOval, type FramingVerdict } from '@/utils/face-framing';
 import { scaleFont } from '@/utils/font-scale';
+import {
+  recordStaffFaceScanFailure,
+  type StaffFaceScanStopReason,
+} from '@/utils/staff-face-scan-attempts';
 import { minutesOf, workdayState, workedLabel } from '@/utils/workday';
 
 /** At most one scan sent per this many ms. The gateway has its own floor too. */
@@ -65,13 +69,6 @@ const MIN_RELOAD_GAP_MS = 2000;
 
 /** Scanning pauses after this long without a stamp, until the person asks again. */
 const SCAN_WINDOW_MS = 30000;
-
-/**
- * Scans of the person's own face that may fail before the camera stops: the
- * first miss and one more try. Then the screen offers "เก็บใบหน้าใหม่" rather
- * than letting a face that will not match keep trying for the full window.
- */
-const MISMATCH_SCAN_LIMIT = 2;
 
 /**
  * What the screen is waiting on, named under the loader. Nothing is rendered
@@ -112,6 +109,13 @@ function canEnrollFace(status: StaffTimestampStatus | null) {
     status?.isStaff === true &&
     status.faceEnroll.remaining !== 0
   );
+}
+
+function pausedScanMessage(stopped: boolean, reason: StaffFaceScanStopReason | null) {
+  if (!stopped) return TEXT.STAFF_FACE_PAUSED;
+  if (reason === 'mismatch') return TEXT.STAFF_FACE_MISMATCH_STOPPED;
+
+  return TEXT.STAFF_FACE_SCAN_FAILED_STOPPED;
 }
 
 /**
@@ -218,9 +222,9 @@ export default function StaffTimestampScreen() {
   const [similarity, setSimilarity] = useState<number | null>(null);
   const [scanMessage, setScanMessage] = useState('');
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
-  // Registering a face: which kind, and how many of the two pictures are in.
-  // The camera stopped because the face failed MISMATCH_SCAN_LIMIT scans.
+  // The camera stopped after two face-service refusals.
   const [scanStopped, setScanStopped] = useState(false);
+  const [scanStopReason, setScanStopReason] = useState<StaffFaceScanStopReason | null>(null);
   // True while the first fix is still coming. The card is already on screen by
   // then, so it says so rather than showing the server's "no location yet".
   const [locating, setLocating] = useState(true);
@@ -255,10 +259,11 @@ export default function StaffTimestampScreen() {
   // A load in flight, and when the last one finished. See MIN_RELOAD_GAP_MS.
   const loadingRef = useRef(false);
   const lastLoadAtRef = useRef(0);
-  const mismatchCountRef = useRef(0);
+  const failedScanCountRef = useRef(0);
   const startScanning = useCallback(() => {
-    mismatchCountRef.current = 0;
+    failedScanCountRef.current = 0;
     setScanStopped(false);
+    setScanStopReason(null);
     scanStartedAtRef.current = Date.now();
     lastSubmitAtRef.current = 0;
     setSimilarity(null);
@@ -458,17 +463,15 @@ export default function StaffTimestampScreen() {
         setSimilarity(result.similarity);
 
         if (!result.passed) {
-          // Not this person's face, or no face at all: keep scanning.
+          // A refusal is a failed attempt too; otherwise no-face and throttled
+          // responses could keep sending a picture on every later blink.
           setScanMessage(result.message);
-          if (result.reason === 'face_mismatch') {
-            mismatchCountRef.current += 1;
-
-            // One retry is enough: stop here and point to Settings, where the
-            // face is registered again.
-            if (mismatchCountRef.current >= MISMATCH_SCAN_LIMIT) {
-              setScanStopped(true);
-              setPhase('paused');
-            }
+          const attempt = recordStaffFaceScanFailure(failedScanCountRef.current, result.reason);
+          failedScanCountRef.current = attempt.failedCount;
+          if (attempt.stopped) {
+            setScanStopped(true);
+            setScanStopReason(attempt.stopReason);
+            setPhase('paused');
           }
           return;
         }
@@ -666,7 +669,7 @@ export default function StaffTimestampScreen() {
           <View style={styles.pausedCover}>
             <IconSymbol size={36} name="clock.fill" color={c.textOnPrimary} />
             <ThemedText style={styles.pausedText}>
-              {scanStopped ? TEXT.STAFF_FACE_MISMATCH_STOPPED : TEXT.STAFF_FACE_PAUSED}
+              {pausedScanMessage(scanStopped, scanStopReason)}
             </ThemedText>
             <Button
               title={TEXT.STAFF_FACE_SCAN_AGAIN}
@@ -675,7 +678,7 @@ export default function StaffTimestampScreen() {
               loading={refreshing}
               onPress={() => void load('refresh')}
             />
-            {scanStopped ? (
+            {scanStopReason === 'mismatch' ? (
               <Button
                 title={TEXT.STAFF_FACE_GO_SETTINGS}
                 icon="gearshape.fill"
