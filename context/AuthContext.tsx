@@ -23,7 +23,6 @@ import {
 import type {StaffStampRole} from '../services/timestampService';
 import {DEV_STAFF_ID} from '../constants/devConfig';
 import {isDemoUser} from '../services/demo/demoMode';
-import {VISITOR_MODE_ENABLED} from '../constants/devConfig';
 
 /**
  * Whether the signed-in person is Faculty of Engineering staff.
@@ -77,14 +76,6 @@ type AuthContextValue = {
   signInDemo: (username: string, password: string) => Promise<void>;
   /** Signed in with the demo account: every screen runs on sample data. */
   isDemo: boolean;
-  /**
-   * Browsing without an account: the home shows only the public parts (news,
-   * calendar, staff search). In memory only — a relaunch is back at the login
-   * page — and always false while VISITOR_MODE_ENABLED is off.
-   */
-  isVisitor: boolean;
-  enterVisitor: () => void;
-  exitVisitor: () => void;
   signOut: () => Promise<void>;
 };
 
@@ -138,7 +129,6 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(true);
-  const [visitorRequested, setVisitorRequested] = useState(false);
   const [eligibility, setEligibility] = useState<StaffEligibilityStatus>('unknown');
   // Resolved by the same call as `eligibility` — one request answers both, so
   // they can never disagree about which account they describe.
@@ -315,10 +305,6 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         await verifyEligibility(resolveStaffId(demoUser));
       },
       isDemo: isDemoUser(user),
-      // Signing in wins over browsing: the flag is ignored once there is a user.
-      isVisitor: VISITOR_MODE_ENABLED && visitorRequested && !user,
-      enterVisitor: () => setVisitorRequested(VISITOR_MODE_ENABLED),
-      exitVisitor: () => setVisitorRequested(false),
       signOut: async () => {
         // Before the session goes, or this phone keeps receiving the signed-out
         // person's notifications. The gateway resets its Settings switch too,
@@ -330,7 +316,6 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
           clearNotificationsForSignOut(),
         ]);
         await authService.logout();
-        setVisitorRequested(false);
         setUser(null);
         // Abandon any check still in flight, so its late reply cannot stamp a
         // verdict onto the signed-out state.
@@ -338,7 +323,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         setEligibility('unknown');
       },
     }),
-    [loading, initializing, visitorRequested, user, effectiveUser, eligibility, isLecturer, stampRole, isCompOtEligible, verifyEligibility],
+    [loading, initializing, user, effectiveUser, eligibility, isLecturer, stampRole, isCompOtEligible, verifyEligibility],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

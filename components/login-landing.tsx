@@ -1,9 +1,9 @@
 /**
  * The whole home screen for someone who is not signed in.
  *
- * Nothing on the signed-in home applies to a visitor — no greeting, no pending
- * work, no module menu, and the staff news feed is for staff — so rather than
- * strip that screen down to a login button, a visitor gets this page of its own:
+ * Nothing on the signed-in home applies to someone who is signed out — no greeting,
+ * no pending work, no module menu, and the staff news feed is for staff — so rather
+ * than strip that screen down to a login button, they get this page of its own:
  * the brand on a red drafting-grid field, and the PSU Passport button on a card
  * at the bottom where a thumb reaches it.
  *
@@ -32,7 +32,7 @@ import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Sheet } from '@/components/ui/sheet';
 import { TextField } from '@/components/ui/text-field';
-import { DEMO_MODE_ENABLED, VISITOR_MODE_ENABLED } from '@/constants/devConfig';
+import { DEMO_MODE_ENABLED } from '@/constants/devConfig';
 import { APP_ICON_MARK, PSU_PASSPORT_BUTTON, PSU_PASSPORT_BUTTON_ASPECT } from '@/constants/images';
 import { boxShadow } from '@/constants/shadows';
 import { TEXT } from '@/constants/text';
@@ -78,11 +78,9 @@ type LoginLandingProps = {
   onLogin: () => void;
   /** Signs in the App Review demo account; rejects with a message to show. */
   onDemoLogin: (username: string, password: string) => Promise<void>;
-  /** Opens the visitor home (news, calendar, staff search) with no sign-in. */
-  onVisitor: () => void;
 };
 
-export function LoginLanding({ onLogin, onDemoLogin, onVisitor }: LoginLandingProps) {
+export function LoginLanding({ onLogin, onDemoLogin }: LoginLandingProps) {
   const s = useThemedStyles(makeStyles);
   const c = useColors();
   const insets = useSafeAreaInsets();
@@ -298,23 +296,6 @@ export function LoginLanding({ onLogin, onDemoLogin, onVisitor }: LoginLandingPr
                 style={({ pressed }) => [s.loginBtn, pressed && s.pressed]}>
                 <Image source={PSU_PASSPORT_BUTTON} style={s.loginBtnImage} contentFit="contain" />
               </Pressable>
-              {VISITOR_MODE_ENABLED ? (
-                <View style={s.visitorBlock}>
-                  <Button
-                    title={TEXT.AUTH_VISITOR_ENTER}
-                    variant="secondary"
-                    size="md"
-                    fullWidth
-                    onPress={onVisitor}
-                  />
-                  <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.85}
-                    maxFontSizeMultiplier={TEXT_MAX_SCALE}
-                    style={s.note}>{TEXT.AUTH_VISITOR_ENTER_HINT}</Text>
-                </View>
-              ) : null}
               <View style={s.noteRow}>
                 <IconSymbol name="checkmark.shield" size={14} color={c.textMuted} />
                 <Text
@@ -542,13 +523,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   loginBtnImage: {
     width: '100%',
     height: '100%',
-  },
-  visitorBlock: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    gap: 8,
-    maxWidth: 300,
-    width: '100%',
   },
   noteRow: {
     flexDirection: 'row',

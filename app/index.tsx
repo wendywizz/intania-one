@@ -216,11 +216,6 @@ const MENU_ITEMS: readonly { title: string; href: string; icon: IconName }[] = [
   { title: TEXT.PERSON_SEARCH_TITLE, href: MODULE_HREF.person, icon: 'user-round-search' },
 ];
 
-// What a visitor (no account) can open: the two tools that read public data.
-const VISITOR_MENU_ITEMS = MENU_ITEMS.filter(
-  (item) => item.href === MODULE_HREF.calendar || item.href === MODULE_HREF.person,
-);
-
 function getDateString() {
   const n = new Date();
   // Buddhist year, as every other date in the app is shown — the greeting was
@@ -803,7 +798,7 @@ export default function HomeScreen() {
   // and how many writes had happened by then.
   const newsLoadedAtRef = useRef(0);
   const summaryLoadedRef = useRef<{ key: string; at: number; epoch: number } | null>(null);
-  const { completeWebSignIn, eligibility, enterVisitor, exitVisitor, isCompOtEligible, isVisitor, loading: isAuthLoading, signIn, signInDemo, signOut, user: authUser } = useAuth();
+  const { completeWebSignIn, eligibility, isCompOtEligible, loading: isAuthLoading, signIn, signInDemo, signOut, user: authUser } = useAuth();
   const completeWebSignInRef = useRef(completeWebSignIn);
 
   useEffect(() => {
@@ -842,20 +837,17 @@ export default function HomeScreen() {
     useCallback(() => {
       let isActive = true;
 
-      // Signed out there is nothing here to fill: the visitor gets LoginLanding,
-      // which has no bell and no news band. Leaving isNewsReady false also keeps
-      // the first-load gate armed for the signed-in home that follows a login.
-      // A visitor has no account but does have the news band, so it falls through.
-      if (!authUser && !isVisitor) {
+      // Signed out there is nothing here to fill: LoginLanding has no bell and
+      // no news band. Leaving isNewsReady false also keeps the first-load gate
+      // armed for the signed-in home that follows a login.
+      if (!authUser) {
         setUnreadCount(0);
         return () => { isActive = false; };
       }
 
-      if (authUser) {
-        void getUnreadNotificationCount().then((count) => {
-          if (isActive) setUnreadCount(count);
-        });
-      }
+      void getUnreadNotificationCount().then((count) => {
+        if (isActive) setUnreadCount(count);
+      });
 
       // The feed is the same for everyone and changes a few times a day, so a
       // revisit inside the window keeps the cards it has.
@@ -884,7 +876,7 @@ export default function HomeScreen() {
       });
 
       return () => { isActive = false; };
-    }, [authUser, isVisitor]),
+    }, [authUser]),
   );
 
   useFocusEffect(
@@ -1152,13 +1144,13 @@ export default function HomeScreen() {
   );
 
   // ─── Signed out ─────────────────────────────────────────────────────────────
-  // Nothing on the home applies to a visitor — no header, no news, no pending
+  // Nothing on the home applies when signed out — no header, no news, no pending
   // work, no menu — so they get a landing page of its own with the PSU Passport
   // button, and nothing below this line runs for them.
-  if (!authUser && !isVisitor) {
+  if (!authUser) {
     return (
       <>
-        <LoginLanding onLogin={handleLogin} onDemoLogin={signInDemo} onVisitor={enterVisitor} />
+        <LoginLanding onLogin={handleLogin} onDemoLogin={signInDemo} />
         {authErrorModal}
       </>
     );
@@ -1186,9 +1178,6 @@ export default function HomeScreen() {
   // greeting, no settings or notifications, no pending work and no module menu —
   // with an explanation where those would be.
   const isDenied = eligibility === 'denied';
-  // A visitor gets the same stripped home as an account from another faculty, plus
-  // the two public tools below and a way back to the login page.
-  const isGuest = isDenied || isVisitor;
   const displayedNews = newsItems.slice(0, 3);
   const menuCardWidth = Math.floor((screenWidth - D.pad * 2 - D.gap * 2) / 3);
   const newsCardWidth = Math.floor(screenWidth * 0.72);
@@ -1210,7 +1199,7 @@ export default function HomeScreen() {
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
           <View style={styles.headerRow}>
-            {isGuest ? (
+            {isDenied ? (
               <Image
                 source={NAV_LOGO}
                 style={styles.navLogo}
@@ -1244,9 +1233,7 @@ export default function HomeScreen() {
 
             {/* Settings and notifications are for staff — an account from
                 another faculty gets a header with no actions at all. */}
-            {isVisitor ? (
-              <PillButton label={TEXT.HOME_VISITOR_LOGIN} variant="solid" onPress={exitVisitor} />
-            ) : isGuest ? null : (
+            {isDenied ? null : (
               <View style={styles.headerRight}>
                 <Pressable
                   accessibilityRole="button"
@@ -1272,7 +1259,7 @@ export default function HomeScreen() {
         {/* Denied, there is only the news band above the explanation, so the
             block is allowed to grow and centre it in whatever height is left
             rather than leaving it stranded under the news. */}
-        <View style={[styles.innerContent, isGuest && styles.innerContentGuest]}>
+        <View style={[styles.innerContent, isDenied && styles.innerContentGuest]}>
 
           {/* News section — sits on a full-width primary band */}
           <View style={styles.newsSection}>
@@ -1366,28 +1353,8 @@ export default function HomeScreen() {
             </View>
           ) : null}
 
-          {/* Visitor: only what needs no account. */}
-          {isVisitor ? (
-            <View style={styles.menuSection}>
-              <View style={styles.menuGrid}>
-                {VISITOR_MENU_ITEMS.map((item) => (
-                  <Pressable
-                    key={item.href}
-                    accessibilityRole="button"
-                    accessibilityLabel={item.title}
-                    style={({ pressed }) => [styles.menuCard, { width: menuCardWidth }, pressed && styles.pressed]}
-                    onPress={() => navPush(item.href as Parameters<typeof navPush>[0])}>
-                    <IconSymbol name={item.icon} size={30} color={m.icon} />
-                    <Text numberOfLines={2} style={styles.menuLabel}>{item.title}</Text>
-                  </Pressable>
-                ))}
-              </View>
-              <Text style={[styles.deniedText, styles.visitorNote]}>{TEXT.HOME_VISITOR_NOTE}</Text>
-            </View>
-          ) : null}
-
           {/* Upcoming Shift + module menu: both are per-user. */}
-          {isGuest ? null : (
+          {isDenied ? null : (
             <>
               <UpcomingShiftSection
                 tiles={shiftTiles}
@@ -1444,7 +1411,7 @@ export default function HomeScreen() {
       {/* ── Pinned mini header ────────────────────────────────────────────── */}
       {/* Denied, it would carry the same avatar, name and personal actions the
           main header just dropped, so it is not rendered at all. */}
-      {isGuest ? null : (
+      {isDenied ? null : (
       <Animated.View
         pointerEvents={isCompactHeader ? 'auto' : 'none'}
         style={[
@@ -1608,7 +1575,7 @@ const makeStyles = (m: M) => StyleSheet.create({
     alignSelf: 'center',
   },
   // Centred in the space a signed-in user's pending work and module menu would
-  // fill — the one thing a visitor can act on, so it sits in the middle of the
+  // fill — the one thing a denied account can act on, so it sits in the middle of the
   // page rather than tucked under the news band or into a header corner.
   loginSection: {
     flexGrow: 1,
@@ -1621,13 +1588,6 @@ const makeStyles = (m: M) => StyleSheet.create({
   // for staff the block is already taller than the screen.
   innerContentGuest: {
     flexGrow: 1,
-  },
-  visitorNote: {
-    marginTop: 18,
-    fontFamily: F.regular,
-    fontSize: 14,
-    lineHeight: 22,
-    color: m.textMuted,
   },
   deniedIcon: {
     width: 64,
