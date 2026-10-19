@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { Bell, Camera, ChevronRight, KeyRound, LockKeyhole, MapPin, ScanFace, Moon, SunMoon, UserCheck } from 'lucide-react-native';
+import { Bell, Camera, Check, ChevronRight, KeyRound, LockKeyhole, MapPin, ScanFace, ShieldCheck, Moon, SunMoon, UserCheck } from 'lucide-react-native';
 import { Alert, AppState, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -19,7 +19,9 @@ import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
+import { LANGUAGE_OPTIONS } from '@/i18n/language';
 import {
   checkNotificationPermission,
   getNotificationEnabled,
@@ -43,6 +45,8 @@ import {
   setBiometricEnabled,
   type BiometricSupport,
 } from '@/services/biometricService';
+import { PRIVACY_POLICY_URL } from '@/constants/config';
+import { getLanguage } from '@/i18n/language';
 import { TEXT } from '@/constants/text';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { boxShadow } from '@/constants/shadows';
@@ -63,6 +67,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ size: number; color: string
   'face-enroll': UserCheck,
   'dark-mode': Moon,
   'auto-theme': SunMoon,
+  privacy: ShieldCheck,
 };
 
 /** Neutral grey tile behind a settings row's glyph, matching the absence menu. */
@@ -83,6 +88,7 @@ export default function SettingsScreen() {
   const styles = useThemedStyles(makeStyles);
   const { user: authUser, signOut, isLecturer } = useAuth();
   const { isDarkMode, toggleDarkMode, isAutoTheme, toggleAutoTheme } = useTheme();
+  const { language, setLanguage } = useLanguage();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
@@ -410,6 +416,43 @@ export default function SettingsScreen() {
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: contentBottomPadding }]} showsVerticalScrollIndicator={false}>
 
+        {/* ── Language: first, because switching rebuilds every screen and sends this
+            one back to the top - there is nothing below it to lose your place in. ── */}
+        <View style={styles.section}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <ThemedText style={styles.sectionTitle}>{TEXT.SETTINGS_LANGUAGE_TITLE}</ThemedText>
+              <ThemedText style={styles.sectionCaption}>{TEXT.SETTINGS_LANGUAGE_CAPTION}</ThemedText>
+            </View>
+            {LANGUAGE_OPTIONS.map((option, index) => {
+              const selected = option.value === language;
+              return (
+                <Pressable
+                  key={option.value}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={option.name}
+                  style={[styles.row, index < LANGUAGE_OPTIONS.length - 1 ? styles.rowDivider : null]}
+                  onPress={() => {
+                    if (!selected) setLanguage(option.value);
+                  }}
+                >
+                  <View style={styles.iconCircle}>
+                    <ThemedText style={styles.languageCode}>{option.code}</ThemedText>
+                  </View>
+                  <View style={styles.rowBody}>
+                    <ThemedText style={styles.rowTitle}>{option.name}</ThemedText>
+                    <ThemedText style={styles.rowSub}>{option.hint}</ThemedText>
+                  </View>
+                  <View style={styles.checkSlot}>
+                    {selected ? <Check size={18} color={c.primary} /> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
         <View style={styles.section}>
           <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -591,6 +634,23 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
+          <View style={styles.card}>
+            <Pressable
+              accessibilityRole="link"
+              style={styles.row}
+              onPress={() => void Linking.openURL(PRIVACY_POLICY_URL[getLanguage()])}
+            >
+              <IconCircle name="privacy" />
+              <View style={styles.rowBody}>
+                <ThemedText style={styles.rowTitle}>{TEXT.SETTINGS_PRIVACY_POLICY}</ThemedText>
+                <ThemedText style={styles.rowSub}>{TEXT.SETTINGS_PRIVACY_POLICY_SUB}</ThemedText>
+              </View>
+              <ChevronRight size={18} color={c.textFaint} />
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Button
             title={TEXT.SETTINGS_LOGOUT}
             variant="dangerOutline"
@@ -691,6 +751,14 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
+
+  languageCode: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: AppFonts.psuBold,
+    color: c.text,
+  },
+  checkSlot: { width: 18, alignItems: 'center', justifyContent: 'center' },
 
   versionText: {
     fontSize: 12,

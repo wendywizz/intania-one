@@ -279,7 +279,7 @@ async function exchangeRefreshToken(refreshToken: string, scopes: string): Promi
   });
 
   if (!response.ok) {
-    throw new Error(await getOAuthErrorMessage(response, 'ไม่สามารถต่ออายุการเชื่อมต่ออีเมลได้'));
+    throw new Error(await getOAuthErrorMessage(response, TEXT.MAIL_RENEW_FAILED));
   }
 
   return response.json();

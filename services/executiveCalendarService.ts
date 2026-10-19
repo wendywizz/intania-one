@@ -1,6 +1,7 @@
 import { ENDPOINTS } from '../constants/endpoints';
 import { ENV } from '../constants/config';
 import { buildHttpsUrl, fetchApi } from './api';
+import { intlLocale } from '@/i18n/locale';
 
 const SCHEDULE_TYPE_EXECUTIVE = 'exc';
 const GOOGLE_CALENDAR_API_BASE_URL = 'https://www.googleapis.com';
@@ -87,7 +88,7 @@ function formatCalendarTime(value?: GoogleCalendarDate) {
     return '';
   }
 
-  return new Date(value.dateTime).toLocaleTimeString('th-TH', {
+  return new Date(value.dateTime).toLocaleTimeString(intlLocale(), {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,

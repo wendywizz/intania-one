@@ -1,0 +1,10 @@
+{
+  "ios": {
+    "NSCameraUsageDescription": "แอปใช้กล้องของคุณเพื่อเก็บข้อมูลภาพถ่ายสำหรับเป็นหลักฐานการลงเวลาเข้าและออกงาน",
+    "NSPhotoLibraryUsageDescription": "แอปใช้รูปภาพของคุณเพื่อแนบหลักฐานรับรองการลาป่วย",
+    "NSLocationWhenInUseUsageDescription": "แอปใช้ตำแหน่งของคุณเพื่อยืนยันว่าคุณอยู่ในบริเวณคณะวิศวกรรมศาสตร์ขณะลงเวลาปฏิบัติราชการ",
+    "NSLocationAlwaysAndWhenInUseUsageDescription": "แอปใช้ตำแหน่งของคุณเพื่อยืนยันว่าคุณอยู่ในบริเวณคณะวิศวกรรมศาสตร์ขณะลงเวลาปฏิบัติราชการ",
+    "NSFaceIDUsageDescription": "ใช้ Face ID เพื่อปลดล็อกแอป Intania One",
+    "NSLocalNetworkUsageDescription": "แอปเชื่อมต่อเซิร์ฟเวอร์ทดสอบภายในเครือข่ายคณะวิศวกรรมศาสตร์ เพื่อดึงข้อมูลระหว่างช่วงทดสอบ"
+  }
+}

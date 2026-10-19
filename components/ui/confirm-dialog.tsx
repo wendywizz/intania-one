@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { useColors } from '@/constants/theme';
+import { TEXT } from '@/constants/text';
 
 type ConfirmDialogProps = {
   visible: boolean;
@@ -36,8 +37,8 @@ export function ConfirmDialog({
   visible,
   title,
   message,
-  confirmLabel = 'ยืนยัน',
-  cancelLabel = 'ยกเลิก',
+  confirmLabel = TEXT.SHARED_CONFIRM,
+  cancelLabel = TEXT.CANCEL,
   onConfirm,
   onCancel,
   destructive = false,

@@ -9,17 +9,9 @@ import type {
     RepairComputer,
     RepairComputerPrivilege,
 } from "../models/types";
-import {
-    ensureSuccess,
-    fetchApi,
-    type ListResponse,
-    type MutationResponse,
-    listRequest,
-    MESSAGE_SERVER_ERROR,
-    mutationRequest,
-    rowRequest,
-} from "./api";
+import { ensureSuccess, fetchApi, type ListResponse, type MutationResponse, listRequest, mutationRequest, rowRequest } from "./api";
 import { thaiOnly } from "../utils/thai-message";
+import { TEXT } from '@/constants/text';
 
 const SCOOBA_API_KEY = ENV.scoobaApiKey;
 
@@ -110,7 +102,7 @@ export async function removeJob(id: string): Promise<MutationResponse> {
   const text = await response.text();
 
   if (!response.ok || !text) {
-    throw new Error(MESSAGE_SERVER_ERROR);
+    throw new Error(TEXT.SERVICE_ERROR_SERVER);
   }
 
   const json = JSON.parse(text) as { message?: string; success?: boolean };
@@ -386,7 +378,7 @@ export async function checkPrivilege(
     const body = await response.text();
 
     if (response.status !== 200 || !body) {
-      throw new Error(MESSAGE_SERVER_ERROR);
+      throw new Error(TEXT.SERVICE_ERROR_SERVER);
     }
 
     const json = JSON.parse(body) as { data?: unknown };

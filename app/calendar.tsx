@@ -33,7 +33,21 @@ LocaleConfig.locales.th = {
   dayNamesShort: ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."],
   today: "วันนี้",
 };
-LocaleConfig.defaultLocale = "th";
+LocaleConfig.locales.en = {
+  monthNames: [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ],
+  monthNamesShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  dayNames: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+  dayNamesShort: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+  today: "Today",
+};
+
+/** Called as the screen renders: the library keeps one global default, so it has to follow the app language. */
+function applyCalendarLocale() {
+  LocaleConfig.defaultLocale = getLanguage();
+}
 
 import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
@@ -54,6 +68,8 @@ import {
     type CalendarSource,
 } from "@/services/executiveCalendarService";
 import { scaleFont } from "@/utils/font-scale";
+import { displayYear, intlLocale } from '@/i18n/locale';
+import { getLanguage } from '@/i18n/language';
 
 const todayKey = toDateKey(new Date());
 
@@ -69,7 +85,7 @@ function getMonthKey(dateKey: string) {
 }
 
 function formatSelectedDate(dateKey: string) {
-  return new Date(`${dateKey}T00:00:00`).toLocaleDateString("th-TH", {
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString(intlLocale(), {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -78,14 +94,14 @@ function formatSelectedDate(dateKey: string) {
 }
 
 function formatMonthTitle(dateKey: string) {
-  return new Date(`${dateKey}T00:00:00`).toLocaleDateString("th-TH", {
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString(intlLocale(), {
     month: "long",
   });
 }
 
 function formatYearTitle(dateKey: string) {
-  // Plain Buddhist-era year (no "พ.ศ." prefix), matching the timestamp calendar.
-  return String(new Date(`${dateKey}T00:00:00`).getFullYear() + 543);
+  // Plain year (Buddhist era in Thai, no "พ.ศ." prefix), matching the timestamp calendar.
+  return String(displayYear(new Date(`${dateKey}T00:00:00`).getFullYear()));
 }
 
 // Split the source name into the executive position and the parenthetical
@@ -102,6 +118,7 @@ function splitSourceName(name: string) {
 }
 
 export default function CalendarScreen() {
+  applyCalendarLocale();
   const c = useColors();
   const contentBottomPadding = useContentBottomPadding(24);
   const { isDarkMode } = useTheme();

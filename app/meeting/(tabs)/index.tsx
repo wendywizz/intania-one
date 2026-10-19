@@ -65,7 +65,7 @@ function groupByDate(meetings: Meeting[], ascending: boolean): ListRow[] {
   for (const meeting of meetings) {
     const date = getText(meeting, dateFields);
     const sortKey = getDateSortKey(meeting) || "9999-12-31";
-    const label = date ? formatDateOnly(date) : "ไม่ระบุวันที่";
+    const label = date ? formatDateOnly(date) : TEXT.MEETING_NO_DATE;
 
     if (!groups[sortKey]) {
       order.push(sortKey);

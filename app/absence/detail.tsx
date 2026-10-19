@@ -32,13 +32,13 @@ import { getabsenceData } from '@/services/absenceService';
 import { formatDateRange } from '@/utils/date-format';
 
 const absenceTypeLabels: Record<string, string> = {
-  [TYPE_ABSENCE_CANCEL]: TEXT.ABSENCE_CANCEL_TITLE,
-  [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
-  [TYPE_ABSENCE_BUSINESS]: TEXT.ABSENCE_BUSINESS_TITLE,
-  [TYPE_ABSENCE_BIRTH]: TEXT.ABSENCE_BIRTH_TITLE,
-  [TYPE_ABSENCE_RELAX]: TEXT.ABSENCE_RELAX_TITLE,
-  [TYPE_ABSENCE_HELPMATE]: TEXT.ABSENCE_BIRTH_TITLE,
-  [TYPE_ABSENCE_HAJJ]: TEXT.ABSENCE_HAJJ_TITLE,
+  get [TYPE_ABSENCE_CANCEL]() { return TEXT.ABSENCE_CANCEL_TITLE; },
+  get [TYPE_ABSENCE_SICK]() { return TEXT.ABSENCE_SICK_TITLE; },
+  get [TYPE_ABSENCE_BUSINESS]() { return TEXT.ABSENCE_BUSINESS_TITLE; },
+  get [TYPE_ABSENCE_BIRTH]() { return TEXT.ABSENCE_BIRTH_TITLE; },
+  get [TYPE_ABSENCE_RELAX]() { return TEXT.ABSENCE_RELAX_TITLE; },
+  get [TYPE_ABSENCE_HELPMATE]() { return TEXT.ABSENCE_BIRTH_TITLE; },
+  get [TYPE_ABSENCE_HAJJ]() { return TEXT.ABSENCE_HAJJ_TITLE; },
 };
 
 const absenceTypeFields = [
@@ -274,11 +274,11 @@ function getAgentEntries(item: absence): StaffEntry[] {
 function getStatusBadge(status: string, c: AppColors): { bg: string; color: string } {
   const lower = status.toLowerCase();
   const kind =
-    lower.includes('อนุมัติแล้ว') || lower.includes('approved') || lower.includes('completed') || lower.includes('success')
+    lower.includes(TEXT.ABSENCE_APPROVE_STATUS_APPROVED) || lower.includes('approved') || lower.includes('completed') || lower.includes('success')
       ? 'approved'
-      : lower.includes('รออนุมัติ') || lower.includes('pending') || lower.includes('waiting') || lower.includes('processing')
+      : lower.includes(TEXT.ABSENCE_PENDING_BADGE) || lower.includes('pending') || lower.includes('waiting') || lower.includes('processing')
         ? 'pending'
-        : lower.includes('ไม่อนุมัติ') || lower.includes('reject') || lower.includes('cancel') || lower.includes('denied')
+        : lower.includes(TEXT.ABSENCE_APPROVE_STATUS_REJECTED) || lower.includes('reject') || lower.includes('cancel') || lower.includes('denied')
           ? 'rejected'
           : 'unknown';
   return getApprovalStatusBadge(kind, c);

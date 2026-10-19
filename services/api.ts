@@ -6,14 +6,11 @@ import {
 } from "../constants/module-status";
 import { API_BASE_URL, LOCAL_URL_BASE } from "../constants/endpoints";
 import { thaiOnly } from "../utils/thai-message";
+import { TEXT } from '@/constants/text';
 
 const TIMEOUT_MS = 10000;
 
 export { API_BASE_URL };
-export const MESSAGE_CANNOT_CONNECT_TO_SERVER =
-  "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้";
-export const MESSAGE_PROCESS_FAILED = "ดำเนินการไม่สำเร็จ";
-export const MESSAGE_SERVER_ERROR = "เซิร์ฟเวอร์ขัดข้อง";
 
 export type JsonMap = Record<string, unknown>;
 
@@ -223,7 +220,7 @@ async function fetchWithRetry(
         continue;
       }
 
-      throw new Error(MESSAGE_CANNOT_CONNECT_TO_SERVER);
+      throw new Error(TEXT.SERVICE_ERROR_CANNOT_CONNECT);
     }
   }
 }
@@ -268,7 +265,7 @@ export async function requestJson<T = JsonMap>(
       }
     }
 
-    throw new Error(MESSAGE_SERVER_ERROR);
+    throw new Error(TEXT.SERVICE_ERROR_SERVER);
   }
 
   return JSON.parse(text) as T;
@@ -298,7 +295,7 @@ function getMessage(json: ApiResponse) {
 
 export function ensureSuccess(json: ApiResponse) {
   if (!isSuccessResponse(json)) {
-    throw new Error(getMessage(json) || MESSAGE_PROCESS_FAILED);
+    throw new Error(getMessage(json) || TEXT.SERVICE_ERROR_PROCESS_FAILED);
   }
 }
 

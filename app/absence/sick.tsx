@@ -58,6 +58,7 @@ import {
   isRetryableInitialError,
   startOfDay
 } from "@/utils/absence-form";
+import { intlLocale } from '@/i18n/locale';
 
 // Removes the browser focus outline on web so active inputs show only their
 // bottom border (no box).
@@ -221,11 +222,11 @@ function getHalfDayLabel(value: string) {
 }
 
 const halfDayOptions: SelectOption[] = [
-  { label: TEXT.ABSENCE_HALF_DAY_NONE, value: "0" },
-  { label: TEXT.ABSENCE_HALF_DAY_FIRST_MORNING, value: "1" },
-  { label: TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON, value: "2" },
-  { label: TEXT.ABSENCE_HALF_DAY_LAST_MORNING, value: "3" },
-  { label: TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING, value: "4" },
+  { get label() { return TEXT.ABSENCE_HALF_DAY_NONE; }, value: "0" },
+  { get label() { return TEXT.ABSENCE_HALF_DAY_FIRST_MORNING; }, value: "1" },
+  { get label() { return TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON; }, value: "2" },
+  { get label() { return TEXT.ABSENCE_HALF_DAY_LAST_MORNING; }, value: "3" },
+  { get label() { return TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING; }, value: "4" },
 ];
 
 /**
@@ -235,19 +236,7 @@ const halfDayOptions: SelectOption[] = [
  */
 const halfDayChoices = halfDayOptions.filter((option) => option.value !== "0");
 
-const FILE_PICKER_LABEL = TEXT.ABSENCE_MEDICAL_CERTIFICATE_LABEL;
-const FILE_PICKER_ACTION = TEXT.ABSENCE_MEDICAL_CERTIFICATE_ACTION;
 const FILE_PICKER_REUPLOAD_ACTION = "Re-upload file";
-const SUBMITTING_LABEL = TEXT.ABSENCE_SUBMITTING_LABEL;
-const SUBMIT_SUCCESS_MESSAGE = TEXT.ABSENCE_SICK_SUBMIT_SUCCESS_MESSAGE;
-const SUBMIT_ERROR_MESSAGE = TEXT.ABSENCE_SICK_SUBMIT_ERROR_MESSAGE;
-const CONFIRM_SUBMIT_TITLE = TEXT.ABSENCE_CONFIRM_SUBMIT_TITLE;
-const CONFIRM_SUBMIT_MESSAGE = TEXT.ABSENCE_CONFIRM_SUBMIT_MESSAGE;
-const CONFIRM_SUBMIT_CANCEL = TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL;
-const CONFIRM_SUBMIT_ACTION = TEXT.ABSENCE_CONFIRM_SUBMIT_ACTION;
-const CONFIRM_REMOVE_TITLE = TEXT.ABSENCE_CONFIRM_REMOVE_TITLE;
-const CONFIRM_REMOVE_MESSAGE = TEXT.ABSENCE_CONFIRM_REMOVE_MESSAGE;
-const PENDING_APPROVAL_TITLE = TEXT.ABSENCE_CANNOT_REQUEST_TITLE;
 
 function PersonAvatar({
   photoId,
@@ -819,7 +808,7 @@ export default function SickScreen() {
         await Linking.openURL(fileUrl);
       } catch {
         setToastType("error");
-        setToastMessage("ไม่สามารถเปิดไฟล์ได้");
+        setToastMessage(TEXT.ABSENCE_FILE_OPEN_FAILED);
       }
     },
     [],
@@ -918,14 +907,14 @@ export default function SickScreen() {
           : await addabsenceData(payload, TYPE_ABSENCE_SICK, uploadOptions);
 
       setToastType("success");
-      setToastMessage(result.message || SUBMIT_SUCCESS_MESSAGE);
+      setToastMessage(result.message || TEXT.ABSENCE_SICK_SUBMIT_SUCCESS_MESSAGE);
       setTimeout(() => {
         router.replace("/absence/pending");
       }, 1500);
     } catch (error) {
       setToastType("error");
       setToastMessage(
-        error instanceof Error ? error.message : SUBMIT_ERROR_MESSAGE,
+        error instanceof Error ? error.message : TEXT.ABSENCE_SICK_SUBMIT_ERROR_MESSAGE,
       );
     } finally {
       setIsSubmitting(false);
@@ -979,7 +968,7 @@ export default function SickScreen() {
     } catch (error) {
       setToastType("error");
       setToastMessage(
-        error instanceof Error ? error.message : SUBMIT_ERROR_MESSAGE,
+        error instanceof Error ? error.message : TEXT.ABSENCE_SICK_SUBMIT_ERROR_MESSAGE,
       );
     } finally {
       setIsRemoving(false);
@@ -1015,7 +1004,7 @@ export default function SickScreen() {
         ) : (
           <ErrorState
             variant="empty"
-            title={PENDING_APPROVAL_TITLE}
+            title={TEXT.ABSENCE_CANNOT_REQUEST_TITLE}
             message={TEXT.ABSENCE_PENDING_APPROVAL_MESSAGE}
             actions={[
               {
@@ -1148,7 +1137,7 @@ export default function SickScreen() {
                   style={styles.leaveDaySummary}
                 >
                   {TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL}
-                  {leaveDayCount.toLocaleString("th-TH")} {TEXT.ABSENCE_DAY_UNIT}
+                  {leaveDayCount.toLocaleString(intlLocale())} {TEXT.ABSENCE_DAY_UNIT}
                 </ThemedText>
               ) : null}
             </View>
@@ -1293,7 +1282,7 @@ export default function SickScreen() {
                       <ThemedText style={styles.uploadZoneText}>
                         {isEditMode && hasUploadedFile
                           ? FILE_PICKER_REUPLOAD_ACTION
-                          : FILE_PICKER_ACTION}
+                          : TEXT.ABSENCE_MEDICAL_CERTIFICATE_ACTION}
                       </ThemedText>
                       <ThemedText style={styles.uploadZoneHint}>PDF, JPG, PNG</ThemedText>
                     </Pressable>
@@ -1361,7 +1350,7 @@ export default function SickScreen() {
                   darkColor="#FFFFFF"
                   type="defaultSemiBold"
                 >
-                  {isSubmitting ? SUBMITTING_LABEL : TEXT.SHARED_UPDATE}
+                  {isSubmitting ? TEXT.ABSENCE_SUBMITTING_LABEL : TEXT.SHARED_UPDATE}
                 </ThemedText>
               </Pressable>
             </View>
@@ -1383,7 +1372,7 @@ export default function SickScreen() {
                 darkColor="#FFFFFF"
                 type="defaultSemiBold"
               >
-                {isSubmitting ? SUBMITTING_LABEL : TEXT.ABSENCE_SUBMIT_REQUEST}
+                {isSubmitting ? TEXT.ABSENCE_SUBMITTING_LABEL : TEXT.ABSENCE_SUBMIT_REQUEST}
               </ThemedText>
             </Pressable>
           )}
@@ -1406,9 +1395,9 @@ export default function SickScreen() {
               lightColor="#FFFFFF"
               darkColor="#151718"
             >
-              <ThemedText type="subtitle">{CONFIRM_SUBMIT_TITLE}</ThemedText>
+              <ThemedText type="subtitle">{TEXT.ABSENCE_CONFIRM_SUBMIT_TITLE}</ThemedText>
               <ThemedText style={styles.confirmMessage}>
-                {CONFIRM_SUBMIT_MESSAGE}
+                {TEXT.ABSENCE_CONFIRM_SUBMIT_MESSAGE}
               </ThemedText>
               <View style={styles.confirmActions}>
                 <Pressable
@@ -1417,7 +1406,7 @@ export default function SickScreen() {
                   style={[styles.secondaryButton, styles.confirmActionButton]}
                 >
                   <ThemedText type="defaultSemiBold">
-                    {CONFIRM_SUBMIT_CANCEL}
+                    {TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL}
                   </ThemedText>
                 </Pressable>
                 <Pressable
@@ -1438,7 +1427,7 @@ export default function SickScreen() {
                     darkColor="#FFFFFF"
                     type="defaultSemiBold"
                   >
-                    {CONFIRM_SUBMIT_ACTION}
+                    {TEXT.ABSENCE_CONFIRM_SUBMIT_ACTION}
                   </ThemedText>
                 </Pressable>
               </View>
@@ -1463,9 +1452,9 @@ export default function SickScreen() {
               lightColor="#FFFFFF"
               darkColor="#151718"
             >
-              <ThemedText type="subtitle">{CONFIRM_REMOVE_TITLE}</ThemedText>
+              <ThemedText type="subtitle">{TEXT.ABSENCE_CONFIRM_REMOVE_TITLE}</ThemedText>
               <ThemedText style={styles.confirmMessage}>
-                {CONFIRM_REMOVE_MESSAGE}
+                {TEXT.ABSENCE_CONFIRM_REMOVE_MESSAGE}
               </ThemedText>
               <View style={styles.confirmActions}>
                 <Pressable
@@ -1474,7 +1463,7 @@ export default function SickScreen() {
                   style={[styles.secondaryButton, styles.confirmActionButton]}
                 >
                   <ThemedText type="defaultSemiBold">
-                    {CONFIRM_SUBMIT_CANCEL}
+                    {TEXT.ABSENCE_CONFIRM_SUBMIT_CANCEL}
                   </ThemedText>
                 </Pressable>
                 <Pressable

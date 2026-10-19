@@ -17,6 +17,7 @@ import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { statsData } from '@/services/absenceService';
 import { boxShadow } from '@/constants/shadows';
+import { displayYear } from '@/i18n/locale';
 
 interface StatsData {
   staffId: string;
@@ -80,19 +81,14 @@ function mapStatsData(data: unknown): StatsData | null {
 const ABSENCE_MAX_TIMES = 18;
 const ABSENCE_MAX_DAYS = 45;
 
-const MONTH_NAMES_TH = [
-  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
-];
-
 function formatBudgetDateShort(value: string) {
   const [year, month, day] = value.split('-');
   if (!year || !month || !day) return value || '-';
-  const monthName = MONTH_NAMES_TH[parseInt(month, 10) - 1] ?? month;
+  const monthName = TEXT.HOME_MONTH_NAMES[parseInt(month, 10) - 1] ?? month;
   const parsedYear = parseInt(year, 10);
-  // Backend may already send the Buddhist year — only convert CE (<= 2500).
-  const yearBuddhist = parsedYear > 2500 ? parsedYear : parsedYear + 543;
-  return `${parseInt(day, 10)} ${monthName} ${yearBuddhist}`;
+  // Backend may already send the Buddhist year - normalise to CE (<= 2500) first.
+  const yearLabel = displayYear(parsedYear > 2500 ? parsedYear - 543 : parsedYear);
+  return `${parseInt(day, 10)} ${monthName} ${yearLabel}`;
 }
 
 function fmt(n: number) {
@@ -110,7 +106,7 @@ function InfoCard({ servantAge, budgetStartDate, budgetEndDate }: Pick<StatsData
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.infoCard}>
-      <ThemedText style={styles.cardHeader}>ข้อมูลทั่วไป</ThemedText>
+      <ThemedText style={styles.cardHeader}>{TEXT.ABSENCE_STATS_GENERAL_SECTION}</ThemedText>
       <View style={styles.infoDivider} />
       <View style={styles.infoRow}>
         <View style={styles.infoIconCircle}>
@@ -351,7 +347,7 @@ export default function StatsScreen() {
         </View>
 
         <View style={styles.typeListCard}>
-          <ThemedText style={styles.cardHeader}>ข้อมูลการลา</ThemedText>
+          <ThemedText style={styles.cardHeader}>{TEXT.ABSENCE_DETAIL_INFO_SECTION}</ThemedText>
           <View style={styles.rowDivider} />
           <TypeRow
             icon="cross.fill"

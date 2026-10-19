@@ -6,12 +6,16 @@ import { Platform } from "react-native";
 
 import { ENDPOINTS } from "@/constants/endpoints";
 import { ENV } from "@/constants/config";
+import { getLanguage } from "@/i18n/language";
 import type { AuthUser } from "@/models/types";
 import { fetchApi } from "./api";
 
 const DEVICE_ID_STORAGE_KEY = "PUSH_DEVICE_ID";
 const REGISTERED_DEVICE_OWNERS_STORAGE_KEY = "REGISTERED_DEVICE_OWNERS";
 const PENDING_UNREGISTER_STORAGE_KEY = "PUSH_PENDING_UNREGISTER";
+// "<staff id>:<device id>:<language>" last accepted by the gateway - what lets a launch
+// skip telling it the language again.
+const LANGUAGE_SYNCED_STORAGE_KEY = "PUSH_LANGUAGE_SYNCED";
 const UNREGISTER_TIMEOUT_MS = 4000;
 const DEVICE_REGISTER_API_KEY = ENV.deviceRegisterApiKey;
 
@@ -260,7 +264,10 @@ async function registerDevice(
   pushEnabled?: boolean,
 ) {
   const deviceName = getDeviceName();
+  const language = getLanguage();
   const payload = {
+    // The language the app is set to: pushes to this phone are written in it.
+    language,
     owner: staffId,
     staff_id: staffId,
     device_id: deviceId,
@@ -291,6 +298,8 @@ async function registerDevice(
   if (!response.ok) {
     throw new Error(`Unable to register device for push notification: ${await getErrorMessage(response)}`);
   }
+
+  await AsyncStorage.setItem(LANGUAGE_SYNCED_STORAGE_KEY, `${staffId}:${deviceId}:${language}`);
 }
 
 async function registerLoggedInDeviceWithToken(user: AuthUser, pushToken: PushRegistrationToken) {
@@ -393,6 +402,29 @@ export async function setDevicePushEnabled(user: AuthUser, enabled: boolean) {
   const deviceId = await getDeviceId();
   const pushToken = await getPushRegistrationToken();
   await registerDevice(user, staffId, deviceId, pushToken, enabled);
+}
+
+/**
+ * Tell the gateway which language this phone's app is set to, so pushes to it are
+ * written in that language.
+ *
+ * Registration already carries the language, so this only has to cover a change
+ * made while signed in - and a launch where nothing changed costs nothing, because
+ * the last language the gateway accepted is remembered. It sends no push token, so
+ * it never opens a permission prompt, and a failure just leaves it to the next launch.
+ */
+export async function syncDeviceLanguage(user: AuthUser) {
+  if (Platform.OS === "web" || !DEVICE_REGISTER_API_KEY) return;
+
+  const staffId = getStaffId(user);
+  const deviceId = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY);
+  // No id yet means this phone was never registered - registering will say it.
+  if (!staffId || !deviceId) return;
+
+  const synced = await AsyncStorage.getItem(LANGUAGE_SYNCED_STORAGE_KEY);
+  if (synced === `${staffId}:${deviceId}:${getLanguage()}`) return;
+
+  await registerDevice(user, staffId, deviceId, emptyPushRegistrationToken());
 }
 
 export async function registerLoggedInDeviceOnce(user: AuthUser) {

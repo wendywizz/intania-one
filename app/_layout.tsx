@@ -2,7 +2,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
@@ -15,8 +15,10 @@ import { ToastProvider } from '@/components/toast-provider';
 import { UpdateGate } from '@/components/update-gate';
 import { REDIRECT_SCREEN_OPTIONS, STACK_SCREEN_OPTIONS } from '@/constants/navigation';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { LanguageProvider, useLanguage } from '@/context/LanguageContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { useBlurOnNavigate } from '@/hooks/use-blur-on-navigate';
+import { useDeviceLanguageSync } from '@/hooks/use-device-language-sync';
 import { useNotificationDeepLink } from '@/hooks/use-notification-deep-link';
 import { registerForegroundNotificationHandler } from '@/services/notificationService';
 
@@ -39,6 +41,24 @@ export const unstable_settings = {
  */
 const IDLE_RESET_AFTER_MS = 30 * 60 * 1000;
 
+/**
+ * Remounts a screen's content when the app language changes.
+ *
+ * Screens do not re-render on their own: React Navigation memoises each one, and the
+ * strings in `TEXT` are plain reads rather than state. A new `key` is the one thing
+ * that reaches every mounted screen - including the ones parked under the current
+ * one - without each of them having to subscribe. The navigator's own state is not
+ * touched, so the person stays on the same route, just re-rendered in the new language.
+ */
+function LanguageKeyed({ children }: { children: ReactNode }) {
+  const { language } = useLanguage();
+  return <Fragment key={language}>{children}</Fragment>;
+}
+
+function renderLanguageKeyed({ children }: { children: ReactNode }) {
+  return <LanguageKeyed>{children}</LanguageKeyed>;
+}
+
 function AppStack() {
   const { isDarkMode } = useTheme();
   const { initializing: isRestoringSession, user } = useAuth();
@@ -47,6 +67,10 @@ function AppStack() {
   // here because the navigator it drives is the one rendered below; the hook
   // waits for that navigator and holds any tap that beats it.
   useNotificationDeepLink(!isRestoringSession && Boolean(user));
+
+  // Pushes are written in the language this phone is set to, which the gateway only
+  // knows if told.
+  useDeviceLanguageSync(user);
 
   // Web only — see the hook's own docblock for why every route change needs
   // this.
@@ -80,7 +104,7 @@ function AppStack() {
           default. Listing routes one by one meant a new route that forgot its
           entry got the native header *as well as* its NavTopBar — two stacked
           bars. Opting out here makes that impossible. */}
-      <Stack screenOptions={STACK_SCREEN_OPTIONS}>
+      <Stack screenOptions={STACK_SCREEN_OPTIONS} screenLayout={renderLanguageKeyed}>
         {/* Auth/session hops the user never asked to "navigate" to — no
             transition should be visible when they land. */}
         <Stack.Screen name="login-callback" options={REDIRECT_SCREEN_OPTIONS} />
@@ -157,34 +181,36 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AuthProvider key={remountKey}>
-          <ThemeProvider>
-            <ToastProvider>
-              {/* Checked before anything else — an EAS Update is unrelated to
-                  scooba-service, so it's offered even if the gateway below is
-                  unreachable. */}
-              <UpdateGate>
-                {/* Nothing below this mounts — not the app lock, not the
-                    navigator — until scooba-service has answered. */}
-                <ConnectionGate>
-                  <BiometricGate>
-                    <AppStack />
-                  </BiometricGate>
-                </ConnectionGate>
-              </UpdateGate>
+        <LanguageProvider>
+          <AuthProvider key={remountKey}>
+            <ThemeProvider>
+              <ToastProvider>
+                {/* Checked before anything else — an EAS Update is unrelated to
+                    scooba-service, so it's offered even if the gateway below is
+                    unreachable. */}
+                <UpdateGate>
+                  {/* Nothing below this mounts — not the app lock, not the
+                      navigator — until scooba-service has answered. */}
+                  <ConnectionGate>
+                    <BiometricGate>
+                      <AppStack />
+                    </BiometricGate>
+                  </ConnectionGate>
+                </UpdateGate>
 
-              {/* The cold-start splash. A sibling rather than a wrapper around
-                  the gate stack above, and declared after it, so it paints on
-                  top of whatever any gate is doing underneath — including
-                  BiometricGate's own plain cover for this exact window — for
-                  as long as the session is still restoring. Remounting along
-                  with everything else above means it reappears for an idle
-                  reset too, which is correct: that reset re-runs the same
-                  session restore this splash exists to cover. */}
-              <ColdStartSplash />
-            </ToastProvider>
-          </ThemeProvider>
-        </AuthProvider>
+                {/* The cold-start splash. A sibling rather than a wrapper around
+                    the gate stack above, and declared after it, so it paints on
+                    top of whatever any gate is doing underneath — including
+                    BiometricGate's own plain cover for this exact window — for
+                    as long as the session is still restoring. Remounting along
+                    with everything else above means it reappears for an idle
+                    reset too, which is correct: that reset re-runs the same
+                    session restore this splash exists to cover. */}
+                <ColdStartSplash />
+              </ToastProvider>
+            </ThemeProvider>
+          </AuthProvider>
+        </LanguageProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

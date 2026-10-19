@@ -37,17 +37,17 @@ const FIELD_CONFIG: Record<Field, {
   keyboardType: React.ComponentProps<typeof TextInput>['keyboardType'];
 }> = {
   phone: {
-    title: TEXT.EDIT_PROFILE_PHONE_TITLE,
-    description: TEXT.EDIT_PROFILE_PHONE_DESCRIPTION,
-    label: TEXT.EDIT_PROFILE_PHONE_LABEL,
-    placeholder: TEXT.EDIT_PROFILE_PHONE_PLACEHOLDER,
+    get title() { return TEXT.EDIT_PROFILE_PHONE_TITLE; },
+    get description() { return TEXT.EDIT_PROFILE_PHONE_DESCRIPTION; },
+    get label() { return TEXT.EDIT_PROFILE_PHONE_LABEL; },
+    get placeholder() { return TEXT.EDIT_PROFILE_PHONE_PLACEHOLDER; },
     keyboardType: 'phone-pad',
   },
   email: {
-    title: TEXT.EDIT_PROFILE_EMAIL_TITLE,
-    description: TEXT.EDIT_PROFILE_EMAIL_DESCRIPTION,
-    label: TEXT.EDIT_PROFILE_EMAIL_LABEL,
-    placeholder: TEXT.EDIT_PROFILE_EMAIL_PLACEHOLDER,
+    get title() { return TEXT.EDIT_PROFILE_EMAIL_TITLE; },
+    get description() { return TEXT.EDIT_PROFILE_EMAIL_DESCRIPTION; },
+    get label() { return TEXT.EDIT_PROFILE_EMAIL_LABEL; },
+    get placeholder() { return TEXT.EDIT_PROFILE_EMAIL_PLACEHOLDER; },
     keyboardType: 'email-address',
   },
 };

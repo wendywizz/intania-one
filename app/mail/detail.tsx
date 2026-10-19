@@ -35,8 +35,8 @@ import { formatNewsDateTime } from '@/utils/date-format';
 // Reply and reply-all share one toolbar button that opens a small menu, the
 // way iOS Mail does; forward and delete are single taps.
 const REPLY_MENU: { mode: ComposeMode; label: string; icon: IconSymbolName }[] = [
-  { mode: 'reply', label: TEXT.MAIL_REPLY, icon: 'arrowshape.turn.up.left' },
-  { mode: 'replyAll', label: TEXT.MAIL_REPLY_ALL, icon: 'arrowshape.turn.up.left.2' },
+  { mode: 'reply', get label() { return TEXT.MAIL_REPLY; }, icon: 'arrowshape.turn.up.left' },
+  { mode: 'replyAll', get label() { return TEXT.MAIL_REPLY_ALL; }, icon: 'arrowshape.turn.up.left.2' },
 ];
 
 const TOOLBAR_HEIGHT = 56;

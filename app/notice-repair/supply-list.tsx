@@ -30,7 +30,7 @@ export default function SupplyListScreen() {
     setIsLoading(true);
     getFullDetail(Number(repair_id), staffId)
       .then(setDetail)
-      .catch((e) => setError(e instanceof Error ? e.message : 'ไม่สามารถโหลดรายการได้'))
+      .catch((e) => setError(e instanceof Error ? e.message : TEXT.SHARED_LOAD_LIST_FAILED))
       .finally(() => setIsLoading(false));
   }, [repair_id, staffId]);
 
@@ -49,7 +49,7 @@ export default function SupplyListScreen() {
       ) : (
         <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: contentBottomPadding }]} showsVerticalScrollIndicator={false}>
           {detail?.repair_number ? (
-            <ThemedText style={styles.subhead}>เลขที่คำร้อง {detail.repair_number}</ThemedText>
+            <ThemedText style={styles.subhead}>{TEXT.NOTICE_REPAIR_REQUEST_NUMBER}{' '}{detail.repair_number}</ThemedText>
           ) : null}
 
           {requisitions.length > 0 ? (
@@ -63,12 +63,12 @@ export default function SupplyListScreen() {
                 unit={r.unit}
                 total={r.price}
                 statusLabel={
-                  r.status === 'd' ? 'จัดหาเอง' : r.status === 'c' ? 'หน่วยอาคารฯ' : undefined
+                  r.status === 'd' ? TEXT.NOTICE_REPAIR_SUPPLY_SELF : r.status === 'c' ? TEXT.NOTICE_REPAIR_SUPPLY_BUILDING_UNIT : undefined
                 }
               />
             ))
           ) : (
-            <ThemedText style={styles.empty}>ไม่มีรายการจัดหาวัสดุ</ThemedText>
+            <ThemedText style={styles.empty}>{TEXT.NOTICE_REPAIR_NO_SUPPLY_ITEMS}</ThemedText>
           )}
         </ScrollView>
       )}

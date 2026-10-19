@@ -43,11 +43,11 @@ import {
 import { formatNewsDateTime } from '@/utils/date-format';
 
 const TITLE: Record<ComposeMode, string> = {
-  new: TEXT.MAIL_COMPOSE_TITLE_NEW,
-  reply: TEXT.MAIL_COMPOSE_TITLE_REPLY,
-  replyAll: TEXT.MAIL_COMPOSE_TITLE_REPLY,
-  forward: TEXT.MAIL_COMPOSE_TITLE_FORWARD,
-  draft: TEXT.MAIL_COMPOSE_TITLE_DRAFT,
+  get new() { return TEXT.MAIL_COMPOSE_TITLE_NEW; },
+  get reply() { return TEXT.MAIL_COMPOSE_TITLE_REPLY; },
+  get replyAll() { return TEXT.MAIL_COMPOSE_TITLE_REPLY; },
+  get forward() { return TEXT.MAIL_COMPOSE_TITLE_FORWARD; },
+  get draft() { return TEXT.MAIL_COMPOSE_TITLE_DRAFT; },
 };
 
 function toComposeMode(value?: string): ComposeMode {

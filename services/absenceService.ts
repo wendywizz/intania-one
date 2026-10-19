@@ -5,16 +5,7 @@ import {
 import { Platform } from "react-native";
 
 import type { absence } from "../models/types";
-import {
-  ensureSuccess,
-  fetchWithTimeout,
-  MESSAGE_PROCESS_FAILED,
-  requestJson,
-  type JsonMap,
-  type ListResponse,
-  type MutationResponse,
-  type UploadableFile,
-} from "./api";
+import { ensureSuccess, fetchWithTimeout, requestJson, type JsonMap, type ListResponse, type MutationResponse, type UploadableFile } from "./api";
 import { ENDPOINTS } from "../constants/endpoints";
 import { TEXT } from "../constants/text";
 import { thaiOnly } from "../utils/thai-message";
@@ -69,7 +60,7 @@ async function readBlobAsBase64(blob: Blob) {
       const result = String(reader.result ?? "");
       resolve(result.includes(",") ? result.split(",")[1] : result);
     };
-    reader.onerror = () => reject(reader.error ?? new Error(MESSAGE_PROCESS_FAILED));
+    reader.onerror = () => reject(reader.error ?? new Error(TEXT.SERVICE_ERROR_PROCESS_FAILED));
     reader.readAsDataURL(blob);
   });
 }
@@ -145,13 +136,13 @@ export async function uploadMedFile(
   const body = await response.text();
 
   if (!body) {
-    throw new Error(MESSAGE_PROCESS_FAILED);
+    throw new Error(TEXT.SERVICE_ERROR_PROCESS_FAILED);
   }
 
   const jsonData = JSON.parse(body) as JsonMap;
 
   if (!response.ok) {
-    throw new Error(String(jsonData.message ?? MESSAGE_PROCESS_FAILED));
+    throw new Error(String(jsonData.message ?? TEXT.SERVICE_ERROR_PROCESS_FAILED));
   }
 
   ensureSuccess(jsonData);

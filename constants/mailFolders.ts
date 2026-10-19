@@ -24,11 +24,11 @@ export type MailFolder = {
 
 // Inbox first and selected by default: the chips are how you get back to it.
 export const MAIL_FOLDERS: readonly MailFolder[] = [
-  { key: 'inbox', label: TEXT.MAIL_FOLDER_INBOX, icon: 'tray.fill', showsRecipients: false },
-  { key: 'drafts', label: TEXT.MAIL_FOLDER_DRAFTS, icon: 'doc.pencil', showsRecipients: true },
-  { key: 'sentitems', label: TEXT.MAIL_FOLDER_SENT, icon: 'paperplane.fill', showsRecipients: true },
-  { key: 'deleteditems', label: TEXT.MAIL_FOLDER_DELETED, icon: 'trash.fill', showsRecipients: false },
-  { key: 'junkemail', label: TEXT.MAIL_FOLDER_JUNK, icon: 'nosign', showsRecipients: false },
+  { key: 'inbox', get label() { return TEXT.MAIL_FOLDER_INBOX; }, icon: 'tray.fill', showsRecipients: false },
+  { key: 'drafts', get label() { return TEXT.MAIL_FOLDER_DRAFTS; }, icon: 'doc.pencil', showsRecipients: true },
+  { key: 'sentitems', get label() { return TEXT.MAIL_FOLDER_SENT; }, icon: 'paperplane.fill', showsRecipients: true },
+  { key: 'deleteditems', get label() { return TEXT.MAIL_FOLDER_DELETED; }, icon: 'trash.fill', showsRecipients: false },
+  { key: 'junkemail', get label() { return TEXT.MAIL_FOLDER_JUNK; }, icon: 'nosign', showsRecipients: false },
 ];
 
 export function getMailFolder(key: MailFolderKey): MailFolder {
@@ -36,7 +36,7 @@ export function getMailFolder(key: MailFolderKey): MailFolder {
 }
 
 export const MAIL_READ_FILTER_LABEL: Record<MailReadFilter, string> = {
-  all: TEXT.MAIL_FILTER_ALL,
-  unread: TEXT.MAIL_FILTER_UNREAD,
-  read: TEXT.MAIL_FILTER_READ,
+  get all() { return TEXT.MAIL_FILTER_ALL; },
+  get unread() { return TEXT.MAIL_FILTER_UNREAD; },
+  get read() { return TEXT.MAIL_FILTER_READ; },
 };

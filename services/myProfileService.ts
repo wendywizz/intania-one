@@ -4,6 +4,7 @@ import { ENDPOINTS } from '../constants/endpoints';
 import { MODULE_DISABLED } from '../constants/module-status';
 import type { Person } from '../models/types';
 import { fetchApi } from './api';
+import { TEXT } from '@/constants/text';
 
 /**
  * my-profile — the signed-in person's own record.
@@ -73,7 +74,7 @@ export async function getMyProfile(staffId: string): Promise<Person | null> {
   }
 
   if (!response.ok) {
-    throw new Error(await readError(response, 'ไม่สามารถโหลดข้อมูลโปรไฟล์ได้'));
+    throw new Error(await readError(response, TEXT.PROFILE_LOAD_FAILED));
   }
 
   const json = (await response.json()) as { data?: Person | null };
@@ -100,7 +101,7 @@ export async function updateMyProfileInfo(
   });
 
   if (!response.ok) {
-    throw new Error(await readError(response, 'บันทึกข้อมูลไม่สำเร็จ'));
+    throw new Error(await readError(response, TEXT.PROFILE_SAVE_FAILED));
   }
 }
 
@@ -123,7 +124,7 @@ export async function uploadMyProfilePhoto(staffId: string, imageUri: string): P
 
   const base64 = manipulated.base64 ?? '';
   if (!base64) {
-    throw new Error('ไม่สามารถอ่านไฟล์รูปภาพได้');
+    throw new Error(TEXT.PROFILE_PHOTO_READ_FAILED);
   }
 
   const response = await fetchApi(ENDPOINTS.myProfileUploadPhoto, {
@@ -133,6 +134,6 @@ export async function uploadMyProfilePhoto(staffId: string, imageUri: string): P
   });
 
   if (!response.ok) {
-    throw new Error(await readError(response, 'อัปโหลดรูปภาพไม่สำเร็จ'));
+    throw new Error(await readError(response, TEXT.PROFILE_PHOTO_UPLOAD_FAILED));
   }
 }

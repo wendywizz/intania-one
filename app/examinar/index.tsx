@@ -25,25 +25,26 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import type { ExamTask } from '@/models/types';
 import { listExamRounds, listExamTasks } from '@/services/examinarService';
-import { toBuddhistYear } from '@/utils/date-format';
+import { toDisplayYear } from '@/utils/date-format';
 import { boxShadow } from '@/constants/shadows';
+import { fill } from '@/utils/text-template';
 
 // ─── Filter options ────────────────────────────────────────────────────────────
 
 const currentYear = new Date().getFullYear();
 const YEAR_OPTIONS: ModalSelectOption[] = Array.from({ length: 4 }, (_, i) => {
   const y = currentYear - 3 + i;
-  return { label: toBuddhistYear(y), value: String(y) };
+  return { label: toDisplayYear(y), value: String(y) };
 });
 
 const TERM_OPTIONS: ModalSelectOption[] = [
-  { label: TEXT.EXAMINAR_TERM_1, value: '1' },
-  { label: TEXT.EXAMINAR_TERM_2, value: '2' },
+  { get label() { return TEXT.EXAMINAR_TERM_1; }, value: '1' },
+  { get label() { return TEXT.EXAMINAR_TERM_2; }, value: '2' },
 ];
 
 const PERIOD_OPTIONS: ModalSelectOption[] = [
-  { label: TEXT.EXAMINAR_PERIOD_MIDTERM, value: 'mid' },
-  { label: TEXT.EXAMINAR_PERIOD_FINAL, value: 'final' },
+  { get label() { return TEXT.EXAMINAR_PERIOD_MIDTERM; }, value: 'mid' },
+  { get label() { return TEXT.EXAMINAR_PERIOD_FINAL; }, value: 'final' },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -336,7 +337,7 @@ export default function ExaminarListScreen() {
             ListHeaderComponent={
               tasks.length > 0 ? (
                 <ThemedText style={styles.resultCount}>
-                  {`คุมสอบทั้งหมด ${tasks.length} รายการ`}
+                  {fill(TEXT.EXAMINAR_RESULT_COUNT, { count: tasks.length })}
                 </ThemedText>
               ) : null
             }

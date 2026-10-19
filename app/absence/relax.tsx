@@ -1,4 +1,3 @@
-import { TEXT } from "@/constants/text";
 import { X } from "lucide-react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { navReplace } from "@/utils/navigation";
@@ -56,6 +55,9 @@ import {
   getStaffPositionLabel,
 } from "@/utils/staff-label";
 import { StaffOptionLabel } from "@/components/staff-option-label";
+import { intlLocale } from '@/i18n/locale';
+import { fill } from '@/utils/text-template';
+import { TEXT } from '@/constants/text';
 
 // Remove the default focus outline on web so active inputs match the
 // borderless underline style (RN Web only; no-op on native).
@@ -941,7 +943,7 @@ export default function RelaxScreen() {
           {maxRelaxDays !== null ? (
             <TipAlert
               title={TEXT.ABSENCE_POLICY_NOTE_LABEL}
-              message={`ท่านสามารถยื่นลาพักผ่อนได้จำนวน ${maxRelaxDays.toLocaleString("th-TH")} วัน`}
+              message={fill(TEXT.ABSENCE_RELAX_MAX_DAYS, { days: maxRelaxDays.toLocaleString(intlLocale()) })}
               style={styles.policyCard}
             />
           ) : null}
@@ -1023,7 +1025,7 @@ export default function RelaxScreen() {
                   style={styles.leaveDaySummary}
                 >
                   {TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL}
-                  {leaveDayCount.toLocaleString("th-TH")} {TEXT.ABSENCE_DAY_UNIT}
+                  {leaveDayCount.toLocaleString(intlLocale())} {TEXT.ABSENCE_DAY_UNIT}
                 </ThemedText>
               ) : null}
             </View>

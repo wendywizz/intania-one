@@ -13,8 +13,8 @@ import { TEXT } from "@/constants/text";
 type TimestampTab = "forgot" | "history";
 
 const TABS: { key: TimestampTab; label: string }[] = [
-  { key: "forgot", label: TEXT.TIMESTAMP_FORGOT_TAB },
-  { key: "history", label: TEXT.SHARED_HISTORY },
+  { key: "forgot", get label() { return TEXT.TIMESTAMP_FORGOT_TAB; } },
+  { key: "history", get label() { return TEXT.SHARED_HISTORY; } },
 ];
 
 export default function ForgotTimestampScreen() {

@@ -60,12 +60,8 @@ import {
   getMeetingRoomWeek,
   type MeetingRoomOption,
 } from '@/services/meetingRoomService';
+import { displayYear } from '@/i18n/locale';
 
-const THAI_DAYS = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
-const THAI_MONTHS = [
-  'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
-  'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.',
-];
 
 /** Which system a picked room belongs to — carried in the room id itself
  *  (`classroom:5` / `meeting-room:6`) so the two id-spaces never collide. */
@@ -168,16 +164,16 @@ function shiftDays(iso: string, days: number) {
 function weekLabel(start: string, end: string) {
   const a = parseDate(start);
   const b = parseDate(end);
-  const year = b.getFullYear() + 543;
+  const year = displayYear(b.getFullYear());
   return a.getMonth() === b.getMonth()
-    ? `${a.getDate()}–${b.getDate()} ${THAI_MONTHS[b.getMonth()]} ${year}`
-    : `${a.getDate()} ${THAI_MONTHS[a.getMonth()]} – ${b.getDate()} ${THAI_MONTHS[b.getMonth()]} ${year}`;
+    ? `${a.getDate()}–${b.getDate()} ${TEXT.MONTH_NAMES_SHORT[b.getMonth()]} ${year}`
+    : `${a.getDate()} ${TEXT.MONTH_NAMES_SHORT[a.getMonth()]} – ${b.getDate()} ${TEXT.MONTH_NAMES_SHORT[b.getMonth()]} ${year}`;
 }
 
 /** The picked day — today until the user picks another or steps a week. */
 function dateLabel(iso: string) {
   const d = parseDate(iso);
-  return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`;
+  return `${d.getDate()} ${TEXT.MONTH_NAMES_SHORT[d.getMonth()]} ${displayYear(d.getFullYear())}`;
 }
 
 function roomLabel(room?: UnifiedRoom | null) {
@@ -406,7 +402,7 @@ export default function BookingRoomScheduleScreen() {
                 {d.getDate()}
               </ThemedText>
               <ThemedText style={[styles.dateMonth, active && styles.dateOnActive]}>
-                {THAI_MONTHS[d.getMonth()]}
+                {TEXT.MONTH_NAMES_SHORT[d.getMonth()]}
               </ThemedText>
             </View>
 
@@ -418,7 +414,7 @@ export default function BookingRoomScheduleScreen() {
                   active && styles.dayTitleActive,
                 ]}
                 numberOfLines={1}>
-                {THAI_DAYS[d.getDay()]}
+                {TEXT.DAY_NAMES_NO_PREFIX[d.getDay()]}
               </ThemedText>
               {isToday ? (
                 <ThemedText style={styles.todayTag}>

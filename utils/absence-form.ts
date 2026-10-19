@@ -86,18 +86,26 @@ export function getHalfDayValue(
     : selectedOption.value;
 }
 
+// Wording that means "the load failed, trying again may work", in both languages: the
+// gateway's own English, the app's own messages (TEXT.*, in whichever language is on)
+// and the Thai ones the PHP sites send.
+const RETRYABLE_ERROR_WORDS = [
+  "unable to load",
+  "unable to connect",
+  "cannot connect",
+  "could not load",
+  "could not connect",
+  "server",
+  "timeout",
+  "timed out",
+  "network",
+  "ไม่สามารถโหลด",
+  "ไม่สามารถเชื่อมต่อ",
+  "เซิร์ฟเวอร์",
+];
+
 export function isRetryableInitialError(message: string) {
   const normalizedMessage = message.toLowerCase();
 
-  return (
-    normalizedMessage.includes("unable to load") ||
-    normalizedMessage.includes("unable to connect") ||
-    normalizedMessage.includes("cannot connect") ||
-    normalizedMessage.includes("server") ||
-    normalizedMessage.includes("timeout") ||
-    normalizedMessage.includes("network") ||
-    normalizedMessage.includes("ไม่สามารถโหลด") ||
-    normalizedMessage.includes("ไม่สามารถเชื่อมต่อ") ||
-    normalizedMessage.includes("เซิร์ฟเวอร์")
-  );
+  return RETRYABLE_ERROR_WORDS.some((word) => normalizedMessage.includes(word));
 }

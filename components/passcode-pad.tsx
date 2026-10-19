@@ -5,6 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { AppFonts } from '@/constants/fonts';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { PASSCODE_LENGTH } from '@/services/appPasswordService';
+import { TEXT } from '@/constants/text';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'delete'] as const;
 
@@ -71,7 +72,7 @@ export function PasscodePad({
             <Pressable
               key={key}
               accessibilityRole="button"
-              accessibilityLabel={key === 'delete' ? 'ลบ' : key}
+              accessibilityLabel={key === 'delete' ? TEXT.DELETE : key}
               onPress={() => press(key)}
               disabled={key === 'delete' && value.length === 0}
               style={({ pressed }) => [

@@ -13,8 +13,8 @@ import {
 type HistoryTab = 'job' | 'supply';
 
 const TABS: { key: HistoryTab; label: string }[] = [
-  { key: 'job', label: 'ประวัติงานซ่อม' },
-  { key: 'supply', label: 'ประวัติอนุมัติเบิก' },
+  { key: 'job', get label() { return TEXT.REPAIR_COMPUTER_HISTORY_JOBS_TAB; } },
+  { key: 'supply', get label() { return TEXT.REPAIR_COMPUTER_HISTORY_SUPPLY_TAB; } },
 ];
 
 export default function ForemanHistoryScreen() {

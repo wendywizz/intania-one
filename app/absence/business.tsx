@@ -55,6 +55,7 @@ import {
   getStaffNameLabel,
   getStaffPositionLabel,
 } from "@/utils/staff-label";
+import { intlLocale } from '@/i18n/locale';
 
 // Remove the default focus outline on web so active inputs match the
 // borderless underline style (RN Web only; no-op on native).
@@ -258,11 +259,11 @@ function uniqueValues(values: string[]) {
 }
 
 const halfDayOptions: SelectOption[] = [
-  { label: TEXT.ABSENCE_HALF_DAY_NONE, value: "0" },
-  { label: TEXT.ABSENCE_HALF_DAY_FIRST_MORNING, value: "1" },
-  { label: TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON, value: "2" },
-  { label: TEXT.ABSENCE_HALF_DAY_LAST_MORNING, value: "3" },
-  { label: TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING, value: "4" },
+  { get label() { return TEXT.ABSENCE_HALF_DAY_NONE; }, value: "0" },
+  { get label() { return TEXT.ABSENCE_HALF_DAY_FIRST_MORNING; }, value: "1" },
+  { get label() { return TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON; }, value: "2" },
+  { get label() { return TEXT.ABSENCE_HALF_DAY_LAST_MORNING; }, value: "3" },
+  { get label() { return TEXT.ABSENCE_HALF_DAY_FIRST_AFTERNOON_LAST_MORNING; }, value: "4" },
 ];
 
 /** Everything except "none" — the forms only ever offer real half-days. */
@@ -1071,7 +1072,7 @@ export default function BusinessScreen() {
                   style={styles.leaveDaySummary}
                 >
                   {TEXT.ABSENCE_LEAVE_DAY_COUNT_LABEL}
-                  {leaveDayCount.toLocaleString("th-TH")} {TEXT.ABSENCE_DAY_UNIT}
+                  {leaveDayCount.toLocaleString(intlLocale())} {TEXT.ABSENCE_DAY_UNIT}
                 </ThemedText>
               ) : null}
             </View>

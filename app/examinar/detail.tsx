@@ -22,7 +22,7 @@ import { TEXT } from '@/constants/text';
 import type { ExamDetail, ExamStaff, ExamSubject } from '@/models/types';
 import { useAuth } from '@/context/AuthContext';
 import { getExamDetail } from '@/services/examinarService';
-import { toBuddhistYear } from '@/utils/date-format';
+import { toDisplayYear } from '@/utils/date-format';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -98,7 +98,7 @@ function HeroSection({
   // The detail payload carries no year, so this falls back to the C.E. value the
   // list screen put in the route params — show it as B.E. like every other year
   // in the app (and like `date_label`, which the API already sends as B.E.).
-  const yearValue = toBuddhistYear(detail.year ?? year);
+  const yearValue = toDisplayYear(detail.year ?? year);
 
   // Same "titled card + icon/label/value rows" layout as the absence detail screen.
   return (

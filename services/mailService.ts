@@ -22,6 +22,7 @@ import {
   mockSuggestRecipients,
 } from '@/services/mailMockData';
 import { getPersonnelSuggestions } from '@/services/personService';
+import { TEXT } from '@/constants/text';
 
 /**
  * Microsoft Graph calls for the mail module. Plain exported async functions
@@ -152,7 +153,7 @@ async function graphFetch<T>(url: string, init: { method?: string; body?: unknow
 
   if (!response.ok) {
     const json = (await response.json().catch(() => ({}))) as GraphErrorResponse;
-    throw new Error(json.error?.message || 'ไม่สามารถโหลดอีเมลได้');
+    throw new Error(json.error?.message || TEXT.MAIL_UNABLE_TO_LOAD);
   }
 
   const text = await response.text();
@@ -535,7 +536,7 @@ export async function getAttachmentBase64(messageId: string, attachmentId: strin
   const json = await graphFetch<GraphAttachment>(
     `${GRAPH}/me/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
   );
-  if (!json.contentBytes) throw new Error('ไม่สามารถเปิดไฟล์แนบได้');
+  if (!json.contentBytes) throw new Error(TEXT.MAIL_ATTACHMENT_OPEN_FAILED);
   return json.contentBytes;
 }
 

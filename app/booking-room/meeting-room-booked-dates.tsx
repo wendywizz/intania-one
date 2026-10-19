@@ -32,6 +32,7 @@ import {
   type MeetingRoomRequestDetail,
 } from '@/services/meetingRoomService';
 import { formatFullDate, formatWeekday } from '@/utils/date-format';
+import { timeSuffix } from '@/i18n/locale';
 
 export default function MeetingRoomBookedDatesScreen() {
   const c = useColors();
@@ -123,7 +124,7 @@ export default function MeetingRoomBookedDatesScreen() {
                 <View style={styles.timeRow}>
                   <IconSymbol name="clock.fill" size={13} color={c.textMuted} />
                   <ThemedText style={styles.time}>
-                    {d.start_time} – {d.end_time} น.
+                    {d.start_time} – {d.end_time}{timeSuffix()}
                   </ThemedText>
                 </View>
               </View>

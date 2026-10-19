@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
 import { ThemedText } from "@/components/themed-text";
+import { TEXT } from '@/constants/text';
 
 // Renders a PDF's pages to canvases with pdf.js — used on Android, whose WebView
 // can't display a raw PDF inline.
@@ -37,7 +38,7 @@ export function buildPdfViewerHtml(base64: string): string {
   </style>
 </head>
 <body>
-  <div id="msg">กำลังโหลดเอกสาร...</div>
+  <div id="msg">${TEXT.PDF_LOADING}</div>
   <div id="pages"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -59,7 +60,7 @@ export function buildPdfViewerHtml(base64: string): string {
         });
       })();
     }).catch(function(){
-      document.getElementById('msg').textContent='ไม่สามารถโหลดเอกสารได้';
+      document.getElementById('msg').textContent='${TEXT.PDF_LOAD_FAILED}';
     });
   </script>
 </body>
@@ -79,7 +80,7 @@ type PdfViewerModalProps = {
  * module's viewer: web/iOS load the URL directly; Android downloads and renders
  * via pdf.js since its WebView can't show a raw PDF inline.
  */
-export function PdfViewerModal({ url, title = "เอกสาร PDF", showPrint = true, onClose }: PdfViewerModalProps) {
+export function PdfViewerModal({ url, title = TEXT.PDF_DOCUMENT_TITLE, showPrint = true, onClose }: PdfViewerModalProps) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
@@ -151,7 +152,7 @@ export function PdfViewerModal({ url, title = "เอกสาร PDF", showPrin
               <Pressable onPress={handlePrint} style={styles.printBtn} accessibilityRole="button">
                 <Printer size={15} color="#FFFFFF" />
                 <ThemedText lightColor="#FFFFFF" darkColor="#FFFFFF" style={styles.printBtnText}>
-                  พิมพ์
+                  {TEXT.SHARED_PRINT}
                 </ThemedText>
               </Pressable>
             ) : null}

@@ -1,0 +1,10 @@
+{
+  "ios": {
+    "NSCameraUsageDescription": "The app uses your camera to capture photos as evidence of your clock-in and clock-out.",
+    "NSPhotoLibraryUsageDescription": "The app uses your photos to attach evidence for a sick leave request.",
+    "NSLocationWhenInUseUsageDescription": "The app uses your location to confirm you are within the Faculty of Engineering when you clock in for official duty.",
+    "NSLocationAlwaysAndWhenInUseUsageDescription": "The app uses your location to confirm you are within the Faculty of Engineering when you clock in for official duty.",
+    "NSFaceIDUsageDescription": "Use Face ID to unlock the Intania One app.",
+    "NSLocalNetworkUsageDescription": "The app connects to a test server inside the Faculty of Engineering network to fetch data during the testing period."
+  }
+}

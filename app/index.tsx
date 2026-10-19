@@ -41,6 +41,7 @@ import { ENDPOINTS } from '@/constants/endpoints';
 import { LoginLanding } from '@/components/login-landing';
 import { NAV_LOGO, USER_PLACEHOLDER } from '@/constants/images';
 import { boxShadow } from '@/constants/shadows';
+import { displayYear } from '@/i18n/locale';
 
 // Scroll offsets at which the pinned mini header appears / disappears. The gap
 // between them is deliberate — it stops the bar flickering at the boundary.
@@ -195,32 +196,31 @@ const MODULE_HREF = {
 // business first, then the things asked for when something is needed, with
 // reference lookups last.
 const MENU_ITEMS: readonly { title: string; href: string; icon: IconName }[] = [
-  { title: TEXT.TIMESTAMP_TITLE, href: MODULE_HREF.timestamp, icon: 'calendar-clock' },
+  { get title() { return TEXT.TIMESTAMP_TITLE; }, href: MODULE_HREF.timestamp, icon: 'calendar-clock' },
   // Straight to the pending list, not to /absence: the leave-form chooser there
   // is no longer a tab, so landing on it would show a tab bar with nothing
   // selected. Starting a new request is a button on this list.
   // A document, not another calendar: leave is filed as ใบลา, and the grid can
   // only carry so many calendar glyphs before they stop telling each other apart.
-  { title: TEXT.ABSENCE_TITLE, href: MODULE_HREF.absence, icon: 'doc.text.fill' },
+  { get title() { return TEXT.ABSENCE_TITLE; }, href: MODULE_HREF.absence, icon: 'doc.text.fill' },
   // Mail is daily business too — checked as often as leave, so it sits with it.
-  { title: TEXT.MAIL_MENU_TITLE, href: MODULE_HREF.mail, icon: 'envelope.fill' },
-  { title: TEXT.MEETING_MENU_TITLE, href: MODULE_HREF.meeting, icon: 'person.2.fill' },
+  { get title() { return TEXT.MAIL_MENU_TITLE; }, href: MODULE_HREF.mail, icon: 'envelope.fill' },
+  { get title() { return TEXT.MEETING_MENU_TITLE; }, href: MODULE_HREF.meeting, icon: 'person.2.fill' },
   // Opens the hub in app/repair.tsx, which hands off to whichever of the two
   // standalone modules (repair-computer / notice-repair) the person picks.
-  { title: TEXT.REPAIR_MENU_TITLE, href: MODULE_HREF.repairHub, icon: 'wrench.fill' },
-  { title: TEXT.BOOKING_ROOM_MENU_TITLE, href: MODULE_HREF.booking, icon: 'door.open' },
+  { get title() { return TEXT.REPAIR_MENU_TITLE; }, href: MODULE_HREF.repairHub, icon: 'wrench.fill' },
+  { get title() { return TEXT.BOOKING_ROOM_MENU_TITLE; }, href: MODULE_HREF.booking, icon: 'door.open' },
   // A clipboard, not a checkmark: a tick reads as "approved/done", and this is a
   // roster of duty to turn up for.
-  { title: TEXT.EXAMINER_MENU_TITLE, href: MODULE_HREF.exam, icon: 'clipboard-list' },
-  { title: TEXT.CALENDAR_TITLE, href: MODULE_HREF.calendar, icon: 'calendar-range' },
-  { title: TEXT.PERSON_SEARCH_TITLE, href: MODULE_HREF.person, icon: 'user-round-search' },
+  { get title() { return TEXT.EXAMINER_MENU_TITLE; }, href: MODULE_HREF.exam, icon: 'clipboard-list' },
+  { get title() { return TEXT.CALENDAR_TITLE; }, href: MODULE_HREF.calendar, icon: 'calendar-range' },
+  { get title() { return TEXT.PERSON_SEARCH_TITLE; }, href: MODULE_HREF.person, icon: 'user-round-search' },
 ];
 
 function getDateString() {
   const n = new Date();
-  // Buddhist year, as every other date in the app is shown — the greeting was
-  // the one place still reading 2026 while the screens below it said 2569.
-  const year = n.getFullYear() + 543;
+  // The same year the rest of the app shows (Buddhist in Thai, Gregorian in English).
+  const year = displayYear(n.getFullYear());
   return `${TEXT.HOME_DAY_NAMES[n.getDay()]} ${n.getDate()} ${TEXT.HOME_MONTH_NAMES[n.getMonth()]} ${year}`;
 }
 

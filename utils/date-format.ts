@@ -1,7 +1,12 @@
 import moment from 'moment';
 import 'moment/locale/th';
 
-moment.locale('th');
+import { displayYear, isThai, timeSuffix } from '@/i18n/locale';
+import { getLanguage } from '@/i18n/language';
+
+// The moment locale is global and owned by LanguageProvider (it follows the language
+// the person picked), so nothing here pins it - `import 'moment/locale/th'` only
+// registers the Thai month and day names.
 
 const PARSE_FORMATS = [
   moment.ISO_8601,
@@ -38,20 +43,22 @@ export function parseDateTime(value: string) {
   return parsedDate.isValid() ? parsedDate : null;
 }
 
+/** The year as the current language prints it: Buddhist Era in Thai, Gregorian in English. */
 function beYear(m: moment.Moment) {
-  return m.year() + 543;
+  return displayYear(m.year());
 }
 
 /**
- * Buddhist-era label for a bare year, which the app shows everywhere. Values
- * already past 2400 are treated as B.E. and passed through untouched — some
- * endpoints hand back the Thai year while others echo the C.E. one we sent
- * them, and the two ranges cannot overlap for any year we display.
+ * Label for a bare year: Buddhist Era in Thai, Gregorian in English. Values already
+ * past 2400 are treated as B.E. whichever way they arrive — some endpoints hand back
+ * the Thai year while others echo the C.E. one we sent them, and the two ranges
+ * cannot overlap for any year we display.
  */
-export function toBuddhistYear(value: string | number): string {
+export function toDisplayYear(value: string | number): string {
   const n = typeof value === 'number' ? value : parseInt(String(value).trim(), 10);
   if (!Number.isFinite(n)) return String(value ?? '');
-  return String(n > 2400 ? n : n + 543);
+  const gregorian = n > 2400 ? n - 543 : n;
+  return String(displayYear(gregorian));
 }
 
 function dateStr(m: moment.Moment) {
@@ -89,8 +96,8 @@ export function formatNewsDate(value: string) {
   return hasTime ? `${base} - ${m.format('HH:mm')}` : base;
 }
 
-// Thai news datetime, e.g. "27 มีนาคม 2569 - 11:20 น." — same RFC-2822/timezone
-// handling as formatNewsDate, but Thai month + Buddhist year + a "น." suffix.
+// News datetime in the app language, e.g. "27 มีนาคม 2569 - 11:20 น." or
+// "27 March 2026 - 11:20" — same RFC-2822/timezone handling as formatNewsDate.
 export function formatNewsDateTime(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return value;
@@ -103,10 +110,10 @@ export function formatNewsDateTime(value: string) {
     m = parsed.utcOffset(420); // Asia/Bangkok (no DST)
   }
 
-  m.locale('th');
+  m.locale(getLanguage());
   const hasTime = /\d{1,2}:\d{2}/.test(trimmed);
   const base = `${m.format('D MMMM')} ${beYear(m)}`;
-  return hasTime ? `${base} - ${m.format('HH:mm')} น.` : base;
+  return hasTime ? `${base} - ${m.format('HH:mm')}${timeSuffix()}` : base;
 }
 
 export function formatDateOnly(value: string) {
@@ -121,17 +128,17 @@ export function formatFullDate(value: string) {
   return dateStr(m);
 }
 
-/** The Thai weekday on its own — 'จันทร์', 'พุธ'. */
+/** The weekday on its own, in the app language — 'จันทร์', 'Monday'. */
 export function formatWeekday(value: string) {
   const m = parseDateTime(value);
   return m ? m.format('dddd') : '';
 }
 
-/** '24 มิ.ย. 69' — for lists of many dates, where the full form is too long. */
+/** '24 มิ.ย. 69' / '24 Jun 26' — for lists of many dates, where the full form is too long. */
 export function formatShortDate(value: string) {
   const m = parseDateTime(value);
   if (!m) return value.split(/[T ]/)[0] || value;
-  return `${m.format('D MMM')} ${String(m.year() + 543).slice(-2)}`;
+  return `${m.format('D MMM')} ${String(beYear(m)).slice(-2)}`;
 }
 
 export function formatDateRange(startDate: string, endDate: string) {
@@ -172,9 +179,10 @@ export function formatMeetingDetailDate(value: string): string {
   if (!m) return value;
   const hasTime = /\d{1,2}:\d{2}/.test(value.trim());
   const dayName = m.format('dddd');
-  const fullDayName = dayName.startsWith('วัน') ? dayName : `วัน${dayName}`;
-  const datePart = `${fullDayName}ที่ ${m.format('D MMMM')} พ.ศ. ${beYear(m)}`;
-  const timePart = hasTime ? ` • ${m.format('HH:mm')} น.` : '';
+  const datePart = isThai()
+    ? `${dayName.startsWith('วัน') ? dayName : `วัน${dayName}`}ที่ ${m.format('D MMMM')} พ.ศ. ${beYear(m)}`
+    : `${dayName}, ${m.format('D MMMM')} ${beYear(m)}`;
+  const timePart = hasTime ? ` • ${m.format('HH:mm')}${timeSuffix()}` : '';
   return `${datePart}${timePart}`;
 }
 

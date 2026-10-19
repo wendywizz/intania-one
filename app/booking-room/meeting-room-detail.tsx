@@ -43,6 +43,7 @@ import {
   type MeetingRoomRequestDetail,
 } from '@/services/meetingRoomService';
 import { formatDateRange, formatFullDate } from '@/utils/date-format';
+import { timeSuffix } from '@/i18n/locale';
 
 /** Mirrors Request_Order_Model::CANCELLED_STATUS on the server. */
 const CANCELLED_STATUS = 90;
@@ -145,7 +146,7 @@ export default function MeetingRoomDetailScreen() {
         const n = many ? ` (${i + 1})` : "";
         return [
           { label: TEXT.MEETING_ROOM_DETAIL_DATE_LABEL + n, value: formatFullDate(d.date), icon: "calendar" },
-          { label: TEXT.MEETING_ROOM_DETAIL_TIME_LABEL + n, value: `${d.start_time} – ${d.end_time} น.`, icon: "clock.fill" },
+          { label: TEXT.MEETING_ROOM_DETAIL_TIME_LABEL + n, value: `${d.start_time} – ${d.end_time}${timeSuffix()}`, icon: "clock.fill" },
         ];
       }),
     ];

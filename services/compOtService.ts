@@ -1,5 +1,6 @@
 import { ENDPOINTS } from '../constants/endpoints';
-import { fetchWithTimeout, MESSAGE_SERVER_ERROR } from './api';
+import { fetchWithTimeout } from './api';
+import { TEXT } from '@/constants/text';
 
 /**
  * Computer-lab OT duty roster (เวรห้องคอมพิวเตอร์, scooba-comp-ot — dept 209
@@ -88,7 +89,7 @@ async function requestJson(url: string, init?: RequestInit): Promise<unknown> {
 
   if (!response.ok || json === null) {
     const reason = extractError(json);
-    throw new Error(response.status < 500 && reason ? reason : MESSAGE_SERVER_ERROR);
+    throw new Error(response.status < 500 && reason ? reason : TEXT.SERVICE_ERROR_SERVER);
   }
 
   return json;
@@ -133,7 +134,7 @@ export async function getCompOtSchedule(params: {
   const json = await requestJson(url);
   const data = extractObject<CompOtSchedule>(json);
   if (!data) {
-    throw new Error(extractError(json) || 'โหลดตารางเวรไม่สำเร็จ');
+    throw new Error(extractError(json) || TEXT.COMP_OT_LOAD_ERROR);
   }
 
   return {
@@ -188,7 +189,7 @@ export async function stampCompOtEvent(params: {
 
   const data = extractObject<CompOtStampResult>(json);
   if (!data) {
-    throw new Error(extractError(json) || 'บันทึกการลงเวลาไม่สำเร็จ');
+    throw new Error(extractError(json) || TEXT.COMP_OT_STAMP_ERROR);
   }
 
   return data;
@@ -272,7 +273,7 @@ export async function getCompOtSwaps(staffId: string): Promise<CompOtSwapRequest
   const json = await requestJson(createCompOtUrl(ENDPOINTS.compOtSwaps, { staff_id: staffId }));
   const data = extractObject<{ requests?: CompOtSwapRequest[] }>(json);
   if (!data) {
-    throw new Error(extractError(json) || 'โหลดคำขอแลกเวร/ขายเวรไม่สำเร็จ');
+    throw new Error(extractError(json) || TEXT.COMP_OT_SWAPS_LOAD_ERROR);
   }
   return Array.isArray(data.requests) ? data.requests : [];
 }
@@ -292,7 +293,7 @@ export async function getCompOtSwapCandidates(params: {
   );
   const data = extractObject<{ events?: CompOtEvent[]; staff?: CompOtSwapPerson[] }>(json);
   if (!data) {
-    throw new Error(extractError(json) || 'โหลดรายชื่อไม่สำเร็จ');
+    throw new Error(extractError(json) || TEXT.COMP_OT_SWAP_CANDIDATES_ERROR);
   }
   return params.type === 'ex'
     ? { type: 'ex', events: Array.isArray(data.events) ? data.events : [] }
@@ -316,7 +317,7 @@ export function offerCompOtSwap(params: {
       target_event_id: params.targetEventId,
       target_staff_id: params.targetStaffId,
     },
-    'ส่งคำขอไม่สำเร็จ',
+    TEXT.MEETING_ROOM_SUBMIT_ERROR,
   );
 }
 
@@ -329,7 +330,7 @@ export function respondCompOtSwap(params: {
   return postCompOtSwapAction(
     ENDPOINTS.compOtSwapRespond,
     { staff_id: params.staffId, request_id: params.requestId, action: params.action },
-    'ตอบกลับคำขอไม่สำเร็จ',
+    TEXT.COMP_OT_SWAP_REPLY_ERROR,
   );
 }
 
@@ -338,6 +339,6 @@ export function cancelCompOtSwap(params: { staffId: string; requestId: string })
   return postCompOtSwapAction(
     ENDPOINTS.compOtSwapCancel,
     { staff_id: params.staffId, request_id: params.requestId },
-    'ยกเลิกคำขอไม่สำเร็จ',
+    TEXT.MEETING_ROOM_CANCEL_ERROR,
   );
 }

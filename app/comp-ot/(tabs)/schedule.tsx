@@ -35,35 +35,36 @@ import {
   type CompOtSwapType,
 } from '@/services/compOtService';
 import { loadCompOtSwaps, useCompOtSwaps } from '@/stores/compOtSwaps';
-
-moment.locale('th');
+import { displayYear } from '@/i18n/locale';
+import { fill } from '@/utils/text-template';
 
 const PAGE_SIZE = 10;
 
-/** Month dropdown options — Thai full names, via the locale set above. */
-const MONTH_OPTIONS: ModalSelectOption[] = Array.from({ length: 12 }, (_, i) => ({
-  value: String(i + 1),
-  label: moment().month(i).format('MMMM'),
-}));
+/** Month dropdown options — full names in the app language, via the global moment locale. */
+const getMonthOptions = (): ModalSelectOption[] =>
+  Array.from({ length: 12 }, (_, i) => ({
+    value: String(i + 1),
+    label: moment().month(i).format('MMMM'),
+  }));
 
 /** Year dropdown options — a duty roster is only ever browsed a year or two
  * either side of now, so a short fixed range beats an open-ended picker. */
-const YEAR_OPTIONS: ModalSelectOption[] = (() => {
+const getYearOptions = (): ModalSelectOption[] => {
   const current = new Date().getFullYear();
   const years: ModalSelectOption[] = [];
   for (let y = current - 2; y <= current + 1; y += 1) {
-    years.push({ value: String(y), label: String(y + 543) });
+    years.push({ value: String(y), label: String(displayYear(y)) });
   }
   return years;
-})();
+};
 
 type ShiftTypeFilter = 'all' | CompOtShiftType;
 
 const SHIFT_TYPE_OPTIONS: ModalSelectOption[] = [
-  { value: 'all', label: TEXT.COMP_OT_FILTER_ALL },
-  { value: 'after_hours', label: TEXT.COMP_OT_SHIFT_AFTER_HOURS },
-  { value: 'lunch', label: TEXT.COMP_OT_SHIFT_LUNCH },
-  { value: 'holiday', label: TEXT.COMP_OT_SHIFT_HOLIDAY },
+  { value: 'all', get label() { return TEXT.COMP_OT_FILTER_ALL; } },
+  { value: 'after_hours', get label() { return TEXT.COMP_OT_SHIFT_AFTER_HOURS; } },
+  { value: 'lunch', get label() { return TEXT.COMP_OT_SHIFT_LUNCH; } },
+  { value: 'holiday', get label() { return TEXT.COMP_OT_SHIFT_HOLIDAY; } },
 ];
 
 /** Local calendar date as YYYY-MM-DD — matches the plain DATE column PHP returns. */
@@ -74,7 +75,7 @@ function toDateKey(date: Date) {
 
 function formatDateLabel(dateStr: string) {
   const m = moment(dateStr, 'YYYY-MM-DD');
-  return m.isValid() ? `${m.format('ddd D MMMM')} ${m.year() + 543}` : dateStr;
+  return m.isValid() ? `${m.format('ddd D MMMM')} ${displayYear(m.year())}` : dateStr;
 }
 
 export default function CompOtScheduleScreen() {
@@ -304,7 +305,7 @@ export default function CompOtScheduleScreen() {
               <ModalSelectField
                 title={TEXT.COMP_OT_YEAR_FIELD_TITLE}
                 placeholder={TEXT.COMP_OT_FILTER_YEAR_LABEL}
-                options={YEAR_OPTIONS}
+                options={getYearOptions()}
                 value={String(visibleMonth.getFullYear())}
                 onSelect={selectYear}
               />
@@ -313,7 +314,7 @@ export default function CompOtScheduleScreen() {
               <ModalSelectField
                 title={TEXT.COMP_OT_MONTH_FIELD_TITLE}
                 placeholder={TEXT.COMP_OT_FILTER_MONTH_LABEL}
-                options={MONTH_OPTIONS}
+                options={getMonthOptions()}
                 value={String(visibleMonth.getMonth() + 1)}
                 onSelect={selectMonth}
               />
@@ -350,7 +351,7 @@ export default function CompOtScheduleScreen() {
             ListHeaderComponent={
               filteredEvents.length > 0 ? (
                 <ThemedText style={styles.resultCount}>
-                  {`เวรทั้งหมด ${filteredEvents.length} รายการ`}
+                  {fill(TEXT.COMP_OT_RESULT_COUNT, { count: filteredEvents.length })}
                 </ThemedText>
               ) : null
             }

@@ -16,6 +16,7 @@ import { TEXT } from '@/constants/text';
 
 import { ThemedText } from '@/components/themed-text';
 import { MonthCalendar } from '@/components/ui';
+import { intlLocale } from '@/i18n/locale';
 
 type DatePickerFieldProps = {
   label: string;
@@ -107,7 +108,7 @@ function isWeekendDate(date: Date) {
 }
 
 function formatDisplayDate(date: Date) {
-  return date.toLocaleDateString('th-TH', {
+  return date.toLocaleDateString(intlLocale(), {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
@@ -115,7 +116,7 @@ function formatDisplayDate(date: Date) {
 }
 
 function getMonthTitle(date: Date) {
-  return date.toLocaleDateString('th-TH', {
+  return date.toLocaleDateString(intlLocale(), {
     month: 'long',
     year: 'numeric',
   });
@@ -286,7 +287,7 @@ export function DatePickerField({
             !displayValue && !value && styles.placeholder,
             textStyle,
           ]}>
-          {displayValue ?? (value ? formatDisplayDate(value) : `เลือก${label}`)}
+          {displayValue ?? (value ? formatDisplayDate(value) : `${TEXT.SHARED_PICK_PREFIX}${label}`)}
         </ThemedText>
       </Pressable>
 

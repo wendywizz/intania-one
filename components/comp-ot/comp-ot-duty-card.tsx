@@ -15,6 +15,7 @@ import {
   type CompOtStampFlag,
   type CompOtSwapType,
 } from '@/services/compOtService';
+import { timeSuffix } from '@/i18n/locale';
 
 type CompOtBadgeKind = 'mine' | 'today' | 'past';
 
@@ -103,7 +104,7 @@ export function CompOtDutyCard({
     canStampNow = now >= window.start && now <= window.end;
     if (!canStampNow) {
       if (now < window.start) {
-        stampHint = `${relevantFlag === 'in' ? TEXT.COMP_OT_STAMP_IN_OPENS_AT : TEXT.COMP_OT_STAMP_OUT_OPENS_AT} ${formatClock(window.start)} น.`;
+        stampHint = `${relevantFlag === 'in' ? TEXT.COMP_OT_STAMP_IN_OPENS_AT : TEXT.COMP_OT_STAMP_OUT_OPENS_AT} ${formatClock(window.start)}${timeSuffix()}`;
       } else {
         missedFlag = relevantFlag;
       }

@@ -15,6 +15,12 @@ function getEnvValue(name: string, fallback = '') {
   return expoExtra[name] ?? process.env[name] ?? fallback;
 }
 
+/** Published privacy policy (Thai / English); App Store Connect points at the same pages. */
+export const PRIVACY_POLICY_URL = {
+  th: 'https://www.eng.psu.ac.th/intania-one-privacy',
+  en: 'https://www.eng.psu.ac.th/en-v2024/intania-one-privacy',
+} as const;
+
 export const ENV = {
   expoOs: process.env.EXPO_OS ?? '',
   appMode: getEnvValue('EXPO_PUBLIC_MODE', 'development'),

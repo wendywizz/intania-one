@@ -19,6 +19,8 @@ import {
 } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { useActionBarBottomPadding } from "@/hooks/use-action-bar-padding";
+import { TEXT } from '@/constants/text';
+import { fill } from '@/utils/text-template';
 
 function todayISO() {
   const d = new Date();
@@ -58,7 +60,7 @@ export default function RequisitionScreen() {
       getRequisitionRequesters(staffId).catch(() => [] as RequisitionRequester[]),
     ])
       .then(([d, r]) => { setDetail(d); setRequesters(r); })
-      .catch((e) => setError(e instanceof Error ? e.message : 'ไม่สามารถโหลดข้อมูลได้'))
+      .catch((e) => setError(e instanceof Error ? e.message : TEXT.SHARED_LOAD_FAILED))
       .finally(() => setIsLoading(false));
   }, [repair_id, staffId]);
 
@@ -66,9 +68,9 @@ export default function RequisitionScreen() {
   const requesterName = requesters.find((r) => r.staff_id === requesterId)?.name ?? '';
 
   const handleSave = async () => {
-    if (!date.trim()) { showToast('กรุณาเลือกวันที่', 'error'); return; }
-    if (!requesterId) { showToast('กรุณาเลือกผู้ขอให้จัดหา', 'error'); return; }
-    if (!repair_id || !staffId) { showToast('ไม่พบข้อมูลใบแจ้งซ่อม', 'error'); return; }
+    if (!date.trim()) { showToast(TEXT.SHARED_CHOOSE_DATE_REQUIRED, 'error'); return; }
+    if (!requesterId) { showToast(TEXT.NOTICE_REPAIR_REQUISITION_REQUESTER_REQUIRED, 'error'); return; }
+    if (!repair_id || !staffId) { showToast(TEXT.NOTICE_REPAIR_REQUEST_NOT_FOUND, 'error'); return; }
 
     setSubmitting(true);
     try {
@@ -78,10 +80,10 @@ export default function RequisitionScreen() {
         requisition_receive_date: receiveDate.trim() || undefined,
         remarks,
       });
-      showToast('บันทึกใบขอจัดหาเรียบร้อยแล้ว', 'success');
+      showToast(TEXT.NOTICE_REPAIR_REQUISITION_SAVED, 'success');
       router.back();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ', 'error');
+      showToast(e instanceof Error ? e.message : TEXT.SHARED_SAVE_FAILED, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -98,7 +100,7 @@ export default function RequisitionScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="ใบขอจัดหา" backHref={backHref} showHomeButton tone="primary" />
+      <NavTopBar title={TEXT.NOTICE_REPAIR_REQUISITION_TITLE} backHref={backHref} showHomeButton tone="primary" />
 
       {isLoading ? (
         <OrbitLoader size={32} style={styles.loader} />
@@ -108,11 +110,11 @@ export default function RequisitionScreen() {
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             {!!detail?.repair_number && (
-              <ThemedText style={styles.subhead}>จัดหาเพื่อ ตามเลขที่ใบแจ้งซ่อม {detail.repair_number}</ThemedText>
+              <ThemedText style={styles.subhead}>{fill(TEXT.NOTICE_REPAIR_REQUISITION_FOR, { number: detail.repair_number ?? '' })}</ThemedText>
             )}
 
             {/* รายการวัสดุที่ใช้ */}
-            <ThemedText style={styles.sectionLabel}>รายการวัสดุที่ใช้ ({requisitions.length})</ThemedText>
+            <ThemedText style={styles.sectionLabel}>{fill(TEXT.NOTICE_REPAIR_REQUISITION_MATERIALS, { count: requisitions.length })}</ThemedText>
             {requisitions.length > 0 ? (
               <View style={styles.matList}>
                 {requisitions.map((r, i) => (
@@ -124,20 +126,20 @@ export default function RequisitionScreen() {
                     amount={r.number}
                     unit={r.unit}
                     total={r.price}
-                    statusLabel={r.status === 'd' ? 'จัดหาเอง' : r.status === 'c' ? 'หน่วยอาคารฯ' : undefined}
+                    statusLabel={r.status === 'd' ? TEXT.NOTICE_REPAIR_SUPPLY_SELF : r.status === 'c' ? TEXT.NOTICE_REPAIR_SUPPLY_BUILDING_UNIT : undefined}
                   />
                 ))}
               </View>
             ) : (
-              <ThemedText style={styles.empty}>ไม่มีรายการวัสดุ</ThemedText>
+              <ThemedText style={styles.empty}>{TEXT.NOTICE_REPAIR_NO_MATERIAL_ITEMS}</ThemedText>
             )}
 
             {/* ใบขอจัดหา form */}
             <View style={styles.card}>
-              <ThemedText style={styles.cardTitle}>ใบขอจัดหา</ThemedText>
+              <ThemedText style={styles.cardTitle}>{TEXT.NOTICE_REPAIR_REQUISITION_TITLE}</ThemedText>
 
               <View style={styles.field}>
-                <ThemedText style={styles.label}>วันที่ *</ThemedText>
+                <ThemedText style={styles.label}>{TEXT.SHARED_DATE_REQUIRED_LABEL}</ThemedText>
                 <TextInput
                   style={styles.input}
                   value={date}
@@ -148,17 +150,17 @@ export default function RequisitionScreen() {
               </View>
 
               <View style={styles.field}>
-                <ThemedText style={styles.label}>ผู้ขอให้จัดหา *</ThemedText>
+                <ThemedText style={styles.label}>{TEXT.NOTICE_REPAIR_REQUISITION_REQUESTER_LABEL}</ThemedText>
                 <Pressable style={styles.select} onPress={() => setPickerOpen(true)}>
                   <ThemedText style={[styles.selectText, !requesterName && styles.placeholder]} numberOfLines={1}>
-                    {requesterName || 'เลือกผู้ขอให้จัดหา'}
+                    {requesterName || TEXT.NOTICE_REPAIR_REQUISITION_REQUESTER_PICK}
                   </ThemedText>
                   <IconSymbol name="chevron.down" size={18} color={c.textMuted} />
                 </Pressable>
               </View>
 
               <View style={styles.field}>
-                <ThemedText style={styles.label}>วันที่รับของ</ThemedText>
+                <ThemedText style={styles.label}>{TEXT.NOTICE_REPAIR_REQUISITION_RECEIVE_DATE}</ThemedText>
                 <TextInput
                   style={styles.input}
                   value={receiveDate}
@@ -171,7 +173,7 @@ export default function RequisitionScreen() {
               {/* per-item remarks */}
               {requisitions.length > 0 && (
                 <View style={styles.field}>
-                  <ThemedText style={styles.label}>หมายเหตุรายการ</ThemedText>
+                  <ThemedText style={styles.label}>{TEXT.NOTICE_REPAIR_REQUISITION_ITEM_NOTE}</ThemedText>
                   {requisitions.map((r, i) => {
                     const id = String(r.requisition_equipment_id ?? '');
                     return (
@@ -182,7 +184,7 @@ export default function RequisitionScreen() {
                           value={remarks[id] ?? ''}
                           editable={!!id}
                           onChangeText={(t) => setRemarks((prev) => ({ ...prev, [id]: t }))}
-                          placeholder="หมายเหตุ"
+                          placeholder={TEXT.NOTICE_REPAIR_FORM_REMARK}
                           placeholderTextColor="#9CA3AF"
                         />
                       </View>
@@ -199,7 +201,7 @@ export default function RequisitionScreen() {
               disabled={submitting}
               onPress={handleSave}
               style={[styles.submitBtn, submitting && styles.submitDisabled]}>
-              {submitting ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.submitText}>บันทึก</ThemedText>}
+              {submitting ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.submitText}>{TEXT.SHARED_SAVE}</ThemedText>}
             </Pressable>
           </View>
         </KeyboardAvoidingView>
@@ -208,10 +210,10 @@ export default function RequisitionScreen() {
       <Modal visible={pickerOpen} transparent animationType="fade" onRequestClose={() => setPickerOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setPickerOpen(false)}>
           <Pressable style={styles.pickerCard}>
-            <ThemedText style={styles.pickerTitle}>ผู้ขอให้จัดหา</ThemedText>
+            <ThemedText style={styles.pickerTitle}>{TEXT.NOTICE_REPAIR_REQUISITION_REQUESTER}</ThemedText>
             <ScrollView style={{ maxHeight: 360 }}>
               {requesters.length === 0 ? (
-                <ThemedText style={styles.empty}>ไม่มีรายชื่อ</ThemedText>
+                <ThemedText style={styles.empty}>{TEXT.SHARED_NO_NAMES}</ThemedText>
               ) : (
                 requesters.map((r) => {
                   const active = r.staff_id === requesterId;

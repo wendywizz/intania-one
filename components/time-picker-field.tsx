@@ -44,6 +44,7 @@ import { SelectSheet } from '@/components/ui/select-sheet';
 import { Sheet } from '@/components/ui/sheet';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { ThemeContext } from '@/context/theme-context';
+import { TEXT } from '@/constants/text';
 
 type TimePickerFieldProps = {
   label: string;
@@ -199,7 +200,7 @@ export function TimePickerField({
         <ThemedText
           numberOfLines={1}
           style={[styles.buttonText, !value && styles.placeholder, textStyle]}>
-          {formatTime(value) || `เลือก${label}`}
+          {formatTime(value) || `${TEXT.SHARED_PICK_PREFIX}${label}`}
         </ThemedText>
       </Pressable>
 
@@ -237,7 +238,7 @@ export function TimePickerField({
                 }}
                 style={styles.iosSpinner}
               />
-              <Button title="เสร็จ" onPress={confirmIosDraft} />
+              <Button title={TEXT.SHARED_DONE_SHORT} onPress={confirmIosDraft} />
             </View>
           ) : null}
         </Sheet>

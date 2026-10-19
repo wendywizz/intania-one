@@ -53,7 +53,7 @@ const queueCountFields = [
 ];
 
 // "Active Jobs: " -> "Active Jobs" (used as the muted subtitle under the name).
-const ACTIVE_JOBS_LABEL = TEXT.REPAIR_COMPUTER_ACTIVE_JOBS_PREFIX.replace(/:\s*$/, "").trim();
+const getActiveJobsLabel = () => TEXT.REPAIR_COMPUTER_ACTIVE_JOBS_PREFIX.replace(/:\s*$/, "").trim();
 
 function getText(item: WorkerQueueItem, fields: string[]) {
   for (const field of fields) {
@@ -180,7 +180,7 @@ function WorkerQueueListItem({
         <ThemedText type="defaultSemiBold" style={styles.workerName} numberOfLines={2}>
           {fullName}
         </ThemedText>
-        <ThemedText style={styles.workerMeta}>{ACTIVE_JOBS_LABEL}</ThemedText>
+        <ThemedText style={styles.workerMeta}>{getActiveJobsLabel()}</ThemedText>
       </View>
 
       <View style={styles.countBadge}>

@@ -42,15 +42,15 @@ type RepairTypeMenuItem = {
 const repairTypeMenus: RepairTypeMenuItem[] = [
   {
     key: 'notice-repair',
-    title: TEXT.REPAIR_HUB_NOTICE_REPAIR_TITLE,
-    description: TEXT.REPAIR_HUB_NOTICE_REPAIR_DESCRIPTION,
+    get title() { return TEXT.REPAIR_HUB_NOTICE_REPAIR_TITLE; },
+    get description() { return TEXT.REPAIR_HUB_NOTICE_REPAIR_DESCRIPTION; },
     href: '/notice-repair',
     icon: 'wrench.fill',
   },
   {
     key: 'repair-computer',
-    title: TEXT.REPAIR_HUB_COMPUTER_TITLE,
-    description: TEXT.REPAIR_HUB_COMPUTER_DESCRIPTION,
+    get title() { return TEXT.REPAIR_HUB_COMPUTER_TITLE; },
+    get description() { return TEXT.REPAIR_HUB_COMPUTER_DESCRIPTION; },
     href: '/repair-computer',
     icon: 'laptop',
   },

@@ -25,8 +25,7 @@ import {
   type TimestampCalendarDay,
 } from '@/services/timestampService';
 import { boxShadow } from '@/constants/shadows';
-
-moment.locale('th');
+import { displayYear } from '@/i18n/locale';
 
 // Late arrival (ABSENCE.timestamp.flag_in = 2) is orthogonal to day status — a
 // present day can still be flagged late — so it gets its own amber marker.
@@ -34,11 +33,11 @@ const LATE_COLOR = '#EA580C';
 
 // ABSENCE.absence_type code -> Thai label (falls back to a generic "ลา").
 const LEAVE_TYPE_LABELS: Record<string, string> = {
-  '1': TEXT.ABSENCE_SICK_TITLE,
-  '2': TEXT.ABSENCE_BUSINESS_TITLE,
-  '3': TEXT.ABSENCE_BIRTH_TITLE,
-  '4': TEXT.ABSENCE_RELAX_TITLE,
-  '6': TEXT.ABSENCE_HAJJ_TITLE,
+  get '1'() { return TEXT.ABSENCE_SICK_TITLE; },
+  get '2'() { return TEXT.ABSENCE_BUSINESS_TITLE; },
+  get '3'() { return TEXT.ABSENCE_BIRTH_TITLE; },
+  get '4'() { return TEXT.ABSENCE_RELAX_TITLE; },
+  get '6'() { return TEXT.ABSENCE_HAJJ_TITLE; },
 };
 
 function getLeaveLabel(day: TimestampCalendarDay | undefined) {
@@ -271,7 +270,7 @@ export default function TimestampCalendarScreen() {
   );
 
   const monthLabel = useMemo(
-    () => `${moment({ year, month: month - 1, day: 1 }).format('MMMM')} ${year + 543}`,
+    () => `${moment({ year, month: month - 1, day: 1 }).format('MMMM')} ${displayYear(year)}`,
     [month, year],
   );
 
@@ -375,7 +374,7 @@ export default function TimestampCalendarScreen() {
       );
     }
     const selectedMoment = moment({ year, month: month - 1, day: selectedDay });
-    const dateLabel = `${selectedDay} ${selectedMoment.format('MMMM')} ${year + 543}`;
+    const dateLabel = `${selectedDay} ${selectedMoment.format('MMMM')} ${displayYear(year)}`;
     const selectedKey = selectedMoment.format('YYYY-MM-DD');
     const isWeekend = [0, 6].includes(selectedMoment.day());
     const isFuture = selectedKey > todayKey;

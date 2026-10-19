@@ -39,7 +39,7 @@ import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
-import { MESSAGE_CANNOT_CONNECT_TO_SERVER } from '@/services/api';
+
 import { readDevicePosition, type LocationReading } from '@/services/deviceLocation';
 import {
   getStaffTimestampStatus,
@@ -54,6 +54,7 @@ import {
   type StaffFaceScanStopReason,
 } from '@/utils/staff-face-scan-attempts';
 import { minutesOf, workdayState, workedLabel } from '@/utils/workday';
+import { weekdayLabel } from '@/i18n/locale';
 
 /** At most one scan sent per this many ms. The gateway has its own floor too. */
 const MIN_SCAN_GAP_MS = 1500;
@@ -128,7 +129,7 @@ type ScanResult = { message: string; tone: 'success' | 'warning' | 'muted' };
 function thaiWeekdayLabel(date: string) {
   const weekday = date ? formatWeekday(date) : '';
 
-  return weekday ? `วัน${weekday}` : '';
+  return weekday ? weekdayLabel(weekday) : '';
 }
 
 /** '07:01:12' -> '07:01'. Empty stays empty. */
@@ -339,7 +340,7 @@ export default function StaffTimestampScreen() {
 
         decide(next);
       } catch (err) {
-        setError(err instanceof Error ? err.message : MESSAGE_CANNOT_CONNECT_TO_SERVER);
+        setError(err instanceof Error ? err.message : TEXT.SERVICE_ERROR_CANNOT_CONNECT);
         setPhase('idle');
       } finally {
         loadingRef.current = false;
@@ -497,7 +498,7 @@ export default function StaffTimestampScreen() {
         }
       } catch (err) {
         settled = true;
-        showToast(err instanceof Error ? err.message : MESSAGE_CANNOT_CONNECT_TO_SERVER, 'error');
+        showToast(err instanceof Error ? err.message : TEXT.SERVICE_ERROR_CANNOT_CONNECT, 'error');
         setPhase('paused');
       } finally {
         busyRef.current = false;

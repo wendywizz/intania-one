@@ -60,7 +60,7 @@ function getForemanName(foreman: Person) {
   const first = getValue(foreman, ["first_name_th", "firstNameTH", "FMAN_FNAME_TH"]);
   const last = getValue(foreman, ["last_name_th", "lastNameTH", "FMAN_SNAME_TH"]);
   const name = [prefix, first, last].filter(Boolean).join(" ").trim();
-  return name || getValue(foreman, ["division_name", "divisionName"]) || "หัวหน้างาน";
+  return name || getValue(foreman, ["division_name", "divisionName"]) || TEXT.NOTICE_REPAIR_ROLE_HEADER;
 }
 
 function getForemanDivisionName(foreman: Person) {

@@ -18,11 +18,11 @@ import { formatDateRange } from "@/utils/date-format";
 import { boxShadow } from '@/constants/shadows';
 
 const absenceTypeLabels: Record<string, string> = {
-  [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
-  [TYPE_ABSENCE_BUSINESS]: TEXT.ABSENCE_BUSINESS_TITLE,
-  [TYPE_ABSENCE_BIRTH]: TEXT.ABSENCE_BIRTH_TITLE,
-  [TYPE_ABSENCE_RELAX]: TEXT.ABSENCE_RELAX_TITLE,
-  [TYPE_ABSENCE_HAJJ]: TEXT.ABSENCE_HAJJ_TITLE,
+  get [TYPE_ABSENCE_SICK]() { return TEXT.ABSENCE_SICK_TITLE; },
+  get [TYPE_ABSENCE_BUSINESS]() { return TEXT.ABSENCE_BUSINESS_TITLE; },
+  get [TYPE_ABSENCE_BIRTH]() { return TEXT.ABSENCE_BIRTH_TITLE; },
+  get [TYPE_ABSENCE_RELAX]() { return TEXT.ABSENCE_RELAX_TITLE; },
+  get [TYPE_ABSENCE_HAJJ]() { return TEXT.ABSENCE_HAJJ_TITLE; },
 };
 
 const absenceTypeFields = ['absentType', 'absenceType', 'typeAbsence', 'ABSENCE_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type'];
@@ -77,9 +77,9 @@ function getTypeIcon(type: string): IconName {
 
 export type LeaveBadge = { text: string; bg: string; color: string };
 
-export const PENDING_BADGE: LeaveBadge = { text: TEXT.ABSENCE_PENDING_BADGE, bg: '#E1E2E6', color: '#584140' };
-export const APPROVED_BADGE: LeaveBadge = { text: TEXT.ABSENCE_APPROVE_STATUS_APPROVED, bg: '#DCFCE7', color: '#166534' };
-export const REJECTED_BADGE: LeaveBadge = { text: TEXT.ABSENCE_APPROVE_STATUS_REJECTED, bg: '#FEE2E2', color: '#991B1B' };
+export const PENDING_BADGE: LeaveBadge = { get text() { return TEXT.ABSENCE_PENDING_BADGE; }, bg: '#E1E2E6', color: '#584140' };
+export const APPROVED_BADGE: LeaveBadge = { get text() { return TEXT.ABSENCE_APPROVE_STATUS_APPROVED; }, bg: '#DCFCE7', color: '#166534' };
+export const REJECTED_BADGE: LeaveBadge = { get text() { return TEXT.ABSENCE_APPROVE_STATUS_REJECTED; }, bg: '#FEE2E2', color: '#991B1B' };
 
 export function statusBadge(status: string): LeaveBadge {
   return String(status) === '2' ? REJECTED_BADGE : APPROVED_BADGE;

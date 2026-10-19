@@ -18,15 +18,16 @@ import {
 import { SavingDots } from '@/components/timestamp/saving-dots';
 import { FRAMING_HINT } from '@/components/timestamp/face-framing-hint';
 import { useToast } from '@/components/toast-provider';
-import { Button, IconSymbol } from '@/components/ui';
+import { Button, IconSymbol, Toggle } from '@/components/ui';
 import { TipAlert } from '@/components/ui/tip-alert';
 import { AppFonts } from '@/constants/fonts';
+import { PRIVACY_POLICY_URL } from '@/constants/config';
 import { boxShadow } from '@/constants/shadows';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
-import { MESSAGE_CANNOT_CONNECT_TO_SERVER } from '@/services/api';
+
 import {
   getStaffTimestampStatus,
   STAFF_ENROLL_RETRY_REASONS,
@@ -34,6 +35,7 @@ import {
   type StaffFaceEnrollMode,
   type StaffTimestampStatus,
 } from '@/services/timestampService';
+import { getLanguage } from '@/i18n/language';
 import { guideOval, type FramingVerdict } from '@/utils/face-framing';
 import { scaleFont } from '@/utils/font-scale';
 
@@ -78,6 +80,8 @@ export default function FaceEnrollScreen() {
   const [message, setMessage] = useState('');
   // What the last attempt came to, said on the intro when it ended the attempt.
   const [outcome, setOutcome] = useState('');
+  // Asked afresh every time the screen opens: a registration is a new collection of face data.
+  const [consented, setConsented] = useState(false);
   const [doneMessage, setDoneMessage] = useState('');
   const [scanSize, setScanSize] = useState({ width: 0, height: 0 });
 
@@ -100,7 +104,7 @@ export default function FaceEnrollScreen() {
     try {
       setStatus(await getStaffTimestampStatus(staffId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : MESSAGE_CANNOT_CONNECT_TO_SERVER);
+      setError(err instanceof Error ? err.message : TEXT.SERVICE_ERROR_CANNOT_CONNECT);
     } finally {
       setLoading(false);
     }
@@ -202,7 +206,7 @@ export default function FaceEnrollScreen() {
         setStep('intro');
         showToast(result.message, 'error');
       } catch (err) {
-        const text = err instanceof Error ? err.message : MESSAGE_CANNOT_CONNECT_TO_SERVER;
+        const text = err instanceof Error ? err.message : TEXT.SERVICE_ERROR_CANNOT_CONNECT;
         shotsRef.current = [];
         setShots(0);
         setOutcome(text);
@@ -398,6 +402,30 @@ export default function FaceEnrollScreen() {
           ))}
         </View>
 
+        <View style={styles.consent}>
+          <ThemedText style={styles.tipsTitle}>{TEXT.FACE_CONSENT_TITLE}</ThemedText>
+          {TEXT.FACE_CONSENT_POINTS.map((point) => (
+            <View key={point} style={styles.tipRow}>
+              <View style={styles.tipDot} />
+              <ThemedText style={styles.consentText}>{point}</ThemedText>
+            </View>
+          ))}
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => void Linking.openURL(PRIVACY_POLICY_URL[getLanguage()])}
+          >
+            <ThemedText style={styles.consentLink}>{TEXT.FACE_CONSENT_POLICY_LINK}</ThemedText>
+          </Pressable>
+          <View style={styles.consentSwitchRow}>
+            <ThemedText style={styles.consentLabel}>{TEXT.FACE_CONSENT_LABEL}</ThemedText>
+            <Toggle
+              value={consented}
+              onValueChange={setConsented}
+              accessibilityLabel={TEXT.FACE_CONSENT_LABEL}
+            />
+          </View>
+        </View>
+
         {outcome ? <TipAlert message={outcome} /> : null}
         {exhausted ? <TipAlert message={TEXT.STAFF_FACE_ENROLL_NO_QUOTA} /> : null}
 
@@ -406,7 +434,7 @@ export default function FaceEnrollScreen() {
           icon="faceid"
           size="lg"
           fullWidth
-          disabled={exhausted}
+          disabled={exhausted || !consented}
           onPress={startCamera}
         />
       </View>
@@ -479,6 +507,29 @@ const makeStyles = (c: AppColors) =>
       fontFamily: AppFonts.psuBold,
       fontSize: scaleFont(15),
       lineHeight: scaleFont(21),
+    },
+    consent: {
+      alignSelf: 'stretch',
+      backgroundColor: c.warningSoft,
+      borderRadius: 12,
+      gap: 8,
+      padding: 14,
+    },
+    consentText: {
+      color: c.text,
+      flex: 1,
+      fontFamily: AppFonts.psuRegular,
+      fontSize: scaleFont(14),
+      lineHeight: scaleFont(20),
+    },
+    consentLink: { color: c.primary, fontFamily: AppFonts.psuBold, fontSize: 13, textDecorationLine: 'underline' },
+    consentSwitchRow: { alignItems: 'center', flexDirection: 'row', gap: 12, marginTop: 6 },
+    consentLabel: {
+      color: c.text,
+      flex: 1,
+      fontFamily: AppFonts.psuBold,
+      fontSize: scaleFont(14),
+      lineHeight: scaleFont(20),
     },
     tipRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
     tipDot: { backgroundColor: c.info, borderRadius: 3, height: 6, width: 6 },

@@ -13,7 +13,7 @@ export type BiometricSupport = {
   usable: boolean;
   hasHardware: boolean;
   isEnrolled: boolean;
-  /** Human label for what this device offers, e.g. "Face ID" or "ลายนิ้วมือ". */
+  /** Human label for what this device offers, e.g. "Face ID", or "fingerprint" in the app language. */
   label: string;
 };
 
@@ -42,13 +42,13 @@ function describeTypes(
   const { AuthenticationType } = LocalAuthentication;
 
   if (types.includes(AuthenticationType.FACIAL_RECOGNITION)) {
-    return Platform.OS === "ios" ? "Face ID" : "สแกนใบหน้า";
+    return Platform.OS === "ios" ? "Face ID" : TEXT.BIOMETRIC_LABEL_FACE;
   }
   if (types.includes(AuthenticationType.FINGERPRINT)) {
-    return Platform.OS === "ios" ? "Touch ID" : "ลายนิ้วมือ";
+    return Platform.OS === "ios" ? "Touch ID" : TEXT.BIOMETRIC_LABEL_FINGERPRINT;
   }
   if (types.includes(AuthenticationType.IRIS)) {
-    return "สแกนม่านตา";
+    return TEXT.BIOMETRIC_LABEL_IRIS;
   }
   return "";
 }

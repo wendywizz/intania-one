@@ -20,6 +20,7 @@ import { ThemedView } from "@/components/themed-view";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { submitForgetApprove } from "@/services/timestampService";
+import { TH } from '@/i18n/th';
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value ?? "";
@@ -49,7 +50,9 @@ export default function TimestampApproveReasonScreen() {
 
   // Approve pre-fills "รับรอง"; reject starts empty so the approver must give a
   // reason. The field is required either way.
-  const [reason, setReason] = useState(isApprove ? TEXT.TIMESTAMP_APPROVE_ACCEPT_REASON : "");
+  // Stays Thai whatever the app language: it is pre-filled into the approver's note,
+  // which is saved into the HR system and read by staff on the Thai website.
+  const [reason, setReason] = useState(isApprove ? TH.TIMESTAMP_APPROVE_ACCEPT_REASON : "");
   const [fieldError, setFieldError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);

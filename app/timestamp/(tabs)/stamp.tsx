@@ -19,7 +19,7 @@ import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { useHolidays } from '@/hooks/use-holidays';
-import { MESSAGE_CANNOT_CONNECT_TO_SERVER } from '@/services/api';
+
 import { readDevicePosition, type LocationReading } from '@/services/deviceLocation';
 import {
   getLectTimestampStatus,
@@ -28,6 +28,7 @@ import {
 } from '@/services/timestampService';
 import { formatFullDate, formatWeekday } from '@/utils/date-format';
 import { scaleFont } from '@/utils/font-scale';
+import { weekdayLabel } from '@/i18n/locale';
 
 /**
  * A resume within this long of the last load does not reload the screen.
@@ -51,7 +52,7 @@ function thaiDateLabel(date: string) {
   const weekday = formatWeekday(date);
   const full = formatFullDate(date);
 
-  return weekday ? `วัน${weekday} ${full}` : full;
+  return weekday ? `${weekdayLabel(weekday)} ${full}` : full;
 }
 
 /**
@@ -159,7 +160,7 @@ export default function LectTimestampScreen() {
       } catch (err) {
         // Only a failure to *reach* the answer lands here — a refusal is a
         // successful answer with a reason, and is rendered as one.
-        setError(err instanceof Error ? err.message : MESSAGE_CANNOT_CONNECT_TO_SERVER);
+        setError(err instanceof Error ? err.message : TEXT.SERVICE_ERROR_CANNOT_CONNECT);
       } finally {
         loadingRef.current = false;
         lastLoadAtRef.current = Date.now();
@@ -236,7 +237,7 @@ export default function LectTimestampScreen() {
       showToast(next.message, next.created || next.stamped ? 'success' : 'error');
     } catch (err) {
       showToast(
-        err instanceof Error ? err.message : MESSAGE_CANNOT_CONNECT_TO_SERVER,
+        err instanceof Error ? err.message : TEXT.SERVICE_ERROR_CANNOT_CONNECT,
         'error',
       );
     } finally {

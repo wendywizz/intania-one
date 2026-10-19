@@ -33,14 +33,14 @@ type RoomTypeMenuItem = {
 
 const roomTypeMenus: RoomTypeMenuItem[] = [
   {
-    title: TEXT.BOOKING_ROOM_ADD_BOOKING,
-    description: TEXT.MEETING_ROOM_HUB_CLASSROOM_DESCRIPTION,
+    get title() { return TEXT.BOOKING_ROOM_ADD_BOOKING; },
+    get description() { return TEXT.MEETING_ROOM_HUB_CLASSROOM_DESCRIPTION; },
     href: '/booking-room/select-booking',
     icon: 'door.open',
   },
   {
-    title: TEXT.MEETING_ROOM_HUB_CARD_TITLE,
-    description: TEXT.MEETING_ROOM_HUB_CARD_DESCRIPTION,
+    get title() { return TEXT.MEETING_ROOM_HUB_CARD_TITLE; },
+    get description() { return TEXT.MEETING_ROOM_HUB_CARD_DESCRIPTION; },
     href: '/booking-room/meeting-room-form',
     icon: 'presentation',
   },

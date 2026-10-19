@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { StyleSheet, View } from 'react-native';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
+import { TEXT } from '@/constants/text';
 
 /** Format a number/string as Thai baht: "1,234.56". Falls back to "-". */
 export function formatBaht(v: string | number | undefined | null): string {
@@ -56,16 +57,16 @@ export function MaterialItemCard({
       <View style={styles.matItemHead}>
         <ThemedText style={styles.matItemName} numberOfLines={2}>{`${index}. ${name || '-'}`}</ThemedText>
         {isDraft ? (
-          <View style={styles.draftTagCell}><ThemedText style={styles.draftTag}>ใหม่</ThemedText></View>
+          <View style={styles.draftTagCell}><ThemedText style={styles.draftTag}>{TEXT.SHARED_NEW}</ThemedText></View>
         ) : statusLabel ? (
           <View style={styles.matStatusTag}><ThemedText style={styles.matStatusTagText}>{statusLabel}</ThemedText></View>
         ) : null}
       </View>
       <View style={styles.matItemRows}>
-        {showPriceUnit ? <MatDetailRow label="ราคา/หน่วย" value={`${formatBaht(priceUnit)} บาท`} /> : null}
-        <MatDetailRow label="จำนวน" value={amountText} />
-        <MatDetailRow label="หน่วย" value={unit || '-'} />
-        {showTotal ? <MatDetailRow label="ราคารวม" value={`${formatBaht(total)} บาท`} emphasize /> : null}
+        {showPriceUnit ? <MatDetailRow label={TEXT.NOTICE_REPAIR_MATERIAL_PRICE_PER_UNIT} value={`${formatBaht(priceUnit)} ${TEXT.CURRENCY_BAHT}`} /> : null}
+        <MatDetailRow label={TEXT.NOTICE_REPAIR_MATERIAL_QTY} value={amountText} />
+        <MatDetailRow label={TEXT.NOTICE_REPAIR_MATERIAL_UNIT} value={unit || '-'} />
+        {showTotal ? <MatDetailRow label={TEXT.NOTICE_REPAIR_MATERIAL_TOTAL_PRICE} value={`${formatBaht(total)} ${TEXT.CURRENCY_BAHT}`} emphasize /> : null}
       </View>
     </View>
   );

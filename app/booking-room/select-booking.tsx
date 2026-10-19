@@ -36,20 +36,20 @@ type BookingMenuItem = {
 // them apart is the span each one draws: a day, a range, a range with a clock.
 const bookingMenus: BookingMenuItem[] = [
   {
-    title: TEXT.BOOKING_ROOM_GENERAL_TITLE,
-    description: TEXT.BOOKING_ROOM_GENERAL_DESCRIPTION,
+    get title() { return TEXT.BOOKING_ROOM_GENERAL_TITLE; },
+    get description() { return TEXT.BOOKING_ROOM_GENERAL_DESCRIPTION; },
     href: '/booking-room/general-booking',
     icon: 'calendar',
   },
   {
-    title: TEXT.BOOKING_ROOM_TERM_TITLE,
-    description: TEXT.BOOKING_ROOM_TERM_DESCRIPTION,
+    get title() { return TEXT.BOOKING_ROOM_TERM_TITLE; },
+    get description() { return TEXT.BOOKING_ROOM_TERM_DESCRIPTION; },
     href: '/booking-room/term-booking',
     icon: 'calendar-range',
   },
   {
-    title: TEXT.BOOKING_ROOM_PERIOD_TITLE,
-    description: TEXT.BOOKING_ROOM_PERIOD_DESCRIPTION,
+    get title() { return TEXT.BOOKING_ROOM_PERIOD_TITLE; },
+    get description() { return TEXT.BOOKING_ROOM_PERIOD_DESCRIPTION; },
     href: '/booking-room/period-booking',
     icon: 'calendar-clock',
   },

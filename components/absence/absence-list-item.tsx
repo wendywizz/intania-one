@@ -18,13 +18,13 @@ import type { absence } from '@/models/types';
 import { formatDateRange } from '@/utils/date-format';
 
 const absenceTypeLabels: Record<string, string> = {
-  [TYPE_ABSENCE_CANCEL]: TEXT.ABSENCE_CANCEL_TITLE,
-  [TYPE_ABSENCE_SICK]: TEXT.ABSENCE_SICK_TITLE,
-  [TYPE_ABSENCE_BUSINESS]: TEXT.ABSENCE_BUSINESS_TITLE,
-  [TYPE_ABSENCE_BIRTH]: TEXT.ABSENCE_BIRTH_TITLE,
-  [TYPE_ABSENCE_HELPMATE]: TEXT.ABSENCE_BIRTH_TITLE,
-  [TYPE_ABSENCE_RELAX]: TEXT.ABSENCE_RELAX_TITLE,
-  [TYPE_ABSENCE_HAJJ]: TEXT.ABSENCE_HAJJ_TITLE,
+  get [TYPE_ABSENCE_CANCEL]() { return TEXT.ABSENCE_CANCEL_TITLE; },
+  get [TYPE_ABSENCE_SICK]() { return TEXT.ABSENCE_SICK_TITLE; },
+  get [TYPE_ABSENCE_BUSINESS]() { return TEXT.ABSENCE_BUSINESS_TITLE; },
+  get [TYPE_ABSENCE_BIRTH]() { return TEXT.ABSENCE_BIRTH_TITLE; },
+  get [TYPE_ABSENCE_HELPMATE]() { return TEXT.ABSENCE_BIRTH_TITLE; },
+  get [TYPE_ABSENCE_RELAX]() { return TEXT.ABSENCE_RELAX_TITLE; },
+  get [TYPE_ABSENCE_HAJJ]() { return TEXT.ABSENCE_HAJJ_TITLE; },
 };
 
 const absenceTypeFields = ['absentType', 'absenceType', 'ABSENCE_type', 'typeabsence', 'type_absence', 'leaveType', 'leave_type', 'type'];
@@ -72,11 +72,11 @@ type MetaRow = { label: string; value: string };
 function getMetaRows(item: absence): MetaRow[] {
   const rows: MetaRow[] = [];
   const reason = getText(item, reasonFields);
-  if (reason) rows.push({ label: 'เหตุผล', value: reason });
+  if (reason) rows.push({ label: TEXT.ABSENCE_REASON_LABEL, value: reason });
   const approver = getText(item, approverFields);
-  if (approver) rows.push({ label: 'ผู้อนุมัติ', value: approver });
+  if (approver) rows.push({ label: TEXT.ABSENCE_APPROVER_LABEL, value: approver });
   const agent = getText(item, agentFields);
-  if (agent) rows.push({ label: 'ผู้ปฏิบัติงานแทน', value: agent });
+  if (agent) rows.push({ label: TEXT.ABSENCE_DELEGATE_FULL_LABEL, value: agent });
   return rows;
 }
 
@@ -131,17 +131,17 @@ export type AbsenceBadge = { text: string; bg: string; color: string };
 
 // Flat UI (Defo) swatches with white text: Sun Flower (pending), Emerald
 // (approved), Alizarin (rejected).
-export const PENDING_BADGE: AbsenceBadge = { text: TEXT.ABSENCE_PENDING_BADGE, bg: '#F1C40F', color: '#FFFFFF' };
+export const PENDING_BADGE: AbsenceBadge = { get text() { return TEXT.ABSENCE_PENDING_BADGE; }, bg: '#F1C40F', color: '#FFFFFF' };
 
 function statusBadgeColors(label: string): { bg: string; color: string } {
   const lower = label.toLowerCase();
-  if (lower.includes('อนุมัติแล้ว') || lower.includes('approved') || lower.includes('completed') || lower.includes('success')) {
+  if (lower.includes(TEXT.ABSENCE_APPROVE_STATUS_APPROVED) || lower.includes('approved') || lower.includes('completed') || lower.includes('success')) {
     return { bg: '#2ECC71', color: '#FFFFFF' }; // Emerald
   }
-  if (lower.includes('รออนุมัติ') || lower.includes('pending') || lower.includes('waiting') || lower.includes('processing')) {
+  if (lower.includes(TEXT.ABSENCE_PENDING_BADGE) || lower.includes('pending') || lower.includes('waiting') || lower.includes('processing')) {
     return { bg: '#F1C40F', color: '#FFFFFF' }; // Sun Flower
   }
-  if (lower.includes('ไม่อนุมัติ') || lower.includes('reject') || lower.includes('cancel') || lower.includes('denied')) {
+  if (lower.includes(TEXT.ABSENCE_APPROVE_STATUS_REJECTED) || lower.includes('reject') || lower.includes('cancel') || lower.includes('denied')) {
     return { bg: '#E74C3C', color: '#FFFFFF' }; // Alizarin
   }
   return { bg: '#E74C3C', color: '#FFFFFF' }; // Alizarin (fallback)

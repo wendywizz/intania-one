@@ -25,20 +25,20 @@ type AbsenceMenuItem = {
 
 const absenceMenus: AbsenceMenuItem[] = [
   {
-    title: TEXT.ABSENCE_SICK_TITLE,
-    description: TEXT.ABSENCE_SICK_DESCRIPTION,
+    get title() { return TEXT.ABSENCE_SICK_TITLE; },
+    get description() { return TEXT.ABSENCE_SICK_DESCRIPTION; },
     href: '/absence/sick',
     icon: 'cross.fill',
   },
   {
-    title: TEXT.ABSENCE_BUSINESS_TITLE,
-    description: TEXT.ABSENCE_BUSINESS_DESCRIPTION,
+    get title() { return TEXT.ABSENCE_BUSINESS_TITLE; },
+    get description() { return TEXT.ABSENCE_BUSINESS_DESCRIPTION; },
     href: '/absence/business',
     icon: 'briefcase.fill',
   },
   {
-    title: TEXT.ABSENCE_RELAX_TITLE,
-    description: TEXT.ABSENCE_RELAX_DESCRIPTION,
+    get title() { return TEXT.ABSENCE_RELAX_TITLE; },
+    get description() { return TEXT.ABSENCE_RELAX_DESCRIPTION; },
     href: '/absence/relax',
     icon: 'sun.max.fill',
   },
@@ -77,13 +77,12 @@ export default function ChooseAbsenceScreen() {
           tab — going to the dashboard instead would drop the person out of the
           module they are halfway through. The home button is there for the
           times they do want to leave. */}
-      <ScreenHeader title="ยื่นลา" backHref={backHref} titleInNavBar showHomeButton />
+      <ScreenHeader title={TEXT.ABSENCE_TAB_APPEAL} backHref={backHref} titleInNavBar showHomeButton />
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]} showsVerticalScrollIndicator={false}>
         <View style={styles.intro}>
-          <ThemedText style={styles.screenTitle}>เลือกประเภทการลา</ThemedText>
+          <ThemedText style={styles.screenTitle}>{TEXT.ABSENCE_CHOOSE_TITLE}</ThemedText>
           <ThemedText style={styles.screenDesc}>
-            เลือกประเภทการลาที่ต้องการยื่น ระบบจะนำคุณไปยังแบบฟอร์ม
-            สำหรับกรอกรายละเอียดและส่งคำขอลาของคุณ
+            {TEXT.ABSENCE_CHOOSE_DESCRIPTION}
           </ThemedText>
         </View>
         <View style={styles.cardList}>

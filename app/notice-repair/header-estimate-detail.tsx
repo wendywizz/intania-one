@@ -161,14 +161,14 @@ export default function HeaderEstimateDetailScreen() {
 
   const handleSave = async () => {
     if (!assessment) {
-      setToast('กรุณาเลือกผลการประเมินการซ่อม');
+      setToast(TEXT.NOTICE_REPAIR_ASSESS_RESULT_REQUIRED);
       return;
     }
     setSubmitting(true);
     try {
       // TODO: persist via the header-assessment endpoint once available
       // (work_category change + repair_examine y/n).
-      setSuccessToast('บันทึกผลการประเมินสำเร็จ');
+      setSuccessToast(TEXT.NOTICE_REPAIR_ASSESS_SAVED);
       setTimeout(() => { if (router.canGoBack()) router.back(); }, 800);
     } finally {
       setSubmitting(false);
@@ -218,7 +218,7 @@ export default function HeaderEstimateDetailScreen() {
               <View style={styles.summaryTitleBlock}>
                 <ThemedText style={styles.summaryTitle}>{TEXT.NOTICE_REPAIR_DETAIL_TITLE}</ThemedText>
                 {!!detail.repair_number && (
-                  <ThemedText style={styles.requestNo}>เลขที่คำร้อง {detail.repair_number}</ThemedText>
+                  <ThemedText style={styles.requestNo}>{TEXT.NOTICE_REPAIR_REQUEST_NUMBER}{' '}{detail.repair_number}</ThemedText>
                 )}
               </View>
               {!!status && (
@@ -257,7 +257,7 @@ export default function HeaderEstimateDetailScreen() {
         {(detail.informer_name || informerId) && (
           <Card>
             <View style={styles.cardInner}>
-              <ThemedText style={styles.sectionHeading}>ข้อมูลผู้แจ้งซ่อม</ThemedText>
+              <ThemedText style={styles.sectionHeading}>{TEXT.NOTICE_REPAIR_SECTION_INFORMER}</ThemedText>
 
               <View style={styles.profileRow}>
                 <RequesterAvatar staffId={informerId} />
@@ -275,8 +275,8 @@ export default function HeaderEstimateDetailScreen() {
 
               <View>
                 <DividerRow label={TEXT.NOTICE_REPAIR_DETAIL_DEPARTMENT} value={detail.repair_inform_dept_name} />
-                <DividerRow label="ประเภทการซ่อม" value={detail.work_type_name} />
-                <DividerRow label="เบอร์โทรศัพท์" value={detail.repair_tel} valueColor="#B33939" />
+                <DividerRow label={TEXT.NOTICE_REPAIR_FORM_WORK_TYPE} value={detail.work_type_name} />
+                <DividerRow label={TEXT.NOTICE_REPAIR_FORM_PHONE} value={detail.repair_tel} valueColor="#B33939" />
               </View>
             </View>
           </Card>
@@ -285,16 +285,16 @@ export default function HeaderEstimateDetailScreen() {
         {/* ── Location & Detail Card ── */}
         <Card>
           <View style={styles.summaryInner}>
-            <ThemedText style={styles.sectionHeading}>รายละเอียดสถานที่</ThemedText>
+            <ThemedText style={styles.sectionHeading}>{TEXT.NOTICE_REPAIR_SECTION_LOCATION}</ThemedText>
 
             <View style={styles.tileGroup}>
-              <InfoTile label="อาคาร" value={detail.building_name} />
-              <InfoTile label="สถานที่ / ห้อง" value={detail.repair_place} />
+              <InfoTile label={TEXT.NOTICE_REPAIR_DETAIL_BUILDING} value={detail.building_name} />
+              <InfoTile label={TEXT.NOTICE_REPAIR_DETAIL_ROOM} value={detail.repair_place} />
             </View>
 
             {!!detail.repair_inform && (
               <View style={styles.damageBlock}>
-                <ThemedText style={styles.tileLabel}>รายละเอียดความชำรุด</ThemedText>
+                <ThemedText style={styles.tileLabel}>{TEXT.NOTICE_REPAIR_DETAIL_DAMAGE}</ThemedText>
                 <View style={styles.damageBox}>
                   <ThemedText style={styles.damageText}>{detail.repair_inform}</ThemedText>
                 </View>
@@ -303,7 +303,7 @@ export default function HeaderEstimateDetailScreen() {
 
             {!!detail.repair_remark && (
               <View style={styles.damageBlock}>
-                <ThemedText style={styles.tileLabel}>หมายเหตุ</ThemedText>
+                <ThemedText style={styles.tileLabel}>{TEXT.NOTICE_REPAIR_FORM_REMARK}</ThemedText>
                 <View style={styles.damageBox}>
                   <ThemedText style={styles.damageText}>{detail.repair_remark}</ThemedText>
                 </View>
@@ -315,15 +315,15 @@ export default function HeaderEstimateDetailScreen() {
         {/* ── For head of category: assessment form ── */}
         <Card>
           <View style={styles.cardInner}>
-            <ThemedText style={styles.sectionHeading}>สำหรับหัวหน้าหมวด</ThemedText>
+            <ThemedText style={styles.sectionHeading}>{TEXT.NOTICE_REPAIR_SECTION_FOR_HEAD_SHORT}</ThemedText>
 
             <View style={styles.fieldBlock}>
-              <ThemedText style={styles.fieldLabel}>วันที่ดำเนินการซ่อม / ดูสถานที่</ThemedText>
+              <ThemedText style={styles.fieldLabel}>{TEXT.NOTICE_REPAIR_DETAIL_WORK_VISIT_DATE}</ThemedText>
               <ThemedText style={styles.fieldValue}>{dateRange || '-'}</ThemedText>
             </View>
 
             <View style={styles.fieldBlock}>
-              <ThemedText style={styles.fieldLabel}>ช่างที่รับผิดชอบ</ThemedText>
+              <ThemedText style={styles.fieldLabel}>{TEXT.NOTICE_REPAIR_DETAIL_TECHNICIANS_IN_CHARGE}</ThemedText>
               {technicians.length > 0 ? (
                 technicians.map((t, i) => (
                   <View key={`${t.staff_id ?? t.name}-${i}`} style={styles.techRow}>
@@ -337,12 +337,12 @@ export default function HeaderEstimateDetailScreen() {
             </View>
 
             <View style={styles.fieldBlock}>
-              <ThemedText style={styles.fieldLabel}>เปลี่ยนแปลงหมวดงานซ่อม</ThemedText>
-              <RadioOption selected={changeCategory} label="เปลี่ยนแปลง" onPress={() => setChangeCategory((v) => !v)} />
+              <ThemedText style={styles.fieldLabel}>{TEXT.NOTICE_REPAIR_CHANGE_CATEGORY_TITLE}</ThemedText>
+              <RadioOption selected={changeCategory} label={TEXT.NOTICE_REPAIR_CHANGE} onPress={() => setChangeCategory((v) => !v)} />
               {changeCategory && (
                 <ModalSelectField
-                  title="เลือกหมวดงานซ่อม"
-                  placeholder={categoriesLoading ? 'กำลังโหลด...' : 'เลือกหมวดงานซ่อม'}
+                  title={TEXT.NOTICE_REPAIR_CHOOSE_CATEGORY}
+                  placeholder={categoriesLoading ? TEXT.SHARED_LOADING_ELLIPSIS : TEXT.NOTICE_REPAIR_CHOOSE_CATEGORY}
                   options={categories}
                   value={newCategory}
                   onSelect={setNewCategory}
@@ -351,10 +351,10 @@ export default function HeaderEstimateDetailScreen() {
             </View>
 
             <View style={styles.fieldBlock}>
-              <ThemedText style={styles.fieldLabel}>ประเมินการซ่อม</ThemedText>
+              <ThemedText style={styles.fieldLabel}>{TEXT.NOTICE_REPAIR_DETAIL_ASSESSMENT}</ThemedText>
               <View style={styles.radioGroup}>
-                <RadioOption selected={assessment === 'y'} label="ซ่อม / ติดตั้งได้" onPress={() => setAssessment('y')} />
-                <RadioOption selected={assessment === 'n'} label="ซ่อม / ติดตั้งไม่ได้" onPress={() => setAssessment('n')} />
+                <RadioOption selected={assessment === 'y'} label={TEXT.NOTICE_REPAIR_RESULT_CAN} onPress={() => setAssessment('y')} />
+                <RadioOption selected={assessment === 'n'} label={TEXT.NOTICE_REPAIR_RESULT_CANNOT} onPress={() => setAssessment('n')} />
               </View>
             </View>
           </View>
@@ -376,12 +376,12 @@ export default function HeaderEstimateDetailScreen() {
             style={[styles.actionBtn, styles.approveBtn, styles.approveFlex, submitting && styles.actionBtnDisabled]}>
             {submitting
               ? <ActivityIndicator color="#fff" />
-              : <ThemedText style={styles.approveText}>บันทึก</ThemedText>}
+              : <ThemedText style={styles.approveText}>{TEXT.SHARED_SAVE}</ThemedText>}
           </Pressable>
           <Pressable
             accessibilityRole="button" disabled={submitting} onPress={() => { if (router.canGoBack()) router.back(); }}
             style={[styles.actionBtn, styles.cancelBtn, styles.quarterFlex, submitting && styles.actionBtnDisabled]}>
-            <ThemedText style={styles.cancelText} numberOfLines={1}>ยกเลิก</ThemedText>
+            <ThemedText style={styles.cancelText} numberOfLines={1}>{TEXT.CANCEL}</ThemedText>
           </Pressable>
         </View>
       )}

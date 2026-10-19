@@ -13,29 +13,28 @@
  * hard-coding numbers this client would have to guess at.
  */
 import type { ListCardBadge } from '@/components/ui/list-card';
+import { TEXT } from '@/constants/text';
 
 const EMERALD = '#2ECC71';
 const SUN_FLOWER = '#F1C40F';
 const ALIZARIN = '#E74C3C';
 const WHITE = '#FFFFFF';
 
+// What a status label says, as words in either language. The server's own labels are
+// Thai; the English words are the same statuses as the app words them, so a label
+// still sorts into the right colour if it ever arrives in English. Negations are
+// tested first: "not approved" contains "approved".
+const NEGATIVE = /ไม่อนุมัติ|not approved|reject|declin|cancel|ยกเลิก/;
+const APPROVED = /อนุมัติแล้ว|approved|completed|success/;
+const WAITING = /รออนุมัติ|pending|waiting|processing/;
+
 function statusBadgeColors(label: string): { bg: string; color: string } {
   const lower = label.toLowerCase();
 
-  if (
-    lower.includes('อนุมัติแล้ว') ||
-    lower.includes('approved') ||
-    lower.includes('completed') ||
-    lower.includes('success')
-  ) {
+  if (!NEGATIVE.test(lower) && APPROVED.test(lower)) {
     return { bg: EMERALD, color: WHITE };
   }
-  if (
-    lower.includes('รออนุมัติ') ||
-    lower.includes('pending') ||
-    lower.includes('waiting') ||
-    lower.includes('processing')
-  ) {
+  if (!NEGATIVE.test(lower) && WAITING.test(lower)) {
     return { bg: SUN_FLOWER, color: WHITE };
   }
   // ไม่อนุมัติ/reject/cancel and every other status (billed, room being
@@ -54,21 +53,26 @@ function statusBadgeColors(label: string): { bg: string; color: string } {
  * 4 เจ้าหน้าอาคารดำเนินการแล้ว, 5 …จัดสรรห้องให้ไม่ได้(ห้องใช้เต็มหมด),
  * 6 ผู้อนุมัติประจำคณะอนุมัติแล้ว, 91 …รับทราบการยกเลิก.
  */
-const SHORT_LABELS: [match: string, short: string][] = [
-  ['ไม่อนุมัติ', 'ไม่อนุมัติ'],
-  ['ยกเลิก', 'ยกเลิกแล้ว'],
-  ['จัดสรรห้องให้ไม่ได้', 'ห้องเต็ม'],
-  ['รออนุมัติ', 'รออนุมัติ'],
-  ['ประจำคณะอนุมัติแล้ว', 'อนุมัติแล้ว'],
-  ['หน่วยงานอนุมัติแล้ว', 'หน่วยงานอนุมัติ'],
-  ['ดำเนินการแล้ว', 'ดำเนินการแล้ว'],
+// The first column is what the server's label contains (Thai - it is the server's
+// own wording - or English), the second the TEXT key for the short pill in the app language.
+// Each row matches a Thai phrase or its English counterpart (lower-cased).
+const SHORT_LABELS: [match: RegExp, short: keyof typeof TEXT][] = [
+  [/ไม่อนุมัติ|not approved|rejected/, 'MEETING_ROOM_STATUS_REJECTED'],
+  [/ยกเลิก|cancel/, 'MEETING_ROOM_STATUS_CANCELLED'],
+  [/จัดสรรห้องให้ไม่ได้|no room|room full|fully booked/, 'MEETING_ROOM_STATUS_FULL'],
+  [/รออนุมัติ|pending|awaiting approval/, 'MEETING_ROOM_STATUS_PENDING'],
+  [/ประจำคณะอนุมัติแล้ว|faculty approved|approved by the faculty/, 'MEETING_ROOM_STATUS_APPROVED'],
+  [/หน่วยงานอนุมัติแล้ว|unit approved|department approved/, 'MEETING_ROOM_STATUS_UNIT_APPROVED'],
+  [/ดำเนินการแล้ว|processed/, 'MEETING_ROOM_STATUS_DONE'],
 ];
 
 /** The badge wording for a status — short form when one is known, else the
  *  server's own label unchanged. */
 export function shortMeetingRoomStatus(statusLabel: string): string {
   const label = statusLabel.trim();
-  return SHORT_LABELS.find(([match]) => label.includes(match))?.[1] ?? label;
+  const lower = label.toLowerCase();
+  const hit = SHORT_LABELS.find(([match]) => match.test(lower));
+  return hit ? (TEXT[hit[1]] as string) : label;
 }
 
 /** @param statusLabel the label already resolved server-side (STATUS_DETAIL.detail) */

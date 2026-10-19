@@ -6,11 +6,11 @@ import {
 import { TEXT } from '@/constants/text';
 
 export const noticeRepairRoleOptions = [
-  { label: TEXT.NOTICE_REPAIR_ROLE_INFORMER,   value: NOTICE_REPAIR_ROLE_INFORMER },
-  { label: TEXT.NOTICE_REPAIR_ROLE_TECHNICIAN, value: NOTICE_REPAIR_ROLE_TECHNICIAN },
-  { label: TEXT.NOTICE_REPAIR_ROLE_HEADER,     value: NOTICE_REPAIR_ROLE_HEADER },
-  { label: TEXT.NOTICE_REPAIR_ROLE_ADMIN,      value: NOTICE_REPAIR_ROLE_ADMIN },
-  { label: TEXT.NOTICE_REPAIR_ROLE_APPROVE,    value: NOTICE_REPAIR_ROLE_APPROVE },
+  { get label() { return TEXT.NOTICE_REPAIR_ROLE_INFORMER; },   value: NOTICE_REPAIR_ROLE_INFORMER },
+  { get label() { return TEXT.NOTICE_REPAIR_ROLE_TECHNICIAN; }, value: NOTICE_REPAIR_ROLE_TECHNICIAN },
+  { get label() { return TEXT.NOTICE_REPAIR_ROLE_HEADER; },     value: NOTICE_REPAIR_ROLE_HEADER },
+  { get label() { return TEXT.NOTICE_REPAIR_ROLE_ADMIN; },      value: NOTICE_REPAIR_ROLE_ADMIN },
+  { get label() { return TEXT.NOTICE_REPAIR_ROLE_APPROVE; },    value: NOTICE_REPAIR_ROLE_APPROVE },
 ] as const;
 
 const privilegeCache = new Map<string, NoticeRepairRole[]>();

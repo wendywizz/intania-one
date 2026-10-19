@@ -5,10 +5,8 @@ import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'rea
 
 import { ThemedText } from '@/components/themed-text';
 import { AppFonts } from '@/constants/fonts';
+import { TEXT } from '@/constants/text';
 import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
-
-// Thai weekday abbreviations, Sunday first — shared default for every calendar.
-const DEFAULT_WEEKDAYS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
 
 export type MonthCalendarProps = {
   /** First-of-month Date for the visible month (the day component is ignored). */
@@ -23,8 +21,8 @@ export type MonthCalendarProps = {
    * fill it, so callers only style the inner day pill.
    */
   renderDay: (date: Date) => ReactNode;
-  /** Weekday header labels, Sunday first. Defaults to Thai abbreviations. */
-  weekdayLabels?: string[];
+  /** Weekday header labels, Sunday first. Defaults to the app language's abbreviations. */
+  weekdayLabels?: readonly string[];
   /** Colour the Sat/Sun weekday labels with the brand accent. */
   colorWeekendLabels?: boolean;
   /** Optional content rendered below the grid (e.g. a legend). */
@@ -76,7 +74,7 @@ export function MonthCalendar({
   onPrevMonth,
   onNextMonth,
   renderDay,
-  weekdayLabels = DEFAULT_WEEKDAYS,
+  weekdayLabels = TEXT.WEEKDAY_NAMES_MIN,
   colorWeekendLabels = false,
   footer,
   prevLabel,

@@ -42,9 +42,9 @@ const KIND_ICON: Record<CartItem['kind'], IconSymbolName> = {
 };
 
 const KIND_LABEL: Record<CartItem['kind'], string> = {
-  general: 'จองทั่วไป',
-  term: 'จองรายเทอม',
-  period: 'จองช่วงเวลา',
+  get general() { return TEXT.BOOKING_ROOM_GENERAL_TITLE; },
+  get term() { return TEXT.BOOKING_ROOM_CART_KIND_TERM; },
+  get period() { return TEXT.BOOKING_ROOM_CART_KIND_PERIOD; },
 };
 
 

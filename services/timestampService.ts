@@ -4,7 +4,8 @@ import { ENDPOINTS } from "../constants/endpoints";
 import { currentWifiIp } from "../utils/wifi-ip";
 import { thaiOnly } from "../utils/thai-message";
 import type { JsonMap } from "./api";
-import { ensureSuccess, fetchWithTimeout, MESSAGE_SERVER_ERROR, requestJson } from "./api";
+import { ensureSuccess, fetchWithTimeout, requestJson } from "./api";
+import { TEXT } from '@/constants/text';
 
 export type Timestamp = {
   id?: string;
@@ -891,7 +892,7 @@ export async function submitStaffFaceStamp({
     throw new Error(
       response.status < 500 && typeof serverMessage === 'string' && serverMessage
         ? serverMessage
-        : MESSAGE_SERVER_ERROR,
+        : TEXT.SERVICE_ERROR_SERVER,
     );
   }
   ensureSuccess(json);
@@ -990,7 +991,7 @@ export async function submitStaffFaceEnroll({
     throw new Error(
       response.status < 500 && typeof serverMessage === 'string' && serverMessage
         ? serverMessage
-        : MESSAGE_SERVER_ERROR,
+        : TEXT.SERVICE_ERROR_SERVER,
     );
   }
   ensureSuccess(json);

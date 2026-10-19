@@ -28,8 +28,8 @@ const webNoOutline: any = Platform.OS === 'web' ? { outlineStyle: 'none' } : nul
 
 /** Radio group for repair type: แจ้งซ่อม (n) / ติดตั้งเพิ่มเติม (y). */
 const REPAIR_TYPE_OPTIONS = [
-  { value: 'n', label: 'แจ้งซ่อม' },
-  { value: 'y', label: 'ติดตั้งเพิ่มเติม' },
+  { value: 'n', get label() { return TEXT.NOTICE_REPAIR_TYPE_REPAIR; } },
+  { value: 'y', get label() { return TEXT.NOTICE_REPAIR_TYPE_INSTALL; } },
 ] as const;
 
 type RepairType = typeof REPAIR_TYPE_OPTIONS[number]['value'];
@@ -400,7 +400,7 @@ export function RepairInformForm({
                 label={TEXT.NOTICE_REPAIR_FORM_PLACE}
                 value={place}
                 onChangeText={setPlace}
-                placeholder="เช่น ห้อง 201 ชั้น 2"
+                placeholder={TEXT.NOTICE_REPAIR_PLACE_PLACEHOLDER}
               />
             </SectionCard>
 
@@ -410,7 +410,7 @@ export function RepairInformForm({
                 label={TEXT.NOTICE_REPAIR_FORM_DETAIL}
                 value={detail}
                 onChangeText={setDetail}
-                placeholder="อธิบายปัญหาที่พบ"
+                placeholder={TEXT.NOTICE_REPAIR_DETAIL_PLACEHOLDER}
                 multiline
               />
               <TextField

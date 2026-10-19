@@ -54,7 +54,7 @@ export default function SupplyResultScreen() {
     setToastType("");
 
     if (!detail.trim()) {
-      setValidationError("กรุณากรอกผลการจัดหาวัสดุ");
+      setValidationError(TEXT.REPAIR_COMPUTER_SUPPLY_RESULT_REQUIRED);
       return;
     }
 

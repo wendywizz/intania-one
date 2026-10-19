@@ -13,8 +13,8 @@ import { TEXT } from "@/constants/text";
 type ApproveTab = "pending" | "history";
 
 const TABS: { key: ApproveTab; label: string }[] = [
-  { key: "pending", label: TEXT.TIMESTAMP_APPROVE_PENDING_TAB },
-  { key: "history", label: TEXT.TIMESTAMP_APPROVE_HISTORY_TAB },
+  { key: "pending", get label() { return TEXT.TIMESTAMP_APPROVE_PENDING_TAB; } },
+  { key: "history", get label() { return TEXT.TIMESTAMP_APPROVE_HISTORY_TAB; } },
 ];
 
 export default function TimestampApproveScreen() {

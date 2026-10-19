@@ -21,6 +21,7 @@ import { MAX_FONT_SCALE } from '@/constants/typography';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppFonts } from '@/constants/fonts';
 import { useColors } from '@/constants/theme';
+import { TEXT } from '@/constants/text';
 
 type TextFieldProps = TextInputProps & {
   label?: string;
@@ -56,7 +57,7 @@ export function TextField({
             {label}
             {required ? <Text style={{ color: c.danger }}> *</Text> : null}
           </Text>
-          {optional ? <Text style={[styles.optional, { color: c.textFaint }]}>ไม่บังคับ</Text> : null}
+          {optional ? <Text style={[styles.optional, { color: c.textFaint }]}>{TEXT.SHARED_OPTIONAL}</Text> : null}
         </View>
       ) : null}
 

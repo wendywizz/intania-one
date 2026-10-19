@@ -22,7 +22,12 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         },
-        "NSLocalNetworkUsageDescription": "แอปเชื่อมต่อเซิร์ฟเวอร์ทดสอบภายในเครือข่ายคณะวิศวกรรมศาสตร์ เพื่อดึงข้อมูลระหว่างช่วงทดสอบ"
+        "NSLocalNetworkUsageDescription": "The app connects to a test server inside the Faculty of Engineering network to fetch data during the testing period.",
+        "CFBundleAllowMixedLocalizations": true,
+        "CFBundleLocalizations": [
+          "en",
+          "th"
+        ]
       }
     },
     "android": {
@@ -67,9 +72,9 @@
       ],
       [
         "expo-image-picker",
-        {          
-          "photosPermission": "แอปใช้รูปภาพของคุณเพื่อแนบหลักฐานรับรองการลาป่วย",
-          "cameraPermission": "แอปใช้กล้องของคุณเพื่อเก็บข้อมูลภาพถ่ายสำหรับเป็นหลักฐานการลงเวลาเข้าและออกงาน"
+        {
+          "photosPermission": "The app uses your photos to attach evidence for a sick leave request.",
+          "cameraPermission": "The app uses your camera to capture photos as evidence of your clock-in and clock-out."
         }
       ],
       "@react-native-community/datetimepicker",
@@ -77,14 +82,14 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "ใช้ Face ID เพื่อปลดล็อกแอป Intania One"
+          "faceIDPermission": "Use Face ID to unlock the Intania One app."
         }
       ],
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "แอปใช้ตำแหน่งของคุณเพื่อยืนยันว่าคุณอยู่ในบริเวณคณะวิศวกรรมศาสตร์ขณะลงเวลาปฏิบัติราชการ",
-          "locationWhenInUsePermission": "แอปใช้ตำแหน่งของคุณเพื่อยืนยันว่าคุณอยู่ในบริเวณคณะวิศวกรรมศาสตร์ขณะลงเวลาปฏิบัติราชการ",
+          "locationAlwaysAndWhenInUsePermission": "The app uses your location to confirm you are within the Faculty of Engineering when you clock in for official duty.",
+          "locationWhenInUsePermission": "The app uses your location to confirm you are within the Faculty of Engineering when you clock in for official duty.",
           "isIosBackgroundLocationEnabled": false,
           "isAndroidBackgroundLocationEnabled": false
         }
@@ -101,6 +106,10 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "locales": {
+      "en": "./locales/en.json",
+      "th": "./locales/th.json"
     }
   }
 }

@@ -861,7 +861,7 @@ function SelectField({
 }
 
 /**
- * Best-effort icon for one equipment/food item, matched on its Thai name.
+ * Best-effort icon for one equipment/food item, matched on its name (Thai or English).
  *
  * The catalogue itself is free-text set by whoever administers the legacy
  * site, so there is no id this can key on reliably — only the words in
@@ -869,20 +869,23 @@ function SelectField({
  * wrong icon claims to know what the item is, while falling back to its own
  * (shortened) name never lies.
  */
+// Checked in order. Each rule matches the Thai words the catalogue uses or the English
+// ones (whole words, so "tea" does not light up inside "team").
+const THING_ICON_RULES: { test: RegExp; icon: IconSymbolName }[] = [
+  { test: /ไมค์|ไมโครโฟน|\b(mic|microphone)s?\b/, icon: 'mic' },
+  { test: /โปรเจค|ฉาย|\bprojectors?\b/, icon: 'projector' },
+  { test: /จอ|มอนิเตอร์|\b(screen|monitor|display|tv)s?\b/, icon: 'display' },
+  { test: /โน้ตบุ๊ค|คอมพิวเตอร์|\b(laptop|notebook|computer|pc)s?\b/, icon: 'laptop' },
+  { test: /ปริ้น|\b(printer|print)s?\b/, icon: 'printer.fill' },
+  { test: /ไวไฟ|อินเทอร์เน็ต|\b(wi-?fi|internet)\b/, icon: 'wifi' },
+  { test: /กาแฟ|ชา|\b(coffee|tea)\b/, icon: 'coffee' },
+  { test: /น้ำ|เครื่องดื่ม|\b(drinks?|water|juice|soda|beverages?)\b/, icon: 'cup-soda' },
+  { test: /ขนม|อาหาร|เบรก|\b(food|snacks?|break|lunch|meals?|bakery|cake)\b/, icon: 'utensils' },
+];
+
 function getThingIcon(detail: string): IconSymbolName | null {
   const d = detail.toLowerCase();
-  if (d.includes('ไมค์') || d.includes('ไมโครโฟน') || d.includes('mic')) return 'mic';
-  if (d.includes('โปรเจค') || d.includes('ฉาย') || d.includes('projector')) return 'projector';
-  if (d.includes('จอ') || d.includes('มอนิเตอร์') || d.includes('screen') || d.includes('monitor')) return 'display';
-  if (d.includes('โน้ตบุ๊ค') || d.includes('คอมพิวเตอร์') || d.includes('laptop')) return 'laptop';
-  if (d.includes('ปริ้น') || d.includes('printer')) return 'printer.fill';
-  if (d.includes('ไวไฟ') || d.includes('อินเทอร์เน็ต') || d.includes('wifi')) return 'wifi';
-  if (d.includes('กาแฟ') || d.includes('ชา') || d.includes('coffee')) return 'coffee';
-  if (d.includes('น้ำ') || d.includes('เครื่องดื่ม') || d.includes('drink')) return 'cup-soda';
-  if (d.includes('ขนม') || d.includes('อาหาร') || d.includes('เบรก') || d.includes('food') || d.includes('snack')) {
-    return 'utensils';
-  }
-  return null;
+  return THING_ICON_RULES.find((rule) => rule.test.test(d))?.icon ?? null;
 }
 
 /** A short stand-in for an item's name when no icon matched it — just the

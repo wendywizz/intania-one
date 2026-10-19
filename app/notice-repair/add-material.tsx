@@ -60,19 +60,19 @@ export default function AddMaterialScreen() {
   // the detail screen, which scrolls to the materials section and offers Save.
   const handleSave = () => {
     if (!name.trim()) {
-      Alert.alert('กรุณากรอกชื่อรายการวัสดุ');
+      Alert.alert(TEXT.NOTICE_REPAIR_MATERIAL_NAME_REQUIRED);
       return;
     }
     if (!quantity || parseFloat(quantity) <= 0) {
-      Alert.alert('กรุณากรอกจำนวนที่มากกว่า 0');
+      Alert.alert(TEXT.NOTICE_REPAIR_MATERIAL_QTY_REQUIRED);
       return;
     }
     if (!unit.trim()) {
-      Alert.alert('กรุณากรอกหน่วย');
+      Alert.alert(TEXT.NOTICE_REPAIR_MATERIAL_UNIT_REQUIRED);
       return;
     }
     if (!repair_id || !staff_id) {
-      Alert.alert(TEXT.NOTICE_REPAIR_ACTION_FAILED, 'ไม่พบข้อมูลใบแจ้งซ่อม');
+      Alert.alert(TEXT.NOTICE_REPAIR_ACTION_FAILED, TEXT.NOTICE_REPAIR_REQUEST_NOT_FOUND);
       return;
     }
 
@@ -94,7 +94,7 @@ export default function AddMaterialScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <NavTopBar title="เพิ่มรายการวัสดุ" backHref={backHref} showHomeButton tone="primary" />
+      <NavTopBar title={TEXT.NOTICE_REPAIR_MATERIAL_ADD_TITLE} backHref={backHref} showHomeButton tone="primary" />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -111,24 +111,24 @@ export default function AddMaterialScreen() {
             <View style={styles.cardInner}>
               {/* Material Name */}
               <View style={styles.fieldGroup}>
-                <ThemedText style={styles.label}>ชื่อรายการวัสดุ *</ThemedText>
+                <ThemedText style={styles.label}>{TEXT.NOTICE_REPAIR_MATERIAL_NAME_LABEL}</ThemedText>
                 <TextInput
                   style={styles.input}
                   value={name}
                   onChangeText={setName}
-                  placeholder="กรอกชื่อรายการวัสดุ"
+                  placeholder={TEXT.NOTICE_REPAIR_MATERIAL_NAME_PLACEHOLDER}
                   placeholderTextColor="#9CA3AF"
                 />
               </View>
 
               {/* Quantity */}
               <View style={styles.fieldGroup}>
-                <ThemedText style={styles.label}>จำนวน *</ThemedText>
+                <ThemedText style={styles.label}>{TEXT.NOTICE_REPAIR_MATERIAL_QTY_LABEL}</ThemedText>
                 <TextInput
                   style={styles.input}
                   value={quantity}
                   onChangeText={setQuantity}
-                  placeholder="กรอกจำนวน"
+                  placeholder={TEXT.NOTICE_REPAIR_MATERIAL_QTY_PLACEHOLDER}
                   placeholderTextColor="#9CA3AF"
                   keyboardType="decimal-pad"
                 />
@@ -136,24 +136,24 @@ export default function AddMaterialScreen() {
 
               {/* Unit */}
               <View style={styles.fieldGroup}>
-                <ThemedText style={styles.label}>หน่วย *</ThemedText>
+                <ThemedText style={styles.label}>{TEXT.NOTICE_REPAIR_MATERIAL_UNIT_LABEL}</ThemedText>
                 <TextInput
                   style={styles.input}
                   value={unit}
                   onChangeText={setUnit}
-                  placeholder="กรอกหน่วย (เช่น ชิ้น, อัน, เมตร)"
+                  placeholder={TEXT.NOTICE_REPAIR_MATERIAL_UNIT_PLACEHOLDER}
                   placeholderTextColor="#9CA3AF"
                 />
               </View>
 
               {/* Unit Price */}
               <View style={styles.fieldGroup}>
-                <ThemedText style={styles.label}>ราคาประมาณ/หน่วย (บาท)</ThemedText>
+                <ThemedText style={styles.label}>{TEXT.NOTICE_REPAIR_MATERIAL_PRICE_LABEL}</ThemedText>
                 <TextInput
                   style={styles.input}
                   value={unitPrice}
                   onChangeText={setUnitPrice}
-                  placeholder="กรอกราคาต่อหน่วย"
+                  placeholder={TEXT.NOTICE_REPAIR_MATERIAL_PRICE_PLACEHOLDER}
                   placeholderTextColor="#9CA3AF"
                   keyboardType="decimal-pad"
                 />
@@ -161,7 +161,7 @@ export default function AddMaterialScreen() {
 
               {/* Total Price */}
               <View style={styles.fieldGroup}>
-                <ThemedText style={styles.label}>ราคาประมาณ (บาท)</ThemedText>
+                <ThemedText style={styles.label}>{TEXT.NOTICE_REPAIR_MATERIAL_TOTAL_LABEL}</ThemedText>
                 <View style={styles.readOnlyBox}>
                   <ThemedText style={styles.readOnlyText}>
                     {totalPrice || '0.00'}
@@ -173,7 +173,7 @@ export default function AddMaterialScreen() {
 
           {/* Submit Button */}
           <Pressable style={styles.submitBtn} onPress={handleSave}>
-            <ThemedText style={styles.submitBtnText}>เพิ่มรายการ</ThemedText>
+            <ThemedText style={styles.submitBtnText}>{TEXT.NOTICE_REPAIR_MATERIAL_ADD_ACTION}</ThemedText>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>

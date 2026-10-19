@@ -20,6 +20,7 @@ import { ThemedView } from "@/components/themed-view";
 import { AppFonts } from "@/constants/fonts";
 import { TEXT } from "@/constants/text";
 import { approveSaveData } from "@/services/absenceService";
+import { TH } from '@/i18n/th';
 
 function firstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value ?? "";
@@ -43,7 +44,9 @@ export default function ApproveReasonScreen() {
 
   // Approve pre-fills "อนุมัติ"; reject starts empty so the approver must give a
   // reason. The field is required either way.
-  const [reason, setReason] = useState(isApprove ? TEXT.ABSENCE_APPROVE_ACCEPT : "");
+  // Stays Thai whatever the app language: it is pre-filled into the approver's note,
+  // which is saved into the HR system and read by staff on the Thai website.
+  const [reason, setReason] = useState(isApprove ? TH.ABSENCE_APPROVE_ACCEPT : "");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);

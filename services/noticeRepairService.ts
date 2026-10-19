@@ -2,6 +2,7 @@ import { ENDPOINTS } from '@/constants/endpoints';
 import { fetchWithTimeout, ensureSuccess } from './api';
 import type { NoticeRepairPrivilege, NoticeRepairJob, NoticeRepairDetail, NoticeRepairReference } from '@/models/types';
 import type { ListResponse } from './api';
+import { TEXT } from '@/constants/text';
 
 const BASE = ENDPOINTS.noticeRepair;
 
@@ -39,7 +40,7 @@ export async function getPrivilege(staffId: string): Promise<NoticeRepairPrivile
   // Genuine failure (e.g. upstream 502) — throw so the caller can apply its
   // transient fallback. An empty `data` is NOT an error: it means the user
   // holds no role in this app, so return empty roles → handled as "no access".
-  if (json?.success === false) throw new Error('ไม่สามารถตรวจสอบสิทธิ์ได้');
+  if (json?.success === false) throw new Error(TEXT.NOTICE_REPAIR_PRIVILEGE_CHECK_FAILED);
   const data = json?.data;
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
     return { roles: [], work_category_ids: [], approve_dept_ids: [] };
@@ -168,7 +169,7 @@ export async function getList(
     total?: number;
   }>(buildUrl('/list', { type, staff_id: staffId, page, per_page: perPage }));
 
-  if (!json.success) throw new Error('ไม่สามารถโหลดรายการได้');
+  if (!json.success) throw new Error(TEXT.SHARED_LOAD_LIST_FAILED);
   return {
     data: sortByDateDesc(Array.isArray(json.data) ? json.data : []),
     totalCount: Number(json.total_count ?? json.total ?? 0),
@@ -222,7 +223,7 @@ async function getRepairListFromUrl(
     total_count?: number;
   }>(url.toString());
 
-  if (!json.success) throw new Error('ไม่สามารถโหลดรายการได้');
+  if (!json.success) throw new Error(TEXT.SHARED_LOAD_LIST_FAILED);
   // Sorting is per-page; the server already returns each page newest-first, so
   // the pages stay in order as they are appended.
   const data = sortByDateDesc(Array.isArray(json.data) ? json.data : []);
@@ -249,7 +250,7 @@ export async function getDetail(repairId: number, staffId: string): Promise<Noti
   url.searchParams.set('repair_id', String(repairId));
   url.searchParams.set('staff_id', staffId);
   const json = await getJson<{ success: boolean; data: NoticeRepairDetail }>(url.toString());
-  if (!json.success || !json.data) throw new Error('ไม่สามารถโหลดรายละเอียดได้');
+  if (!json.success || !json.data) throw new Error(TEXT.NOTICE_REPAIR_DETAIL_LOAD_ERROR);
   return json.data;
 }
 
@@ -262,7 +263,7 @@ export async function getHeaderDetail(repairId: number, staffId: string): Promis
   url.searchParams.set('repair_id', String(repairId));
   url.searchParams.set('staff_id', staffId);
   const json = await getJson<{ success: boolean; data: NoticeRepairDetail }>(url.toString());
-  if (!json.success || !json.data) throw new Error('ไม่สามารถโหลดรายละเอียดได้');
+  if (!json.success || !json.data) throw new Error(TEXT.NOTICE_REPAIR_DETAIL_LOAD_ERROR);
   return json.data;
 }
 
@@ -275,7 +276,7 @@ export async function getFullDetail(repairId: number, staffId: string): Promise<
   url.searchParams.set('repair_id', String(repairId));
   url.searchParams.set('staff_id', staffId);
   const json = await getJson<{ success: boolean; data: NoticeRepairDetail }>(url.toString());
-  if (!json.success || !json.data) throw new Error('ไม่สามารถโหลดรายละเอียดได้');
+  if (!json.success || !json.data) throw new Error(TEXT.NOTICE_REPAIR_DETAIL_LOAD_ERROR);
   return json.data;
 }
 
@@ -323,7 +324,7 @@ async function postRepairAction(
     | { success?: boolean; data?: Record<string, unknown>; error?: string }
     | null;
   if (!json || json.success !== true) {
-    throw new Error(json?.error || 'ดำเนินการไม่สำเร็จ');
+    throw new Error(json?.error || TEXT.NOTICE_REPAIR_ACTION_FAILED);
   }
   return json.data ?? {};
 }

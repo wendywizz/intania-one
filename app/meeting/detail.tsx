@@ -37,6 +37,7 @@ import { TEXT } from '@/constants/text';
 import type { MeetingAgendaItem, MeetingSubtopic, MeetingTopic } from '@/models/types';
 import { getMeetingTopics } from '@/services/meetingService';
 import { formatMeetingDetailDate } from '@/utils/date-format';
+import { fill } from '@/utils/text-template';
 
 function toPdfProxyUrl(url: string): string {
   return `${ENDPOINTS.meetingPdf}?url=${encodeURIComponent(url)}`;
@@ -58,7 +59,7 @@ function buildPdfViewerHtml(base64: string): string {
   </style>
 </head>
 <body>
-  <div id="msg">กำลังโหลดเอกสาร...</div>
+  <div id="msg">${TEXT.PDF_LOADING}</div>
   <div id="pages"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -80,7 +81,7 @@ function buildPdfViewerHtml(base64: string): string {
         });
       })();
     }).catch(function(){
-      document.getElementById('msg').textContent='ไม่สามารถโหลดเอกสารได้';
+      document.getElementById('msg').textContent='${TEXT.PDF_LOAD_FAILED}';
     });
   </script>
 </body>
@@ -136,7 +137,7 @@ function PdfViewerModal({ url, onClose }: { url: string; onClose: () => void }) 
       <View style={[pdfStyles.sheet, { paddingTop: insets.top > 0 ? insets.top : 8, paddingBottom: insets.bottom }]}>
         <View style={pdfStyles.handle} />
         <View style={pdfStyles.header}>
-          <ThemedText style={pdfStyles.headerTitle} numberOfLines={1}>เอกสาร PDF</ThemedText>
+          <ThemedText style={pdfStyles.headerTitle} numberOfLines={1}>{TEXT.PDF_DOCUMENT_TITLE}</ThemedText>
           <Pressable onPress={onClose} style={pdfStyles.closeBtn} hitSlop={10}>
             <X size={18} color={c.textMuted} />
           </Pressable>
@@ -241,7 +242,7 @@ function PdfCard({
           {index ? `${index} ` : ''}{title}
         </ThemedText>
         <ThemedText style={styles.pdfCardMeta} numberOfLines={1}>
-          {filename}{typeof pdfPages === 'number' ? ` • ${pdfPages} หน้า` : ''}
+          {filename}{typeof pdfPages === 'number' ? ` • ${fill(TEXT.MEETING_PDF_PAGES, { pages: pdfPages })}` : ''}
         </ThemedText>
       </View>
       {expandable
@@ -395,7 +396,7 @@ function TopicRow({
             ? <ChevronDown size={18} color={c.textFaint} />
             : <ChevronRight size={18} color={c.textFaint} />
         ) : hasPdf ? (
-          <ThemedText style={styles.viewDocText}>ดูเอกสาร</ThemedText>
+          <ThemedText style={styles.viewDocText}>{TEXT.MEETING_VIEW_DOCUMENT}</ThemedText>
         ) : null}
       </Pressable>
 

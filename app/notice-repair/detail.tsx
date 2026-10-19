@@ -29,6 +29,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { type AppColors, useColors, useScreenGutter, useThemedStyles } from '@/constants/theme';
 import { useActionBarBottomPadding, useContentBottomPadding } from "@/hooks/use-action-bar-padding";
 import { boxShadow } from '@/constants/shadows';
+import { fill } from '@/utils/text-template';
 
 // New job awaiting approval — the only status where the approver's
 // เห็นชอบ / ไม่เห็นชอบ / ยกเลิก actions are valid (see Repair_Controller).
@@ -171,7 +172,7 @@ export default function NoticeRepairDetailScreen() {
       draftMaterials
         .map((d, i) => {
           const qty = `${d.number}${d.unit ? ` ${d.unit}` : ''}`;
-          const price = d.price ? ` = ${d.price} บาท` : '';
+          const price = d.price ? ` = ${d.price} ${TEXT.CURRENCY_BAHT}` : '';
           return `${i + 1}. ${d.name}  (${qty})${price}`;
         })
         .join('\n'),
@@ -186,7 +187,7 @@ export default function NoticeRepairDetailScreen() {
     // so the "สำหรับหัวหน้าหมวดงาน" block shows whenever the job has it.
     getFullDetail(Number(repair_id), staffId)
       .then(setDetail)
-      .catch((e) => setError(e instanceof Error ? e.message : 'ไม่สามารถโหลดรายละเอียดได้'))
+      .catch((e) => setError(e instanceof Error ? e.message : TEXT.NOTICE_REPAIR_DETAIL_LOAD_ERROR))
       .finally(() => setIsLoading(false));
   }, [repair_id, staffId]);
 
@@ -374,7 +375,7 @@ export default function NoticeRepairDetailScreen() {
       await addRequisition(repair_id, staffId, [...draftMaterials]);
       clearDraftMaterials(repair_id ?? '');
       setMaterialConfirm(null);
-      showToast('บันทึกรายการวัสดุเรียบร้อยแล้ว', 'success');
+      showToast(TEXT.NOTICE_REPAIR_MATERIAL_SAVED, 'success');
       if (leaveAfterSave) {
         doBack();
         return;
@@ -422,14 +423,14 @@ export default function NoticeRepairDetailScreen() {
     const opDateRange = opStart || opEnd ? formatDateRange(opStart, opEnd) : '';
     const technicians = (detail.technicians ?? []).filter((t) => !!t.name?.trim());
     const assessmentText = detail.repair === 'n'
-      ? 'ซ่อม / ติดตั้งไม่ได้'
-      : detail.repair_estimate === 'y' ? 'ซ่อม / ติดตั้งได้' : '';
+      ? TEXT.NOTICE_REPAIR_RESULT_CANNOT
+      : detail.repair_estimate === 'y' ? TEXT.NOTICE_REPAIR_RESULT_CAN : '';
     const requisitions = detail.requisitions ?? [];
     const examineCode = detail.examine?.repair_examine ?? detail.repair_examine;
     const examineRemark = detail.examine?.repair_examine_remark ?? detail.repair_examine_remark;
     const examineText = examineCode === 'y'
-      ? 'ดำเนินการเสร็จสมบูรณ์'
-      : examineCode === 'n' ? `ไม่ผ่าน${examineRemark ? ` - ${examineRemark}` : ''}` : '';
+      ? TEXT.NOTICE_REPAIR_RESULT_COMPLETED
+      : examineCode === 'n' ? `${TEXT.NOTICE_REPAIR_RESULT_FAILED}${examineRemark ? ` - ${examineRemark}` : ''}` : '';
 
     const hasDrafts = draftMaterials.length > 0;
 
@@ -470,16 +471,16 @@ export default function NoticeRepairDetailScreen() {
               value: detail.work_category_name ?? '',
               icon: getCategoryIcon(detail.work_category_name),
             },
-            { label: 'วันที่แจ้ง', value: dateText, icon: 'calendar' },
-            { label: 'อาคาร', value: detail.building_name ?? '', icon: 'house.fill' },
-            { label: 'สถานที่ / ห้อง', value: detail.repair_place ?? '', icon: 'mappin' },
-            { label: 'รายละเอียดความชำรุด', value: detail.repair_inform ?? '', icon: 'list.bullet' },
+            { label: TEXT.NOTICE_REPAIR_DETAIL_DATE, value: dateText, icon: 'calendar' },
+            { label: TEXT.NOTICE_REPAIR_DETAIL_BUILDING, value: detail.building_name ?? '', icon: 'house.fill' },
+            { label: TEXT.NOTICE_REPAIR_DETAIL_ROOM, value: detail.repair_place ?? '', icon: 'mappin' },
+            { label: TEXT.NOTICE_REPAIR_DETAIL_DAMAGE, value: detail.repair_inform ?? '', icon: 'list.bullet' },
           ]}
         />
 
         {/* ── Requester (person + how to reach them) ── */}
         {(detail.informer_name || informerId) && (
-          <SectionCard title="ผู้แจ้งซ่อม">
+          <SectionCard title={TEXT.NOTICE_REPAIR_ROLE_INFORMER}>
             <PersonRow
               name={detail.informer_name ?? ''}
               position={detail.informer_position}
@@ -489,7 +490,7 @@ export default function NoticeRepairDetailScreen() {
               style={styles.personRows}
               rows={[
                 { label: TEXT.NOTICE_REPAIR_DETAIL_DEPARTMENT, value: detail.repair_inform_dept_name ?? '', icon: 'briefcase.fill' },
-                { label: 'เบอร์โทรศัพท์', value: detail.repair_tel ?? '', icon: 'phone.fill' },
+                { label: TEXT.NOTICE_REPAIR_FORM_PHONE, value: detail.repair_tel ?? '', icon: 'phone.fill' },
               ]}
             />
           </SectionCard>
@@ -499,19 +500,19 @@ export default function NoticeRepairDetailScreen() {
         {detail.header && (
           <>
             <DetailInfoCard
-              title="สำหรับหัวหน้าหมวดงาน"
+              title={TEXT.NOTICE_REPAIR_SECTION_FOR_HEAD}
               rows={[
-                { label: 'วันที่ดำเนินการซ่อม / ดูสถานที่', value: opDateRange, icon: 'calendar-range' },
-                { label: 'ประเมินการซ่อม', value: assessmentText, icon: 'wrench.fill' },
-                { label: 'รายละเอียดการซ่อม', value: detail.header.repair_detail ?? '', icon: 'list.bullet' },
-                { label: 'การตรวจรับงานซ่อม', value: examineText, icon: 'checkmark.circle.fill' },
+                { label: TEXT.NOTICE_REPAIR_DETAIL_WORK_VISIT_DATE, value: opDateRange, icon: 'calendar-range' },
+                { label: TEXT.NOTICE_REPAIR_DETAIL_ASSESSMENT, value: assessmentText, icon: 'wrench.fill' },
+                { label: TEXT.NOTICE_REPAIR_DETAIL_REPAIR_DETAILS, value: detail.header.repair_detail ?? '', icon: 'list.bullet' },
+                { label: TEXT.NOTICE_REPAIR_DETAIL_ACCEPTANCE, value: examineText, icon: 'checkmark.circle.fill' },
               ]}
             />
 
             {technicians.length > 0 && (
               <PersonListCard
-                title="ช่างที่รับผิดชอบ"
-                countSuffix=" คน"
+                title={TEXT.NOTICE_REPAIR_DETAIL_TECHNICIANS_IN_CHARGE}
+                countSuffix={TEXT.NOTICE_REPAIR_PERSON_UNIT}
                 people={technicians.map((t, i) => ({
                   key: `${t.staff_id ?? t.name}-${i}`,
                   name: t.name ?? '',
@@ -526,7 +527,7 @@ export default function NoticeRepairDetailScreen() {
             {!canViewSupply && !canViewSupplyList && (
             <View ref={materialSectionRef}>
               <SectionCard
-                title="รายการวัสดุ"
+                title={TEXT.NOTICE_REPAIR_MATERIAL_LIST}
                 trailing={
                   canAddMaterial ? (
                     <Pressable
@@ -538,7 +539,7 @@ export default function NoticeRepairDetailScreen() {
                       } as Parameters<typeof router.push>[0])}
                     >
                       <IconSymbol name="plus" size={16} color={c.textOnPrimary} />
-                      <ThemedText style={styles.addMatBtnText}>เพิ่มวัสดุ</ThemedText>
+                      <ThemedText style={styles.addMatBtnText}>{TEXT.NOTICE_REPAIR_MATERIAL_ADD}</ThemedText>
                     </Pressable>
                   ) : null
                 }
@@ -555,7 +556,7 @@ export default function NoticeRepairDetailScreen() {
                         unit={r.unit}
                         total={r.price}
                         statusLabel={
-                          r.status === 'd' ? 'จัดหาเอง' : r.status === 'c' ? 'หน่วยอาคารฯ' : undefined
+                          r.status === 'd' ? TEXT.NOTICE_REPAIR_SUPPLY_SELF : r.status === 'c' ? TEXT.NOTICE_REPAIR_SUPPLY_BUILDING_UNIT : undefined
                         }
                       />
                     ))}
@@ -575,12 +576,12 @@ export default function NoticeRepairDetailScreen() {
                 ) : (
                   <View style={styles.matEmpty}>
                     <IconSymbol name="package.plus" size={20} color={c.textFaint} />
-                    <ThemedText style={styles.matEmptyText}>ไม่มีการจัดหาวัสดุ</ThemedText>
+                    <ThemedText style={styles.matEmptyText}>{TEXT.NOTICE_REPAIR_NO_MATERIALS}</ThemedText>
                   </View>
                 )}
                 {hasDrafts && (
                   <ThemedText style={styles.draftHint}>
-                    * รายการที่ไฮไลต์ยังไม่ถูกบันทึก กดปุ่ม “บันทึกรายการวัสดุ” ด้านล่างเพื่อบันทึก
+                    {TEXT.NOTICE_REPAIR_MATERIAL_UNSAVED_NOTE}
                   </ThemedText>
                 )}
               </SectionCard>
@@ -722,7 +723,7 @@ export default function NoticeRepairDetailScreen() {
             style={[styles.actionBtn, styles.approveBtn, styles.approveFlex, savingMaterials && styles.actionBtnDisabled]}>
             {savingMaterials
               ? <ActivityIndicator color="#fff" />
-              : <ThemedText style={styles.approveText}>{`บันทึกรายการวัสดุ (${draftMaterials.length})`}</ThemedText>}
+              : <ThemedText style={styles.approveText}>{fill(TEXT.NOTICE_REPAIR_MATERIAL_SAVE_BUTTON, { count: draftMaterials.length })}</ThemedText>}
           </Pressable>
         </View>
       )}
@@ -741,10 +742,10 @@ export default function NoticeRepairDetailScreen() {
       {/* Same confirm-with-summary modal for both Save and back buttons */}
       <ConfirmModal
         visible={materialConfirm !== null}
-        title="ยืนยันการบันทึกรายการวัสดุ"
-        message={`ตรวจสอบรายการวัสดุก่อนบันทึก:\n\n${draftSummary}`}
-        confirmLabel="บันทึก"
-        cancelLabel="ยกเลิก"
+        title={TEXT.NOTICE_REPAIR_MATERIAL_SAVE_CONFIRM_TITLE}
+        message={`${TEXT.NOTICE_REPAIR_MATERIAL_SAVE_CONFIRM_LEAD}\n\n${draftSummary}`}
+        confirmLabel={TEXT.SHARED_SAVE}
+        cancelLabel={TEXT.CANCEL}
         loading={savingMaterials}
         onConfirm={onConfirmSaveMaterials}
         onCancel={() => { if (!savingMaterials) setMaterialConfirm(null); }}
