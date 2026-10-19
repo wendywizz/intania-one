@@ -416,43 +416,6 @@ export default function SettingsScreen() {
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: contentBottomPadding }]} showsVerticalScrollIndicator={false}>
 
-        {/* ── Language: first, because switching rebuilds every screen and sends this
-            one back to the top - there is nothing below it to lose your place in. ── */}
-        <View style={styles.section}>
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <ThemedText style={styles.sectionTitle}>{TEXT.SETTINGS_LANGUAGE_TITLE}</ThemedText>
-              <ThemedText style={styles.sectionCaption}>{TEXT.SETTINGS_LANGUAGE_CAPTION}</ThemedText>
-            </View>
-            {LANGUAGE_OPTIONS.map((option, index) => {
-              const selected = option.value === language;
-              return (
-                <Pressable
-                  key={option.value}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  accessibilityLabel={option.name}
-                  style={[styles.row, index < LANGUAGE_OPTIONS.length - 1 ? styles.rowDivider : null]}
-                  onPress={() => {
-                    if (!selected) setLanguage(option.value);
-                  }}
-                >
-                  <View style={styles.iconCircle}>
-                    <ThemedText style={styles.languageCode}>{option.code}</ThemedText>
-                  </View>
-                  <View style={styles.rowBody}>
-                    <ThemedText style={styles.rowTitle}>{option.name}</ThemedText>
-                    <ThemedText style={styles.rowSub}>{option.hint}</ThemedText>
-                  </View>
-                  <View style={styles.checkSlot}>
-                    {selected ? <Check size={18} color={c.primary} /> : null}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-
         <View style={styles.section}>
           <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -630,6 +593,43 @@ export default function SettingsScreen() {
                 onValueChange={toggleAutoTheme}
               />
             </View>
+          </View>
+        </View>
+
+        {/* ── Language: directly under Appearance. Switching rebuilds every screen and
+            sends this one back to the top. ── */}
+        <View style={styles.section}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <ThemedText style={styles.sectionTitle}>{TEXT.SETTINGS_LANGUAGE_TITLE}</ThemedText>
+              <ThemedText style={styles.sectionCaption}>{TEXT.SETTINGS_LANGUAGE_CAPTION}</ThemedText>
+            </View>
+            {LANGUAGE_OPTIONS.map((option, index) => {
+              const selected = option.value === language;
+              return (
+                <Pressable
+                  key={option.value}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={option.name}
+                  style={[styles.row, index < LANGUAGE_OPTIONS.length - 1 ? styles.rowDivider : null]}
+                  onPress={() => {
+                    if (!selected) setLanguage(option.value);
+                  }}
+                >
+                  <View style={styles.iconCircle}>
+                    <ThemedText style={styles.languageCode}>{option.code}</ThemedText>
+                  </View>
+                  <View style={styles.rowBody}>
+                    <ThemedText style={styles.rowTitle}>{option.name}</ThemedText>
+                    <ThemedText style={styles.rowSub}>{option.hint}</ThemedText>
+                  </View>
+                  <View style={styles.checkSlot}>
+                    {selected ? <Check size={18} color={c.primary} /> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 

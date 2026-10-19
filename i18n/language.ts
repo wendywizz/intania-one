@@ -1,8 +1,7 @@
 /**
  * Which language the app speaks. Thai is the house language - the staff this app
- * serves read it first - so it is what a failed storage read and a phone that will
- * not name its own language fall back to. A fresh install follows the phone
- * (`device-language.ts`) until a language is chosen in Settings.
+ * serves read it first - so it is what a fresh install and a failed storage read
+ * open in, whatever the phone's own language is, until one is chosen in Settings.
  */
 export type Language = 'th' | 'en';
 

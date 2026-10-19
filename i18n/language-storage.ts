@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { getDeviceLanguage } from './device-language';
 import { DEFAULT_LANGUAGE, isLanguage, type Language } from './language';
 
 // Kept apart from `language.ts` so the pure language state (and everything that
@@ -8,14 +7,13 @@ import { DEFAULT_LANGUAGE, isLanguage, type Language } from './language';
 const LANGUAGE_KEY = '@app_language';
 
 /**
- * The language to open in: the one chosen in Settings, else the phone's own. A phone's
- * language is deliberately not written back - until someone chooses, the app keeps
- * following the phone, so changing the phone's language changes the app too.
+ * The language to open in: the one chosen in Settings, else Thai. The phone's own
+ * language is deliberately not consulted - a fresh install always opens in Thai.
  */
 export async function loadStoredLanguage(): Promise<Language> {
   try {
     const stored = await AsyncStorage.getItem(LANGUAGE_KEY);
-    return isLanguage(stored) ? stored : getDeviceLanguage();
+    return isLanguage(stored) ? stored : DEFAULT_LANGUAGE;
   } catch {
     return DEFAULT_LANGUAGE;
   }

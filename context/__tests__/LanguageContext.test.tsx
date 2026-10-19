@@ -11,7 +11,6 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { TEXT } from '@/constants/text';
 import { LanguageProvider, useLanguage } from '@/context/LanguageContext';
-import { getDeviceLanguage } from '@/i18n/device-language';
 import { setCurrentLanguage } from '@/i18n/language';
 import { TH } from '@/i18n/th';
 import { EN } from '@/i18n/en';
@@ -19,9 +18,6 @@ import { EN } from '@/i18n/en';
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
-
-jest.mock('@/i18n/device-language', () => ({ getDeviceLanguage: jest.fn(() => 'th') }));
-const deviceLanguage = getDeviceLanguage as jest.Mock;
 
 // React's act() environment flag, so the renderer does not warn.
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -51,7 +47,6 @@ beforeEach(async () => {
   await AsyncStorage.clear();
   setCurrentLanguage('th');
   moment.locale('th');
-  deviceLanguage.mockReturnValue('th');
 });
 
 it('starts in Thai when nothing is stored, and renders nothing until it has looked', async () => {
@@ -90,19 +85,11 @@ it('opens in the stored language', async () => {
   expect(shown(tree)).toBe(EN.CANCEL);
 });
 
-it('follows the phone until a language is chosen, without writing it down', async () => {
-  deviceLanguage.mockReturnValue('en');
+it('opens in Thai on a fresh install and does not write it down', async () => {
   const tree = await mount();
-  expect(api.language).toBe('en');
-  expect(shown(tree)).toBe(EN.CANCEL);
-  expect(await AsyncStorage.getItem('@app_language')).toBeNull();
-});
-
-it('lets the stored choice win over the phone', async () => {
-  deviceLanguage.mockReturnValue('en');
-  await AsyncStorage.setItem('@app_language', 'th');
-  await mount();
   expect(api.language).toBe('th');
+  expect(shown(tree)).toBe(TH.CANCEL);
+  expect(await AsyncStorage.getItem('@app_language')).toBeNull();
 });
 
 it('ignores a stored value it does not know', async () => {
