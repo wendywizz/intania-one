@@ -12,7 +12,7 @@ Limits are App Store Connect's. Counts are code points, checked with a script.
 | Promotional Text | 170 (99) | ลงเวลา ลา แจ้งซ่อม ประชุม จองห้อง และดูตารางคุมสอบ ครบในแอปเดียวสำหรับบุคลากรคณะวิศวกรรมศาสตร์ ม.อ. |
 | Keywords | 100 (89) | `บุคลากร,ลงเวลา,ลางาน,แจ้งซ่อม,จองห้อง,ประชุม,คุมสอบ,วิศวกรรมศาสตร์,สงขลานครินทร์,ม.อ.,PSU` |
 | Support URL | — | `<support URL>` |
-| Privacy Policy URL | — | `<privacy policy URL>` |
+| Privacy Policy URL | — | `https://www.eng.psu.ac.th/en-v2024/intania-one-privacy` (Thai: `https://www.eng.psu.ac.th/intania-one-privacy`) |
 
 ### Description (Thai)
 
@@ -84,16 +84,12 @@ Sign-in is PSU Passport only, so the reviewer needs a working account.
 ### Notes for the reviewer
 
 ```
-Intania One is the staff app for the Faculty of Engineering, Prince of Songkla University. Staff sign in with the university's PSU Passport (OpenID); a public area and a demo account are described below.
+Intania One is the staff app for the Faculty of Engineering, Prince of Songkla University. Staff sign in with the university's PSU Passport (OpenID); a demo account is described below.
 
 Camera: used by Timestamp (lecturer stamping) and face verification, and to attach photos to repair requests.
 Location: used by Timestamp to confirm the user is within the faculty area when stamping attendance.
 Face ID / fingerprint: optional app lock, set up in Settings.
 Notifications: reminders and work that is waiting on the user.
-
-PUBLIC AREA (no account): on the login screen tap "เข้าใช้งาน" (Enter). It opens a
-home with the faculty news, the executive calendar and the staff directory search,
-which anyone can use.
 
 FULL FEATURES (demo account): the staff features need a PSU Passport, which the
 university issues only to its own staff, so for review please use the demo mode:
