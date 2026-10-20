@@ -11,6 +11,7 @@
  */
 import Constants from 'expo-constants';
 import { Image } from 'expo-image';
+import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -87,6 +88,12 @@ export function LoginLanding({ onLogin, onDemoLogin }: LoginLandingProps) {
   const { width: screenWidth } = useWindowDimensions();
   const [demoOpen, setDemoOpen] = useState(false);
   const versionTaps = useRef({ count: 0, last: 0 });
+  const tapProgress = useRef(new Animated.Value(0)).current;
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+  }, []);
 
   const onVersionPress = () => {
     if (!DEMO_MODE_ENABLED) return;
@@ -95,7 +102,27 @@ export function LoginLanding({ onLogin, onDemoLogin }: LoginLandingProps) {
     // Taps must come in one run; a pause starts the count over.
     taps.count = now - taps.last > DEMO_TAP_WINDOW_MS ? 1 : taps.count + 1;
     taps.last = now;
-    if (taps.count >= DEMO_TAPS) {
+    const opening = taps.count >= DEMO_TAPS;
+    // A faint cue so the tapper knows it registered: the rule under the title
+    // stretches a little further with each tap, and the phone ticks.
+    Animated.timing(tapProgress, {
+      toValue: opening ? 0 : taps.count / DEMO_TAPS,
+      duration: 140,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: USE_NATIVE_DRIVER,
+    }).start();
+    // Left alone for a moment, the rule relaxes back as the count starts over.
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+    resetTimer.current = setTimeout(() => {
+      Animated.timing(tapProgress, { toValue: 0, duration: 240, useNativeDriver: USE_NATIVE_DRIVER }).start();
+    }, DEMO_TAP_WINDOW_MS);
+    if (Platform.OS !== 'web') {
+      const feedback = opening
+        ? Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        : Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      void feedback.catch(() => {});
+    }
+    if (opening) {
       taps.count = 0;
       setDemoOpen(true);
     }
@@ -278,7 +305,15 @@ export function LoginLanding({ onLogin, onDemoLogin }: LoginLandingProps) {
                 {TEXT.HOME_LANDING_TITLE_SUFFIX}
               </Text>
             </Text>
-            <View style={s.rule} />
+            <Animated.View
+              style={[
+                s.rule,
+                {
+                  transformOrigin: 'left',
+                  transform: [{ scaleX: tapProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 3] }) }],
+                },
+              ]}
+            />
             <Text
               numberOfLines={1}
               adjustsFontSizeToFit
