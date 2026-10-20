@@ -70,7 +70,7 @@ const EYEBROW_HEIGHT = 18;
  *  (app-icon-mark.png: the bar's foot sits at 0.19 + 0.62 × 0.82 ≈ 0.70). */
 const MARK_INK_BOTTOM = 0.7;
 
-/** Taps on the version line that open the demo sheet, and the longest pause between two of them. */
+/** Taps on the word "One" in the title, or on the version line, that open the demo sheet, and the longest pause between two of them. */
 const DEMO_TAPS = 5;
 const DEMO_TAP_WINDOW_MS = 1500;
 
@@ -270,7 +270,11 @@ export function LoginLanding({ onLogin, onDemoLogin }: LoginLandingProps) {
               {/* Capped again: AppText sets its own default cap on every Text,
                   nested ones included, which would let this word outgrow the
                   one it sits beside. */}
-              <Text maxFontSizeMultiplier={TEXT_MAX_SCALE} style={s.titleAccent}>
+              <Text
+                maxFontSizeMultiplier={TEXT_MAX_SCALE}
+                style={s.titleAccent}
+                onPress={onVersionPress}
+                suppressHighlighting>
                 {TEXT.HOME_LANDING_TITLE_SUFFIX}
               </Text>
             </Text>
@@ -309,7 +313,7 @@ export function LoginLanding({ onLogin, onDemoLogin }: LoginLandingProps) {
             {/* App Review cannot get a PSU Passport, so it signs in through the
                 demo sheet — see services/demo/demoMode.ts. TestFlight testers
                 run the same binary and must not see it, so there is no visible
-                control: tapping this version line DEMO_TAPS times opens it. The
+                control: tapping this version line (or the word "One" in the title) DEMO_TAPS times opens it. The
                 gesture is written in the App Review notes. */}
             <Pressable onPress={onVersionPress} accessible={false}>
               <Text maxFontSizeMultiplier={TEXT_MAX_SCALE} style={s.version}>
