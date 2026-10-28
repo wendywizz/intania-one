@@ -626,6 +626,29 @@ Prefer these shared components over building screen-local equivalents. When a sc
 - `components/ui/month-calendar.tsx` → `MonthCalendar`: the shared calendar chrome — bordered card, primary month-nav header band (deep-red circular prev/next buttons + single-line month label), weekday-name row, and a Sunday-first day grid. Day cells are caller-owned via `renderDay(date)` (each screen styles days differently); optional `footer` (e.g. a legend). Used by `DatePickerField` (absence forms) and the timestamp calendar. The executive calendar (`app/calendar.tsx`) uses the `react-native-calendars` library but shares the same brand tokens (`c.primary`/`c.primaryDeep`/`c.textOnPrimary`) so it stays visually identical.
 - Primitives in `components/ui`: `Button`, `TextField`, `ListItem`, `Card`, `ConfirmDialog`, `Sheet`, `IconSymbol`. Also `components/date-picker-field.tsx` → `DatePickerField` (calendar picker with weekend/holiday marking + legend, built on `MonthCalendar`) and `hooks/use-holidays.ts` → `useHolidays`.
 
+# Privacy & store disclosure (telemetry, scooba-insight T14)
+
+The app's own telemetry (T9–T12: `X-App-Version` / `X-Platform` / `X-Install-Id` headers,
+client errors, usage events, sent to scooba-service and viewed in `scooba-insight`) is disclosed in:
+- `store-assets/PRIVACY_POLICY_DRAFT.md` §1.8 (Thai + English, plus matching lines in §3, §5 and §8):
+  linked to the staff ID, used to maintain/improve the service, raw rows 90 days, PII-free daily
+  rollup 13 months, self-hosted on the Faculty server, never shown per person on the dashboard.
+- `store-assets/APP_STORE_METADATA.md` → *App Privacy answers* (Diagnostics: Crash / Performance /
+  Other Diagnostic Data; Usage Data: Product Interaction; Identifiers incl. install ID; all linked, not tracking).
+- `store-assets/GOOGLE_PLAY_METADATA.md` → *Data safety answers* (App interactions, Crash logs,
+  Diagnostics, Device or other IDs; collected, not shared).
+
+Rules: **no third-party analytics/crash SDK** (Firebase Analytics, Crashlytics, Sentry SaaS, Mixpanel…)
+— policy §1.7 promises none. Adding a new telemetry field (or a new kind of data) means updating
+§1.8 TH+EN and both answer sheets in the same change, and the policy must be published / the
+console forms updated **before** submitting a build that sends it. Never send name, email, IP,
+location, face images, tokens or typed content as telemetry.
+`store-assets/__tests__/privacy-disclosure.test.ts` (jest) fails if the required statements go missing.
+
+Placeholders that only the owner can fill (all still open): DPO / legal confirmation of the legal
+basis for §1.8 and whether Computer Crime Act §26 applies (`<รอยืนยันจาก DPO / นิติกร>` at the top
+of the policy draft), plus the existing contact / date / support-email placeholders.
+
 # Other
 - Bottom tab navigation: Screens inside a bottom tab menu must load data only when their tab is active. Do not load data for inactive tabs.
 - If the data display as ListItems that have multiple line. The app should not load all data to display in one time. Just display like pagination when scroll down and get more data

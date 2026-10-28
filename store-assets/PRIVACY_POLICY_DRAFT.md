@@ -2,6 +2,8 @@
 
 `<...>` = ผู้ดูแลต้องกรอกเอง ก่อนเผยแพร่ควรให้เจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคลของคณะ/มหาวิทยาลัยตรวจอีกครั้ง
 เนื้อหาด้านล่างเขียนจากการทำงานจริงของแอปและระบบหลังบ้าน (scooba-service) ณ 19 ต.ค. 2569
+ข้อ 1.8 (ข้อมูลการใช้งาน ข้อผิดพลาด และข้อมูลอุปกรณ์) เพิ่มเมื่อ 28 ต.ค. 2569 สำหรับระบบ scooba-insight ต้องเผยแพร่ก่อนปล่อยแอปเวอร์ชันที่ส่งข้อมูลนี้
+**`<รอยืนยันจาก DPO / นิติกร>`** ระบบนี้เข้าข่าย "ผู้ให้บริการ" ตาม พ.ร.บ.คอมพิวเตอร์ฯ มาตรา 26 หรือไม่ (ถ้าเข้าข่าย ห้ามลดอายุข้อมูลต่ำกว่า 90 วัน) และฐานทางกฎหมายของข้อ 1.8 (ประโยชน์โดยชอบด้วยกฎหมาย หรือความยินยอม)
 
 ---
 
@@ -33,6 +35,19 @@ Intania One เป็นแอปบนมือถือและแท็บ�
 1.5 **ข้อมูลใบหน้า** ดูข้อ 2
 1.6 **ข้อมูลอุปกรณ์สำหรับแจ้งเตือน** โทเคนการแจ้งเตือน (push token) เพื่อส่งการแจ้งเตือนเรื่องที่รอท่านดำเนินการ
 1.7 **ข้อมูลที่ไม่เก็บ** แอปไม่มีโฆษณา ไม่ใช้เครื่องมือติดตามพฤติกรรมของบุคคลภายนอก และไม่ขายข้อมูล
+ข้อมูลตามข้อ 1.8 เก็บด้วยระบบของคณะเองบนเซิร์ฟเวอร์ของคณะ ไม่ส่งให้บริการวิเคราะห์ข้อมูลหรือรายงานข้อผิดพลาดของบุคคลภายนอก
+1.8 **ข้อมูลการใช้งาน ข้อผิดพลาด และข้อมูลอุปกรณ์** ผูกกับรหัสบุคลากรของท่าน ใช้เพื่อดูแลและปรับปรุงระบบ เก็บ 90 วัน และไม่เปิดเผยแก่บุคคลภายนอก ได้แก่
+- **ข้อมูลอุปกรณ์** รุ่นและผู้ผลิตอุปกรณ์ ระบบปฏิบัติการและเวอร์ชัน เวอร์ชันแอปและหมายเลขบิลด์ เวอร์ชันการอัปเดตของแอป และประเภทเครือข่าย (Wi-Fi หรือเครือข่ายมือถือ) แอปไม่เก็บชื่อเครื่องที่ท่านตั้งไว้
+- **รหัสการติดตั้ง (install ID)** รหัสสุ่มที่แอปสร้างขึ้นเมื่อติดตั้ง ใช้แยกแยะอุปกรณ์ในการดูแลระบบ ไม่ใช่รหัสโฆษณาและไม่ใช่รหัสประจำเครื่องจากผู้ผลิต และจะเปลี่ยนใหม่เมื่อลบแล้วติดตั้งแอปใหม่
+- **ข้อมูลการเรียกใช้ระบบ** วันเวลา ส่วนของระบบที่เรียกใช้ (เช่น หน้าการลา หน้าการประชุม) ผลลัพธ์ (สำเร็จหรือรหัสข้อผิดพลาด) และเวลาที่ใช้ ไม่รวมเนื้อหาที่ท่านกรอกหรือข้อมูลที่ระบบตอบกลับ
+- **ข้อผิดพลาดและแอปค้าง** ชื่อข้อผิดพลาด ข้อความข้อผิดพลาดที่ตัดข้อมูลส่วนบุคคลออกแล้ว ตำแหน่งในโค้ดแบบย่อ และประเภทปัญหาการเชื่อมต่อ (เช่น หมดเวลา ไม่มีอินเทอร์เน็ต)
+- **ประสิทธิภาพ** เวลาเปิดแอปและเวลาโหลดหน้า
+- **การใช้งานแอป** หน้าที่เปิด (เป็นชื่อหน้า ไม่ใช่ข้อมูลในหน้า) การแตะเปิดการแจ้งเตือน การไม่อนุญาตสิทธิ์ในเครื่อง และสถานะการอัปเดตแอป
+
+ข้อมูลในข้อนี้**ไม่รวม**ชื่อ อีเมล หมายเลข IP ตำแหน่งที่ตั้ง ภาพใบหน้า โทเคน และเนื้อหาที่ท่านกรอก
+หลังครบ 90 วัน ระบบลบข้อมูลรายการโดยอัตโนมัติ และเก็บไว้เฉพาะสถิติสรุปรายวันที่ไม่มีรหัสบุคลากรหรือรหัสการติดตั้ง (เช่น จำนวนผู้ใช้ต่อวัน อัตราข้อผิดพลาด) ไม่เกิน 13 เดือน เพื่อเทียบแนวโน้มปีต่อปี
+เว้นแต่หน่วยงานรัฐที่มีอำนาจตามกฎหมายสั่งให้เก็บนานกว่านั้น ซึ่งจะเก็บเท่าที่ถูกสั่งเท่านั้น
+ผู้เข้าถึงได้คือผู้ดูแลระบบของคณะที่ได้รับมอบหมาย หน้าจอดูแลระบบแสดงเป็นสถิติรวม ไม่แสดงรหัสบุคลากรหรือรหัสการติดตั้ง และระบบบันทึกทุกครั้งที่ผู้ดูแลเปิดดูข้อมูล
 
 ## 2. ข้อมูลใบหน้า
 2.1 **เก็บอะไร**
@@ -59,6 +74,7 @@ Intania One เป็นแอปบนมือถือและแท็บ�
 - บันทึกและตรวจสอบการลงเวลา การลา การประชุม การจองห้อง และการแจ้งซ่อม
 - ส่งการแจ้งเตือนเรื่องที่รอท่านดำเนินการ
 - รักษาความปลอดภัยและตรวจสอบการใช้งานที่ผิดปกติ
+- ตรวจหาและแก้ไขข้อผิดพลาด ดูความเร็วและความเสถียรของระบบ และดูว่าฟีเจอร์ใดถูกใช้มากน้อยเพื่อวางแผนปรับปรุง (ข้อ 1.8)
 
 ## 4. การเปิดเผยข้อมูล
 คณะไม่ขายและไม่แบ่งปันข้อมูลส่วนบุคคลของท่านให้บุคคลภายนอกเพื่อการตลาด
@@ -68,6 +84,7 @@ Intania One เป็นแอปบนมือถือและแท็บ�
 ## 5. การเก็บรักษาและความปลอดภัย
 ข้อมูลส่งผ่าน HTTPS การเข้าถึงมีการยืนยันตัวตน จำกัดเฉพาะผู้ที่ได้รับมอบหมาย และแอปสามารถล็อกด้วย Face ID ลายนิ้วมือ หรือรหัสผ่าน
 คณะเก็บข้อมูลส่วนบุคคลเท่าที่จำเป็นตามวัตถุประสงค์ และตามระเบียบของมหาวิทยาลัยและกฎหมายที่เกี่ยวข้อง
+ข้อมูลตามข้อ 1.8 เก็บ 90 วันแล้วลบโดยอัตโนมัติ สถิติสรุปรายวันที่ไม่ระบุตัวบุคคลเก็บไม่เกิน 13 เดือน
 
 ## 6. สิ่งที่แอปขออนุญาตในเครื่อง
 - **กล้อง** ลงเวลา/ลงทะเบียนด้วยใบหน้า และแนบรูปในเรื่องแจ้งซ่อม
@@ -82,7 +99,8 @@ Intania One เป็นแอปบนมือถือและแท็บ�
 การเพิกถอนความยินยอมไม่กระทบการประมวลผลที่ทำไปแล้วก่อนหน้านั้น
 
 ## 8. ผู้ที่ไม่ใช่บุคลากร
-ผู้ไม่ได้เข้าสู่ระบบอ่านข่าวสาธารณะได้ แอปไม่เก็บข้อมูลส่วนบุคคลของผู้ใช้ที่ไม่ได้เข้าสู่ระบบ
+ผู้ไม่ได้เข้าสู่ระบบอ่านข่าวสาธารณะได้ แอปไม่เก็บข้อมูลบัญชี ตำแหน่งที่ตั้ง หรือข้อมูลใบหน้าของผู้ใช้ที่ไม่ได้เข้าสู่ระบบ
+แอปยังส่งข้อมูลตามข้อ 1.8 โดยไม่มีรหัสบุคลากร (มีเพียงรหัสการติดตั้งและข้อมูลอุปกรณ์) และเก็บตามระยะเวลาเดียวกัน
 
 ## 9. การเปลี่ยนแปลงนโยบาย
 หากมีการแก้ไขสาระสำคัญ คณะจะแจ้งในแอปหรือบนหน้านี้ พร้อมวันที่ปรับปรุงล่าสุด
@@ -119,6 +137,19 @@ The information the app shows and records comes from the Faculty's and Universit
 1.5 **Face data**: see Section 2.
 1.6 **Notification token** (push token), to send you notifications about items waiting on you.
 1.7 **What we do not do**: the App has no ads, uses no third-party behavioural tracking, and never sells data.
+The data in 1.8 is collected by the Faculty's own system and stored on the Faculty's servers; it is not sent to any third-party analytics or crash-reporting service.
+1.8 **Usage, error and device data**: linked to your staff ID, used to maintain and improve the service, kept for 90 days and not disclosed to third parties. It consists of:
+- **Device information**: device model and manufacturer, operating system and version, app version and build number, app update version, and network type (Wi-Fi or mobile data). The App does not collect the name you gave your device.
+- **Install ID**: a random ID the App creates when it is installed, used to tell devices apart when maintaining the service. It is not an advertising ID or a manufacturer hardware ID, and it changes if you delete and reinstall the App.
+- **Service requests**: date and time, which part of the service was called (for example leave or meetings), the result (success or an error code) and how long it took. It does not include what you type or the data the service returns.
+- **Errors and crashes**: the error name, the error message with personal data removed, a shortened code location, and the type of connection problem (for example timeout or no internet).
+- **Performance**: app start-up time and screen load time.
+- **App usage**: screens opened (the screen name, not its contents), opening a notification, declining a device permission, and app update status.
+
+This data does **not** include your name, email, IP address, location, face images, tokens or anything you type.
+After 90 days the individual records are deleted automatically. Only daily summary statistics without staff IDs or install IDs (for example users per day, error rates) are kept, for up to 13 months, to compare trends year on year.
+The only exception is when a government authority with legal power orders longer retention, in which case only what is ordered is kept.
+Only authorized Faculty system administrators can access it. The administration screens show aggregate statistics only, never staff IDs or install IDs, and every time an administrator views the data is logged.
 
 ## 2. Face data
 2.1 **What is collected**
@@ -144,6 +175,7 @@ the Faculty's other stamping methods still work. Face registration in the App is
 - To record and review attendance, leave, meetings, room bookings and repairs
 - To send notifications about items waiting on you
 - To keep the service secure and detect unusual use
+- To find and fix errors, monitor the speed and stability of the service, and see how much each feature is used so improvements can be planned (Section 1.8)
 
 ## 4. Disclosure
 The Faculty does not sell your personal data or share it with third parties for marketing. Data may be disclosed to your supervisors and Faculty/University staff with relevant duties,
@@ -152,6 +184,7 @@ to the operating-system notification services (Apple, Google), which receive onl
 ## 5. Security and retention
 Data is sent over HTTPS, access requires authentication and is limited to authorized staff, and the App can be locked with Face ID, fingerprint or a passcode.
 The Faculty keeps personal data only as long as necessary for its purposes and as required by university regulations and applicable law.
+The data in Section 1.8 is kept for 90 days and then deleted automatically; daily summary statistics that identify no one are kept for up to 13 months.
 
 ## 6. Device permissions
 - **Camera**: face stamping/registration and repair photos
@@ -165,7 +198,8 @@ Under Thailand's Personal Data Protection Act B.E. 2562 (2019) you may request a
 Contact: <unit>, email <email>, phone <phone>. The Faculty will respond within <number> days. Withdrawing consent does not affect processing done before it.
 
 ## 8. Non-staff users
-People who are not signed in can read public news. The App collects no personal data from users who are not signed in.
+People who are not signed in can read public news. The App collects no account, location or face data from users who are not signed in.
+It still sends the data in Section 1.8 without a staff ID (only the install ID and device information), kept for the same periods.
 
 ## 9. Changes
 If we make material changes we will announce them in the App or on this page, with the updated date.

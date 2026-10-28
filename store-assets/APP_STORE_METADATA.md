@@ -109,8 +109,34 @@ mode the location check is simulated and the face scan always succeeds.
 | Category | Primary: Productivity (alt: Business) |
 | Export compliance | Already `ITSAppUsesNonExemptEncryption: false` in app.json — answers itself |
 | Pricing | Free |
-| App Privacy → data collected | Contact info (name, email), Precise location, Photos/Camera and face data, User ID, Device ID (push token). Linked to the user. Used for app functionality; not tracking. |
+| App Privacy → data collected | Contact info (name, email), Precise location, Photos/Camera and face data, User ID, Device ID (push token, install ID), Diagnostics (Crash Data, Performance Data, Other Diagnostic Data), Usage Data (Product Interaction). All linked to the user. Used for App Functionality / Analytics; **not tracking**. Full answer sheet in *App Privacy answers* below. |
 | Content Rights | Confirm you hold rights to the news content shown from the faculty site |
+
+## App Privacy answers
+
+App Store Connect → **App Privacy** → *Get Started*. "Do you or your third-party partners
+collect data from this app?" → **Yes**. Every type below: **Linked to the user: Yes** ·
+**Used for tracking: No** (nothing is combined with other companies' data, nothing goes to a
+data broker, no ads). The diagnostics and usage rows come from the Faculty's own telemetry
+(scooba-insight, policy §1.8) — no third-party SDK, so there is no "third-party partner" data.
+
+| Category → type | Purposes | What it is in this app |
+| --- | --- | --- |
+| Contact Info → Name, Email Address | App Functionality | PSU Passport account (policy §1.1) |
+| Location → Precise Location | App Functionality | coordinates at the moment of stamping only (§1.3) |
+| User Content → Photos or Videos | App Functionality | repair photos, face photos for stamping (§1.2, §2) |
+| Identifiers → User ID | App Functionality, Analytics | staff ID (`UNI_STAFF_ID`); also tags the diagnostics and usage rows (§1.8) |
+| Identifiers → Device ID | App Functionality, Analytics | push token (§1.6) and the random install ID (`X-Install-Id`, §1.8). Not the IDFA — the app never asks for tracking permission |
+| Diagnostics → Crash Data | App Functionality, Analytics | JS errors / crashes: name, scrubbed message, short stack (§1.8) |
+| Diagnostics → Performance Data | App Functionality, Analytics | request duration, cold start, screen load time (§1.8) |
+| Diagnostics → Other Diagnostic Data | App Functionality, Analytics | device model, OS version, app version/build, update ID, network type, network-failure kind (§1.8) |
+| Usage Data → Product Interaction | App Functionality, Analytics | screen views (route name), push opened, permission declined, OTA status, which API module was called (§1.8) |
+
+Do **not** tick: Purchases, Financial Info, Health & Fitness, Contacts, Browsing/Search History,
+Sensitive Info, Advertising Data, Other Usage Data. Only Analytics + App Functionality as purposes —
+never Third-Party Advertising, Developer's Advertising or Product Personalization.
+Diagnostics / usage start being sent only from the app version that ships T9–T12; publish policy
+§1.8 and update these answers **before** that version is submitted.
 
 ## Check before submitting
 
