@@ -660,6 +660,43 @@ Placeholders that only the owner can fill (all still open): DPO / legal confirma
 basis for §1.8 and whether Computer Crime Act §26 applies (`<รอยืนยันจาก DPO / นิติกร>` at the top
 of the policy draft), plus the existing contact / date / support-email placeholders.
 
+# Client telemetry & error capture (scooba-insight T10)
+
+What only the phone can see goes to scooba-service `POST /api/telemetry/events` (T9;
+`ENDPOINTS.telemetryEvents`). Self-hosted only — see *Privacy & store disclosure*.
+- `services/telemetryService.ts` — the queue. `track(type, name, props)` never throws; events
+  live in memory and are mirrored (1 s debounce) to AsyncStorage `TELEMETRY_QUEUE_V1`, capped at
+  `MAX_QUEUE` 200 (oldest dropped). `flushTelemetry()` sends `MAX_BATCH` 50 per call, when the
+  queue reaches `FLUSH_AT` 20, when the app goes to background/inactive, and once at start
+  (`startTelemetry()`, from `AppStack` in `app/_layout.tsx`) — so what a previous run left
+  (a fatal crash, a request that never got out) arrives on the next launch.
+  Outcome per batch: 2xx → removed; network error / timeout (10 s) / 5xx / 408 / 429 / 401 / 403 →
+  kept for the next round (401/403 = wrong token in that build: keep, don't lose crash reports);
+  other 4xx → dropped so a malformed batch can't jam the queue.
+  Body = `{ device, network_type, events }`; `device` is the §1.8 device info (platform,
+  os_version, manufacturer, model, app_version, build_number, update_id, runtime_version — never
+  the user-set device name), `network_type` from `expo-network`. Who sent it rides in the T9
+  headers via `withApiToken` (incl. `X-Install-Id`, loaded before sending), never in the body.
+  It uses plain `fetch`, **not** `fetchWithTimeout`, so a failed telemetry call is never itself
+  reported once T11 hooks the request wrapper. `scrubText` / `routeShape` mirror
+  scooba-service `src/observability/scrub.js` (the server scrubs again).
+  `setTelemetryRoute(usePathname())` keeps the current route (ids → `:id`) for error reports.
+- `services/errorReporting.ts` — `reportError(error, {source, fatal})` → one `error` event:
+  name = error class, props `{source: boundary|global|promise|other, fatal, message (scrubbed,
+  ≤300), stack (top 8 frames, bundle URLs cut to the file name, ≤1000), route}`; same error twice
+  within 2 s counts once. `installGlobalErrorHandlers()` (module load of `app/_layout.tsx`) wraps
+  `ErrorUtils.setGlobalHandler` — reports, persists the queue on a fatal, then **always calls the
+  previous handler** (LogBox / native crash unchanged) — and, in release builds only, hooks the
+  Hermes unhandled-rejection tracker (dev keeps RN's own LogBox tracker; JSC/web: none).
+- `components/app-error-boundary.tsx` → `AppErrorBoundary`, exported as `ErrorBoundary` from
+  `app/_layout.tsx` (expo-router convention; before T10 a render error was a white screen). It
+  renders in place of the root layout — outside every provider — so it uses only RN primitives,
+  `useColorScheme` and `TEXT.SHARED_SOMETHING_WENT_WRONG` / `SHARED_UNABLE_TO_COMPLETE` /
+  `SHARED_RETRY`; reports once, flushes, "retry" re-renders.
+- Tests: `services/__tests__/telemetryService.test.ts`, `components/__tests__/app-error-boundary.test.tsx`.
+- Next: T11 (network failure + startup/perf), T12 (screen view, push open, permission, OTA) call
+  `track()`; every new type/prop must also be in the server whitelist (`ingest.js`) and §1.8.
+
 # Other
 - Bottom tab navigation: Screens inside a bottom tab menu must load data only when their tab is active. Do not load data for inactive tabs.
 - If the data display as ListItems that have multiple line. The app should not load all data to display in one time. Just display like pagination when scroll down and get more data

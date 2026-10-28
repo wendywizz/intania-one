@@ -1,5 +1,5 @@
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -8,6 +8,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AppErrorBoundary } from '@/components/app-error-boundary';
 import { BiometricGate } from '@/components/biometric-gate';
 import { ColdStartSplash } from '@/components/cold-start-splash';
 import { ConnectionGate } from '@/components/connection-gate';
@@ -20,9 +21,18 @@ import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { useBlurOnNavigate } from '@/hooks/use-blur-on-navigate';
 import { useDeviceLanguageSync } from '@/hooks/use-device-language-sync';
 import { useNotificationDeepLink } from '@/hooks/use-notification-deep-link';
+import { installGlobalErrorHandlers } from '@/services/errorReporting';
 import { registerForegroundNotificationHandler } from '@/services/notificationService';
+import { setTelemetryRoute, startTelemetry } from '@/services/telemetryService';
 
 SplashScreen.preventAutoHideAsync();
+
+// scooba-insight T10: uncaught errors and unhandled rejections go to the
+// self-hosted telemetry queue — installed at module load, before any screen.
+installGlobalErrorHandlers();
+
+/** A render error anywhere below the root lands here (expo-router convention). */
+export const ErrorBoundary = AppErrorBoundary;
 
 export const unstable_settings = {
   anchor: 'index',
@@ -143,6 +153,16 @@ export default function RootLayout() {
   useEffect(() => {
     registerForegroundNotificationHandler();
   }, []);
+
+  // T10: send what the last run left queued (a crash, a request that never got
+  // out), then flush on every trip to the background.
+  useEffect(() => startTelemetry(), []);
+
+  // Error reports carry the screen they happened on, shaped (ids → `:id`).
+  const pathname = usePathname();
+  useEffect(() => {
+    setTelemetryRoute(pathname);
+  }, [pathname]);
 
   // Bumped once per idle spell past IDLE_RESET_AFTER_MS; used as `key` below
   // to remount everything from AuthProvider down. That's a deliberate reuse

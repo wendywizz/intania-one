@@ -70,6 +70,8 @@ export const ENDPOINTS = {
   // --- core ----------------------------------------------------------------
   scooba: API_BASE_URL,
   health: `${API_BASE_URL}/api/health`,
+  /** App-side telemetry batches (scooba-insight T9/T10, privacy §1.8). */
+  telemetryEvents: `${API_BASE_URL}/api/telemetry/events`,
   staffNewsFeed: `${API_BASE_URL}/api/news`,
   staffInfo: `${API_BASE_URL}/api/staff-info`,
   pushRegisterDevice: `${API_BASE_URL}/api/push/register-device`,
