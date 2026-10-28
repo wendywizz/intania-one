@@ -9,8 +9,9 @@ import { ENV } from "@/constants/config";
 import { getLanguage } from "@/i18n/language";
 import type { AuthUser } from "@/models/types";
 import { fetchApi } from "./api";
+import { INSTALL_ID_STORAGE_KEY, loadInstallId } from "./appHeaders";
 
-const DEVICE_ID_STORAGE_KEY = "PUSH_DEVICE_ID";
+const DEVICE_ID_STORAGE_KEY = INSTALL_ID_STORAGE_KEY;
 const REGISTERED_DEVICE_OWNERS_STORAGE_KEY = "REGISTERED_DEVICE_OWNERS";
 const PENDING_UNREGISTER_STORAGE_KEY = "PUSH_PENDING_UNREGISTER";
 // "<staff id>:<device id>:<language>" last accepted by the gateway - what lets a launch
@@ -50,20 +51,9 @@ function textValue(value: unknown) {
   return "";
 }
 
-function createDeviceId() {
-  const random = Math.random().toString(36).slice(2);
-  return `${Platform.OS}-${Date.now().toString(36)}-${random}`;
-}
-
-async function getDeviceId() {
-  const stored = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY);
-  if (stored) {
-    return stored;
-  }
-
-  const deviceId = createDeviceId();
-  await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, deviceId);
-  return deviceId;
+/** The install id (`X-Install-Id`) — one random id per install, shared with telemetry. */
+function getDeviceId() {
+  return loadInstallId();
 }
 
 function getDeviceName() {

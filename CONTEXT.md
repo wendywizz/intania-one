@@ -526,6 +526,16 @@ text to show.
   its own `Authorization` (that exemption is what lets the OpenID calls carry a user
   token instead). So the gateway token can never leak to SSO, the feed host or anywhere
   else.
+- On the same gateway-only condition it adds the **T9 app headers** from
+  `services/appHeaders.ts` (`appHeaders()`): `X-Request-Id`, `X-Staff-Id`, `X-Install-Id`,
+  `X-App-Version` (`<version>+<build>`), `X-Update-Id` (OTA id / `embedded`), `X-Platform`,
+  `X-OS-Version` — ASCII, ≤ 64 chars, never the user-set device name. A header the caller sets
+  itself wins. Building them never throws (native modules are optional-required).
+  `X-Install-Id` is the **same id** `deviceService` registers as `device_id` (AsyncStorage key
+  `PUSH_DEVICE_ID`, via `loadInstallId()`; existing installs keep their old id, new ones get a
+  UUID). `AuthContext` keeps `X-Staff-Id` in step with the effective signed-in staff id
+  (`setHeaderStaffId(resolveStaffId(user))`). Tests: `services/__tests__/appHeaders.test.ts`;
+  AsyncStorage is mocked in `__mocks__/@react-native-async-storage/`.
 - `requestJson<T>()` — sets `Content-Type: application/json`, reads the body as text,
   and throws `MESSAGE_SERVER_ERROR` on a non-OK or empty response. One exception: a
   **503 with `error.name === "ModuleDisabled"`** is re-thrown carrying the
@@ -628,7 +638,8 @@ Prefer these shared components over building screen-local equivalents. When a sc
 
 # Privacy & store disclosure (telemetry, scooba-insight T14)
 
-The app's own telemetry (T9–T12: `X-App-Version` / `X-Platform` / `X-Install-Id` headers,
+The app's own telemetry (T9–T12: `X-App-Version` / `X-Update-Id` / `X-Platform` / `X-OS-Version` /
+`X-Install-Id` / `X-Staff-Id` headers — built in `services/appHeaders.ts` —
 client errors, usage events, sent to scooba-service and viewed in `scooba-insight`) is disclosed in:
 - `store-assets/PRIVACY_POLICY_DRAFT.md` §1.8 (Thai + English, plus matching lines in §3, §5 and §8):
   linked to the staff ID, used to maintain/improve the service, raw rows 90 days, PII-free daily

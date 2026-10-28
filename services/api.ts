@@ -7,6 +7,7 @@ import {
 import { API_BASE_URL, LOCAL_URL_BASE } from "../constants/endpoints";
 import { thaiOnly } from "../utils/thai-message";
 import { TEXT } from '@/constants/text';
+import { appHeaders } from './appHeaders';
 
 const TIMEOUT_MS = 10000;
 
@@ -151,21 +152,26 @@ function requestUrl(input: RequestInfo | URL) {
  * SSO calls carry a user token instead.
  */
 export function withApiToken(input: RequestInfo | URL, init?: RequestInit): RequestInit | undefined {
+  if (!requestUrl(input).startsWith(API_BASE_URL)) {
+    return init;
+  }
+
   const token = ENV.scoobaApiKey.trim();
-  if (!token || !requestUrl(input).startsWith(API_BASE_URL)) {
-    return init;
+  const own = { ...((init?.headers as Record<string, string> | undefined) ?? {}) };
+  const ownKeys = new Set(Object.keys(own).map((key) => key.toLowerCase()));
+  // T9: app/build/install headers for scooba-insight (privacy §1.8). A header the
+  // caller set itself always wins.
+  const headers: Record<string, string> = {};
+  for (const [key, value] of Object.entries(appHeaders())) {
+    if (!ownKeys.has(key.toLowerCase())) headers[key] = value;
+  }
+  Object.assign(headers, own);
+
+  if (token && !ownKeys.has("authorization")) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
-  const headers = { ...((init?.headers as Record<string, string> | undefined) ?? {}) };
-  const hasAuth = Object.keys(headers).some(
-    (key) => key.toLowerCase() === "authorization",
-  );
-
-  if (hasAuth) {
-    return init;
-  }
-
-  return { ...init, headers: { ...headers, Authorization: `Bearer ${token}` } };
+  return { ...init, headers };
 }
 
 const RETRY_DELAY_MS = 300;

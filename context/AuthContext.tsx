@@ -22,6 +22,7 @@ import {
 } from '../services/staffInfoService';
 import type {StaffStampRole} from '../services/timestampService';
 import {DEV_STAFF_ID} from '../constants/devConfig';
+import {loadInstallId, setHeaderStaffId} from '../services/appHeaders';
 import {isDemoUser} from '../services/demo/demoMode';
 
 /**
@@ -210,6 +211,15 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   useEffect(() => {
     userRef.current = user;
   }, [user]);
+
+  // T9: the staff id sent as `X-Staff-Id` follows the effective signed-in account.
+  useEffect(() => {
+    setHeaderStaffId(resolveStaffId(user));
+  }, [user]);
+
+  useEffect(() => {
+    loadInstallId().catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     authService
