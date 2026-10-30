@@ -50,6 +50,15 @@ export function splitPhones(value: string): string[] {
 const LEADING_THAI_VOWEL = /^[\u0E40-\u0E44]/;
 
 /** The letter drawn in the avatar circle when a person has no photo. */
+/**
+ * The id the staff photo endpoint expects: numeric ids are zero-padded to seven
+ * digits (`1234` → `0001234`), anything else is passed through trimmed.
+ */
+export function toPhotoStaffId(staffId: unknown): string {
+  const text = String(staffId ?? '').trim();
+  return /^\d+$/.test(text) ? text.padStart(7, '0') : text;
+}
+
 export function getInitial(name: string): string {
   const trimmed = name.trim().replace(LEADING_THAI_VOWEL, '');
   const first = Array.from(trimmed)[0] ?? '';

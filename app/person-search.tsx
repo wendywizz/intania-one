@@ -12,6 +12,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -28,7 +29,13 @@ import { useTheme } from '@/context/ThemeContext';
 import type { Person } from '@/models/types';
 import { getPersonnelSuggestions } from '@/services/personService';
 import { boxShadow } from '@/constants/shadows';
-import { getInitial, pickTone, splitHighlight, splitPhones } from '@/utils/person-search';
+import {
+  getInitial,
+  pickTone,
+  splitHighlight,
+  splitPhones,
+  toPhotoStaffId,
+} from '@/utils/person-search';
 
 const SEARCH_DEBOUNCE_MS = 350;
 const RECENT_KEYWORDS_KEY = '@person_search_recent_keywords';
@@ -104,6 +111,7 @@ function getPersonDetails(person: Person): {
   };
 }
 
+/** A photo the search response carried inline (data URI / URL), if any. */
 function getPersonResponsePhoto(person: Person) {
   const photo = (person as Record<string, unknown>).photo;
 
@@ -129,15 +137,22 @@ function getPersonResponsePhoto(person: Person) {
     }
   }
 
-  // The search response often has no `photo` field — fall back to the staff photo
-  // endpoint keyed by staff id (same source the other screens use). If it 404s,
-  // the Image's onError swaps in the placeholder.
-  const staffId = person.staffId ? String(person.staffId).trim() : '';
-  if (staffId) {
-    return `${PHOTO_BASE_URL}${staffId}.jpg`;
-  }
-
   return '';
+}
+
+/**
+ * Photo sources to try in order: the staff photo endpoint
+ * (`.../personnel/v1/photo/{STAFF_ID}.jpg`) first, then whatever the search
+ * response carried. When every source fails the initial stays showing.
+ */
+function getPersonPhotoSources(person: Person): string[] {
+  const record = person as Record<string, unknown>;
+  const staffId = toPhotoStaffId(person.staffId ?? record.UNI_STAFF_ID ?? record.STAFF_ID);
+  const sources = [
+    staffId ? `${PHOTO_BASE_URL}${encodeURIComponent(staffId)}.jpg` : '',
+    getPersonResponsePhoto(person),
+  ].filter(Boolean);
+  return Array.from(new Set(sources));
 }
 
 function getPersonSearchKey(person: Person, index: number) {
@@ -178,9 +193,11 @@ function HighlightedText({
     <ThemedText style={style} numberOfLines={numberOfLines}>
       {splitHighlight(text, keyword).map((part, index) =>
         part.match ? (
-          <ThemedText key={index} style={styles.highlight}>
+          // Plain Text so the run inherits the parent's size and line height —
+          // ThemedText would reset it to its own 14pt default.
+          <Text key={index} style={styles.highlight}>
             {part.text}
-          </ThemedText>
+          </Text>
         ) : (
           part.text
         ),
@@ -199,17 +216,19 @@ const AVATAR_TONES = (c: AppColors) => [
 function PersonSearchListItem({ item, keyword }: { item: Person; keyword: string }) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
-  const [photoFailed, setPhotoFailed] = useState(false);
-  const photoUri = getPersonResponsePhoto(item);
+  const photoSources = getPersonPhotoSources(item);
+  const photoKey = photoSources.join('|');
+  const [photoIndex, setPhotoIndex] = useState(0);
+  const photoUri = photoSources[photoIndex] ?? '';
 
   useEffect(() => {
-    setPhotoFailed(false);
-  }, [photoUri]);
+    setPhotoIndex(0);
+  }, [photoKey]);
 
   const { prefix, name } = getPersonNameParts(item);
   const details = getPersonDetails(item);
   const phones = details.phone ? splitPhones(details.phone) : [];
-  const showPhoto = Boolean(photoUri) && !photoFailed;
+  const showPhoto = Boolean(photoUri);
   const tones = AVATAR_TONES(c);
   const tone = tones[pickTone(String(item.staffId ?? name), tones.length)];
 
@@ -225,7 +244,7 @@ function PersonSearchListItem({ item, keyword }: { item: Person; keyword: string
               accessibilityIgnoresInvertColors
               contentFit="cover"
               onError={() => {
-                setPhotoFailed(true);
+                setPhotoIndex((current) => current + 1);
               }}
               source={{ uri: photoUri }}
               style={styles.avatar}
@@ -278,7 +297,7 @@ function PersonSearchListItem({ item, keyword }: { item: Person; keyword: string
                 }}
                 style={({ pressed }) => [styles.phoneButton, pressed && styles.keywordBadgePressed]}
               >
-                <Phone size={14} color={c.primary} />
+                <Phone size={12} color={c.primary} />
                 <ThemedText style={styles.phoneButtonText}>{phone}</ThemedText>
               </Pressable>
             ))}
@@ -733,14 +752,14 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    height: 36,
-    paddingHorizontal: 14,
-    borderRadius: 18,
-    backgroundColor: c.primarySoft,
+    height: 30,
+    paddingHorizontal: 12,
+    borderRadius: 15,
+    backgroundColor: c.surfaceAlt,
   },
   phoneButtonText: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 17,
     color: c.primary,
     fontFamily: AppFonts.psuBold,
   },

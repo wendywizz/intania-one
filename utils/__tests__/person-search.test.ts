@@ -1,4 +1,10 @@
-import { getInitial, pickTone, splitHighlight, splitPhones } from '@/utils/person-search';
+import {
+  getInitial,
+  pickTone,
+  splitHighlight,
+  splitPhones,
+  toPhotoStaffId,
+} from '@/utils/person-search';
 
 describe('splitHighlight', () => {
   it('marks the keyword inside a Thai name', () => {
@@ -60,5 +66,18 @@ describe('pickTone', () => {
     expect(pickTone('0999911', 4)).toBeGreaterThanOrEqual(0);
     expect(pickTone('0999911', 4)).toBeLessThan(4);
     expect(pickTone('x', 0)).toBe(0);
+  });
+});
+
+describe('toPhotoStaffId', () => {
+  it('zero-pads numeric ids to seven digits for the photo endpoint', () => {
+    expect(toPhotoStaffId('1234')).toBe('0001234');
+    expect(toPhotoStaffId(999911)).toBe('0999911');
+    expect(toPhotoStaffId(' 0999911 ')).toBe('0999911');
+  });
+
+  it('passes non-numeric ids through and treats missing as empty', () => {
+    expect(toPhotoStaffId('A12')).toBe('A12');
+    expect(toPhotoStaffId(undefined)).toBe('');
   });
 });
