@@ -7,7 +7,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -291,18 +290,10 @@ function PersonSearchListItem({ item, keyword }: { item: Person; keyword: string
           <ThemedText style={styles.phoneLabel}>{TEXT.PERSON_SEARCH_EXTENSION}</ThemedText>
           <View style={styles.phoneButtons}>
             {phones.map((phone) => (
-              <Pressable
-                key={phone}
-                accessibilityRole="button"
-                accessibilityLabel={`${TEXT.PERSON_SEARCH_CALL} ${phone}`}
-                onPress={() => {
-                  Linking.openURL(`tel:${phone.replace(/[^\d+]/g, '')}`).catch(() => {});
-                }}
-                style={({ pressed }) => [styles.phoneButton, pressed && styles.keywordBadgePressed]}
-              >
+              <View key={phone} style={styles.phoneButton}>
                 <Phone size={12} color={c.primary} />
                 <ThemedText style={styles.phoneButtonText}>{phone}</ThemedText>
-              </Pressable>
+              </View>
             ))}
           </View>
         </View>
