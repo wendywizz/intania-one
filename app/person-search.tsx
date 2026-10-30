@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Building2, Phone, Search } from 'lucide-react-native';
+import { Phone, Search } from 'lucide-react-native';
 import { TEXT } from '@/constants/text';
 import { StatusBar } from 'expo-status-bar';
 import { Image } from 'expo-image';
@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -23,11 +24,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PHOTO_BASE_URL } from '@/constants/endpoints';
 import { AppFonts } from '@/constants/fonts';
-import { USER_PLACEHOLDER } from '@/constants/images';
 import { useTheme } from '@/context/ThemeContext';
 import type { Person } from '@/models/types';
 import { getPersonnelSuggestions } from '@/services/personService';
 import { boxShadow } from '@/constants/shadows';
+import { getInitial, pickTone, splitHighlight, splitPhones } from '@/utils/person-search';
 
 const SEARCH_DEBOUNCE_MS = 350;
 const RECENT_KEYWORDS_KEY = '@person_search_recent_keywords';
@@ -54,8 +55,21 @@ function getPersonLabel(person: Person): string {
   );
 }
 
+// The card puts the title (นาย/ผศ.) small in front of the name, so it is kept
+// apart from the first and last name the keyword is matched in.
+function getPersonNameParts(person: Person): { prefix: string; name: string } {
+  const r = person as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : '');
+  const thName = [str(r.FNAME_TH), str(r.SNAME_TH)].filter(Boolean).join(' ');
+  if (thName) return { prefix: str(r.P_NAME_TH), name: thName };
+  const enName = [str(r.FNAME_ENG), str(r.SNAME_ENG)].filter(Boolean).join(' ');
+  if (enName) return { prefix: str(r.P_SNAME_ENG), name: enName };
+  return { prefix: '', name: getPersonLabel(person) };
+}
+
 function getPersonDetails(person: Person): {
   dept?: string;
+  section?: string;
   phone?: string;
   fallback?: string;
 } {
@@ -71,9 +85,20 @@ function getPersonDetails(person: Person): {
     str(r.deptName) ||
     str(r.faculty) ||
     str(r.DEPT_NAME_TH);
+  // The work group under the department ("กลุ่มงาน…"). The search response is
+  // not known to carry one under a fixed name, so the chip only shows when one
+  // of these is present.
+  const section =
+    str(r.section) ||
+    str(r.sectionName) ||
+    str(r.SECTION_NAME_TH) ||
+    str(r.WORK_NAME_TH) ||
+    str(r.UNIT_NAME_TH) ||
+    str(r.GROUP_NAME_TH);
   const id = person.staffId ? String(person.staffId) : '';
   return {
     dept: dept || undefined,
+    section: section && section !== dept ? section : undefined,
     phone: phone || undefined,
     fallback: id || undefined,
   };
@@ -133,7 +158,45 @@ function getPersonSearchKey(person: Person, index: number) {
   return parts.length ? parts.join('-') : `person-${index}`;
 }
 
-function PersonSearchListItem({ item }: { item: Person }) {
+/**
+ * Draws `text` with every run that matches what the reader typed marked, so it
+ * is plain why this person came back for that keyword.
+ */
+function HighlightedText({
+  text,
+  keyword,
+  style,
+  numberOfLines,
+}: {
+  text: string;
+  keyword: string;
+  style: object;
+  numberOfLines?: number;
+}) {
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <ThemedText style={style} numberOfLines={numberOfLines}>
+      {splitHighlight(text, keyword).map((part, index) =>
+        part.match ? (
+          <ThemedText key={index} style={styles.highlight}>
+            {part.text}
+          </ThemedText>
+        ) : (
+          part.text
+        ),
+      )}
+    </ThemedText>
+  );
+}
+
+const AVATAR_TONES = (c: AppColors) => [
+  { bg: c.primarySoft, fg: c.primary },
+  { bg: c.infoSoft, fg: c.infoOnSoft },
+  { bg: c.successSoft, fg: c.successOnSoft },
+  { bg: c.warningSoft, fg: c.warningOnSoft },
+];
+
+function PersonSearchListItem({ item, keyword }: { item: Person; keyword: string }) {
   const c = useColors();
   const styles = useThemedStyles(makeStyles);
   const [photoFailed, setPhotoFailed] = useState(false);
@@ -143,50 +206,85 @@ function PersonSearchListItem({ item }: { item: Person }) {
     setPhotoFailed(false);
   }, [photoUri]);
 
-  const title = getPersonLabel(item);
+  const { prefix, name } = getPersonNameParts(item);
   const details = getPersonDetails(item);
+  const phones = details.phone ? splitPhones(details.phone) : [];
   const showPhoto = Boolean(photoUri) && !photoFailed;
+  const tones = AVATAR_TONES(c);
+  const tone = tones[pickTone(String(item.staffId ?? name), tones.length)];
 
   return (
-    <View style={styles.listItemRow}>
-      <View style={styles.avatarWrap}>
-        <Image
-          accessibilityIgnoresInvertColors
-          contentFit="cover"
-          onError={() => {
-            setPhotoFailed(true);
-          }}
-          source={showPhoto ? { uri: photoUri } : USER_PLACEHOLDER}
-          style={styles.avatar}
-          transition={200}
-        />
-      </View>
-      <View style={styles.listItemText}>
-        <ThemedText style={styles.name} numberOfLines={2}>
-          {title}
-        </ThemedText>
-        {details.dept ? (
-          <View style={styles.metaRow}>
-            <Building2 size={12} color={c.textMuted} style={styles.metaIcon} />
-            <ThemedText style={styles.metaText} numberOfLines={2}>
-              {details.dept}
-            </ThemedText>
+    <View style={styles.card}>
+      <View style={styles.cardTop}>
+        <View style={[styles.avatarWrap, { backgroundColor: tone.bg }]}>
+          {/* The initial sits underneath; a photo that loads covers it, one that
+              404s is dropped and leaves the initial showing. */}
+          <ThemedText style={[styles.avatarInitial, { color: tone.fg }]}>{getInitial(name)}</ThemedText>
+          {showPhoto ? (
+            <Image
+              accessibilityIgnoresInvertColors
+              contentFit="cover"
+              onError={() => {
+                setPhotoFailed(true);
+              }}
+              source={{ uri: photoUri }}
+              style={styles.avatar}
+              transition={200}
+            />
+          ) : null}
+        </View>
+        <View style={styles.listItemText}>
+          <View style={styles.nameRow}>
+            {prefix ? <ThemedText style={styles.namePrefix}>{prefix}</ThemedText> : null}
+            <HighlightedText text={name} keyword={keyword} style={styles.name} numberOfLines={2} />
           </View>
-        ) : null}
-        {details.phone ? (
-          <View style={styles.metaRow}>
-            <Phone size={12} color={c.textMuted} style={styles.metaIcon} />
-            <ThemedText style={styles.metaText} numberOfLines={1}>
-              {details.phone}
+          {details.dept ? (
+            <HighlightedText
+              text={details.dept}
+              keyword={keyword}
+              style={styles.metaText}
+              numberOfLines={2}
+            />
+          ) : null}
+          {details.section ? (
+            <View style={styles.sectionChip}>
+              <HighlightedText
+                text={details.section}
+                keyword={keyword}
+                style={styles.sectionChipText}
+                numberOfLines={1}
+              />
+            </View>
+          ) : null}
+          {!details.dept && !phones.length && details.fallback && details.fallback !== name ? (
+            <ThemedText style={styles.subtitle} numberOfLines={1}>
+              {details.fallback}
             </ThemedText>
-          </View>
-        ) : null}
-        {!details.dept && !details.phone && details.fallback && details.fallback !== title ? (
-          <ThemedText style={styles.subtitle} numberOfLines={1}>
-            {details.fallback}
-          </ThemedText>
-        ) : null}
+          ) : null}
+        </View>
       </View>
+
+      {phones.length ? (
+        <View style={styles.phoneRow}>
+          <ThemedText style={styles.phoneLabel}>{TEXT.PERSON_SEARCH_EXTENSION}</ThemedText>
+          <View style={styles.phoneButtons}>
+            {phones.map((phone) => (
+              <Pressable
+                key={phone}
+                accessibilityRole="button"
+                accessibilityLabel={`${TEXT.PERSON_SEARCH_CALL} ${phone}`}
+                onPress={() => {
+                  Linking.openURL(`tel:${phone.replace(/[^\d+]/g, '')}`).catch(() => {});
+                }}
+                style={({ pressed }) => [styles.phoneButton, pressed && styles.keywordBadgePressed]}
+              >
+                <Phone size={14} color={c.primary} />
+                <ThemedText style={styles.phoneButtonText}>{phone}</ThemedText>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -367,21 +465,21 @@ export default function PersonSearchScreen() {
             contentContainerStyle={styles.keywordsContent}
             style={styles.keywordsRow}
           >
-            {recentKeywords.map((term, index) => (
+            {recentKeywords.map((term) => (
               <Pressable
                 key={term}
                 accessibilityRole="button"
                 onPress={() => handleBadgePress(term)}
                 style={({ pressed }) => [
                   styles.keywordBadge,
-                  index === 0 && styles.keywordBadgeActive,
+                  term === keyword.trim() && styles.keywordBadgeActive,
                   pressed && styles.keywordBadgePressed,
                 ]}
               >
                 <ThemedText
                   style={[
                     styles.keywordBadgeText,
-                    index === 0 && styles.keywordBadgeTextActive,
+                    term === keyword.trim() && styles.keywordBadgeTextActive,
                   ]}
                   numberOfLines={1}
                 >
@@ -411,7 +509,14 @@ export default function PersonSearchScreen() {
               </ThemedText>
             ) : null
           }
-          renderItem={({ item }) => <PersonSearchListItem item={item} />}
+          ListHeaderComponent={
+            visibleResults.length ? (
+              <ThemedText style={styles.resultsLabel}>
+                {`${TEXT.PERSON_SEARCH_RESULTS_FOR} “${keyword.trim()}”`}
+              </ThemedText>
+            ) : null
+          }
+          renderItem={({ item }) => <PersonSearchListItem item={item} keyword={keyword} />}
         />
       </View>
     </ThemedView>
@@ -518,55 +623,128 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontFamily: AppFonts.psuRegular,
   },
 
+  resultsLabel: {
+    marginBottom: 8,
+    fontSize: 12,
+    lineHeight: 16,
+    color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
+  },
+
   // ─── Person card ─────────────────────────────────────────────────
-  listItemRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
+  card: {
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingVertical: 14,
     backgroundColor: c.surface,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     boxShadow: boxShadow(c.shadow, { y: 2, blur: 8, opacity: 0.04 }),
+  },
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
   },
   avatarWrap: {
     width: 40,
     height: 40,
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: c.surfaceMuted,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: AppFonts.psuBold,
   },
   avatar: {
-    width: 40,
-    height: 40,
+    ...StyleSheet.absoluteFill,
   },
   listItemText: {
     flex: 1,
     minWidth: 0,
     justifyContent: 'center',
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+    marginBottom: 2,
+  },
+  namePrefix: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
+  },
   name: {
+    flexShrink: 1,
     fontSize: 15,
     lineHeight: 20,
-    marginBottom: 3,
     color: c.text,
     fontFamily: AppFonts.psuBold,
   },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 5,
-    marginTop: 3,
+  // The keyword the reader typed, wherever it shows up in a card.
+  highlight: {
+    backgroundColor: c.primarySoft,
+    color: c.primary,
+    fontFamily: AppFonts.psuBold,
+    borderRadius: 4,
   },
-  metaIcon: {
-    marginTop: 3,
+  sectionChip: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    marginTop: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    backgroundColor: c.surfaceAlt,
+  },
+  sectionChipText: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
+  },
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.border,
+  },
+  phoneLabel: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
+  },
+  phoneButtons: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  phoneButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    backgroundColor: c.primarySoft,
+  },
+  phoneButtonText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: c.primary,
+    fontFamily: AppFonts.psuBold,
   },
   metaText: {
-    flex: 1,
     fontSize: 13,
     lineHeight: 19,
     color: c.textMuted,

@@ -371,4 +371,7 @@ export const EN_PART_2 = {
   PERSON_SEARCH_PROMPT: 'Type at least 2 characters to search for staff',
   PERSON_SEARCH_NO_RESULT: 'No staff found matching',
   PERSON_SEARCH_NO_RESULT_HINT: 'Try a first name, last name or department name',
+  PERSON_SEARCH_RESULTS_FOR: 'Results for',
+  PERSON_SEARCH_EXTENSION: 'Ext.',
+  PERSON_SEARCH_CALL: 'Call',
 } as const;

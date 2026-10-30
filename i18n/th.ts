@@ -838,6 +838,9 @@ export const TH = {
   PERSON_SEARCH_PROMPT: 'พิมพ์อย่างน้อย 2 ตัวอักษรเพื่อค้นหาบุคลากร',
   PERSON_SEARCH_NO_RESULT: 'ไม่พบบุคลากรที่ตรงกับ',
   PERSON_SEARCH_NO_RESULT_HINT: 'ลองค้นด้วยชื่อ นามสกุล หรือชื่อหน่วยงาน',
+  PERSON_SEARCH_RESULTS_FOR: 'ผลการค้นหา',
+  PERSON_SEARCH_EXTENSION: 'โทรภายใน',
+  PERSON_SEARCH_CALL: 'โทร',
 
   // Booking Room (module key: booking_room)
   BOOKING_ROOM_MENU_TITLE: 'จองห้อง',
