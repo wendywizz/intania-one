@@ -31,6 +31,7 @@ import { getPersonnelSuggestions } from '@/services/personService';
 import { boxShadow } from '@/constants/shadows';
 import {
   getInitial,
+  getThaiNamePrefix,
   pickTone,
   splitHighlight,
   splitPhones,
@@ -68,7 +69,7 @@ function getPersonNameParts(person: Person): { prefix: string; name: string } {
   const r = person as Record<string, unknown>;
   const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : '');
   const thName = [str(r.FNAME_TH), str(r.SNAME_TH)].filter(Boolean).join(' ');
-  if (thName) return { prefix: str(r.P_NAME_TH), name: thName };
+  if (thName) return { prefix: getThaiNamePrefix(r), name: thName };
   const enName = [str(r.FNAME_ENG), str(r.SNAME_ENG)].filter(Boolean).join(' ');
   if (enName) return { prefix: str(r.P_SNAME_ENG), name: enName };
   return { prefix: '', name: getPersonLabel(person) };
@@ -147,9 +148,11 @@ function getPersonResponsePhoto(person: Person) {
  */
 function getPersonPhotoSources(person: Person): string[] {
   const record = person as Record<string, unknown>;
-  const staffId = toPhotoStaffId(person.staffId ?? record.UNI_STAFF_ID ?? record.STAFF_ID);
+  // STAFF_ID (7 digits) is the photo key; UNI_STAFF_ID — what `staffId` is
+  // normalized from — stays as a fallback for rows where the two differ.
+  const ids = [record.STAFF_ID, record.UNI_STAFF_ID, person.staffId].map(toPhotoStaffId);
   const sources = [
-    staffId ? `${PHOTO_BASE_URL}${encodeURIComponent(staffId)}.jpg` : '',
+    ...ids.map((id) => (id ? `${PHOTO_BASE_URL}${encodeURIComponent(id)}.jpg` : '')),
     getPersonResponsePhoto(person),
   ].filter(Boolean);
   return Array.from(new Set(sources));

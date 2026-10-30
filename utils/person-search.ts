@@ -59,6 +59,47 @@ export function toPhotoStaffId(staffId: unknown): string {
   return /^\d+$/.test(text) ? text.padStart(7, '0') : text;
 }
 
+/**
+ * Long Thai titles the card shows in their usual short form, so the name line
+ * stays one line on a phone.
+ */
+const PREFIX_ABBREVIATIONS: Record<string, string> = {
+  นางสาว: 'น.ส.',
+  ศาสตราจารย์: 'ศ.',
+  รองศาสตราจารย์: 'รศ.',
+  ผู้ช่วยศาสตราจารย์: 'ผศ.',
+  ดอกเตอร์: 'ดร.',
+};
+
+function titleText(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  const text = value.trim();
+  // Phoenix sends the literal string "NULL" for an empty title.
+  return text && text.toUpperCase() !== 'NULL' ? text : '';
+}
+
+export function abbreviatePrefix(prefix: string): string {
+  const text = prefix.trim();
+  return PREFIX_ABBREVIATIONS[text] ?? text;
+}
+
+/**
+ * The title in front of a staff member's Thai name. Academic titles win over the
+ * plain one, the same way the eng-person directory builds it: TITLE_NAME2 is the
+ * rank (ผศ., รศ., ศ.) and TITLE_NAME3 the degree (ดร.), so a lecturer reads
+ * "ผศ. ดร." and everyone else falls back to P_NAME_TH ("นาย", "น.ส.").
+ */
+export function getThaiNamePrefix(row: Record<string, unknown>): string {
+  const academic = [
+    titleText(row.TITLE_NAME2) || titleText(row.TITLE_NAME_2) || titleText(row.titleName2),
+    titleText(row.TITLE_NAME3) || titleText(row.TITLE_NAME_3) || titleText(row.titleName3),
+  ]
+    .filter(Boolean)
+    .map(abbreviatePrefix);
+  if (academic.length) return academic.join(' ');
+  return abbreviatePrefix(titleText(row.P_NAME_TH));
+}
+
 export function getInitial(name: string): string {
   const trimmed = name.trim().replace(LEADING_THAI_VOWEL, '');
   const first = Array.from(trimmed)[0] ?? '';

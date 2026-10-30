@@ -1,5 +1,7 @@
 import {
+  abbreviatePrefix,
   getInitial,
+  getThaiNamePrefix,
   pickTone,
   splitHighlight,
   splitPhones,
@@ -79,5 +81,26 @@ describe('toPhotoStaffId', () => {
   it('passes non-numeric ids through and treats missing as empty', () => {
     expect(toPhotoStaffId('A12')).toBe('A12');
     expect(toPhotoStaffId(undefined)).toBe('');
+  });
+});
+
+describe('getThaiNamePrefix', () => {
+  it('puts the academic rank and degree in front, like eng-person', () => {
+    expect(
+      getThaiNamePrefix({ P_NAME_TH: 'นาย', TITLE_NAME2: 'ผศ.', TITLE_NAME3: 'ดร.' }),
+    ).toBe('ผศ. ดร.');
+    expect(getThaiNamePrefix({ P_NAME_TH: 'นาย', TITLE_NAME2: 'รศ.', TITLE_NAME3: 'NULL' })).toBe('รศ.');
+    expect(getThaiNamePrefix({ P_NAME_TH: 'นาง', TITLE_NAME3: 'ดร.' })).toBe('ดร.');
+  });
+
+  it('falls back to the plain title, shortening นางสาว', () => {
+    expect(getThaiNamePrefix({ P_NAME_TH: 'นางสาว', TITLE_NAME2: 'NULL', TITLE_NAME3: null })).toBe('น.ส.');
+    expect(getThaiNamePrefix({ P_NAME_TH: 'นาย' })).toBe('นาย');
+    expect(getThaiNamePrefix({})).toBe('');
+  });
+
+  it('shortens spelled-out academic ranks', () => {
+    expect(abbreviatePrefix('ผู้ช่วยศาสตราจารย์')).toBe('ผศ.');
+    expect(abbreviatePrefix(' รองศาสตราจารย์ ')).toBe('รศ.');
   });
 });

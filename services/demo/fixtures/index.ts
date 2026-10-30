@@ -13,7 +13,7 @@ import { timestampRoutes } from './timestamp';
 export type { DemoRequest, DemoRoute } from './helpers';
 
 const people = [
-  { UNI_STAFF_ID: '0999911', P_NAME_TH: 'ผศ.', FNAME_TH: 'วิภา', SNAME_TH: 'ตัวอย่าง', DEPT_NAME_TH: DEMO_DEPT, OFFICE_TEL: '1101' },
+  { UNI_STAFF_ID: '0999911', P_NAME_TH: 'นางสาว', TITLE_NAME2: 'ผศ.', TITLE_NAME3: 'ดร.', FNAME_TH: 'วิภา', SNAME_TH: 'ตัวอย่าง', DEPT_NAME_TH: DEMO_DEPT, OFFICE_TEL: '1101' },
   { UNI_STAFF_ID: '0999921', P_NAME_TH: 'นาย', FNAME_TH: 'ประเสริฐ', SNAME_TH: 'ทดสอบ', DEPT_NAME_TH: DEMO_DEPT, OFFICE_TEL: '1102' },
   { UNI_STAFF_ID: '0999922', P_NAME_TH: 'นางสาว', FNAME_TH: 'กมลา', SNAME_TH: 'ตัวอย่าง', DEPT_NAME_TH: 'งานบริหารทั่วไป', OFFICE_TEL: '1103' },
   { UNI_STAFF_ID: '0999912', P_NAME_TH: 'นาง', FNAME_TH: 'สมศรี', SNAME_TH: 'ทดสอบ', DEPT_NAME_TH: 'งานบริหารทั่วไป', OFFICE_TEL: '1104' },
