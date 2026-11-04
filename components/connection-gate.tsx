@@ -11,7 +11,8 @@ import { APP_ICON } from '@/constants/images';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useThemedStyles } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
-import { probeScoobaService } from '@/services/healthService';
+import { lastProbeFailure, probeScoobaService } from '@/services/healthService';
+import { reportGate } from '@/services/networkTelemetry';
 
 type ConnectionStatus = 'checking' | 'online' | 'offline';
 
@@ -40,7 +41,11 @@ export function ConnectionGate({ children }: { children: React.ReactNode }) {
   // A few attempts, not one: a single dropped request on a flaky WiFi moment
   // used to put up the notice while the gateway was fine. See healthService.
   const runProbe = useCallback(async () => {
+    const startedAt = Date.now();
     const reachable = await probeScoobaService();
+    // T11: gate outcome (+ cold start on the first pass). Queued; a failed gate
+    // is sent on a later launch that gets through.
+    reportGate(reachable, Date.now() - startedAt, reachable ? undefined : lastProbeFailure());
     setStatus(reachable ? 'online' : 'offline');
     return reachable;
   }, []);

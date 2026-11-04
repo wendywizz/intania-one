@@ -701,3 +701,23 @@ What only the phone can see goes to scooba-service `POST /api/telemetry/events` 
 - Bottom tab navigation: Screens inside a bottom tab menu must load data only when their tab is active. Do not load data for inactive tabs.
 - If the data display as ListItems that have multiple line. The app should not load all data to display in one time. Just display like pagination when scroll down and get more data
 - Each of module or menu should have CONTEXT.md and when begin edit code on the module should read CONTEXT.md of module first
+
+# Network failure + startup telemetry (scooba-insight T11)
+
+- `services/networkTelemetry.ts` — classifies a failed request on **our API only** (`API_BASE_URL`,
+  never other hosts, never the telemetry call itself) into `dns | tls | timeout | offline | http_5xx | parse | other`
+  and queues one `network` event: method, shaped path (`/api/leave/:id`, no query), status, duration,
+  attempt, `request_id` (the `X-Request-Id` sent). No body, no URL of another host.
+  - Wired via `setNetworkFailureReporter()` in `services/api.ts` (a hook, not an import, so api ↔ telemetry
+    don't import each other); installed by `startNetworkTelemetry()` at module load in `app/_layout.tsx`.
+  - `fetchWithRetry` reports every thrown attempt (our abort = `timeout`; expo-network says no connection =
+    `offline`; else platform wording) and every 5xx except 503. `requestJson` reports a 503 that is **not**
+    `ModuleDisabled` (a switched-off module is not a fault) and a body that would not parse. 4xx are not
+    reported (the gateway logs those itself).
+- `ConnectionGate` → `startup` `gate_passed|gate_failed` (+ `reason` from `healthService.lastProbeFailure()`,
+  duration of the whole probe) and, on the first pass, `perf cold_start` (JS start → gate passed).
+  `AppStack` → `perf first_screen` once per launch (route shaped).
+- All types/props are already on the server whitelist (`scooba-service/src/observability/ingest.js`) and in
+  PRIVACY_POLICY_DRAFT §1.8 ("ประเภทปัญหาการเชื่อมต่อ", "ประสิทธิภาพ") — no new field. Adding one needs all three
+  in the same change.
+- Tests: `services/__tests__/networkTelemetry.test.ts`.

@@ -1,4 +1,5 @@
 import { ENDPOINTS } from '@/constants/endpoints';
+import { classifyFailure, type FailureClass } from './networkTelemetry';
 
 /**
  * How long the startup probe waits before calling scooba-service unreachable.
@@ -26,6 +27,13 @@ const HEALTH_SERVICE_NAME = 'scooba-service';
  */
 const PROBE_RETRY_GAPS_MS = [1000, 2000] as const;
 
+/** Why the last failed ping failed (T11 telemetry: ConnectionGate `reason`). */
+let lastFailure: FailureClass = 'other';
+
+export function lastProbeFailure(): FailureClass {
+  return lastFailure;
+}
+
 type HealthResponse = {
   data?: { status?: string; service?: string };
 };
@@ -45,7 +53,11 @@ type HealthResponse = {
  */
 export async function pingScoobaService(): Promise<boolean> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, PING_TIMEOUT_MS);
 
   try {
     const response = await fetch(ENDPOINTS.health, {
@@ -57,11 +69,24 @@ export async function pingScoobaService(): Promise<boolean> {
       signal: controller.signal,
     });
 
-    if (!response.ok) return false;
+    if (!response.ok) {
+      lastFailure = response.status >= 500 ? 'http_5xx' : 'http_4xx';
+      return false;
+    }
 
-    const json = JSON.parse(await response.text()) as HealthResponse;
-    return json.data?.status === 'ok' && json.data?.service === HEALTH_SERVICE_NAME;
+    let json: HealthResponse;
+    try {
+      json = JSON.parse(await response.text()) as HealthResponse;
+    } catch {
+      lastFailure = 'parse';
+      return false;
+    }
+    const ok = json.data?.status === 'ok' && json.data?.service === HEALTH_SERVICE_NAME;
+    // 200 with someone else's body: a proxy answering for a gateway that is down.
+    if (!ok) lastFailure = 'parse';
+    return ok;
   } catch (error) {
+    lastFailure = classifyFailure(error, timedOut);
     if (process.env.NODE_ENV !== 'production') {
       console.warn('[health] scooba-service unreachable', ENDPOINTS.health, error);
     }

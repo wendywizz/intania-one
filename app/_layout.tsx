@@ -23,6 +23,7 @@ import { useDeviceLanguageSync } from '@/hooks/use-device-language-sync';
 import { useNotificationDeepLink } from '@/hooks/use-notification-deep-link';
 import { installGlobalErrorHandlers } from '@/services/errorReporting';
 import { registerForegroundNotificationHandler } from '@/services/notificationService';
+import { reportFirstScreen, startNetworkTelemetry } from '@/services/networkTelemetry';
 import { setTelemetryRoute, startTelemetry } from '@/services/telemetryService';
 
 SplashScreen.preventAutoHideAsync();
@@ -30,6 +31,8 @@ SplashScreen.preventAutoHideAsync();
 // scooba-insight T10: uncaught errors and unhandled rejections go to the
 // self-hosted telemetry queue — installed at module load, before any screen.
 installGlobalErrorHandlers();
+// T11: failed requests on our API (dns/tls/timeout/offline/5xx/parse).
+startNetworkTelemetry();
 
 /** A render error anywhere below the root lands here (expo-router convention). */
 export const ErrorBoundary = AppErrorBoundary;
@@ -85,6 +88,12 @@ function AppStack() {
   // Web only — see the hook's own docblock for why every route change needs
   // this.
   useBlurOnNavigate();
+
+  // T11: time from JS start to the first screen of this launch (once).
+  const pathname = usePathname();
+  useEffect(() => {
+    if (!isRestoringSession) reportFirstScreen(pathname);
+  }, [isRestoringSession, pathname]);
 
   /**
    * Nothing mounts until the session is restored.

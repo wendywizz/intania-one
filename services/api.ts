@@ -176,13 +176,52 @@ export function withApiToken(input: RequestInfo | URL, init?: RequestInit): Requ
 
 const RETRY_DELAY_MS = 300;
 
-async function fetchOnce(input: RequestInfo | URL, init?: RequestInit) {
+/**
+ * T11: what the app reports about a failed request on our own API (network
+ * class, shaped path, timing — never a body). Registered by
+ * services/networkTelemetry.ts; a hook rather than an import so this module and
+ * the telemetry queue (which sends through withApiToken) don't import each other.
+ */
+export type NetworkFailureReport = {
+  url: string;
+  method: string;
+  error?: unknown;
+  aborted?: boolean;
+  status?: number;
+  parse?: boolean;
+  startedAt: number;
+  attempt: number;
+  requestId?: string;
+};
+
+let networkFailureReporter: ((report: NetworkFailureReport) => void) | null = null;
+
+export function setNetworkFailureReporter(reporter: ((report: NetworkFailureReport) => void) | null) {
+  networkFailureReporter = reporter;
+}
+
+function reportNetworkFailure(report: NetworkFailureReport) {
+  try {
+    networkFailureReporter?.(report);
+  } catch {
+    // Telemetry must never break a request.
+  }
+}
+
+function headerValue(init: RequestInit | undefined, name: string) {
+  const headers = init?.headers as Record<string, string> | undefined;
+  if (!headers) return undefined;
+  const key = Object.keys(headers).find((k) => k.toLowerCase() === name.toLowerCase());
+  return key ? headers[key] : undefined;
+}
+
+async function fetchOnce(input: RequestInfo | URL, prepared?: RequestInit) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
     return await fetch(input, {
-      ...withApiToken(input, init),
+      ...prepared,
       signal: controller.signal,
     });
   } finally {
@@ -212,14 +251,30 @@ async function fetchWithRetry(
   const attempts = method === "GET" || method === "HEAD" ? 2 : 1;
 
   for (let attempt = 1; ; attempt++) {
+    const prepared = withApiToken(input, init);
+    const startedAt = Date.now();
+    const report = {
+      url: requestUrl(input),
+      method,
+      startedAt,
+      attempt,
+      requestId: headerValue(prepared, "X-Request-Id"),
+    };
     try {
-      return await fetchOnce(input, init);
+      const response = await fetchOnce(input, prepared);
+      // 503 can be a switched-off module (not a fault); requestJson reports the
+      // 503s that are not.
+      if (response.status >= 500 && response.status !== 503) {
+        reportNetworkFailure({ ...report, status: response.status });
+      }
+      return response;
     } catch (error) {
       if (process.env.NODE_ENV !== "production") {
         console.warn("[api] request failed", `attempt ${attempt}`, String(input), error);
       }
 
       const aborted = error instanceof Error && error.name === "AbortError";
+      reportNetworkFailure({ ...report, error, aborted });
 
       if (!aborted && attempt < attempts) {
         await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
@@ -245,6 +300,7 @@ export async function requestJson<T = JsonMap>(
   url: string,
   init?: RequestInit,
 ): Promise<T> {
+  const startedAt = Date.now();
   const response = await fetchWithTimeout(url, {
     ...init,
     headers: {
@@ -253,6 +309,13 @@ export async function requestJson<T = JsonMap>(
     },
   });
   const text = await response.text();
+  const failure = {
+    url,
+    method: (init?.method ?? "GET").toUpperCase(),
+    startedAt,
+    attempt: 1,
+    requestId: response.headers?.get?.("X-Request-Id") ?? undefined,
+  };
 
   if (!response.ok || !text) {
     // A switched-off module has to survive as something the UI can tell apart:
@@ -270,11 +333,17 @@ export async function requestJson<T = JsonMap>(
         // Not our envelope — fall through to the generic message below.
       }
     }
+    if (response.status === 503) reportNetworkFailure({ ...failure, status: 503 });
 
     throw new Error(TEXT.SERVICE_ERROR_SERVER);
   }
 
-  return JSON.parse(text) as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch (error) {
+    reportNetworkFailure({ ...failure, status: response.status, parse: true });
+    throw error;
+  }
 }
 
 function isSuccessResponse(json: ApiResponse) {
