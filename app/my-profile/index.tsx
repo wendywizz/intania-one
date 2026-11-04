@@ -25,6 +25,7 @@ import { getMyProfile, uploadMyProfilePhoto } from '@/services/myProfileService'
 import { getUnreadNotificationCount } from '@/services/notificationService';
 import { usePopAnimation } from '@/hooks/use-pop-animation';
 import { boxShadow } from '@/constants/shadows';
+import { reportPermission } from '@/services/usageTelemetry';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -169,6 +170,7 @@ export default function MyProfileScreen() {
   async function handleTakePhoto() {
     setShowPhotoMenu(false);
     const permission = await ImagePicker.requestCameraPermissionsAsync();
+    reportPermission('camera', permission);
     if (!permission.granted) {
       showToast(TEXT.PROFILE_PHOTO_CAMERA_PERMISSION, 'error');
       return;
@@ -187,6 +189,7 @@ export default function MyProfileScreen() {
   async function handleChooseFromLibrary() {
     setShowPhotoMenu(false);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    reportPermission('photos', permission);
     if (!permission.granted) {
       showToast(TEXT.PROFILE_PHOTO_LIBRARY_PERMISSION, 'error');
       return;

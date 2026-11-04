@@ -10,6 +10,7 @@ import { getLanguage } from "@/i18n/language";
 import type { AuthUser } from "@/models/types";
 import { fetchApi } from "./api";
 import { INSTALL_ID_STORAGE_KEY, loadInstallId } from "./appHeaders";
+import { reportPermission } from './usageTelemetry';
 
 const DEVICE_ID_STORAGE_KEY = INSTALL_ID_STORAGE_KEY;
 const REGISTERED_DEVICE_OWNERS_STORAGE_KEY = "REGISTERED_DEVICE_OWNERS";
@@ -151,6 +152,7 @@ async function requestPushPermission(Notifications: typeof ExpoNotifications) {
   }
 
   const requested = await Notifications.requestPermissionsAsync();
+  if (requested.ios?.status !== Notifications.IosAuthorizationStatus.PROVISIONAL) reportPermission('notifications', requested);
   return requested.granted || requested.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
 }
 

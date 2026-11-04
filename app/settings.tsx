@@ -50,6 +50,7 @@ import { getLanguage } from '@/i18n/language';
 import { TEXT } from '@/constants/text';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { boxShadow } from '@/constants/shadows';
+import { reportPermission } from '@/services/usageTelemetry';
 
 // Resolved from package.json by app.config.js, so bumping the package version is
 // all it takes to update what this screen shows.
@@ -317,6 +318,7 @@ export default function SettingsScreen() {
     }
 
     const permission = await Location.requestForegroundPermissionsAsync();
+    reportPermission('location', permission);
     if (permission.status === 'granted') {
       setLocationEnabled(true);
       return;
@@ -342,6 +344,7 @@ export default function SettingsScreen() {
     }
 
     const permission = await ImagePicker.requestCameraPermissionsAsync();
+    reportPermission('camera', permission);
     if (permission.status === 'granted') {
       setCameraEnabled(true);
       return;

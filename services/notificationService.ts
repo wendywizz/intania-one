@@ -2,6 +2,7 @@ import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type * as ExpoNotifications from "expo-notifications";
 import { Platform } from "react-native";
+import { reportPermission } from "./usageTelemetry";
 
 const DEFAULT_CHANNEL_ID = "push_alerts";
 const NOTIFICATION_HISTORY_STORAGE_KEY = "PUSH_NOTIFICATION_HISTORY";
@@ -373,6 +374,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
   const Notifications = await loadNotifications();
   if (!Notifications) return false;
   const status = await Notifications.requestPermissionsAsync();
+  if (status.ios?.status !== Notifications.IosAuthorizationStatus.PROVISIONAL) reportPermission('notifications', status);
   return status.granted || status.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
 }
 

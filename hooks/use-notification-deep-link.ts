@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 
 import { setNotificationTapHandler } from '@/services/notificationService';
 import { getNotificationRoute, markNotificationNavigation } from '@/utils/notification-link';
+import { reportPushOpen } from '@/services/usageTelemetry';
 
 /**
  * Open the screen a notification is about when it is tapped **outside** the app
@@ -37,6 +38,7 @@ export function useNotificationDeepLink(enabled: boolean) {
 
     setNotificationTapHandler((item) => {
       const route = getNotificationRoute(item);
+      reportPushOpen(item.data, typeof route === 'string' ? route : null);
       // An announcement with nothing to act on. It is already marked read; there
       // is simply nowhere for it to go.
       if (!route) {

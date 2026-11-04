@@ -59,6 +59,7 @@ import {
   startOfDay
 } from "@/utils/absence-form";
 import { intlLocale } from '@/i18n/locale';
+import { reportPermission } from '@/services/usageTelemetry';
 
 // Removes the browser focus outline on web so active inputs show only their
 // bottom border (no box).
@@ -744,6 +745,7 @@ export default function SickScreen() {
 
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      reportPermission('photos', permission);
       if (!permission.granted) {
         setToastMessage(TEXT.MEDIA_LIBRARY_PERMISSION);
         return;
@@ -769,6 +771,7 @@ export default function SickScreen() {
 
     try {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
+      reportPermission('camera', permission);
       if (!permission.granted) {
         setToastMessage(TEXT.MEDIA_CAMERA_PERMISSION);
         return;

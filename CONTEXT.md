@@ -721,3 +721,13 @@ What only the phone can see goes to scooba-service `POST /api/telemetry/events` 
   PRIVACY_POLICY_DRAFT §1.8 ("ประเภทปัญหาการเชื่อมต่อ", "ประสิทธิภาพ") — no new field. Adding one needs all three
   in the same change.
 - Tests: `services/__tests__/networkTelemetry.test.ts`.
+
+# Usage telemetry (scooba-insight T12)
+
+`services/usageTelemetry.ts` — every event type/prop is already on the server whitelist (`screen`, `push_open`, `deep_link`, `permission`, `ota` in scooba-service `src/observability/ingest.js`) and in PRIVACY_POLICY_DRAFT §1.8 + both store answer sheets. Never throws.
+
+- **screen**: `app/_layout.tsx` calls `reportScreen(pathname)` on each pathname change; one event per route *left* (`routeShape`: 3+ digit segments → `:id`), with `duration_ms`. Same shaped route twice = no new view. Going to background closes the open view (`flushScreen`), coming back starts a new one.
+- **push_open**: `hooks/use-notification-deep-link.ts` — category (`data.type`, else `other`) + shaped route. Never title/body/data.
+- **deep_link**: `Linking.getInitialURL` + `url` listener in `_layout.tsx`; scheme/host/query dropped, dev-client URLs ignored.
+- **permission**: only declines (`denied` / `blocked` when `canAskAgain === false`), at each request site (camera, photos, location, notifications; iOS provisional counts as granted).
+- **ota**: `components/update-gate.tsx` — `check` / `up_to_date` / `downloaded` / `applied` / `error` + update id.

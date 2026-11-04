@@ -2,6 +2,7 @@ import * as Location from 'expo-location';
 
 import { DEV_LOCATION } from '../constants/devConfig';
 import { isDemoActive } from './demo/demoMode';
+import { reportPermission } from './usageTelemetry';
 
 /**
  * The fence centre (staff.php/lecturer.php), reported in demo mode — App Review
@@ -113,6 +114,7 @@ export async function readDevicePosition(): Promise<LocationReading> {
     // is still raised the one time it is actually needed.
     const granted = await Location.getForegroundPermissionsAsync().catch(() => null);
     const permission = granted?.granted ? granted : await Location.requestForegroundPermissionsAsync();
+    if (!granted?.granted) reportPermission('location', permission);
 
     if (permission.status !== 'granted') {
       return fail('denied', permission.canAskAgain !== false);

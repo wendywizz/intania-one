@@ -3,7 +3,7 @@ import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState, Linking, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -25,6 +25,7 @@ import { installGlobalErrorHandlers } from '@/services/errorReporting';
 import { registerForegroundNotificationHandler } from '@/services/notificationService';
 import { reportFirstScreen, startNetworkTelemetry } from '@/services/networkTelemetry';
 import { setTelemetryRoute, startTelemetry } from '@/services/telemetryService';
+import { flushScreen, reportDeepLink, reportScreen } from '@/services/usageTelemetry';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -169,9 +170,20 @@ export default function RootLayout() {
 
   // Error reports carry the screen they happened on, shaped (ids → `:id`).
   const pathname = usePathname();
+  const currentPathRef = useRef(pathname);
+  currentPathRef.current = pathname;
   useEffect(() => {
     setTelemetryRoute(pathname);
+    // T12: one `screen` event per route left, with its time on screen.
+    reportScreen(pathname);
   }, [pathname]);
+
+  // T12: the link that launched the app, then any handed to it while open.
+  useEffect(() => {
+    Linking.getInitialURL().then(reportDeepLink).catch(() => {});
+    const subscription = Linking.addEventListener('url', ({ url }) => reportDeepLink(url));
+    return () => subscription.remove();
+  }, []);
 
   // Bumped once per idle spell past IDLE_RESET_AFTER_MS; used as `key` below
   // to remount everything from AuthProvider down. That's a deliberate reuse
@@ -188,10 +200,12 @@ export default function RootLayout() {
   useEffect(() => {
     const handleChange = (next: AppStateStatus) => {
       if (next === 'background') {
+        flushScreen();
         backgroundedAtRef.current = Date.now();
         return;
       }
       if (next !== 'active') return;
+      reportScreen(currentPathRef.current);
 
       const since = backgroundedAtRef.current;
       backgroundedAtRef.current = null;

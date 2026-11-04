@@ -11,6 +11,7 @@ import { AppFonts } from '@/constants/fonts';
 import { TEXT } from '@/constants/text';
 import { type AppColors, useThemedStyles } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
+import { reportOta } from '@/services/usageTelemetry';
 
 // Resolved from package.json by app.config.js — same source settings.tsx
 // reads, so the two never disagree about what version is running.
@@ -56,7 +57,9 @@ export function UpdateGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (skippable || startedCheckRef.current) return;
     startedCheckRef.current = true;
-    Updates.checkForUpdateAsync().catch(() => {});
+    Updates.checkForUpdateAsync()
+      .then((result) => reportOta(result.isAvailable ? 'check' : 'up_to_date', { update_id: Updates.updateId }))
+      .catch((error) => reportOta('error', { update_id: Updates.updateId, message: error instanceof Error ? error.message : String(error) }));
     // retryToken re-runs this after a failed download, in case the earlier
     // failure was the check itself rather than the fetch.
   }, [skippable, retryToken]);
@@ -65,15 +68,21 @@ export function UpdateGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isUpdateAvailable || isDownloading || startedFetchRef.current) return;
     startedFetchRef.current = true;
-    Updates.fetchUpdateAsync().catch(() => {
-      // Surfaced via `downloadError` from useUpdates(); handled in render below.
-    });
+    Updates.fetchUpdateAsync()
+      .then((result) => {
+        if (result.isNew) reportOta('downloaded', { update_id: result.manifest?.id });
+      })
+      .catch((error) => {
+        reportOta('error', { update_id: Updates.updateId, message: error instanceof Error ? error.message : String(error) });
+        // Surfaced via `downloadError` from useUpdates(); handled in render below.
+      });
   }, [isUpdateAvailable, isDownloading]);
 
   // Once downloaded, reload straight into it. Nothing meaningful runs after
   // this — the app restarts on the new bundle.
   useEffect(() => {
     if (isUpdatePending) {
+      reportOta('applied', { update_id: Updates.updateId });
       Updates.reloadAsync();
     }
   }, [isUpdatePending]);
