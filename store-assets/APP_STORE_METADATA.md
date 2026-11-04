@@ -130,7 +130,7 @@ data broker, no ads). The diagnostics and usage rows come from the Faculty's own
 | Diagnostics → Crash Data | App Functionality, Analytics | JS errors / crashes: name, scrubbed message, short stack (§1.8) |
 | Diagnostics → Performance Data | App Functionality, Analytics | request duration, cold start, screen load time (§1.8) |
 | Diagnostics → Other Diagnostic Data | App Functionality, Analytics | device model, OS version, app version/build, update ID, network type, network-failure kind (§1.8) |
-| Usage Data → Product Interaction | App Functionality, Analytics | screen views (route name), push opened, permission declined, OTA status, which API module was called (§1.8) |
+| Usage Data → Product Interaction | App Functionality, Analytics | screen views + time on screen (route name), push opened (category), deep link opened (route name), permission declined, OTA status, which API module was called (§1.8) |
 
 Do **not** tick: Purchases, Financial Info, Health & Fitness, Contacts, Browsing/Search History,
 Sensitive Info, Advertising Data, Other Usage Data. Only Analytics + App Functionality as purposes —

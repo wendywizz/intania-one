@@ -65,7 +65,7 @@ the diagnostics/usage telemetry is self-hosted on the Faculty server, policy §1
 | Personal info → User IDs | App functionality, Analytics | staff ID; also tags the telemetry rows (§1.8) |
 | Location → Precise location | App functionality | only at the moment of stamping (§1.3) |
 | Photos and videos → Photos | App functionality | repair photos, face stamp photos (§1.2, §2) |
-| App activity → App interactions | Analytics, App functionality | screen views (route name), push opened, permission declined, OTA status, which API module was called (§1.8) |
+| App activity → App interactions | Analytics, App functionality | screen views + time on screen (route name), push opened (category), deep link opened (route name), permission declined, OTA status, which API module was called (§1.8) |
 | App info and performance → Crash logs | Analytics, App functionality | JS errors / crashes: name, scrubbed message, short stack (§1.8) |
 | App info and performance → Diagnostics | Analytics, App functionality | request and screen-load timing, cold start, network-failure kind, device model, OS and app version (§1.8) |
 | Device or other IDs | App functionality, Analytics | push token (§1.6) and the random install ID (`X-Install-Id`, §1.8). Not the advertising ID |

@@ -42,7 +42,7 @@ Intania One เป็นแอปบนมือถือและแท็บ�
 - **ข้อมูลการเรียกใช้ระบบ** วันเวลา ส่วนของระบบที่เรียกใช้ (เช่น หน้าการลา หน้าการประชุม) ผลลัพธ์ (สำเร็จหรือรหัสข้อผิดพลาด) และเวลาที่ใช้ ไม่รวมเนื้อหาที่ท่านกรอกหรือข้อมูลที่ระบบตอบกลับ
 - **ข้อผิดพลาดและแอปค้าง** ชื่อข้อผิดพลาด ข้อความข้อผิดพลาดที่ตัดข้อมูลส่วนบุคคลออกแล้ว ตำแหน่งในโค้ดแบบย่อ และประเภทปัญหาการเชื่อมต่อ (เช่น หมดเวลา ไม่มีอินเทอร์เน็ต)
 - **ประสิทธิภาพ** เวลาเปิดแอปและเวลาโหลดหน้า
-- **การใช้งานแอป** หน้าที่เปิด (เป็นชื่อหน้า ไม่ใช่ข้อมูลในหน้า) การแตะเปิดการแจ้งเตือน การไม่อนุญาตสิทธิ์ในเครื่อง และสถานะการอัปเดตแอป
+- **การใช้งานแอป** หน้าที่เปิดและระยะเวลาบนหน้า (เป็นชื่อหน้า ไม่ใช่ข้อมูลในหน้า) การแตะเปิดการแจ้งเตือน (เฉพาะประเภท) การเปิดแอปจากลิงก์ (เฉพาะชื่อหน้า) การไม่อนุญาตสิทธิ์ในเครื่อง และสถานะการอัปเดตแอป
 
 ข้อมูลในข้อนี้**ไม่รวม**ชื่อ อีเมล หมายเลข IP ตำแหน่งที่ตั้ง ภาพใบหน้า โทเคน และเนื้อหาที่ท่านกรอก
 หลังครบ 90 วัน ระบบลบข้อมูลรายการโดยอัตโนมัติ และเก็บไว้เฉพาะสถิติสรุปรายวันที่ไม่มีรหัสบุคลากรหรือรหัสการติดตั้ง (เช่น จำนวนผู้ใช้ต่อวัน อัตราข้อผิดพลาด) ไม่เกิน 13 เดือน เพื่อเทียบแนวโน้มปีต่อปี
@@ -144,7 +144,7 @@ The data in 1.8 is collected by the Faculty's own system and stored on the Facul
 - **Service requests**: date and time, which part of the service was called (for example leave or meetings), the result (success or an error code) and how long it took. It does not include what you type or the data the service returns.
 - **Errors and crashes**: the error name, the error message with personal data removed, a shortened code location, and the type of connection problem (for example timeout or no internet).
 - **Performance**: app start-up time and screen load time.
-- **App usage**: screens opened (the screen name, not its contents), opening a notification, declining a device permission, and app update status.
+- **App usage**: screens opened and time on each (the screen name, not its contents), opening a notification (its category only), opening the app from a link (the screen name only), declining a device permission, and app update status.
 
 This data does **not** include your name, email, IP address, location, face images, tokens or anything you type.
 After 90 days the individual records are deleted automatically. Only daily summary statistics without staff IDs or install IDs (for example users per day, error rates) are kept, for up to 13 months, to compare trends year on year.
