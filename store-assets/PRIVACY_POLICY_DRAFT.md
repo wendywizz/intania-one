@@ -3,7 +3,7 @@
 `<...>` = ผู้ดูแลต้องกรอกเอง ก่อนเผยแพร่ควรให้เจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคลของคณะ/มหาวิทยาลัยตรวจอีกครั้ง
 เนื้อหาด้านล่างเขียนจากการทำงานจริงของแอปและระบบหลังบ้าน (scooba-service) ณ 19 ต.ค. 2569
 ข้อ 1.8 (ข้อมูลการใช้งาน ข้อผิดพลาด และข้อมูลอุปกรณ์) เพิ่มเมื่อ 28 ต.ค. 2569 สำหรับระบบ scooba-insight ต้องเผยแพร่ก่อนปล่อยแอปเวอร์ชันที่ส่งข้อมูลนี้
-**`<รอยืนยันจาก DPO / นิติกร>`** ระบบนี้เข้าข่าย "ผู้ให้บริการ" ตาม พ.ร.บ.คอมพิวเตอร์ฯ มาตรา 26 หรือไม่ (ถ้าเข้าข่าย ห้ามลดอายุข้อมูลต่ำกว่า 90 วัน) และฐานทางกฎหมายของข้อ 1.8 (ประโยชน์โดยชอบด้วยกฎหมาย หรือความยินยอม)
+ข้อ 1.8 ใช้ฐานประโยชน์โดยชอบด้วยกฎหมาย (แนวเดียวกับ Timestamp Privacy Notice ของมหาวิทยาลัย) ไม่ต้องขอความยินยอม · เก็บข้อมูลรายการ 90 วัน จึงไม่ต่ำกว่าเกณฑ์ พ.ร.บ.คอมพิวเตอร์ฯ มาตรา 26 · ผู้ดูแลตัดสินใจไม่ส่ง DPO ตรวจ (5 พ.ย. 2569)
 
 ---
 
@@ -36,7 +36,7 @@ Intania One เป็นแอปบนมือถือและแท็บ�
 1.6 **ข้อมูลอุปกรณ์สำหรับแจ้งเตือน** โทเคนการแจ้งเตือน (push token) เพื่อส่งการแจ้งเตือนเรื่องที่รอท่านดำเนินการ
 1.7 **ข้อมูลที่ไม่เก็บ** แอปไม่มีโฆษณา ไม่ใช้เครื่องมือติดตามพฤติกรรมของบุคคลภายนอก และไม่ขายข้อมูล
 ข้อมูลตามข้อ 1.8 เก็บด้วยระบบของคณะเองบนเซิร์ฟเวอร์ของคณะ ไม่ส่งให้บริการวิเคราะห์ข้อมูลหรือรายงานข้อผิดพลาดของบุคคลภายนอก
-1.8 **ข้อมูลการใช้งาน ข้อผิดพลาด และข้อมูลอุปกรณ์** ผูกกับรหัสบุคลากรของท่าน ใช้เพื่อดูแลและปรับปรุงระบบ เก็บ 90 วัน และไม่เปิดเผยแก่บุคคลภายนอก ได้แก่
+1.8 **ข้อมูลการใช้งาน ข้อผิดพลาด และข้อมูลอุปกรณ์** ผูกกับรหัสบุคลากรของท่าน ใช้เพื่อดูแลและปรับปรุงระบบ เก็บ 90 วัน และไม่เปิดเผยแก่บุคคลภายนอก โดยอาศัยฐานประโยชน์โดยชอบด้วยกฎหมายของคณะในการดูแลระบบให้ใช้งานได้ ได้แก่
 - **ข้อมูลอุปกรณ์** รุ่นและผู้ผลิตอุปกรณ์ ระบบปฏิบัติการและเวอร์ชัน เวอร์ชันแอปและหมายเลขบิลด์ เวอร์ชันการอัปเดตของแอป และประเภทเครือข่าย (Wi-Fi หรือเครือข่ายมือถือ) แอปไม่เก็บชื่อเครื่องที่ท่านตั้งไว้
 - **รหัสการติดตั้ง (install ID)** รหัสสุ่มที่แอปสร้างขึ้นเมื่อติดตั้ง ใช้แยกแยะอุปกรณ์ในการดูแลระบบ ไม่ใช่รหัสโฆษณาและไม่ใช่รหัสประจำเครื่องจากผู้ผลิต และจะเปลี่ยนใหม่เมื่อลบแล้วติดตั้งแอปใหม่
 - **ข้อมูลการเรียกใช้ระบบ** วันเวลา ส่วนของระบบที่เรียกใช้ (เช่น หน้าการลา หน้าการประชุม) ผลลัพธ์ (สำเร็จหรือรหัสข้อผิดพลาด) และเวลาที่ใช้ ไม่รวมเนื้อหาที่ท่านกรอกหรือข้อมูลที่ระบบตอบกลับ
@@ -138,7 +138,7 @@ The information the app shows and records comes from the Faculty's and Universit
 1.6 **Notification token** (push token), to send you notifications about items waiting on you.
 1.7 **What we do not do**: the App has no ads, uses no third-party behavioural tracking, and never sells data.
 The data in 1.8 is collected by the Faculty's own system and stored on the Faculty's servers; it is not sent to any third-party analytics or crash-reporting service.
-1.8 **Usage, error and device data**: linked to your staff ID, used to maintain and improve the service, kept for 90 days and not disclosed to third parties. It consists of:
+1.8 **Usage, error and device data**: linked to your staff ID, used to maintain and improve the service, kept for 90 days and not disclosed to third parties. The legal basis is the Faculty's legitimate interest in keeping the service working. It consists of:
 - **Device information**: device model and manufacturer, operating system and version, app version and build number, app update version, and network type (Wi-Fi or mobile data). The App does not collect the name you gave your device.
 - **Install ID**: a random ID the App creates when it is installed, used to tell devices apart when maintaining the service. It is not an advertising ID or a manufacturer hardware ID, and it changes if you delete and reinstall the App.
 - **Service requests**: date and time, which part of the service was called (for example leave or meetings), the result (success or an error code) and how long it took. It does not include what you type or the data the service returns.
