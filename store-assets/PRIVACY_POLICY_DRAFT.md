@@ -1,6 +1,6 @@
 # นโยบายความเป็นส่วนตัว แอป Intania One (ร่าง)
 
-`<...>` = ผู้ดูแลต้องกรอกเอง ก่อนเผยแพร่ควรให้เจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคลของคณะ/มหาวิทยาลัยตรวจอีกครั้ง
+กรอกข้อมูลติดต่อครบแล้ว (5 พ.ย. 2569) · แก้ "ปรับปรุงล่าสุด" เป็นวันที่เผยแพร่จริงทุกครั้งที่แก้เนื้อหา
 เนื้อหาด้านล่างเขียนจากการทำงานจริงของแอปและระบบหลังบ้าน (scooba-service) ณ 19 ต.ค. 2569
 ข้อ 1.8 (ข้อมูลการใช้งาน ข้อผิดพลาด และข้อมูลอุปกรณ์) เพิ่มเมื่อ 28 ต.ค. 2569 สำหรับระบบ scooba-insight ต้องเผยแพร่ก่อนปล่อยแอปเวอร์ชันที่ส่งข้อมูลนี้
 ข้อ 1.8 ใช้ฐานประโยชน์โดยชอบด้วยกฎหมาย (แนวเดียวกับ Timestamp Privacy Notice ของมหาวิทยาลัย) ไม่ต้องขอความยินยอม · เก็บข้อมูลรายการ 90 วัน จึงไม่ต่ำกว่าเกณฑ์ พ.ร.บ.คอมพิวเตอร์ฯ มาตรา 26 · ผู้ดูแลตัดสินใจไม่ส่ง DPO ตรวจ (5 พ.ย. 2569)
@@ -13,7 +13,7 @@
 
 คณะวิศวกรรมศาสตร์ มหาวิทยาลัยสงขลานครินทร์ ("คณะ") เป็นผู้ให้บริการแอป Intania One ("แอป") สำหรับบุคลากรของคณะ
 นโยบายนี้อธิบายว่าคณะเก็บ ใช้ เปิดเผย และเก็บรักษาข้อมูลส่วนบุคคลของท่านอย่างไร
-ปรับปรุงล่าสุด: <วันที่>
+ปรับปรุงล่าสุด: 5 พฤศจิกายน 2569
 
 ## เกี่ยวกับแอป
 Intania One เป็นแอปบนมือถือและแท็บเล็ต (iOS และ Android) ที่รวมงานบริการภายในของคณะไว้ในที่เดียว สำหรับ**บุคลากรของคณะวิศวกรรมศาสตร์ มหาวิทยาลัยสงขลานครินทร์** ได้แก่
@@ -95,7 +95,7 @@ Intania One เป็นแอปบนมือถือและแท็บ�
 
 ## 7. สิทธิของท่าน
 ตาม พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 ท่านมีสิทธิขอเข้าถึง ขอสำเนา แก้ไข ลบ ระงับการใช้ คัดค้าน และเพิกถอนความยินยอม
-ติดต่อ: <หน่วยงาน> อีเมล <อีเมล> โทร <เบอร์โทร> คณะจะตอบภายใน <จำนวน> วัน
+ติดต่อ: คณะวิศวกรรมศาสตร์ มหาวิทยาลัยสงขลานครินทร์ อีเมล info@eng.psu.ac.th โทร 074-287111 คณะจะตอบภายใน 15 วัน
 การเพิกถอนความยินยอมไม่กระทบการประมวลผลที่ทำไปแล้วก่อนหน้านั้น
 
 ## 8. ผู้ที่ไม่ใช่บุคลากร
@@ -106,7 +106,7 @@ Intania One เป็นแอปบนมือถือและแท็บ�
 หากมีการแก้ไขสาระสำคัญ คณะจะแจ้งในแอปหรือบนหน้านี้ พร้อมวันที่ปรับปรุงล่าสุด
 
 ## 10. ติดต่อคณะ
-<ชื่อหน่วยงาน> คณะวิศวกรรมศาสตร์ มหาวิทยาลัยสงขลานครินทร์ <ที่อยู่> อีเมล <อีเมล> โทร <เบอร์โทร>
+คณะวิศวกรรมศาสตร์ มหาวิทยาลัยสงขลานครินทร์ เลขที่ 15 ถนนกาญจนวณิชย์ ตำบลคอหงส์ อำเภอหาดใหญ่ จังหวัดสงขลา 90110 อีเมล info@eng.psu.ac.th โทร 074-287111
 
 ---
 
@@ -115,7 +115,7 @@ Intania One เป็นแอปบนมือถือและแท็บ�
 # Privacy Policy: Intania One app
 
 The Faculty of Engineering, Prince of Songkla University (the "Faculty") provides the Intania One app (the "App") for its staff.
-This policy explains how the Faculty collects, uses, discloses and retains your personal data. Last updated: <date>
+This policy explains how the Faculty collects, uses, discloses and retains your personal data. Last updated: 5 November 2026
 
 ## About the app
 Intania One is a phone and tablet app (iOS and Android) that brings the Faculty's internal services together in one place, for **staff of the Faculty of Engineering, Prince of Songkla University**. It lets staff:
@@ -195,7 +195,7 @@ You can turn these off in device settings; the related features will then not wo
 
 ## 7. Your rights
 Under Thailand's Personal Data Protection Act B.E. 2562 (2019) you may request access, a copy, correction, deletion, restriction, objection and withdrawal of consent.
-Contact: <unit>, email <email>, phone <phone>. The Faculty will respond within <number> days. Withdrawing consent does not affect processing done before it.
+Contact: Faculty of Engineering, Prince of Songkla University, email info@eng.psu.ac.th, phone +66 74 287 111. The Faculty will respond within 15 days. Withdrawing consent does not affect processing done before it.
 
 ## 8. Non-staff users
 People who are not signed in can read public news. The App collects no account, location or face data from users who are not signed in.
@@ -205,4 +205,4 @@ It still sends the data in Section 1.8 without a staff ID (only the install ID a
 If we make material changes we will announce them in the App or on this page, with the updated date.
 
 ## 10. Contact
-<unit name>, Faculty of Engineering, Prince of Songkla University, <address>, email <email>, phone <phone>
+Faculty of Engineering, Prince of Songkla University, 15 Karnjanavanich Road, Kho Hong, Hat Yai, Songkhla 90110, Thailand, email info@eng.psu.ac.th, phone +66 74 287 111

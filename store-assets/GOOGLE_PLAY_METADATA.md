@@ -42,7 +42,7 @@ English (add language, optional):
 | **Target audience** | 18+ (staff app, not directed at children) |
 | **Ads** | No ads |
 | **Store settings → Category** | Productivity (alt: Business) |
-| **Contact details** | email `<support email>` (required), phone and website optional |
+| **Contact details** | email `info@eng.psu.ac.th` (required), phone `+66 74 287 111`, website `https://www.eng.psu.ac.th` |
 | **Permissions declarations** | Location is used in the foreground only (`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`), camera, notifications (`POST_NOTIFICATIONS`). Be ready to explain each in the notes. |
 
 ## Data safety answers
@@ -53,7 +53,7 @@ Policy → App content → **Data safety**. Overview answers:
 | --- | --- |
 | Does your app collect or share any of the required user data types? | Yes |
 | Is all of the user data collected by your app encrypted in transit? | Yes (HTTPS only) |
-| Do you provide a way for users to request that their data is deleted? | Yes — policy §7 (request to the Faculty). Contact address is still `<support email>` / policy placeholder |
+| Do you provide a way for users to request that their data is deleted? | Yes — policy §7 (request to the Faculty). Contact: `info@eng.psu.ac.th`, answered within 15 days |
 
 Per data type. For every row: **Collected: Yes · Shared: No** (no data goes to a third party;
 the diagnostics/usage telemetry is self-hosted on the Faculty server, policy §1.7–1.8) ·
