@@ -345,23 +345,9 @@ export function LoginLanding({ onLogin, onDemoLogin }: LoginLandingProps) {
                   style={s.note}>{TEXT.HOME_LOGIN_NOTE}</Text>
               </View>
             </View>
-            {/* App Review cannot get a PSU Passport, so it signs in through the
-                demo sheet — see services/demo/demoMode.ts. A hidden gesture
-                alone got the app rejected (reviewers tried PSU Passport and
-                could not get in), so the sheet has a visible link too. Tapping
-                the version line or the word "One" DEMO_TAPS times still opens it. */}
-            {DEMO_MODE_ENABLED ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={TEXT.AUTH_DEMO_TITLE}
-                hitSlop={8}
-                onPress={() => setDemoOpen(true)}
-                style={({ pressed }) => [s.demoLink, pressed && s.pressed]}>
-                <Text maxFontSizeMultiplier={TEXT_MAX_SCALE} style={s.demoLinkText}>
-                  {TEXT.AUTH_DEMO_TITLE}
-                </Text>
-              </Pressable>
-            ) : null}
+            {/* App Review signs in through the demo sheet (services/demo/demoMode.ts).
+                The visible link was removed after approval; tapping the version line
+                or the word "One" DEMO_TAPS times opens it. */}
             <Pressable onPress={onVersionPress} accessible={false}>
               <Text maxFontSizeMultiplier={TEXT_MAX_SCALE} style={s.version}>
                 {`${TEXT.HOME_APP_NAME} ${TEXT.HOME_LANDING_TITLE_SUFFIX} · v${APP_VERSION}`}
@@ -587,19 +573,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
     color: c.textMuted,
-  },
-  demoLink: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.45)',
-  },
-  demoLinkText: {
-    fontFamily: 'Sarabun_Md',
-    fontSize: 14,
-    lineHeight: 20,
-    color: c.textOnPrimary,
   },
   demoForm: {
     gap: 14,
