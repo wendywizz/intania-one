@@ -424,7 +424,7 @@ For general staff (`stampRole === 'staff'`) the first tab of the timestamp modul
 | Is the face in the oval, did it blink (liveness) | the phone: `utils/face-framing.ts`, `utils/blink-detector.ts` |
 | Whose face is it | scooba via FaceValid. Must be the signed-in person, `dist <= maxDist` (scooba `config/face-stamp.js`, 0.3667 — the door kiosks' own cutoff) |
 | May they stamp now, and what would it record | LINK_personnel `apis/timestamp/staff.php` (window × today's row, VPN, faculty WiFi, fence) |
-| The write | the door kiosks' own endpoint on ophoenix, called by scooba |
+| The write | the door kiosks' own endpoint on phoenix (ophoenix is retired), called by scooba |
 
 ## Rules the screen follows
 
