@@ -175,7 +175,8 @@ export async function stampCompOtEvent(params: {
   staffId: string;
   eventId: string;
   flag: CompOtStampFlag;
-  amount: number | string;
+  /** Legacy: the app no longer asks for it; the backend defaults a missing amount to 0. */
+  amount?: number | string;
 }): Promise<CompOtStampResult> {
   const json = await requestJson(ENDPOINTS.compOtStamp, {
     method: 'POST',
@@ -183,7 +184,7 @@ export async function stampCompOtEvent(params: {
       staff_id: params.staffId,
       event_id: params.eventId,
       flag: params.flag,
-      amount: params.amount,
+      ...(params.amount !== undefined ? { amount: params.amount } : {}),
     }),
   });
 

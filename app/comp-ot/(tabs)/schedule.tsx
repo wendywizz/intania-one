@@ -6,7 +6,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { CompOtDutyCard } from '@/components/comp-ot/comp-ot-duty-card';
-import { CompOtStampModal } from '@/components/comp-ot/comp-ot-stamp-modal';
 import { CompOtSwapOfferSheet, type CompOtSwapOffer, type CompOtSwapTarget } from '@/components/comp-ot/comp-ot-swap-offer-sheet';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
@@ -15,6 +14,7 @@ import { ModalSelectField, type ModalSelectOption } from '@/components/modal-sel
 import { NavTopBar } from '@/components/nav-top-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Toggle } from '@/components/ui/toggle';
 import { AppFonts } from '@/constants/fonts';
@@ -233,7 +233,7 @@ export default function CompOtScheduleScreen() {
     setVisibleMonth((prev) => new Date(Number(value), prev.getMonth(), 1));
   }
 
-  async function handleStampSubmit(amount: string) {
+  async function handleStampSubmit() {
     if (!stampTarget || !staffId) return;
     setIsSubmittingStamp(true);
     try {
@@ -241,7 +241,6 @@ export default function CompOtScheduleScreen() {
         staffId,
         eventId: stampTarget.event.event_id,
         flag: stampTarget.flag,
-        amount,
       });
       setStampTarget(null);
       showToast(TEXT.COMP_OT_STAMP_SUCCESS, 'success');
@@ -373,12 +372,14 @@ export default function CompOtScheduleScreen() {
         )}
       </View>
 
-      <CompOtStampModal
+      <ConfirmDialog
         visible={stampTarget !== null}
-        flag={stampTarget?.flag ?? 'in'}
+        title={stampTarget?.flag === 'out' ? TEXT.COMP_OT_STAMP_MODAL_TITLE_OUT : TEXT.COMP_OT_STAMP_MODAL_TITLE_IN}
+        confirmLabel={TEXT.COMP_OT_STAMP_SUBMIT}
+        cancelLabel={TEXT.COMP_OT_STAMP_CANCEL}
         loading={isSubmittingStamp}
+        onConfirm={handleStampSubmit}
         onCancel={() => setStampTarget(null)}
-        onSubmit={handleStampSubmit}
       />
 
       <CompOtSwapOfferSheet

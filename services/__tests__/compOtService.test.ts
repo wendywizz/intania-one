@@ -111,6 +111,15 @@ describe('stampCompOtEvent', () => {
     });
   });
 
+  it('leaves amount out of the body when it is not given', async () => {
+    gatewayAnswers(200, { data: { event_id: 'e1', flag: 'out' } });
+
+    await stampCompOtEvent({ staffId: '0024028', eventId: 'e1', flag: 'out' });
+
+    const [, options] = sent();
+    expect(JSON.parse(options.body)).toEqual({ staff_id: '0024028', event_id: 'e1', flag: 'out' });
+  });
+
   it('surfaces the upstream error message when the stamp is rejected', async () => {
     // The literal message Ot_Controller::stamp() sends for a closed window
     // (Y:\ln_OT\api\controller\ot_controller.php) — this is what a "you
