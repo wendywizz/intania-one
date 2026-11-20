@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Phone, Search } from 'lucide-react-native';
+import { Mail, Phone, Search } from 'lucide-react-native';
 import { TEXT } from '@/constants/text';
 import { StatusBar } from 'expo-status-bar';
 import { Image } from 'expo-image';
@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -78,6 +79,7 @@ function getPersonDetails(person: Person): {
   dept?: string;
   section?: string;
   phone?: string;
+  email?: string;
   fallback?: string;
 } {
   const r = person as Record<string, unknown>;
@@ -87,6 +89,7 @@ function getPersonDetails(person: Person): {
     str(r.officeTel) ||
     str(r.phone) ||
     str(r.tel);
+  const email = str(r.EMAIL) || str(r.email);
   const dept =
     str(r.department) ||
     str(r.deptName) ||
@@ -107,6 +110,7 @@ function getPersonDetails(person: Person): {
     dept: dept || undefined,
     section: section && section !== dept ? section : undefined,
     phone: phone || undefined,
+    email: email || undefined,
     fallback: id || undefined,
   };
 }
@@ -297,6 +301,27 @@ function PersonSearchListItem({ item, keyword }: { item: Person; keyword: string
             ))}
           </View>
         </View>
+      ) : null}
+
+      {details.email ? (
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={`${TEXT.PERSON_SEARCH_EMAIL} ${details.email}`}
+          onPress={() => {
+            // No mail app installed: openURL rejects; do nothing.
+            Linking.openURL(`mailto:${details.email}`).catch(() => {});
+          }}
+          style={[styles.emailRow, !phones.length && styles.emailRowAlone]}
+        >
+          <ThemedText style={styles.phoneLabel}>{TEXT.PERSON_SEARCH_EMAIL}</ThemedText>
+          <Mail size={12} color={c.primary} />
+          <HighlightedText
+            text={details.email}
+            keyword={keyword}
+            style={styles.emailText}
+            numberOfLines={1}
+          />
+        </Pressable>
       ) : null}
     </View>
   );
@@ -734,6 +759,25 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     color: c.textMuted,
+    fontFamily: AppFonts.psuRegular,
+  },
+  emailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  emailRowAlone: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.border,
+  },
+  emailText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    color: c.primary,
     fontFamily: AppFonts.psuRegular,
   },
   phoneButtons: {

@@ -373,4 +373,5 @@ export const EN_PART_2 = {
   PERSON_SEARCH_NO_RESULT_HINT: 'Try a first name, last name or department name',
   PERSON_SEARCH_RESULTS_FOR: 'Results for',
   PERSON_SEARCH_EXTENSION: 'Ext.',
+  PERSON_SEARCH_EMAIL: 'Email',
 } as const;
