@@ -374,4 +374,5 @@ export const EN_PART_2 = {
   PERSON_SEARCH_RESULTS_FOR: 'Results for',
   PERSON_SEARCH_EXTENSION: 'Ext.',
   PERSON_SEARCH_EMAIL: 'Email',
+  PERSON_SEARCH_PHOTO_VIEW_LABEL: 'View photo',
 } as const;

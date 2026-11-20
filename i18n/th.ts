@@ -841,6 +841,7 @@ export const TH = {
   PERSON_SEARCH_RESULTS_FOR: 'ผลการค้นหา',
   PERSON_SEARCH_EXTENSION: 'โทรภายใน',
   PERSON_SEARCH_EMAIL: 'อีเมล',
+  PERSON_SEARCH_PHOTO_VIEW_LABEL: 'ดูรูปขยาย',
 
   // Booking Room (module key: booking_room)
   BOOKING_ROOM_MENU_TITLE: 'จองห้อง',

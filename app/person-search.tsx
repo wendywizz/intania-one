@@ -23,6 +23,7 @@ import { NavTopBar } from '@/components/nav-top-bar';
 import { EmptyState } from '@/components/empty-state';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PhotoViewerModal } from '@/components/photo-viewer-modal';
 import { PHOTO_BASE_URL } from '@/constants/endpoints';
 import { AppFonts } from '@/constants/fonts';
 import { useTheme } from '@/context/ThemeContext';
@@ -225,6 +226,7 @@ function PersonSearchListItem({ item, keyword }: { item: Person; keyword: string
   const photoSources = getPersonPhotoSources(item);
   const photoKey = photoSources.join('|');
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const photoUri = photoSources[photoIndex] ?? '';
 
   useEffect(() => {
@@ -240,8 +242,24 @@ function PersonSearchListItem({ item, keyword }: { item: Person; keyword: string
 
   return (
     <View style={styles.card}>
+      {showPhoto ? (
+        <PhotoViewerModal
+          visible={viewerOpen}
+          sources={photoSources}
+          initialIndex={photoIndex}
+          onClose={() => setViewerOpen(false)}
+          accessibilityLabel={`${prefix}${name}`}
+          caption={`${prefix}${name}`}
+        />
+      ) : null}
       <View style={styles.cardTop}>
-        <View style={[styles.avatarWrap, { backgroundColor: tone.bg }]}>
+        <Pressable
+          accessibilityRole="imagebutton"
+          accessibilityLabel={TEXT.PERSON_SEARCH_PHOTO_VIEW_LABEL}
+          disabled={!showPhoto}
+          onPress={() => setViewerOpen(true)}
+          style={[styles.avatarWrap, { backgroundColor: tone.bg }]}
+        >
           {/* The initial sits underneath; a photo that loads covers it, one that
               404s is dropped and leaves the initial showing. */}
           <ThemedText style={[styles.avatarInitial, { color: tone.fg }]}>{getInitial(name)}</ThemedText>
@@ -257,7 +275,7 @@ function PersonSearchListItem({ item, keyword }: { item: Person; keyword: string
               transition={200}
             />
           ) : null}
-        </View>
+        </Pressable>
         <View style={styles.listItemText}>
           <View style={styles.nameRow}>
             {prefix ? <ThemedText style={styles.namePrefix}>{prefix}</ThemedText> : null}
