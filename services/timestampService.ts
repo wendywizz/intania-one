@@ -3,6 +3,7 @@ import { File } from "expo-file-system";
 import { ENDPOINTS } from "../constants/endpoints";
 import { currentWifiIp } from "../utils/wifi-ip";
 import { thaiOnly } from "../utils/thai-message";
+import { faceStampStaffId } from "./demo/demoMode";
 import type { JsonMap } from "./api";
 import { ensureSuccess, fetchWithTimeout, requestJson } from "./api";
 import { TEXT } from '@/constants/text';
@@ -815,7 +816,7 @@ export async function getStaffTimestampStatus(
   position?: LectPosition | null,
 ): Promise<StaffTimestampStatus> {
   const url = createTimestampUrl("/staff", {
-    staff_id: staffId,
+    staff_id: faceStampStaffId(staffId),
     ...positionQuery(position),
   });
   const jsonData = await requestJson<JsonMap>(url, { method: "GET" });
@@ -847,7 +848,7 @@ export async function submitStaffFaceStamp({
   position?: LectPosition | null;
 }): Promise<StaffFaceStampResult> {
   const form = new FormData();
-  form.append('staff_id', staffId);
+  form.append('staff_id', faceStampStaffId(staffId));
   form.append('expect_kind', expectKind);
 
   const coords = positionQuery(position);
@@ -955,7 +956,7 @@ export async function submitStaffFaceEnroll({
   position?: LectPosition | null;
 }): Promise<StaffFaceEnrollResult> {
   const form = new FormData();
-  form.append('staff_id', staffId);
+  form.append('staff_id', faceStampStaffId(staffId));
   form.append('mode', mode);
 
   const coords = positionQuery(position);

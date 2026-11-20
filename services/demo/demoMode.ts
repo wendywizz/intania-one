@@ -14,7 +14,7 @@
  * fixture data in this folder. They are written into App Store Connect →
  * App Review Information.
  */
-import { DEMO_MODE_ENABLED } from '../../constants/devConfig';
+import { DEMO_LIVE_FACE_STAMP, DEMO_MODE_ENABLED } from '../../constants/devConfig';
 import type { AuthUser } from '../../models/types';
 
 /** The switch is constants/devConfig.ts's DEMO_MODE_ENABLED. */
@@ -26,6 +26,18 @@ export const DEMO_PASSWORD = 'IntaniaOne#Review26';
 
 /** An invented staff id, outside the range real CENTRAL.STAFF_INFO ids use. */
 export const DEMO_STAFF_ID = '0999901';
+
+/**
+ * The real test account (CENTRAL.STAFF_INFO UNI_STAFF_ID 0099999, STAFF_ID
+ * 999111, บัญชีทดสอบ1) a demo session face-stamps as while
+ * DEMO_LIVE_FACE_STAMP is on.
+ */
+export const DEMO_LIVE_STAFF_ID = '0099999';
+
+/** The staff id a face-stamp request goes out with: the test account in a live demo session. */
+export function faceStampStaffId(staffId: string): string {
+  return active && DEMO_LIVE_FACE_STAMP ? DEMO_LIVE_STAFF_ID : staffId;
+}
 
 export const DEMO_USER: AuthUser = {
   staffId: DEMO_STAFF_ID,

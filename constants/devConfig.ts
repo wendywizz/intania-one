@@ -4,6 +4,14 @@
 // "บัญชีทดสอบ (Demo account)" link and signs out a stored demo session.
 export const DEMO_MODE_ENABLED: boolean = true;
 
+// Demo account + REAL face stamp: while true, a demo session's ลงเวลาบุคลากร
+// (status, face scan, face enroll) skips the fixtures and goes to the real
+// server as the test account DEMO_LIVE_STAFF_ID (services/demo/demoMode.ts),
+// which scooba lets stamp at any hour (STAFF_STAMP_TEST_IDS). Every other demo
+// screen stays on fixtures. Set false before building for App Review: the
+// reviewer is off the faculty network and would only see refusals.
+export const DEMO_LIVE_FACE_STAMP: boolean = true;
+
 // Dev overrides — must be empty/null before building for production.
 // Set DEV_STAFF_ID to a UNI_STAFF_ID to impersonate that user across ALL features.
 //

@@ -15,13 +15,19 @@
  * - Any other host (PSU SSO, Microsoft Graph, ...) gets a 404 unless a route
  *   names it (the executive calendar's Google Calendar read).
  */
+import { DEMO_LIVE_FACE_STAMP } from '../../constants/devConfig';
 import { API_BASE_URL } from '../../constants/endpoints';
 import { DEMO_ROUTES, type DemoRequest } from './fixtures';
 
 /** Enough to show the screens' loaders for a moment, as a real network would. */
 const LATENCY_MS = 250;
 
-const PASS_THROUGH = [/\/api\/news$/];
+const PASS_THROUGH = [
+  /\/api\/news$/,
+  // ลงเวลาบุคลากร against the real server as the test account (see
+  // DEMO_LIVE_FACE_STAMP; the staff id is swapped in timestampService.ts).
+  ...(DEMO_LIVE_FACE_STAMP ? [/\/api\/timestamp\/staff(\/stamp|\/face-enroll)?$/] : []),
+];
 
 let realFetch: typeof fetch | null = null;
 
