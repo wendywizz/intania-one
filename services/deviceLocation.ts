@@ -65,16 +65,25 @@ export type LocationReading = {
 const FIX_TIMEOUT_MS = 15000;
 
 /**
- * A fix is only ever used while it is younger than this (`Date.now()` minus the
- * fix's own `timestamp`).
+ * A fix is only ever used while it is younger than this.
  *
  * The watcher below starts delivering within about a second, but on iOS the
  * first update is frequently the cached last-known location, handed over
  * through the same callback as a real one. Accepting it would be a
  * `getLastKnownPositionAsync` read by another door — a fix from wherever the
- * phone last was — so age, not the API used, is what keeps a fix honest. It is
- * checked again whenever a fix is picked, not only when it arrives: a fix that
- * was fine when it came in is no use to a tap ten seconds later.
+ * phone last was — so age, not the API used, is what keeps a fix honest.
+ *
+ * Age is never `Date.now()` minus the fix's `timestamp`. The two come from
+ * different clocks: `Date.now()` is the phone's own, which the person can set
+ * by hand, while Android usually stamps a GPS fix with satellite time. A phone
+ * set a minute off would then see every fix as stale (and could never stamp),
+ * or a stale one as fresh. Two checks that only ever subtract one clock from
+ * itself stand in for it (see `isFresh`):
+ *   - held: how long ago the fix *arrived*, on the phone's clock. A fix that
+ *     was fine when it came in is no use to a tap ten seconds later.
+ *   - delivery lag: arrival minus `timestamp`. Whatever the offset between the
+ *     two clocks, it is the same for every fix, so live fixes share one lag and
+ *     a cached fix shows up as lagging the freshest one by its real age.
  */
 const MAX_FIX_AGE_MS = 5000;
 
@@ -108,9 +117,32 @@ export type FixCandidate = {
    * perfect one, so it can only ever be picked by the final timeout.
    */
   accuracyM: number;
-  /** When the OS says the fix was taken, epoch ms. */
+  /** When the OS says the fix was taken, epoch ms — on the OS's clock (often GPS time on Android). */
   timestamp: number;
+  /** When the fix reached the app, `Date.now()` — on the phone's clock. */
+  receivedAt: number;
 };
+
+/**
+ * Whether `fix` counts as the phone's position at `now`, judged against the
+ * other fixes of the same watch (`fixes`). See `MAX_FIX_AGE_MS` for why no
+ * check here compares the two clocks directly — except the one case below.
+ *
+ * A lone fix has nothing to be compared with, and it is exactly the iOS cached
+ * one that tends to arrive alone and first. So until a second fix gives the
+ * lag a baseline, the lone fix must also pass the plain two-clock check; on a
+ * phone with a correct clock that is instant, on one set wrong it costs the
+ * next update, about a second.
+ */
+function isFresh(fix: FixCandidate, fixes: readonly FixCandidate[], now: number): boolean {
+  if (now - fix.receivedAt > MAX_FIX_AGE_MS) return false;
+
+  const lag = fix.receivedAt - fix.timestamp;
+  const baseline = Math.min(...fixes.map((f) => f.receivedAt - f.timestamp));
+  if (lag - baseline > MAX_FIX_AGE_MS) return false;
+
+  return fixes.length >= 2 || Math.abs(lag) <= MAX_FIX_AGE_MS;
+}
 
 export type FixSelection = {
   fix: FixCandidate | null;
@@ -121,8 +153,8 @@ export type FixSelection = {
  * Which fix, if any, a read that began `elapsedMs` ago should settle on at
  * `now`. Pure, so the thresholds can be tested without a clock or a GPS.
  *
- * Returns null to keep waiting. Only fixes younger than `MAX_FIX_AGE_MS` are
- * candidates; of those the most accurate wins.
+ * Returns null to keep waiting. Only fixes that pass `isFresh` are candidates;
+ * of those the most accurate wins.
  *   - at once when one is within `GOOD_FIX_M`;
  *   - from `COARSE_AFTER_MS`, when the best is within `COARSE_FIX_M`;
  *   - at `FIX_TIMEOUT_MS`, the best there is — or none, which is `unavailable`.
@@ -134,7 +166,7 @@ export function selectFix(
 ): FixSelection | null {
   let best: FixCandidate | null = null;
   for (const fix of fixes) {
-    if (now - fix.timestamp > MAX_FIX_AGE_MS) continue;
+    if (!isFresh(fix, fixes, now)) continue;
     if (!best || fix.accuracyM < best.accuracyM || (fix.accuracyM === best.accuracyM && fix.timestamp > best.timestamp)) {
       best = fix;
     }
@@ -153,7 +185,7 @@ export function selectFix(
  * were one; it is the shape a broken fix takes, not a location. A fix with no
  * usable timestamp cannot be shown to be fresh, so it is refused too.
  */
-function toCandidate(fix: Location.LocationObject | null | undefined): FixCandidate | null {
+function toCandidate(fix: Location.LocationObject | null | undefined, receivedAt: number): FixCandidate | null {
   const lat = Number(fix?.coords?.latitude);
   const lon = Number(fix?.coords?.longitude);
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || (lat === 0 && lon === 0)) return null;
@@ -163,7 +195,7 @@ function toCandidate(fix: Location.LocationObject | null | undefined): FixCandid
 
   const accuracy = Number(fix?.coords?.accuracy);
 
-  return { lat, lon, accuracyM: Number.isFinite(accuracy) && accuracy >= 0 ? accuracy : Infinity, timestamp };
+  return { lat, lon, accuracyM: Number.isFinite(accuracy) && accuracy >= 0 ? accuracy : Infinity, timestamp, receivedAt };
 }
 
 function toReading(fix: FixCandidate): LocationReading {
@@ -208,7 +240,7 @@ export type PositionWatch = {
  * first one that is perfect.
  *
  * What stays the same is the rule it serves: the stamp is answered by where the
- * phone is *now*. That is the freshness filter (`MAX_FIX_AGE_MS`), not the
+ * phone is *now*. That is the freshness filter (`isFresh`), not the
  * absence of a cache — a fix older than that is dropped whichever API
  * delivered it.
  *
@@ -243,8 +275,12 @@ export function startPositionWatch(): PositionWatch {
   };
 
   const onFix = (raw: Location.LocationObject) => {
-    const fix = toCandidate(raw);
-    if (!fix || Date.now() - fix.timestamp > MAX_FIX_AGE_MS) return;
+    const fix = toCandidate(raw, Date.now());
+    if (!fix) return;
+    // The same fix handed over twice (the cached one can be) must not pose as
+    // two fixes agreeing on a lag; only a newer reading counts.
+    const last = fixes[fixes.length - 1];
+    if (last && fix.timestamp <= last.timestamp) return;
 
     fixes = [...fixes, fix].slice(-KEPT_FIXES);
     notify();

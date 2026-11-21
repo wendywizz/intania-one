@@ -30,7 +30,14 @@ jest.mock('@/constants/devConfig', () => ({ DEV_LOCATION: null }));
 
 const NOW = 1_700_000_000_000;
 
-const cand = (accuracyM: number, ageMs = 0): FixCandidate => ({ lat: 7, lon: 100.5, accuracyM, timestamp: NOW - ageMs });
+/** `ageMs`: how far `timestamp` trails arrival; `heldMs`: how long ago it arrived. */
+const cand = (accuracyM: number, ageMs = 0, heldMs = 0): FixCandidate => ({
+  lat: 7,
+  lon: 100.5,
+  accuracyM,
+  timestamp: NOW - heldMs - ageMs,
+  receivedAt: NOW - heldMs,
+});
 
 describe('selectFix', () => {
   it('waits when there is nothing yet', () => {
@@ -63,6 +70,29 @@ describe('selectFix', () => {
 
   it('never treats an unknown accuracy as a good one', () => {
     expect(selectFix([cand(Infinity)], NOW, 4500)).toBeNull();
+  });
+
+  it('drops a fix held longer than 5 s, whatever its timestamp', () => {
+    expect(selectFix([cand(10, 0, 5001)], NOW, 0)).toBeNull();
+  });
+
+  // Android stamps fixes with GPS time; the phone's clock can be set by hand.
+  describe('with the phone clock set wrong', () => {
+    const SKEW = 120_000;
+
+    it('waits for a second fix rather than trusting a lone one against a wrong clock', () => {
+      expect(selectFix([cand(10, SKEW)], NOW, 0)).toBeNull();
+    });
+
+    it('accepts live fixes once two agree on the lag, clock behind or ahead', () => {
+      expect(selectFix([cand(10, SKEW, 1000), cand(10, SKEW)], NOW, 0)?.outcome).toBe('good');
+      expect(selectFix([cand(10, -SKEW, 1000), cand(10, -SKEW)], NOW, 0)?.outcome).toBe('good');
+    });
+
+    it('still drops a cached fix that lags the live ones by more than 5 s', () => {
+      const picked = selectFix([cand(5, SKEW + 60_000, 1000), cand(40, SKEW)], NOW, 0);
+      expect(picked?.fix?.accuracyM).toBe(40);
+    });
   });
 });
 
@@ -114,6 +144,31 @@ describe('startPositionWatch', () => {
     emit(raw(30));
     await expect(read).resolves.toMatchObject({ outcome: 'ok' });
     expect(reportLocationFix).toHaveBeenCalledWith(expect.any(Number), 30, 'good');
+    watch.stop();
+  });
+
+  it('stamps fine on a phone whose clock is two minutes off', async () => {
+    const watch = startPositionWatch();
+    await flush();
+    const read = watch.read();
+    emit(raw(10, 120_000));
+    await flush();
+    expect(watch.latest()).toBeNull();
+
+    jest.advanceTimersByTime(1000);
+    emit(raw(12, 120_000));
+    await expect(read).resolves.toMatchObject({ outcome: 'ok', position: { accuracyM: 10 } });
+    watch.stop();
+  });
+
+  it('does not count the same fix delivered twice as two', async () => {
+    const watch = startPositionWatch();
+    await flush();
+    const stale = raw(5, 120_000);
+    emit(stale);
+    jest.advanceTimersByTime(1000);
+    emit(stale);
+    expect(watch.latest()).toBeNull();
     watch.stop();
   });
 
