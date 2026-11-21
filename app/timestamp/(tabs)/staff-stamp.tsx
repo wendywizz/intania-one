@@ -40,7 +40,7 @@ import { type AppColors, useColors, useThemedStyles } from '@/constants/theme';
 import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 
-import { readDevicePosition, type LocationReading } from '@/services/deviceLocation';
+import { COARSE_FIX_M, startPositionWatch, type LocationReading, type PositionWatch } from '@/services/deviceLocation';
 import {
   getStaffTimestampStatus,
   submitStaffFaceStamp,
@@ -79,17 +79,6 @@ const SCAN_WINDOW_MS = 30000;
  * when it says what it is for, which is what these are.
  */
 type LoadStep = 'location' | 'status';
-
-/** A position older than this is read again before a scan is sent. */
-const POSITION_MAX_AGE_MS = 60000;
-
-/**
- * Above this radius of uncertainty the fix cannot answer a 200 m fence at all.
- * The usual cause is "Precise Location" being off for the app, which hands out
- * a position fuzzed by kilometres — the distance then looks absurd and the
- * person has no way to know why.
- */
-const COARSE_FIX_M = 150;
 
 /**
  *   idle      nothing to scan for (or the person declined to)
@@ -252,7 +241,12 @@ export default function StaffTimestampScreen() {
   statusRef.current = status;
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
-  const positionRef = useRef<{ reading: LocationReading | null; at: number }>({ reading: null, at: 0 });
+  // The position watch this screen holds while it is focused and the app is in
+  // the foreground — see startPositionWatch. Null whenever the GPS should be off.
+  const watchRef = useRef<PositionWatch | null>(null);
+  // Set when the app left while a load was still reading; the load switches the
+  // watch off when it finishes instead of having it cut from under it.
+  const leftWhileLoadingRef = useRef(false);
   const busyRef = useRef(false);
   const lastSubmitAtRef = useRef(0);
   const scanStartedAtRef = useRef(0);
@@ -298,6 +292,16 @@ export default function StaffTimestampScreen() {
     [startScanning],
   );
 
+  const startWatch = useCallback((): PositionWatch => {
+    if (!watchRef.current) watchRef.current = startPositionWatch();
+    return watchRef.current;
+  }, []);
+
+  const stopWatch = useCallback(() => {
+    watchRef.current?.stop();
+    watchRef.current = null;
+  }, []);
+
   const load = useCallback(
     async (mode: 'initial' | 'refresh') => {
       // One load at a time, and no refresh straight after the last one. A
@@ -323,11 +327,11 @@ export default function StaffTimestampScreen() {
       setScanResult(null);
 
       try {
-        // A real fix, waited for. Indoors this is the slow part — seconds while
-        // the OS falls back from GPS to WiFi and cell — and it is the reason
-        // the step is named on screen rather than left as a bare spinner.
-        const reading = await readDevicePosition();
-        positionRef.current = { reading, at: Date.now() };
+        // A real fix, waited for. Indoors this can still take seconds while the
+        // OS falls back from GPS to WiFi and cell — it is the reason the step is
+        // named on screen rather than left as a bare spinner — but the watch
+        // answers with the first good-enough fix instead of the perfect one.
+        const reading = await startWatch().read();
         setLocation(reading);
         setLocating(false);
 
@@ -345,12 +349,16 @@ export default function StaffTimestampScreen() {
       } finally {
         loadingRef.current = false;
         lastLoadAtRef.current = Date.now();
+        if (leftWhileLoadingRef.current) {
+          leftWhileLoadingRef.current = false;
+          stopWatch();
+        }
         setLocating(false);
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [staffId, decide],
+    [staffId, decide, startWatch, stopWatch],
   );
 
   useFocusEffect(
@@ -374,19 +382,29 @@ export default function StaffTimestampScreen() {
 
         if (next === 'background') {
           leftTheApp = true;
+          // GPS off while the app is away. A load still reading is let finish
+          // first: the first-ever permission prompt on Android sends the app to
+          // the background too, and cutting the watch there would fail the read
+          // the prompt was for.
+          if (loadingRef.current) leftWhileLoadingRef.current = true;
+          else stopWatch();
           return;
         }
 
         if (next !== 'active' || !leftTheApp) return;
         leftTheApp = false;
+        leftWhileLoadingRef.current = false;
         void load('refresh');
       });
 
       return () => {
         subscription.remove();
+        // Blur: the GPS must not stay on behind a screen nobody is looking at.
+        leftWhileLoadingRef.current = false;
+        stopWatch();
         setPhase('idle');
       };
-    }, [load]),
+    }, [load, stopWatch]),
   );
 
   // Ask for the camera once, when scanning first needs it. After a refusal the
@@ -422,17 +440,20 @@ export default function StaffTimestampScreen() {
     [showToast],
   );
 
-  /** The last fix, read again when it is missing or older than POSITION_MAX_AGE_MS. */
+  /**
+   * Where the phone is now. Answered at once from the watch when it holds a
+   * fix younger than its freshness limit — which, with the watch running for as
+   * long as the screen is open, is the normal case — and read otherwise. There
+   * is no age cut-off of this screen's own any more: the watch applies the
+   * limit to every fix, so a position can never be older than it allows.
+   */
   const freshPosition = useCallback(async () => {
-    let { reading } = positionRef.current;
-    if (!reading || reading.outcome !== 'ok' || Date.now() - positionRef.current.at > POSITION_MAX_AGE_MS) {
-      reading = await readDevicePosition();
-      positionRef.current = { reading, at: Date.now() };
-      setLocation(reading);
-    }
+    const watch = startWatch();
+    const reading = watch.latest() ?? (await watch.read());
+    setLocation(reading);
 
     return reading;
-  }, []);
+  }, [startWatch]);
 
   const onBlink = useCallback(() => {
     const current = statusRef.current;
@@ -449,9 +470,10 @@ export default function StaffTimestampScreen() {
       let settled = false;
 
       try {
-        const reading = await freshPosition();
-
-        const photoUri = await cameraRef.current?.capture();
+        // Capture does not queue behind the position: freshPosition is instant
+        // when the watch has a fix, and when it has not, the two run together
+        // rather than the photo waiting out the read (and going stale for it).
+        const [reading, photoUri] = await Promise.all([freshPosition(), cameraRef.current?.capture()]);
         if (!photoUri) return;
 
         const result = await submitStaffFaceStamp({

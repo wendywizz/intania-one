@@ -20,7 +20,7 @@ import { USER_ID } from '@/constants/user';
 import { useAuth } from '@/context/AuthContext';
 import { useHolidays } from '@/hooks/use-holidays';
 
-import { readDevicePosition, type LocationReading } from '@/services/deviceLocation';
+import { startPositionWatch, type LocationReading, type PositionWatch } from '@/services/deviceLocation';
 import {
   getLectTimestampStatus,
   stampToday,
@@ -111,6 +111,20 @@ export default function LectTimestampScreen() {
   // A load in flight, and when the last one finished. See MIN_RELOAD_GAP_MS.
   const loadingRef = useRef(false);
   const lastLoadAtRef = useRef(0);
+  // The position watch held while this tab is focused and the app is in the
+  // foreground — see startPositionWatch. Null whenever the GPS should be off.
+  const watchRef = useRef<PositionWatch | null>(null);
+  // Set when the app left while a load was still reading; the load switches the
+  // watch off when it finishes instead of having it cut from under it.
+  const leftWhileLoadingRef = useRef(false);
+  const startWatch = useCallback((): PositionWatch => {
+    if (!watchRef.current) watchRef.current = startPositionWatch();
+    return watchRef.current;
+  }, []);
+  const stopWatch = useCallback(() => {
+    watchRef.current?.stop();
+    watchRef.current = null;
+  }, []);
   useEffect(() => {
     if (loading) return;
 
@@ -148,7 +162,7 @@ export default function LectTimestampScreen() {
         // Read the position first and send it with the status request, so the
         // card shows the same verdict the button would get. Asking afterwards
         // would mean a card that says "ลงเวลาได้" and then refuses on tap.
-        const reading = await readDevicePosition();
+        const reading = await startWatch().read();
         setLocation(reading);
 
         // The gateway reads the IP this call arrives on, so the network checks
@@ -164,11 +178,15 @@ export default function LectTimestampScreen() {
       } finally {
         loadingRef.current = false;
         lastLoadAtRef.current = Date.now();
+        if (leftWhileLoadingRef.current) {
+          leftWhileLoadingRef.current = false;
+          stopWatch();
+        }
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [staffId],
+    [staffId, startWatch, stopWatch],
   );
 
   // On focus, not just on mount: this screen is one tab of five, and a status
@@ -195,16 +213,28 @@ export default function LectTimestampScreen() {
       const subscription = AppState.addEventListener('change', (next) => {
         if (next === 'background') {
           leftTheApp = true;
+          // GPS off while the app is away. A load still reading is let finish
+          // first: the first-ever permission prompt on Android sends the app to
+          // the background too, and cutting the watch there would fail the read
+          // the prompt was for.
+          if (loadingRef.current) leftWhileLoadingRef.current = true;
+          else stopWatch();
           return;
         }
 
         if (next !== 'active' || !leftTheApp) return;
         leftTheApp = false;
+        leftWhileLoadingRef.current = false;
         void load('refresh');
       });
 
-      return () => subscription.remove();
-    }, [load]),
+      return () => {
+        subscription.remove();
+        // Blur: the GPS must not stay on behind a tab nobody is looking at.
+        leftWhileLoadingRef.current = false;
+        stopWatch();
+      };
+    }, [load, stopWatch]),
   );
 
   const onStamp = useCallback(async () => {
@@ -212,10 +242,13 @@ export default function LectTimestampScreen() {
     setStamping(true);
 
     try {
-      // Read again rather than reuse the fix from the status call: minutes can
-      // pass between the screen loading and the tap, and the position that
-      // matters is the one at the moment the row is written.
-      const reading = await readDevicePosition();
+      // Not the fix from the status call: minutes can pass between the screen
+      // loading and the tap, and the position that matters is the one at the
+      // moment the row is written. The watch keeps a current one, so this is
+      // instant when it has a fix younger than its freshness limit, and waits
+      // only when it has not.
+      const watch = startWatch();
+      const reading = watch.latest() ?? (await watch.read());
       setLocation(reading);
 
       if (reading.outcome !== 'ok') {
@@ -243,7 +276,7 @@ export default function LectTimestampScreen() {
     } finally {
       setStamping(false);
     }
-  }, [staffId, stamping, showToast]);
+  }, [staffId, stamping, showToast, startWatch]);
 
   const renderBody = () => {
     if (loading) {

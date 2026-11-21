@@ -98,6 +98,29 @@ export function reportPermission(kind: PermissionKind, result: PermissionLike) {
   }
 }
 
+// --- location fix ------------------------------------------------------------
+
+/** How a position read ended: a good fix, the coarse fallback, the best at timeout, or nothing. */
+export type LocationFixOutcome = 'good' | 'coarse' | 'best' | 'none';
+
+/**
+ * How long a position read took and how accurate it was, so the 50 m / 4.5 s
+ * thresholds in services/deviceLocation.ts can be tuned from real indoor data.
+ * Numbers only — no coordinates ever leave through here. Sent as a `perf`
+ * event, a type the server already accepts.
+ */
+export function reportLocationFix(ms: number, accuracyM: number | null, outcome: LocationFixOutcome) {
+  try {
+    track('perf', 'location_fix', {
+      ms: Math.max(0, Math.round(ms)),
+      accuracy_m: accuracyM == null ? undefined : Math.round(accuracyM),
+      outcome,
+    });
+  } catch {
+    // ignore
+  }
+}
+
 // --- OTA ---------------------------------------------------------------------
 
 export type OtaStage = 'check' | 'downloaded' | 'applied' | 'error' | 'up_to_date';
