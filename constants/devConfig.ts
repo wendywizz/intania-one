@@ -4,12 +4,20 @@
 // "บัญชีทดสอบ (Demo account)" link and signs out a stored demo session.
 export const DEMO_MODE_ENABLED: boolean = true;
 
+// The app has two modes, chosen by how the user signs in (not by this file):
+//  - Production: PSU Passport (OpenID) sign-in. Real user, real servers, the
+//    camera picture is what gets stamped. Nothing below changes it.
+//  - Demo: the "บัญชีทดสอบ (Demo account)" sign-in. Fixture data everywhere,
+//    except ลงเวลาบุคลากร while DEMO_LIVE_FACE_STAMP is on (below).
+//
 // Demo account + REAL face stamp: while true, a demo session's ลงเวลาบุคลากร
 // (status, face scan, face enroll) skips the fixtures and goes to the real
 // server as the test account DEMO_LIVE_STAFF_ID (services/demo/demoMode.ts),
-// which scooba lets stamp at any hour (STAFF_STAMP_TEST_IDS). Every other demo
-// screen stays on fixtures. Set false before building for App Review: the
-// reviewer is off the faculty network and would only see refusals.
+// which scooba lets stamp at any hour (STAFF_STAMP_TEST_IDS). The upload is
+// the bundled test photo assets/images/demo-face-test.jpg, not the camera
+// frame (faceStampPhotoUri). Every other demo screen stays on fixtures. Set
+// false before building for App Review: the reviewer is off the faculty
+// network and would only see refusals.
 export const DEMO_LIVE_FACE_STAMP: boolean = true;
 
 // Dev overrides — must be empty/null before building for production.

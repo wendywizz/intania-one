@@ -39,6 +39,30 @@ export function faceStampStaffId(staffId: string): string {
   return active && DEMO_LIVE_FACE_STAMP ? DEMO_LIVE_STAFF_ID : staffId;
 }
 
+/**
+ * The picture a face-stamp request uploads. In a live demo session it is the
+ * bundled test photo (assets/images/demo-face-test.jpg, a public-domain
+ * passport picture from Wikimedia Commons) instead of the camera frame, so a
+ * tester's own face never reaches the server under the test account. scooba
+ * passes any detected face for the test account, and an empty frame would
+ * fail with no_face, so the photo must show one clear face. A PSU sign-in
+ * (production mode) always sends the camera picture unchanged.
+ */
+export async function faceStampPhotoUri(photoUri: string): Promise<string> {
+  if (!active || !DEMO_LIVE_FACE_STAMP) return photoUri;
+  try {
+    // Loaded lazily so production sessions never touch the asset module.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Asset } = require('expo-asset') as typeof import('expo-asset');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const asset = Asset.fromModule(require('../../assets/images/demo-face-test.jpg'));
+    await asset.downloadAsync();
+    return asset.localUri ?? photoUri;
+  } catch {
+    return photoUri;
+  }
+}
+
 export const DEMO_USER: AuthUser = {
   staffId: DEMO_STAFF_ID,
   name: 'สมชาย ใจดี',

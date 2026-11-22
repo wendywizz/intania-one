@@ -3,7 +3,7 @@ import { File } from "expo-file-system";
 import { ENDPOINTS } from "../constants/endpoints";
 import { currentWifiIp } from "../utils/wifi-ip";
 import { thaiOnly } from "../utils/thai-message";
-import { faceStampStaffId } from "./demo/demoMode";
+import { faceStampPhotoUri, faceStampStaffId } from "./demo/demoMode";
 import type { JsonMap } from "./api";
 import { ensureSuccess, fetchWithTimeout, requestJson } from "./api";
 import { TEXT } from '@/constants/text';
@@ -894,7 +894,8 @@ export async function submitStaffFaceStamp({
   // it, and its name and mime type fill in the part's headers. The picture is a
   // JPEG written by ImageManipulator, so the part lands as face-scan.jpg,
   // image/jpeg. The DOM typings do not know the class, hence the cast.
-  form.append('file', new File(photoUri) as unknown as Blob);
+  // A demo session uploads the bundled test photo instead (see faceStampPhotoUri).
+  form.append('file', new File(await faceStampPhotoUri(photoUri)) as unknown as Blob);
 
   // fetchWithTimeout rather than requestJson: requestJson forces a JSON
   // Content-Type, and a multipart body needs the boundary fetch sets itself.
@@ -994,8 +995,9 @@ export async function submitStaffFaceEnroll({
   }
 
   // expo-file-system Files, as in submitStaffFaceStamp - see the note there.
-  form.append('file1', new File(photoUris[0]) as unknown as Blob);
-  form.append('file2', new File(photoUris[1]) as unknown as Blob);
+  // A demo session uploads the bundled test photo for both (see faceStampPhotoUri).
+  form.append('file1', new File(await faceStampPhotoUri(photoUris[0])) as unknown as Blob);
+  form.append('file2', new File(await faceStampPhotoUri(photoUris[1])) as unknown as Blob);
 
   const response = await fetchWithTimeout(createTimestampUrl('/staff/face-enroll'), {
     method: 'POST',
