@@ -13,7 +13,7 @@
 
 คณะวิศวกรรมศาสตร์ มหาวิทยาลัยสงขลานครินทร์ ("คณะ") เป็นผู้ให้บริการแอป Intania One ("แอป") สำหรับบุคลากรของคณะ
 นโยบายนี้อธิบายว่าคณะเก็บ ใช้ เปิดเผย และเก็บรักษาข้อมูลส่วนบุคคลของท่านอย่างไร
-ปรับปรุงล่าสุด: 5 พฤศจิกายน 2569
+ปรับปรุงล่าสุด: 22 พฤศจิกายน 2569
 
 ## เกี่ยวกับแอป
 Intania One เป็นแอปบนมือถือและแท็บเล็ต (iOS และ Android) ที่รวมงานบริการภายในของคณะไว้ในที่เดียว สำหรับ**บุคลากรของคณะวิศวกรรมศาสตร์ มหาวิทยาลัยสงขลานครินทร์** ได้แก่
@@ -39,7 +39,7 @@ Intania One เป็นแอปบนมือถือและแท็บ�
 1.8 **ข้อมูลการใช้งาน ข้อผิดพลาด และข้อมูลอุปกรณ์** ผูกกับรหัสบุคลากรของท่าน ใช้เพื่อดูแลและปรับปรุงระบบ เก็บ 90 วัน และไม่เปิดเผยแก่บุคคลภายนอก โดยอาศัยฐานประโยชน์โดยชอบด้วยกฎหมายของคณะในการดูแลระบบให้ใช้งานได้ ได้แก่
 - **ข้อมูลอุปกรณ์** รุ่นและผู้ผลิตอุปกรณ์ ระบบปฏิบัติการและเวอร์ชัน เวอร์ชันแอปและหมายเลขบิลด์ เวอร์ชันการอัปเดตของแอป และประเภทเครือข่าย (Wi-Fi หรือเครือข่ายมือถือ) แอปไม่เก็บชื่อเครื่องที่ท่านตั้งไว้
 - **รหัสการติดตั้ง (install ID)** รหัสสุ่มที่แอปสร้างขึ้นเมื่อติดตั้ง ใช้แยกแยะอุปกรณ์ในการดูแลระบบ ไม่ใช่รหัสโฆษณาและไม่ใช่รหัสประจำเครื่องจากผู้ผลิต และจะเปลี่ยนใหม่เมื่อลบแล้วติดตั้งแอปใหม่
-- **ข้อมูลการเรียกใช้ระบบ** วันเวลา ส่วนของระบบที่เรียกใช้ (เช่น หน้าการลา หน้าการประชุม) ผลลัพธ์ (สำเร็จหรือรหัสข้อผิดพลาด) และเวลาที่ใช้ ไม่รวมเนื้อหาที่ท่านกรอกหรือข้อมูลที่ระบบตอบกลับ
+- **ข้อมูลการเรียกใช้ระบบ** วันเวลา ส่วนของระบบที่เรียกใช้ (เช่น หน้าการลา หน้าการประชุม) ผลลัพธ์ (สำเร็จหรือรหัสข้อผิดพลาด) และเวลาที่ใช้ รวมถึงระยะเวลาและความแม่นยำโดยประมาณในการหาตำแหน่งตอนลงเวลา (ไม่รวมพิกัด) ไม่รวมเนื้อหาที่ท่านกรอกหรือข้อมูลที่ระบบตอบกลับ
 - **ข้อผิดพลาดและแอปค้าง** ชื่อข้อผิดพลาด ข้อความข้อผิดพลาดที่ตัดข้อมูลส่วนบุคคลออกแล้ว ตำแหน่งในโค้ดแบบย่อ และประเภทปัญหาการเชื่อมต่อ (เช่น หมดเวลา ไม่มีอินเทอร์เน็ต)
 - **ประสิทธิภาพ** เวลาเปิดแอปและเวลาโหลดหน้า
 - **การใช้งานแอป** หน้าที่เปิดและระยะเวลาบนหน้า (เป็นชื่อหน้า ไม่ใช่ข้อมูลในหน้า) การแตะเปิดการแจ้งเตือน (เฉพาะประเภท) การเปิดแอปจากลิงก์ (เฉพาะชื่อหน้า) การไม่อนุญาตสิทธิ์ในเครื่อง และสถานะการอัปเดตแอป
@@ -115,7 +115,7 @@ Intania One เป็นแอปบนมือถือและแท็บ�
 # Privacy Policy: Intania One app
 
 The Faculty of Engineering, Prince of Songkla University (the "Faculty") provides the Intania One app (the "App") for its staff.
-This policy explains how the Faculty collects, uses, discloses and retains your personal data. Last updated: 5 November 2026
+This policy explains how the Faculty collects, uses, discloses and retains your personal data. Last updated: 22 November 2026
 
 ## About the app
 Intania One is a phone and tablet app (iOS and Android) that brings the Faculty's internal services together in one place, for **staff of the Faculty of Engineering, Prince of Songkla University**. It lets staff:
@@ -143,7 +143,7 @@ The data in 1.8 is collected by the Faculty's own system and stored on the Facul
 - **Install ID**: a random ID the App creates when it is installed, used to tell devices apart when maintaining the service. It is not an advertising ID or a manufacturer hardware ID, and it changes if you delete and reinstall the App.
 - **Service requests**: date and time, which part of the service was called (for example leave or meetings), the result (success or an error code) and how long it took. It does not include what you type or the data the service returns.
 - **Errors and crashes**: the error name, the error message with personal data removed, a shortened code location, and the type of connection problem (for example timeout or no internet).
-- **Performance**: app start-up time and screen load time.
+- **Performance**: app start-up time and screen load time, and how long finding your location took when you clock in and its approximate accuracy (never the coordinates themselves).
 - **App usage**: screens opened and time on each (the screen name, not its contents), opening a notification (its category only), opening the app from a link (the screen name only), declining a device permission, and app update status.
 
 This data does **not** include your name, email, IP address, location, face images, tokens or anything you type.
