@@ -570,7 +570,12 @@ function toLectStatus(json: JsonMap): LectTimestampStatus {
 }
 
 /** Where the phone is, for the geofence check. See services/deviceLocation.ts. */
-export type LectPosition = { lat: number; lon: number };
+export type LectPosition = {
+  lat: number;
+  lon: number;
+  /** Android's mock-location flag; undefined = unknown (iOS). See `mockLocationQuery`. */
+  mocked?: boolean;
+};
 
 /**
  * `lat`/`lon` for the request, or nothing at all when there is no usable fix.
@@ -591,6 +596,21 @@ function positionQuery(position?: LectPosition | null) {
   }
 
   return { lat: String(lat), lon: String(lon) };
+}
+
+/**
+ * `mock_location` for a stamp request: '1' or '0' when the OS said, nothing
+ * when it did not.
+ *
+ * Omitted for unknown (iOS) rather than sent as '0': the server records what it
+ * is told, and a '0' from an iPhone would say "checked, genuine" when nothing
+ * was checked. Sent on stamps only, not on the status reads, since it is
+ * recorded with the stamp. The server records it and never refuses on it.
+ */
+function mockLocationQuery(position?: LectPosition | null): { mock_location?: string } {
+  if (!position || typeof position.mocked !== 'boolean') return {};
+
+  return { mock_location: position.mocked ? '1' : '0' };
 }
 
 /**
@@ -641,7 +661,7 @@ export async function stampToday(
   const jsonData = await requestJson<JsonMap>(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ staff_id: staffId, ...positionQuery(position) }),
+    body: JSON.stringify({ staff_id: staffId, ...positionQuery(position), ...mockLocationQuery(position) }),
   });
   ensureSuccess(jsonData);
 
@@ -856,6 +876,9 @@ export async function submitStaffFaceStamp({
     form.append('lat', coords.lat);
     form.append('lon', coords.lon);
   }
+
+  const mock = mockLocationQuery(position);
+  if (mock.mock_location) form.append('mock_location', mock.mock_location);
 
   // Omitted off Wi-Fi: on mobile data the phone's own address says nothing
   // about where it is.

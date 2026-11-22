@@ -30,6 +30,14 @@ export type DevicePosition = {
   lon: number;
   /** Radius of uncertainty in metres, as reported by the OS. */
   accuracyM: number;
+  /**
+   * Android's "this fix came from a mock-location app" (`isFromMockProvider`).
+   * Undefined means unknown, not false: iOS never reports it, so an iPhone
+   * must not read as a verified-genuine position. Only recorded by the server,
+   * never acted on here. Client-reported, so it deters casual fake-GPS use
+   * and nothing more.
+   */
+  mocked?: boolean;
 };
 
 export type LocationOutcome =
@@ -121,6 +129,8 @@ export type FixCandidate = {
   timestamp: number;
   /** When the fix reached the app, `Date.now()` — on the phone's clock. */
   receivedAt: number;
+  /** See `DevicePosition.mocked`. Carried through, never part of `isFresh`. */
+  mocked?: boolean;
 };
 
 /**
@@ -195,13 +205,28 @@ function toCandidate(fix: Location.LocationObject | null | undefined, receivedAt
 
   const accuracy = Number(fix?.coords?.accuracy);
 
-  return { lat, lon, accuracyM: Number.isFinite(accuracy) && accuracy >= 0 ? accuracy : Infinity, timestamp, receivedAt };
+  const candidate: FixCandidate = {
+    lat,
+    lon,
+    accuracyM: Number.isFinite(accuracy) && accuracy >= 0 ? accuracy : Infinity,
+    timestamp,
+    receivedAt,
+  };
+  // Only a real boolean counts: iOS leaves it undefined, and that must stay "unknown".
+  if (typeof fix?.mocked === 'boolean') candidate.mocked = fix.mocked;
+
+  return candidate;
 }
 
 function toReading(fix: FixCandidate): LocationReading {
   return {
     outcome: 'ok',
-    position: { lat: fix.lat, lon: fix.lon, accuracyM: Number.isFinite(fix.accuracyM) ? fix.accuracyM : 0 },
+    position: {
+      lat: fix.lat,
+      lon: fix.lon,
+      accuracyM: Number.isFinite(fix.accuracyM) ? fix.accuracyM : 0,
+      ...(fix.mocked === undefined ? {} : { mocked: fix.mocked }),
+    },
     canAskAgain: true,
   };
 }

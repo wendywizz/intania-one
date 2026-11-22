@@ -137,6 +137,28 @@ describe('startPositionWatch', () => {
     watch.stop();
   });
 
+  it.each([[true], [false]])('keeps mocked=%p through to the returned position', async (mocked) => {
+    const watch = startPositionWatch();
+    await flush();
+    const read = watch.read();
+    emit({ ...raw(8), mocked });
+
+    const reading = await read;
+    expect(reading.position?.mocked).toBe(mocked);
+    watch.stop();
+  });
+
+  it('leaves mocked out when the OS does not report it (iOS): unknown, not false', async () => {
+    const watch = startPositionWatch();
+    await flush();
+    const read = watch.read();
+    emit(raw(8));
+
+    const reading = await read;
+    expect(reading.position).not.toHaveProperty('mocked');
+    watch.stop();
+  });
+
   it('resolves immediately on a fix of 50 m or better', async () => {
     const watch = startPositionWatch();
     await flush();

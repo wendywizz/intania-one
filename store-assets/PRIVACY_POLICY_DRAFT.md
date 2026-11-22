@@ -30,7 +30,7 @@ Intania One เป็นแอปบนมือถือและแท็บ�
 ## 1. ข้อมูลที่เราเก็บ
 1.1 **ข้อมูลบัญชี** ชื่อ-นามสกุล อีเมล รหัสบุคลากร และหน่วยงาน ได้จากบัญชี PSU Passport ที่ท่านใช้เข้าสู่ระบบ
 1.2 **ข้อมูลการลงเวลาและการทำงาน** เวลาเข้า-ออกงาน ใบลา การแจ้งลืมลงเวลา การประชุม การจองห้อง และเรื่องแจ้งซ่อม รวมถึงรูปที่ท่านแนบในเรื่องแจ้งซ่อม
-1.3 **ตำแหน่งที่ตั้ง** พิกัดของอุปกรณ์ขณะลงเวลา เพื่อตรวจว่าอยู่ในพื้นที่คณะ แอปไม่ติดตามตำแหน่งขณะไม่ได้ลงเวลา
+1.3 **ตำแหน่งที่ตั้ง** พิกัดของอุปกรณ์ขณะลงเวลา เพื่อตรวจว่าอยู่ในพื้นที่คณะ และสถานะว่าตำแหน่งมาจากแอปจำลองตำแหน่งหรือไม่ (เฉพาะ Android) แอปไม่ติดตามตำแหน่งขณะไม่ได้ลงเวลา
 1.4 **หมายเลข IP ของ Wi-Fi** ที่อุปกรณ์เชื่อมต่อขณะลงเวลา
 1.5 **ข้อมูลใบหน้า** ดูข้อ 2
 1.6 **ข้อมูลอุปกรณ์สำหรับแจ้งเตือน** โทเคนการแจ้งเตือน (push token) เพื่อส่งการแจ้งเตือนเรื่องที่รอท่านดำเนินการ
@@ -132,7 +132,7 @@ The information the app shows and records comes from the Faculty's and Universit
 ## 1. Data we collect
 1.1 **Account data**: name, email, staff ID and department, from the PSU Passport account you sign in with.
 1.2 **Attendance and work data**: clock-in/out times, leave requests, missed-scan reports, meetings, room bookings and repair requests, including photos you attach to a repair request.
-1.3 **Location**: the device's coordinates at the moment you stamp attendance, to check you are within the faculty area. The App does not track your location otherwise.
+1.3 **Location**: the device's coordinates at the moment you stamp attendance, to check you are within the faculty area, and whether the position came from a mock-location app (Android only). The App does not track your location otherwise.
 1.4 **Wi-Fi IP address** of the network the device is on when you stamp.
 1.5 **Face data**: see Section 2.
 1.6 **Notification token** (push token), to send you notifications about items waiting on you.

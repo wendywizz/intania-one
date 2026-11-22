@@ -190,6 +190,28 @@ describe('submitStaffFaceStamp', () => {
     expect(file.uri).toBe(SCAN.photoUri);
   });
 
+  it.each([
+    [true, '1'],
+    [false, '0'],
+    [undefined, undefined],
+  ])('sends mock_location only when the OS said (mocked %p -> %p)', async (mocked, expected) => {
+    gatewayAnswers(200, { data: { passed: false, reason: 'face_mismatch', message: '' } });
+
+    await submitStaffFaceStamp({ ...SCAN, position: { lat: 7.0067544, lon: 100.5011083, mocked } });
+
+    // Unknown (iOS) is omitted, never '0': '0' would claim a check that did not happen.
+    expect(partOf('mock_location')).toBe(expected);
+    expect(partOf('lat')).toBe('7.0067544');
+  });
+
+  it('sends no mock_location without a position', async () => {
+    gatewayAnswers(200, { data: { passed: false, reason: 'face_mismatch', message: '' } });
+
+    await submitStaffFaceStamp(SCAN);
+
+    expect(partOf('mock_location')).toBeUndefined();
+  });
+
   it("sends the phone's Wi-Fi address with the scan, and nothing on mobile data", async () => {
     const answer = { data: { passed: false, reason: 'face_mismatch', message: '' } };
 
