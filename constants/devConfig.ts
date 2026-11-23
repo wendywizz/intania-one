@@ -18,7 +18,7 @@ export const DEMO_MODE_ENABLED: boolean = true;
 // frame (faceStampPhotoUri). Every other demo screen stays on fixtures. Set
 // false before building for App Review: the reviewer is off the faculty
 // network and would only see refusals.
-export const DEMO_LIVE_FACE_STAMP: boolean = true;
+export const DEMO_LIVE_FACE_STAMP: boolean = false;
 
 // Dev overrides — must be empty/null before building for production.
 // Set DEV_STAFF_ID to a UNI_STAFF_ID to impersonate that user across ALL features.
