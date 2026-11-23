@@ -53,6 +53,7 @@ import {
   recordStaffFaceScanFailure,
   type StaffFaceScanStopReason,
 } from '@/utils/staff-face-scan-attempts';
+import { reloadDecision, type LoadTrigger } from '@/utils/reload-gate';
 import { minutesOf, workdayState, workedLabel } from '@/utils/workday';
 import { weekdayLabel } from '@/i18n/locale';
 
@@ -254,6 +255,9 @@ export default function StaffTimestampScreen() {
   // A load in flight, and when the last one finished. See MIN_RELOAD_GAP_MS.
   const loadingRef = useRef(false);
   const lastLoadAtRef = useRef(0);
+  // A pull that arrived mid-load, run as soon as that load ends.
+  const refreshQueuedRef = useRef(false);
+  const loadRef = useRef<((mode: LoadTrigger) => Promise<void>) | null>(null);
   const failedScanCountRef = useRef(0);
   const startScanning = useCallback(() => {
     failedScanCountRef.current = 0;
@@ -303,16 +307,28 @@ export default function StaffTimestampScreen() {
   }, []);
 
   const load = useCallback(
-    async (mode: 'initial' | 'refresh') => {
-      // One load at a time, and no refresh straight after the last one. A
+    async (mode: LoadTrigger) => {
+      // One load at a time, and no resume straight after the last one. A
       // resume can arrive while the read that caused it is still running: two
       // loads then race, and because each walks the same two steps the loader
-      // flips between them for as long as the screen is open.
-      if (loadingRef.current) return;
-      if (mode === 'refresh' && Date.now() - lastLoadAtRef.current < MIN_RELOAD_GAP_MS) return;
+      // flips between them for as long as the screen is open. A person's pull
+      // during a load is queued instead — see reloadDecision.
+      const verdict = reloadDecision({
+        trigger: mode,
+        loading: loadingRef.current,
+        now: Date.now(),
+        lastLoadAt: lastLoadAtRef.current,
+        minResumeGapMs: MIN_RELOAD_GAP_MS,
+      });
+      if (verdict === 'queue') {
+        refreshQueuedRef.current = true;
+        setRefreshing(true);
+        return;
+      }
+      if (verdict === 'skip') return;
       loadingRef.current = true;
 
-      if (mode === 'refresh') setRefreshing(true);
+      if (mode !== 'initial') setRefreshing(true);
       if (mode === 'initial') {
         setLoading(true);
         // Yesterday's times under this load's own spinner read as its answer.
@@ -355,11 +371,19 @@ export default function StaffTimestampScreen() {
         }
         setLocating(false);
         setLoading(false);
-        setRefreshing(false);
+        if (refreshQueuedRef.current) {
+          // The pull that came in mid-load: check again now, on whatever
+          // network the phone is on by this time. The spinner stays up.
+          refreshQueuedRef.current = false;
+          setTimeout(() => void loadRef.current?.('refresh'), 0);
+        } else {
+          setRefreshing(false);
+        }
       }
     },
     [staffId, decide, startWatch, stopWatch],
   );
+  loadRef.current = load;
 
   useFocusEffect(
     useCallback(() => {
@@ -386,6 +410,7 @@ export default function StaffTimestampScreen() {
           // first: the first-ever permission prompt on Android sends the app to
           // the background too, and cutting the watch there would fail the read
           // the prompt was for.
+          refreshQueuedRef.current = false;
           if (loadingRef.current) leftWhileLoadingRef.current = true;
           else stopWatch();
           return;
@@ -394,12 +419,13 @@ export default function StaffTimestampScreen() {
         if (next !== 'active' || !leftTheApp) return;
         leftTheApp = false;
         leftWhileLoadingRef.current = false;
-        void load('refresh');
+        void load('resume');
       });
 
       return () => {
         subscription.remove();
         // Blur: the GPS must not stay on behind a screen nobody is looking at.
+        refreshQueuedRef.current = false;
         leftWhileLoadingRef.current = false;
         stopWatch();
         setPhase('idle');
